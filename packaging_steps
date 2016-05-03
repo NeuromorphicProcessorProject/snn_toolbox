@@ -1,0 +1,15 @@
+This is a reminder how to prepare a python package for distribution.
+
+1.) Configure project with setup.py, setup.cfg, README.rst, LICENSE.txt etc. as described here:
+http://python-packaging-user-guide.readthedocs.org/en/latest/distributing/
+
+2.) Build a Wheel package by calling
+python setup.py bdist_wheel
+
+This should create a Universal Wheel (pure Python, compatible with Python 2 and 3)
+if setup.cfg contains the flag
+[bdist_wheel]
+universal=1
+
+Otherwise run
+python setup.py bdist_wheel --universal

@@ -1,0 +1,15 @@
+# Requirements for SNN toolbox #
+################################
+
+numpy
+scipy
+matplotlib
+future
+neo
+lazyarray
+sympy
+pyNN
+
+# You may need to install manually (before running 'pip install'):
+keras
+freetype (including libpng)

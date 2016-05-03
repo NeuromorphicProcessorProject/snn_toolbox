@@ -1,0 +1,66 @@
+# Project directory structure:
+
+project (README.md, LICENCE.txt, ...)
+project/docs (Makefile, ...)
+project/docs/source (conf.py, index.rst)
+project/code
+project/code/package (module.py, ...)
+
+# Install sphinx, autobuild and recommonmark (allows use of Markdown and reStructuredText in
+# the same Sphinx project.
+pip install sphinx sphinx-autobuild
+
+# In docs/ run quickstart to create conf.py and index.rst
+sphinx-quickstart
+
+# Edit conf.py: Add path to code so that the autodoc tool will be able to import the modules.
+sys.path.insert(0, os.path.abspath("../../code"))
+
+# In conf.py, add autodoc (automatically extract docstrings from source files) and napoleon 
+# extensions (enables autodoc to read docstrings written in numpy and google style instead of 
+# ReStructuredText)
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+
+# In conf.py, add Markdown as possible source files:
+from recommonmark.parser import CommonMarkParser
+
+source_parsers = {
+    '.md': CommonMarkParser,
+}
+
+source_suffix = ['.rst', '.md']
+
+# In docs, create a file include.rst (any name will do), specifying the relative path to 
+# files outside the docs root directory and which should be included entirely (i.e. not 
+# python source files which are extracted by autodoc):
+
+Getting Started
+===============
+.. include:: ../README.md
+
+# In docs/, run apidoc to generate documentation source files that can be picked up by 
+# autodoc:
+sphinx-apidoc -o source/ ../code/package/
+
+# This will have created a package.rst source file in source/. 
+# Now edit index.rst to include all those source files:
+
+Contents:
+
+.. toctree::
+   :maxdepth: 2
+
+   readme_intro
+   readme_doc
+   package
+   modules
+
+# Then generate the html pages (will appear in docs/build/html/:
+make html
+
+# Or generate pdf:
+make latex
+
+# If the project is on a public repository, the documentation can be hosted at
+# readthedocs.org. Create a Post Commit Hook to rebuild the docs every time code is pushed.
+
