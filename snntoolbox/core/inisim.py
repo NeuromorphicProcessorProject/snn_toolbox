@@ -13,17 +13,12 @@ Created on Tue Dec  8 10:41:10 2015
 from builtins import super
 
 import numpy as np
-
-# Turn off "Warning: The downsample module has been moved to the pool module."
-import warnings
-with warnings.catch_warnings():
-    warnings.simplefilter('ignore')
-    warnings.warn('deprecated', UserWarning)
-    import theano
-    import theano.tensor as T
-    from theano.tensor.signal import pool
-    from keras.layers.core import Layer, Dense, Flatten
-    from keras.layers.convolutional import AveragePooling2D, Convolution2D
+import theano
+import theano.tensor as T
+from theano.tensor.signal import pool
+from keras.layers.core import Dense, Flatten
+from keras.layers.convolutional import AveragePooling2D, Convolution2D
+from keras import backend as K
 
 
 def floatX(X):
@@ -65,31 +60,36 @@ def update_neurons(self, impulse, time, updates):
 
 
 def reset(self):
-    if hasattr(self, 'previous'):
-        reset(self.previous)
+    if self.inbound_nodes[0].inbound_layers:
+        reset(self.inbound_nodes[0].inbound_layers[0])
     self.mem.set_value(floatX(np.zeros(self.output_shape)))
     self.refrac_until.set_value(floatX(np.zeros(self.output_shape)))
 
 
 def get_input(self):
-    inp = Layer.get_input(self)
-    time = get_time(self)
-    updates = get_updates(self)
-    return inp, time, updates
+    if self.inbound_nodes[0].inbound_layers:
+        if 'input' in self.inbound_nodes[0].inbound_layers[0].name:
+            previous_output = self.input
+        else:
+            previous_output = \
+                self.inbound_nodes[0].inbound_layers[0].get_output()
+    else:
+        previous_output = K.placeholder(shape=self.input_shape)
+    return previous_output, get_time(self), get_updates(self)
 
 
 def get_time(self):
-    if hasattr(self, 'previous'):
-        return get_time(self.previous)
-    elif hasattr(self, 'time_var'):
+    if hasattr(self, 'time_var'):
         return self.time_var
+    elif self.inbound_nodes[0].inbound_layers:
+        return get_time(self.inbound_nodes[0].inbound_layers[0])
     else:
         raise Exception("Layer is not connected and is not an input layer.")
 
 
 def get_updates(self):
-    if hasattr(self, 'previous'):
-        return self.previous.updates
+    if self.inbound_nodes[0].inbound_layers:
+        return self.inbound_nodes[0].inbound_layers[0].updates
     else:
         return []
 
@@ -104,10 +104,16 @@ def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
     self.refrac_until = shared_zeros(self.output_shape)
     self.mem = shared_zeros(self.output_shape)
     self.spiketrain = shared_zeros(self.output_shape)
-    if 'input_var' in kwargs:
-        self.input = kwargs['input_var']
+    self.updates = []
     if 'time_var' in kwargs:
-        self.time_var = kwargs['time_var']
+        input_layer = self.inbound_nodes[0].inbound_layers[0]
+        input_layer.v_thresh = v_thresh
+        input_layer.tau_refrac = tau_refrac
+        input_layer.refrac_until = shared_zeros(self.output_shape)
+        input_layer.time_var = kwargs['time_var']
+        input_layer.mem = shared_zeros(self.output_shape)
+        input_layer.spiketrain = shared_zeros(self.output_shape)
+        input_layer.updates = []
 
 
 class SpikeFlatten(Flatten):

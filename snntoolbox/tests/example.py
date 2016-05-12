@@ -12,8 +12,8 @@ Created on Mon Mar  7 15:30:28 2016
 from snntoolbox.config import update_setup
 from snntoolbox.core.util import test_full
 
-if __name__ == '__main__':
 
+def main():
     # Parameters
     globalparams = {'dataset': 'mnist',
                     'architecture': 'cnn',
@@ -42,3 +42,6 @@ if __name__ == '__main__':
 #    print(['{:.2f}'.format(i) for i in params])
 #    print('\n')
 #    test_full(params=params, param_name=param_name, param_logscale=False)
+
+if __name__ == '__main__':
+    main()

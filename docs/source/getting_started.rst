@@ -11,39 +11,81 @@ supported by pyNN may require different versions of python, numpy, ...
 Requirements
 ............
 
-* Install `Keras <keras.io>`_. (In a later version, this toolbox will support alternative
-  neural network libraries like Torch, Cafe or Lasagne.)
-* ``pip install freetype`` (including ``libpng``)
-* If you plan to get the development version, install the packages listed in ``requirements.txt``.
+* Install `Theano <http://www.deeplearning.net/software/theano/>`_.
+* All other dependencies will be installed automatically.
+* For testing a converted network, the toolbox includes a ready-to-use spiking
+  simulator developed at INI. In addition, you may install a simulator supported
+  by `pyNN <http://neuralensemble.org/docs/PyNN/>`_, or bring your own custom
+  simulator that accepts a pyNN model as input.
 
 Prebuild version
 ................
 
 * Download the archive ``dist/snntoolbox-<version>-py2.py3-none-any.whl``
-* Run ``pip install snntoolbox-<version>-py2.py3-none-any.whl``,
-  which will get all other dependencies for you and install Brian as default simulator.
-  Add other simulators as needed.
+* Run ``pip install snntoolbox-<version>-py2.py3-none-any.whl``.
 
 Development version
 ...................
 
-* To get the latest version, checkout the `repository <https://code.ini.uzh.ch/NPP_theory/SNN_toolbox.git>`_
-* The toolbox includes a ready-to-use simulator developed at INI.
-  In addition, you may install a simulator supported by `pyNN <http://neuralensemble.org/docs/PyNN/>`_,
-  or bring your own custom simulator that accepts a pyNN model as input.
-* Run some :doc:`tests </tests>` to try the complete pipeline of loading, converting
-  and simulating a network.
+* To get the latest version, checkout the `repository <git@github.com:dannyneil/chimera_sim.git>`_
+* In the toolbox root directory ``SNN_toolbox/``, run `python setup.py develop`.
 
+Running the toolbox
+-------------------
+
+In a terminal window, type ``snntoolbox`` to start the main GUI containing all tools.
+
+Extending the toolbox
+---------------------
+
+Have a look at the :doc:`tests </tests>` to see how loading, converting and
+simulating a network is implemented. The module ``snntoolbox/core/util.py``
+contains a helper function combining the complete pipeline of
+
+    1. loading and testing a pretrained ANN,
+    2. normalizing weights
+    3. converting it to SNN,
+    4. running it on a simulator,
+    5. if given a specified hyperparameter range ``params``,
+       repeat simulations with modified parameters.
+
+Adding a new model library
+..........................
+
+So far, the toolbox supports input models written in Keras and Lasagne.
+Code that needs to be extended when adding another language (e.g. caffe, torch)
+includes:
+
+    - io.load.ANN
+    - io.load.load_model
+    - io.save.save_model
+    - core.util.evaluate
+    - core.util.get_activations_batch
+    - core.normalization.normalize_weights
+
+Adding a custom simulator
+.........................
+
+Have a look at the following files to see how pyNN simulators, Brian2, and our
+custom simulator 'INI' are integrated in the toolbox.
+
+    - io.load.load_model
+    - io.save.save_model
+    - core.conversion.convert_to_SNN
+    - core.simulation.run_SNN
 
 Examples - Fully Connected Network on MNIST
 -------------------------------------------
 
-Normally, we would run the toolbox simply by specifying a set of parameters and
-then calling :py:func:`tests.util.test_full`, like this:
+Normally, we would run the toolbox simply by typing ``snntoolbox`` in the terminal
+and using the GUI.
+
+If working with a python interpreter, one would specify a set of parameters and
+then call :py:func:`tests.util.test_full`, like this:
 
 .. code-block:: python
 
-	import snntoolbox
+    import snntoolbox
 
     # Define parameters
     globalparams = {'dataset': 'mnist',  # Dataset
@@ -66,9 +108,9 @@ then calling :py:func:`tests.util.test_full`, like this:
 
 However, here are three usecases that allow some more insight into the application of this toolbox:
 
-	A. `Conversion only`_
-	B. `Simulation only`_
-	C. `Parameter sweep`_
+    A. `Conversion only`_
+    B. `Simulation only`_
+    C. `Parameter sweep`_
 
 For a description of ``global_params``, ``cell_params``, and ``sim_params``,
 see :doc:`configure_toolbox`.
@@ -80,10 +122,10 @@ Usecase A - Conversion only
 ...........................
 
 Pipeline:
-	1. Load and test a pretrained ANN
-	2. Normalize weights
-	3. Convert to SNN
-	4. Save SNN to disk
+    1. Load and test a pretrained ANN
+    2. Normalize weights
+    3. Convert to SNN
+    4. Save SNN to disk
 
 .. code-block:: python
 
@@ -151,13 +193,13 @@ Usecase B - Simulation only
 ...........................
 
 Pipeline:
-	1. Specify parameters
-	2. Load dataset
-	3. Call ``run_SNN``. This will
+    1. Specify parameters
+    2. Load dataset
+    3. Call ``run_SNN``. This will
 
-		- load your already converted SNN
-		- run it on a spiking simulator
-		- Plot spikerates, spiketrains and membrane voltage.
+        - load your already converted SNN
+        - run it on a spiking simulator
+        - Plot spikerates, spiketrains and membrane voltage.
 
 It is assumed that a network has been converted using for instance the script
 ``convert_only.py``. (There should be a folder in
@@ -205,13 +247,13 @@ Usecase C - Parameter sweep
 ...........................
 
 Pipeline:
-	1. Specify parameters
-	2. Define a parameter range to sweep, e.g. for `v_thresh`
-	3. Call ``test_full``. This will
+    1. Specify parameters
+    2. Define a parameter range to sweep, e.g. for `v_thresh`
+    3. Call ``test_full``. This will
 
-		- load an already converted SNN
-		- run it repeatedly on a spiking simulator while varying the hyperparameter
-		- plot accuracy vs. hyperparameter
+        - load an already converted SNN
+        - run it repeatedly on a spiking simulator while varying the hyperparameter
+        - plot accuracy vs. hyperparameter
 
 .. code-block:: python
 

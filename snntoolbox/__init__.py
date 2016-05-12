@@ -78,9 +78,13 @@ if not os.path.exists(_dir):
     os.makedirs(_dir)
 
 _SIMULATOR = 'INI'
-_config_path = os.path.expanduser(os.path.join(_dir, 'snntoolbox_config.json'))
-if os.path.exists(_config_path):
-    _config = json.load(open(_config_path))
+_config_path = os.path.join(_dir, 'preferences')
+if not os.path.exists(_config_path):
+    os.makedirs(_config_path)
+
+_config_file = os.path.join(_config_path, 'snntoolbox_config.json')
+if os.path.exists(_config_file):
+    _config = json.load(open(_config_file))
     _sim = _config.get('simulator')
     assert _sim in simulators, \
         "Spiking neuron simulator '{}' ".format(_sim) + \
@@ -89,7 +93,7 @@ if os.path.exists(_config_path):
 else:
     # Save config file, for easy edition
     _config = {'simulator': _SIMULATOR}
-    with open(_config_path, 'w') as f:
+    with open(_config_file, 'w') as f:
         # Add new line in order for bash 'cat' display the content correctly
         f.write(json.dumps(_config) + '\n')
 

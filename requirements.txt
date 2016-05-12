@@ -9,7 +9,6 @@ neo
 lazyarray
 sympy
 pyNN
-
-# You may need to install manually (before running 'pip install'):
 keras
-freetype (including libpng)
+
+# You may need to install 'freetype' (including 'libpng') manually before running 'pip install'.

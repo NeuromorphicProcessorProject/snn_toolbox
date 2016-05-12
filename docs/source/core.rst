@@ -22,3 +22,12 @@ normalization
     :undoc-members:
     :show-inheritance:
 
+util
+----
+
+.. automodule:: core.util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:download:`source <../../snntoolbox/core/util.py>`

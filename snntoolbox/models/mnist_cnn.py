@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 from __future__ import print_function
-import numpy as np
 from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
@@ -12,10 +11,8 @@ from snntoolbox.io.save import save_model
 from snntoolbox.io.plotting import plot_history
 import os
 
-np.random.seed(1337)  # for reproducibility
 
-
-'''
+"""
     Train a simple convnet on the MNIST dataset.
 
     Run on GPU:
@@ -25,7 +22,7 @@ np.random.seed(1337)  # for reproducibility
     for parameter tuning).
 
     16 seconds per epoch on a GRID K520 GPU.
-'''
+"""
 
 batch_size = 128
 nb_classes = 10
@@ -77,18 +74,18 @@ model.add(Dropout(0.5))
 model.add(Dense(nb_classes, b_constraint=maxnorm(0)))
 model.add(Activation('softmax'))
 
-model.compile(loss='categorical_crossentropy', optimizer='adadelta')
+model.compile(loss='categorical_crossentropy', optimizer='adadelta',
+              metrics=['accuracy'])
 early_stopping = EarlyStopping(monitor='val_loss', patience=3)
-history = model.fit(X_train, Y_train, batch_size=batch_size,
-                    nb_epoch=nb_epoch, show_accuracy=True, verbose=1,
-                    validation_data=(X_test, Y_test),
+history = model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
+                    verbose=1, validation_data=(X_test, Y_test),
                     callbacks=[early_stopping])
-score = model.evaluate(X_test, Y_test, show_accuracy=True, verbose=0)
+score = model.evaluate(X_test, Y_test, verbose=0)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 
 plot_history(history)
 
-path = '../data/mnist/cnn/'
+path = '~/Documents/snntoolbox/data/mnist/cnn/'
 filename = '{:2.2f}'.format(score[1] * 100)
 save_model(model, path=os.path.join(path, filename), filename=filename)

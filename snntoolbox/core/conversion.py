@@ -274,15 +274,9 @@ def convert_to_SNN_keras(ann):
         Computes the output of the network
     """
 
-    # Turn off "Warning: The downsample module has been moved to the pool
-    # module."
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        warnings.warn('deprecated', UserWarning)
-        import theano
-        import theano.tensor as T
-        from keras.models import Sequential
+    import theano
+    import theano.tensor as T
+    from keras.models import Sequential
     from snntoolbox.io.save import save_model
 
     # Create empty spiking network
@@ -293,52 +287,50 @@ def convert_to_SNN_keras(ann):
 
     # Allocate input variables
     input_time = T.scalar('time')
-    if globalparams['architecture'] == 'mlp':
-        input_var = T.matrix('input_var')
-    else:
-        input_var = T.tensor4('input_var')
 
     # Iterate over layers to create spiking neurons and connections.
     if globalparams['verbose'] > 1:
         echo("Iterating over ANN layers to add spiking layers...\n")
     for (layer_num, layer) in enumerate(ann.layers):
         layer_type = layer['layer_type']
+        kwargs = {'name': layer['label'], 'trainable': False}
+        kwargs2 = {}
         if layer_num == 0:
             # For the input layer, pass extra keyword argument
             # 'batch_input_shape' to layer constructor.
-            kwargs = {'batch_input_shape': input_shape}
-            kwargs2 = {'input_var': input_var, 'time_var': input_time}
-        else:
-            kwargs = {}
-            kwargs2 = {}
+            kwargs.update({'batch_input_shape': input_shape})
+            kwargs2.update({'time_var': input_time})
         echo("Layer: {}\n".format(layer['label']))
         if layer_type == 'Convolution2D':
             snn.add(sim.SpikeConv2DReLU(layer['nb_filter'],
                                         layer['nb_row'], layer['nb_col'],
                                         sim.floatX(layer['weights']),
                                         border_mode=layer['border_mode'],
-                                        name=layer['label'], **kwargs))
+                                        **kwargs))
         elif layer_type == 'Dense':
             snn.add(sim.SpikeDense(layer['output_shape'][1],
-                                   sim.floatX(layer['weights']),
-                                   name=layer['label'], **kwargs))
+                                   sim.floatX(layer['weights']), **kwargs))
         elif layer_type == 'Flatten':
-            snn.add(sim.SpikeFlatten(name=layer['label'], **kwargs))
+            snn.add(sim.SpikeFlatten(**kwargs))
         elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
             snn.add(sim.AvgPool2DReLU(pool_size=layer['pool_size'],
                                       strides=layer['strides'],
                                       border_mode=layer['border_mode'],
                                       label=layer['label']))
-        sim.init_neurons(snn.layers[-1], v_thresh=cellparams['v_thresh'],
-                         tau_refrac=cellparams['tau_refrac'], **kwargs2)
+        if layer_type in {'Convolution2D', 'Dense', 'Flatten', 'MaxPooling2D',
+                          'AveragePooling2D'}:
+            sim.init_neurons(snn.layers[-1], v_thresh=cellparams['v_thresh'],
+                             tau_refrac=cellparams['tau_refrac'], **kwargs2)
 
     # Compile
     echo('\n')
     echo("Compiling spiking network...\n")
+    snn.compile(loss='categorical_crossentropy', optimizer='sgd',
+                metrics=['accuracy'])
     output_spikes = snn.layers[-1].get_output()
     output_time = sim.get_time(snn.layers[-1])
     updates = sim.get_updates(snn.layers[-1])
-    get_output = theano.function([input_var, input_time],
+    get_output = theano.function([snn.input, input_time],
                                  [output_spikes, output_time], updates=updates)
     echo("Compilation finished.\n\n")
     save_model(snn, filename='snn_keras_' + globalparams['filename'],

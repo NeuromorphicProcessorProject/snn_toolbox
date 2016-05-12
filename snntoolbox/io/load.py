@@ -118,7 +118,7 @@ class ANN():
                                 self.input_shape[3])]
             for (layer_num, layer) in enumerate(layers):
                 attributes = {'layer_num': layer_num,
-                              'layer_type': layer.get_config()['name'],
+                              'layer_type': layer.__class__.__name__,
                               'output_shape': layer.output_shape}
                 if len(attributes['output_shape']) == 2:
                     shape_string = '_{}'.format(attributes['output_shape'][1])
@@ -367,14 +367,10 @@ def load_snn(filename):
         model.load_weights(os.path.join(globalparams['path'], filename+'.h5'))
         # Allocate input variables
         input_time = T.scalar('time')
-        if globalparams['architecture'] == 'mlp':
-            input_var = T.matrix('input_var')
-        else:
-            input_var = T.tensor4('input_var')
         input_shape = list(model.input_shape)
         input_shape[0] = globalparams['batch_size']
         model.layers[0].batch_input_shape = input_shape
-        kwargs = {'input_var': input_var, 'time_var': input_time}
+        kwargs = {'time_var': input_time}
         for layer in model.layers:
             sim.init_neurons(layer,
                              v_thresh=cellparams['v_thresh'],
@@ -382,10 +378,16 @@ def load_snn(filename):
                              **kwargs)
             kwargs = {}
         # Compile model
+        # Todo: Allow user to specify loss function here (optimizer is not
+        # relevant as we do not train any more). Unfortunately, Keras does not
+        # save these parameters. They can be obtained from the compiled model
+        # by calling 'model.loss' and 'model.optimizer'.
+        model.compile(loss='categorical_crossentropy', optimizer='sgd',
+                      metrics=['accuracy'])
         output_spikes = model.layers[-1].get_output()
         output_time = sim.get_time(model.layers[-1])
         updates = sim.get_updates(model.layers[-1])
-        get_output = theano.function([input_var, input_time],
+        get_output = theano.function([model.input, input_time],
                                      [output_spikes, output_time],
                                      updates=updates)
         return {'model': model, 'get_output': get_output}
@@ -404,6 +406,12 @@ def load_ann(filename):
                 open(path).read(), custom_objects=snntoolbox.custom_layers)
         model.load_weights(os.path.join(globalparams['path'],
                                         filename + '.h5'))
+        # Todo: Allow user to specify loss function here (optimizer is not
+        # relevant as we do not train any more). Unfortunately, Keras does not
+        # save these parameters. They can be obtained from the compiled model
+        # by calling 'model.loss' and 'model.optimizer'.
+        model.compile(loss='categorical_crossentropy', optimizer='sgd',
+                      metrics=['accuracy'])
         return {'model': model}
     elif globalparams['model_lib'] == 'lasagne':
         return model_from_py(filename)

@@ -1,15 +1,15 @@
 Tests
 =====
 
-all_in_one
-----------
+example
+-------
 
-.. automodule:: tests.all_in_one
+.. automodule:: tests.example
     :members:
     :undoc-members:
     :show-inheritance:
 
-:download:`source <../../snntoolbox/tests/all_in_one.py>`
+:download:`source <../../snntoolbox/tests/example.py>`
 
 augmentation_testsuit
 ---------------------
@@ -83,13 +83,4 @@ test_saving
     :undoc-members:
     :show-inheritance:
 
-util
-----
-
-.. automodule:: tests.util
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:download:`source <../../snntoolbox/tests/util.py>`
 

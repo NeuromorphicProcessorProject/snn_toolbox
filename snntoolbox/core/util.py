@@ -123,21 +123,18 @@ def test_full(params=[cellparams['v_thresh']],
             # Evaluate ANN before normalization to ensure it doesn't affect
             # accuracy
             if globalparams['evaluateANN']:
-                score = evaluate(model, X_test, Y_test,
-                                 **{'show_accuracy': True, 'verbose': 1})
+                score = evaluate(model, X_test, Y_test, **{'verbose': 1})
                 echo('\n')
                 echo("Before weight normalization:\n")
                 echo("Test score: {:.2f}\n".format(score[0]))
                 echo("Test accuracy: {:.2%}\n".format(score[1]))
 
             model = normalize_weights(model, X_train,
-                                      globalparams['path'],
                                       'ann_' + globalparams['filename'])
 
         # (Re-) evaluate ANN
         if globalparams['evaluateANN']:
-            score = evaluate(model, X_test, Y_test, **{'show_accuracy': True,
-                                                       'verbose': 1})
+            score = evaluate(model, X_test, Y_test, **{'verbose': 1})
             echo("Test score: {:.2f}\n".format(score[0]))
             echo("Test accuracy: {:.2%}\n".format(score[1]))
 
@@ -341,23 +338,57 @@ def print_description(ann=None):
     print('\n')
 
 
-def get_activations(model, X):
-    activations_batch = get_activations_batch(model, np.array(X,
-                                                              ndmin=X.ndim+1))
-    return [(activations[0][0], activations[1]) for activations in
-            activations_batch]
+def spiketrains_to_rates(snn, spiketrains_batch):
+    spikerates_batch = []
+    j = 0
+    for sp in spiketrains_batch:
+        shape = sp[0].shape[:-1]  # output_shape of layer
+        if 'Flatten' not in sp[1]:
+            # Allocate list containing an empty array of shape
+            # 'output_shape' for each layer of the network, which will
+            # hold the spikerates of a mini-batch.
+            spikerates_batch.append((np.empty(shape), sp[1]))
+            # Count number of spikes fired in the layer and divide by the
+            # simulation time in seconds to get the mean firing rate of each
+            # neuron in Hertz.
+            if len(shape) == 2:
+                for ii in range(len(sp[0])):
+                    for jj in range(len(sp[0][ii])):
+                        spikerates_batch[j][0][ii, jj] = \
+                            (len(np.nonzero(sp[0][ii][jj])[0]) * 1000 /
+                             simparams['duration'])
+            elif len(shape) == 4:
+                for ii in range(len(sp[0])):
+                    for jj in range(len(sp[0][ii])):
+                        for kk in range(len(sp[0][ii, jj])):
+                            for ll in range(len(sp[0][ii, jj, kk])):
+                                spikerates_batch[j][0][ii, jj, kk, ll] = (
+                                    len(np.nonzero(sp[0][ii, jj, kk, ll])[0]) /
+                                    simparams['duration'] * 1000)
+            j += 1
+
+    return spikerates_batch
 
 
-def get_activations_batch(model, X_batch):
+def get_sample_activity_from_batch(activity_batch):
+    """ Returns layer activity for the first sample of a batch. """
+    return [(layer_act[0][0], layer_act[1]) for layer_act in activity_batch]
+
+
+def get_activations(X):
+    """ Returns layer activations for a single input X """
+    activations_batch = get_activations_batch(np.array(X, ndmin=X.ndim+1))
+    return get_sample_activity_from_batch(activations_batch)
+
+
+def get_activations_batch(X_batch):
     """
     Compute layer activations of an ANN.
 
     Parameters
     ----------
 
-    model : network object
-        A network object of the ``model_lib`` language, e.g. keras.
-    X : float32 array
+    X_batch : float32 array
         The input samples to use for determining the layer activations.
         With data of the form (channels, num_rows, num_cols), X has dimension
         (1, channels*num_rows*num_cols) for a multi-layer perceptron, and
@@ -366,7 +397,7 @@ def get_activations_batch(model, X_batch):
     Returns
     -------
 
-    layer_activations : list of tuples ``(activations, label)``
+    activations_batch : list of tuples ``(activations, label)``
         Each entry represents a layer in the ANN for which an activation can be
         calculated (e.g. ``Dense``, ``Convolution2D``).
 
@@ -376,27 +407,32 @@ def get_activations_batch(model, X_batch):
         ``label`` is a string specifying the layer type, e.g. ``'Dense'``.
 
     """
+    import os
+    import theano
+    from snntoolbox.io.load import load_model
+    # Load ANN and compute activations in each layer to compare
+    # with SNN spikerates.
+    filename = 'ann_' + globalparams['filename']
+    if os.path.isfile(os.path.join(globalparams['path'],
+                                   filename+'_normWeights.h5')):
+        filename += '_normWeights'
+    model = load_model(filename)['model']
 
-    # Turn off "Warning: The downsample module has been moved to the pool
-    # module."
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        warnings.warn('deprecated', UserWarning)
-        import theano
-
-    layer_activations = []
+    activations_batch = []
     # Loop through all layers, looking for activation layers
     if globalparams['model_lib'] == 'keras':
+        from keras import backend as K
         layers = model.layers
         for idx, layer in enumerate(layers):
             if layer.__class__.__name__ in {'Activation', 'AveragePooling2D',
                                             'MaxPooling2D'}:
-                get_activ = theano.function([layers[0].input],
-                                            layer.get_output(train=False),
-                                            allow_input_downcast=True)
-                layer_activations.append((get_activ(X_batch),
-                                         layers[idx-1].get_config()['name']))
+                get_activ = theano.function([layers[0].input,
+                                             K.learning_phase()],
+                                            layer.output,
+                                            allow_input_downcast=True,
+                                            on_unused_input='ignore')
+                activations_batch.append((get_activ(X_batch, 0),
+                                          layers[idx-1].get_config()['name']))
     elif globalparams['model_lib'] == 'lasagne':
         import lasagne
         layers = lasagne.layers.get_all_layers(model)
@@ -416,8 +452,8 @@ def get_activations_batch(model, X_batch):
                     [layers[0].input_var],
                     lasagne.layers.get_output(layer, layers[0].input_var),
                     allow_input_downcast=True)
-                layer_activations.append((get_activ(X_batch), label))
-    return layer_activations
+                activations_batch.append((get_activ(X_batch), label))
+    return activations_batch
 
 
 def extract_label(label):

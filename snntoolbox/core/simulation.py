@@ -24,8 +24,11 @@ from snntoolbox.config import globalparams, cellparams, simparams
 from snntoolbox.io.plotting import plot_spiketrains, plot_layer_activity
 from snntoolbox.io.plotting import plot_layer_summaries
 from snntoolbox.io.plotting import plot_pearson_coefficients
+from snntoolbox.io.plotting import plot_activity_distribution
 from snntoolbox.io.load import load_assembly, load_model
-from snntoolbox.core.util import extract_label
+from snntoolbox.core.util import get_activations, get_activations_batch
+from snntoolbox.core.util import extract_label, spiketrains_to_rates
+from snntoolbox.core.util import get_sample_activity_from_batch
 
 standard_library.install_aliases()
 
@@ -305,9 +308,6 @@ def run_SNN_pyNN(X_test, Y_test, **kwargs):
                                            filename+'_normWeights')):
                 filename += '_normWeights'
             model = load_model(filename)['model']
-            # Do this import here so the toolbox can be used without installing
-            # Theano by setting globalparams['verbose'] < 2
-            from snntoolbox.core.util import get_activations
             layer_activations = get_activations(model, X_test[ind])
 
             j = 0
@@ -441,22 +441,17 @@ def run_SNN_keras(X_test, Y_test, **kwargs):
     # Allocate a list 'spiketrains' with the following specification:
     # Each entry in ``spiketrains`` contains a tuple ``(spiketimes, label)``
     # for each layer of the network (for the first batch only).
-    # ``spiketimes`` is a 2D array where the first index runs over the number
-    # of neurons in the layer, and the second index contains the spike times
+    # ``spiketimes`` is an array where the first indices run over the number
+    # of neurons in the layer, and the last index contains the spike times
     # of the specific neuron.
     # ``label`` is a string specifying both the layer type and the index,
     # e.g. ``'03Dense'``.
-    spiketrains = []
+    spiketrains_batch = []
     for layer in snn.layers:
-        shape = (int(np.prod(layer.output_shape[1:])),
-                 int(simparams['duration'] / simparams['dt']))
-        spiketrains.append((np.zeros(shape), layer.name))
+        shape = list(layer.output_shape) + [int(simparams['duration'] /
+                                                simparams['dt'])]
+        spiketrains_batch.append((np.zeros(shape), layer.name))
 
-    from copy import deepcopy
-    # Allocate a list to store the spiketrains lists for each sample in the
-    # batch, as specified above.
-    spiketrains_batch = [deepcopy(spiketrains) for sample in
-                         range(globalparams['batch_size'])]
     for batch_idx in range(num_batches):
         # Determine batch indices.
         max_idx = min((batch_idx + 1) * globalparams['batch_size'],
@@ -480,14 +475,8 @@ def run_SNN_keras(X_test, Y_test, **kwargs):
             # in each layer.
             if batch_idx == 0 and globalparams['verbose'] > 1:
                 for layer in range(len(snn.layers)):
-                    # s is an array of dimension
-                    # (batch_size, num_neurons_in_layer)
-                    s = snn.layers[layer].spiketrain.get_value()
-                    # Split s to separate the spike times of each sample in the
-                    # batch.
-                    for sample in range(globalparams['batch_size']):
-                        spiketrains_batch[sample][layer][0][:, t_idx] = \
-                            s[sample, :].flatten()
+                    spiketrains_batch[layer][0][Ellipsis, t_idx] = \
+                        snn.layers[layer].spiketrain.get_value()
             t_idx += 1
             # Count number of spikes in output layer during whole simulation.
             output[batch_idxs, :] += out_spikes.astype('int32')
@@ -506,10 +495,20 @@ def run_SNN_keras(X_test, Y_test, **kwargs):
                 echo('\n')
                 echo("Saving plots for last image in first batch...\n")
                 path = os.path.join(globalparams['path'], 'log', 'gui')
-                plot_layer_summaries(snn, spiketrains_batch[-1],
-                                     X_test[globalparams['batch_size'] - 1],
+
+                spiketrains = get_sample_activity_from_batch(spiketrains_batch)
+                spikerates_batch = spiketrains_to_rates(snn, spiketrains_batch)
+                spikerates = get_sample_activity_from_batch(spikerates_batch)
+                activations_batch = get_activations_batch(batch)
+                activations = get_sample_activity_from_batch(activations_batch)
+
+                plot_layer_summaries(spiketrains, spikerates, activations,
                                      path)
-                plot_pearson_coefficients(spiketrains_batch, batch, path)
+                plot_pearson_coefficients(spikerates_batch, activations_batch,
+                                          path)
+                plot_activity_distribution({'Spikerates': spikerates_batch,
+                                            'Activations': activations_batch},
+                                           path)
 
     guesses = np.argmax(output, axis=1)
     total_acc = np.mean(guesses == truth)

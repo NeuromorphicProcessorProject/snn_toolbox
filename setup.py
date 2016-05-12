@@ -3,27 +3,29 @@ Setup SNN toolbox
 
 """
 
-from setuptools import setup, find_packages
 from codecs import open
 from os import path
+import ez_setup
+ez_setup.use_setuptools()
+from setuptools import setup, find_packages  # noqa
 
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, 'docs', 'source', 'index.rst'),
-	      encoding='utf-8') as f:
-    long_description = f.read()
+with open(path.join(here, 'docs', 'source', 'index.rst'), encoding='utf-8') \
+        as f:
+            long_description = f.read()
 
 setup(
-	name='snntoolbox',
-    version='0.1.0.dev1', # see https://www.python.org/dev/peps/pep-0440/
-	description='Spiking Neural Net Conversion',
-	long_description=long_description,
-	author='Bodo Rueckauer',
-	author_email='bodo.rueckauer@gmail.com',
-	url='https://code.ini.uzh.ch/NPP_theory/SNN_toolbox',
-	download_url='git@code.ini.uzh.ch:NPP_theory/SNN_toolbox.git',
-	license='MIT',
+    name='snntoolbox',
+    version='0.2.0',  # see https://www.python.org/dev/peps/pep-0440/
+    description='Spiking Neural Net Conversion',
+    long_description=long_description,
+    author='Bodo Rueckauer',
+    author_email='bodo.rueckauer@gmail.com',
+    url='https://code.ini.uzh.ch/NPP_theory/SNN_toolbox',
+    download_url='git@code.ini.uzh.ch:NPP_theory/SNN_toolbox.git',
+    license='MIT',
 
     classifiers=[
         # How mature is this project? Common values are
@@ -34,9 +36,9 @@ setup(
 
         # Indicate who this project is intended for
         'Intended Audience :: Researchers',
-        #'Topic :: Software Development :: Build Tools',
+        # 'Topic :: Software Development :: Build Tools',
 
-	# License
+        # License
         'License :: OSI Approved :: MIT License',
 
         # Supported Python versions
@@ -49,9 +51,9 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
 
-	keywords='neural networks, deep learning, spiking',
+    keywords='neural networks, deep learning, spiking',
 
-	install_requires=[
+    install_requires=[
         'numpy',
         'scipy',
         'matplotlib',
@@ -59,35 +61,38 @@ setup(
         'neo',
         'lazyarray',
         'sympy',
+        'keras',
         'pyNN'],
 
 
     # Additional groups of dependencies (e.g. development dependencies).
-	# Install them with
-    # $ pip install -e .[dev,test]
-#	extras_require={
-#		'dev': ['foo'],
-#		'test': ['bar']	
-#	},
+    # Install them with $ pip install -e .[dev,test]
+    extras_require={
+        'dev': ['foo'],
+        'test': ['bar']
+    },
 
-	packages=find_packages(),
+    packages=find_packages(),
 
-	# Include everything in source control
-	include_package_data=True,
+    # Include everything in source control
+    include_package_data=True,
 
-	# Include documentation
-	data_files=[
-		('',['README.rst', 'requirements.txt']),
-		('docs/',['docs/Makefile']),
-#		('docs/source',['docs/source/*.rst', 'workflow.png'])
-	],
+    # Include documentation
+    data_files=[
+        ('', ['README.rst', 'requirements.txt']),
+        ('docs/', ['docs/Makefile']),
+        # ('docs/source', ['docs/source/*.rst', 'workflow.png'])
+    ],
 
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
-		'console_scripts': [
-	        'snntoolbox=gui:main',
+        'console_scripts': [
+            'snntoolbox_example=snntoolbox.tests.example:main',
+        ],
+        'gui_scripts': [
+            'snntoolbox=snntoolbox.gui:main',
         ],
     },
 )

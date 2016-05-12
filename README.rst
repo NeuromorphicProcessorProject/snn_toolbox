@@ -1,6 +1,9 @@
 SNN toolbox Documentation
 =========================
 
+This is a toolbox for converting analog to spiking neural networks (ANN to SNN),
+and running them in a spiking neuron simulator.
+
 A completed but most likely outdated build of the documentation is linked to ``Documentation.html`` in the repository root directory.
 The source for this documentation is located in the directory ``docs/source/``.
 

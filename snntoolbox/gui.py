@@ -560,7 +560,7 @@ class snntoolboxGUI():
             return
         f = plt.figure(figsize=(30, 15))
         f.subplots_adjust(left=0.01, bottom=0.05, right=0.99, top=0.99,
-                          wspace=0.01, hspace=0.01)
+                          wspace=0.01, hspace=0.1)
         gs = gridspec.GridSpec(4, 3)
         self.a = [plt.subplot(gs[0:-1, i]) for i in range(3)]
         self.a += [plt.subplot(gs[-1, i]) for i in range(3)]
@@ -636,8 +636,8 @@ class snntoolboxGUI():
     def quit_toolbox(self):
         self.store_last_settings = True
         self.save_settings()
-        root.destroy()
-        root.quit()
+        self.parent.destroy()
+        self.parent.quit()
 
     def declare_parameter_vars(self):
         self.dataset = tk.StringVar()
@@ -901,10 +901,13 @@ class snntoolboxGUI():
             self.state_pyNN = tk.NORMAL
 
 
-if __name__ == "__main__":
-
+def main():
     root = tk.Tk()
     root.title("SNN Toolbox")
     app = snntoolboxGUI(root)
     root.protocol('WM_DELETE_WINDOW', app.quit_toolbox)
     root.mainloop()
+
+
+if __name__ == "__main__":
+    main()

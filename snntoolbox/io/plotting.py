@@ -46,9 +46,11 @@ def plot_spiketrains(layer, path=None):
         If not none, specifies where to save the resulting image.
     """
 
+    shape = [np.prod(layer[0].shape[:-1]), layer[0].shape[-1]]
+    spiketrains = np.reshape(layer[0], shape)
     plt.figure()
     # Iterate over neurons in layer
-    for (neuron, spiketrain) in enumerate(layer[0]):
+    for (neuron, spiketrain) in enumerate(spiketrains):
         # Remove zeros from spiketrain which falsely indicate spikes at time 0.
         # Spikes at time 0 are forbidden (and indeed prevented in the
         # simulation), because of this difficulty to distinguish them from a 0
@@ -292,8 +294,7 @@ def plot_potential(times, layer, showLegend=False, path=None):
     # Replace 'name' by 'layer[1]' to get more info into the title
     # name = extract_label(layer[1])[1]
     name = layer[1]
-    plt.title('Membrane potential for neurons \n ' +
-              'in layer {}\n'.format(name))
+    plt.title('Membrane potential for neurons \n in layer {}\n'.format(name))
     if path is not None:
         filename = 'Potential'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
@@ -302,103 +303,109 @@ def plot_potential(times, layer, showLegend=False, path=None):
     plt.close()
 
 
-def plot_layer_summaries(snn, spiketrains, X, path=None):
-    import os
-    from snntoolbox.config import globalparams
-    from snntoolbox.io.load import load_model
-    from snntoolbox.core.util import get_activations
-
-    # Load ANN and compute activations in each layer to compare
-    # with SNN spikerates.
-    filename = 'ann_' + globalparams['filename']
-    if os.path.isfile(os.path.join(globalparams['path'],
-                                   filename+'_normWeights.h5')):
-        filename += '_normWeights'
-    model = load_model(filename)['model']
-
-    # Get the last sample of batch to plot results:
-    layer_activations = get_activations(model, X)
-
+def plot_layer_summaries(spiketrains, spikerates, activations, path=None):
     # Loop over layers
     j = 0
-    spikerates = []
-    labels = []
-    for (i, sp) in enumerate(spiketrains):
-        if 'Flatten' not in sp[1]:
-            newpath = os.path.join(path, sp[1])
+    for sp in spiketrains:
+        label = sp[1]
+        if 'Flatten' not in label:
+            newpath = os.path.join(path, label)
             if not os.path.exists(newpath):
                 os.makedirs(newpath)
-            plot_spiketrains(sp, newpath)
-            # Count number of spikes fired in the layer and divide
-            # by the simulation time in seconds to get the mean
-            # firing rate of each neuron in Hertz.
-            spikerates.append(([1000 * len(np.nonzero(neuron)[0]) /
-                                simparams['duration'] for neuron
-                                in sp[0]], sp[1]))
-            # Get layer shape from label and reshape the 1D SNN
-            # layer to its original form.
-            shape = snn.layers[i].output_shape[1:]
-            rates_reshaped = np.reshape(np.array(spikerates[-1][0]), shape)
-            plot_layer_activity((rates_reshaped, sp[1]), 'Spikerates',
-                                newpath)
-            plot_layer_activity(layer_activations[j], 'Activations', newpath)
-            plot_rates_minus_activations(rates_reshaped,
-                                         layer_activations[j][0], sp[1],
-                                         newpath)
-            labels.append(sp[1])
-            title = 'ANN-SNN correlations\n of layer ' + sp[1]
-            plot_layer_correlation(spikerates[-1][0],
-                                   layer_activations[j][0].flatten(),
-                                   title, newpath)
+            plot_spiketrains(spiketrains[j], newpath)
+            plot_layer_activity(spikerates[j], 'Spikerates', newpath)
+            plot_layer_activity(activations[j], 'Activations', newpath)
+            plot_rates_minus_activations(spikerates[j][0], activations[j][0],
+                                         label, newpath)
+            title = 'ANN-SNN correlations\n of layer ' + label
+            plot_layer_correlation(spikerates[j][0].flatten(),
+                                   activations[j][0].flatten(), title, newpath)
             j += 1
 
     print("Saved plots to {}.\n".format(path))
 
 
-def plot_pearson_coefficients(spiketrains_batch, X_batch, path=None):
+def plot_activity_distribution(activity_dict, path=None):
+    h = {}
+    for (key, val) in activity_dict.items():
+        l = []
+        for a in val:
+            l += list(a[0].flatten())
+        h.update({key: l})
+    plot_hist(h, path=path)
+
+
+def plot_activity_distribution_layer(activity_dict, title, path=None):
+    h = {}
+    for (key, val) in activity_dict.items():
+        h.update({key: list(np.array(val).flatten())})
+    plot_hist(h, title, path)
+
+
+def plot_hist(h, title=None, path=None):
+    keys = list(h.keys())
+    if title is not None and 'Activ' in title:
+        hist_range = (0.001, None)
+    else:
+        hist_range = None
+    fig, ax = plt.subplots()
+    ax.tick_params(axis='x', which='both')
+    ax.get_xaxis().set_visible(False)
+    axes = [ax]
+    fig.subplots_adjust(top=0.8)
+    colors = plt.cm.spectral(np.linspace(0, 0.9, len(keys)))
+    for i in range(len(keys)):
+        axes.append(ax.twiny())
+        axes[-1].hist(h[keys[i]], label=keys[i], color=colors[i],
+                      histtype='step', range=hist_range)
+        unit = ' [Hz]' if keys[i] == 'Spikerates' else ''
+        axes[-1].set_xlabel(keys[i] + unit, color=colors[i])
+        axes[-1].tick_params(axis='x', colors=colors[i])
+        if i > 0:
+            axes[-1].set_frame_on(True)
+            axes[-1].patch.set_visible(False)
+            axes[-1].xaxis.set_ticks_position('bottom')  # 1-i/10
+            axes[-1].xaxis.set_label_position('bottom')
+    plt.title('Activity distribution \n for layer {}'.format(title), y=1.15)
+
+    if path is not None:
+        if title is not None:
+            filename = title + '_Activity_distribution'
+        else:
+            filename = 'Activity_distribution'
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
+def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
     """
     Plot the Pearson correlation coefficients for each layer, averaged over one
     mini batch.
     """
-    from snntoolbox.config import globalparams
-    from snntoolbox.io.load import load_model
-    from snntoolbox.core.util import get_activations_batch
     from scipy.stats import pearsonr
 
-    # Load ANN and compute activations in each layer to compare
-    # with SNN spikerates.
-    filename = 'ann_' + globalparams['filename']
-    if os.path.isfile(os.path.join(globalparams['path'],
-                                   filename+'_normWeights.h5')):
-        filename += '_normWeights'
-    model = load_model(filename)['model']
+    batch_size = len(spikerates_batch[0][0])
 
-    spikerates = []
     co = []
-    layer_activations = get_activations_batch(model, X_batch)
-    for l in range(len(X_batch)):
-        j = 0
-        c = []
-        for (i, sp) in enumerate(spiketrains_batch[l]):
-            if 'Flatten' not in sp[1]:
-                # Count number of spikes fired in the layer and divide
-                # by the simulation time in seconds to get the mean
-                # firing rate of each neuron in Hertz.
-                spikerates.append(([1000 * len(np.nonzero(neuron)[0]) /
-                                    simparams['duration'] for neuron
-                                    in sp[0]], sp[1]))
-                # Get layer shape from label and reshape the 1D SNN
-                # layer to its original form.
-                (r, p) = pearsonr(spikerates[-1][0],
-                                  layer_activations[j][0][l].flatten())
+    j = 0
+    for layer_num in range(len(spikerates_batch)):
+        if 'Flatten' not in spikerates_batch[layer_num][1]:
+            c = []
+            for sample in range(batch_size):
+                (r, p) = pearsonr(
+                    spikerates_batch[layer_num][0][sample].flatten(),
+                    activations_batch[layer_num][0][sample].flatten())
                 c.append(r)
-                j += 1
-        co.append(c)
-    # Average over batch
-    corr = np.mean(co, axis=0)
-    std = np.std(co, axis=0)
+            j += 1
+            co.append(c)
 
-    labels = [sp[1] for sp in spiketrains_batch[0] if 'Flatten' not in sp[1]]
+    # Average over batch
+    corr = np.mean(co, axis=1)
+    std = np.std(co, axis=1)
+
+    labels = [sp[1] for sp in spikerates_batch if 'Flatten' not in sp[1]]
 
     plt.figure()
     plt.bar([i + 0.1 for i in range(len(corr))], corr, width=0.8, yerr=std,
@@ -408,7 +415,7 @@ def plot_pearson_coefficients(spiketrains_batch, X_batch, path=None):
     plt.xticks([i + 0.5 for i in range(len(labels))], labels, rotation=90)
     plt.tick_params(bottom='off')
     plt.title('Correlation between ANN activations \n and SNN spikerates,\n ' +
-              'averaged over {} samples'.format(len(X_batch)))
+              'averaged over {} samples'.format(batch_size))
     plt.ylabel('Pearson Correlation Coefficient')
     if path is not None:
         filename = 'Pearson'
