@@ -340,32 +340,29 @@ def print_description(ann=None):
 
 def spiketrains_to_rates(snn, spiketrains_batch):
     spikerates_batch = []
-    j = 0
-    for sp in spiketrains_batch:
+    for (i, sp) in enumerate(spiketrains_batch):
         shape = sp[0].shape[:-1]  # output_shape of layer
-        if 'Flatten' not in sp[1]:
-            # Allocate list containing an empty array of shape
-            # 'output_shape' for each layer of the network, which will
-            # hold the spikerates of a mini-batch.
-            spikerates_batch.append((np.empty(shape), sp[1]))
-            # Count number of spikes fired in the layer and divide by the
-            # simulation time in seconds to get the mean firing rate of each
-            # neuron in Hertz.
-            if len(shape) == 2:
-                for ii in range(len(sp[0])):
-                    for jj in range(len(sp[0][ii])):
-                        spikerates_batch[j][0][ii, jj] = \
-                            (len(np.nonzero(sp[0][ii][jj])[0]) * 1000 /
-                             simparams['duration'])
-            elif len(shape) == 4:
-                for ii in range(len(sp[0])):
-                    for jj in range(len(sp[0][ii])):
-                        for kk in range(len(sp[0][ii, jj])):
-                            for ll in range(len(sp[0][ii, jj, kk])):
-                                spikerates_batch[j][0][ii, jj, kk, ll] = (
-                                    len(np.nonzero(sp[0][ii, jj, kk, ll])[0]) /
-                                    simparams['duration'] * 1000)
-            j += 1
+        # Allocate list containing an empty array of shape
+        # 'output_shape' for each layer of the network, which will
+        # hold the spikerates of a mini-batch.
+        spikerates_batch.append((np.empty(shape), sp[1]))
+        # Count number of spikes fired in the layer and divide by the
+        # simulation time in seconds to get the mean firing rate of each
+        # neuron in Hertz.
+        if len(shape) == 2:
+            for ii in range(len(sp[0])):
+                for jj in range(len(sp[0][ii])):
+                    spikerates_batch[i][0][ii, jj] = \
+                        (len(np.nonzero(sp[0][ii][jj])[0]) * 1000 /
+                         simparams['duration'])
+        elif len(shape) == 4:
+            for ii in range(len(sp[0])):
+                for jj in range(len(sp[0][ii])):
+                    for kk in range(len(sp[0][ii, jj])):
+                        for ll in range(len(sp[0][ii, jj, kk])):
+                            spikerates_batch[i][0][ii, jj, kk, ll] = (
+                                len(np.nonzero(sp[0][ii, jj, kk, ll])[0]) /
+                                simparams['duration'] * 1000)
 
     return spikerates_batch
 

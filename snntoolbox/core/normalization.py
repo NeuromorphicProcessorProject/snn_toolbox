@@ -67,17 +67,21 @@ def normalize_weights(model, X_train, filename=None):
             batch_idxs = range(batch_idx * globalparams['batch_size'], max_idx)
             batch = X_train[batch_idxs, :]
             activations.append(get_activ(batch, 0))
-        return activations
+        return np.array(activations)
 
     def norm_weights(weights, activations, norm_fac):
-        activation_max = np.max(np.mean(activations, axis=0))
+        # Skip last batch if batch_size was chosen such that the dataset could
+        # not be divided into an integer number of equal-sized batches.
+        if len(activations[0]) != len(activations[-1]):
+            activation_max = np.max(np.mean(activations[:-1], axis=0))
+        else:
+            activation_max = np.max(np.mean(activations, axis=0))
         weight_max = np.max(weights[0])  # Disregard biases
         total_max = np.max([weight_max, activation_max])
         print("Done. Maximum value: {:.2f}.".format(total_max))
         # Normalization factor is the ratio of the max values of the
         # previous to this layer.
         norm_fac /= total_max
-#        norm_fac = 1 / total_max
         return [x * norm_fac for x in weights], norm_fac
 
     echo("Normalizing weights:\n")
@@ -105,7 +109,7 @@ def normalize_weights(model, X_train, filename=None):
                 weights_norm, norm_fac = norm_weights(weights, activations,
                                                       norm_fac)
                 m.layers[idx-1].set_weights(weights_norm)
-                activation_dict = {'Activations': activations[0],
+                activation_dict = {'Activations': activations[0],  # Using only first batch of activations here for memory reasons
                                    'Weights': weights[0],
                                    'weights_norm': weights_norm[0]}
                 title = '0' + str(idx) + label if idx < 10 else str(idx)+label

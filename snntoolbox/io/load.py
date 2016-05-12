@@ -540,7 +540,9 @@ def get_dataset():
                                                             'y_test.txt')
         (X_train, y_train), (X_val, y_val) = caltech101.load_cv_split_paths(
                                                                 base_path, 0)
-        X_train = caltech101.load_samples(X_train, 2*globalparams['batch_size'])
+        print("Warning: Used only a total of two batch sizes for X_train.")
+        X_train = caltech101.load_samples(X_train,
+                                          2*globalparams['batch_size'])
         X_test = caltech101.load_samples(X_test, 2*globalparams['batch_size'])
 
     X_train = X_train.astype('float32')

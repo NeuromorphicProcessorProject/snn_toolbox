@@ -140,37 +140,38 @@ def plot_layer_activity(layer, title, path=None, limits=None):
         ax.get_yaxis().set_visible(False)
     # Case: Multi-dimensional layer, where first dimension gives the number of
     # channels (input layer) or feature maps (convolution layer).
-    # Plot feature maps as 2d-images next to each other, but start a new row
-    # when four columns are filled, since the number of features in a
-    # convolution layer is usually a multiple of 4.
+    # Plot feature maps as 2d-images next to each other, but start a new column
+    # when four rows are filled, since the number of features in a
+    # convolution layer is often a multiple of 4.
     else:
-        if num < 4:
+        if num < 4:  # Arrange less than 4 feature maps in a single row.
+            num_rows = 1
             num_cols = num
-        else:
-            num_cols = 4
-        num_rows = int(np.ceil(num / num_cols))
-        if num_rows > 4:
-            fac = num_rows / 4
-        f, ax = plt.subplots(num_rows, num_cols, figsize=(7, 2 + num_rows * 2),
-                             squeeze=False)
+        else:  # Arrange more than 4 feature maps in a rectangle.
+            num_rows = 4
+            num_cols = int(np.ceil(num / num_rows))
+        if num_cols > 4:
+            fac = num_cols / 4
+        f, ax = plt.subplots(num_rows, num_cols, squeeze=False,
+                             figsize=(3 + num_cols * 2, 11))
         for i in range(num_rows):
             for j in range(num_cols):
                 idx = j + num_cols * i
                 if idx >= num:
                     break
-                im = ax[i, j].imshow(layer[0][idx],
-                                     interpolation='nearest', clim=limits)
+                im = ax[i, j].imshow(layer[0][idx], interpolation='nearest',
+                                     clim=limits)
                 ax[i, j].get_xaxis().set_visible(False)
                 ax[i, j].get_yaxis().set_visible(False)
     # Replace 'name' by 'layer[1]' to get more info into the title
     # name = extract_label(layer[1])[1]
     name = layer[1]
     f.suptitle('{} \n of layer {}'.format(title, name), fontsize=20)
-    f.subplots_adjust(left=0, bottom=0.072, right=1, top=0.9,
+    f.subplots_adjust(left=0, bottom=0, right=0.99, top=0.9,
                       wspace=0.05, hspace=0.05)
-    cax = f.add_axes([0.05, 0, 0.9, 0.05 / fac])
+    cax = f.add_axes([0.99, 0, 0.05 / fac, 0.95])
     cax.locator_params(nbins=8)
-    f.colorbar(im, cax=cax, orientation='horizontal')
+    f.colorbar(im, cax=cax, orientation='vertical')
     if path is not None:
         if title == 'Activations':
             filename = '0' + title
@@ -305,24 +306,19 @@ def plot_potential(times, layer, showLegend=False, path=None):
 
 def plot_layer_summaries(spiketrains, spikerates, activations, path=None):
     # Loop over layers
-    j = 0
-    for sp in spiketrains:
-        label = sp[1]
-        if 'Flatten' not in label:
-            newpath = os.path.join(path, label)
-            if not os.path.exists(newpath):
-                os.makedirs(newpath)
-            plot_spiketrains(spiketrains[j], newpath)
-            plot_layer_activity(spikerates[j], 'Spikerates', newpath)
-            plot_layer_activity(activations[j], 'Activations', newpath)
-            plot_rates_minus_activations(spikerates[j][0], activations[j][0],
-                                         label, newpath)
-            title = 'ANN-SNN correlations\n of layer ' + label
-            plot_layer_correlation(spikerates[j][0].flatten(),
-                                   activations[j][0].flatten(), title, newpath)
-            j += 1
-
-    print("Saved plots to {}.\n".format(path))
+    for i in range(len(spiketrains)):
+        label = spiketrains[i][1]
+        newpath = os.path.join(path, label)
+        if not os.path.exists(newpath):
+            os.makedirs(newpath)
+        plot_spiketrains(spiketrains[i], newpath)
+        plot_layer_activity(spikerates[i], 'Spikerates', newpath)
+        plot_layer_activity(activations[i], 'Activations', newpath)
+        plot_rates_minus_activations(spikerates[i][0], activations[i][0],
+                                     label, newpath)
+        title = 'ANN-SNN correlations\n of layer ' + label
+        plot_layer_correlation(spikerates[i][0].flatten(),
+                               activations[i][0].flatten(), title, newpath)
 
 
 def plot_activity_distribution(activity_dict, path=None):

@@ -440,7 +440,8 @@ def run_SNN_keras(X_test, Y_test, **kwargs):
         echo("Starting new simulation...\n")
     # Allocate a list 'spiketrains' with the following specification:
     # Each entry in ``spiketrains`` contains a tuple ``(spiketimes, label)``
-    # for each layer of the network (for the first batch only).
+    # for each layer of the network (for the first batch only, and excluding
+    # ``Flatten`` layers).
     # ``spiketimes`` is an array where the first indices run over the number
     # of neurons in the layer, and the last index contains the spike times
     # of the specific neuron.
@@ -448,9 +449,10 @@ def run_SNN_keras(X_test, Y_test, **kwargs):
     # e.g. ``'03Dense'``.
     spiketrains_batch = []
     for layer in snn.layers:
-        shape = list(layer.output_shape) + [int(simparams['duration'] /
-                                                simparams['dt'])]
-        spiketrains_batch.append((np.zeros(shape), layer.name))
+        if 'Flatten' not in layer.name:
+            shape = list(layer.output_shape) + [int(simparams['duration'] /
+                                                    simparams['dt'])]
+            spiketrains_batch.append((np.zeros(shape), layer.name))
 
     for batch_idx in range(num_batches):
         # Determine batch indices.
@@ -474,9 +476,12 @@ def run_SNN_keras(X_test, Y_test, **kwargs):
             # For the first batch only, record the spiketrains of each neuron
             # in each layer.
             if batch_idx == 0 and globalparams['verbose'] > 1:
-                for layer in range(len(snn.layers)):
-                    spiketrains_batch[layer][0][Ellipsis, t_idx] = \
-                        snn.layers[layer].spiketrain.get_value()
+                j = 0
+                for i in range(len(snn.layers)):
+                    if 'Flatten' not in snn.layers[i].name:
+                        spiketrains_batch[j][0][Ellipsis, t_idx] = \
+                            snn.layers[i].spiketrain.get_value()
+                        j += 1
             t_idx += 1
             # Count number of spikes in output layer during whole simulation.
             output[batch_idxs, :] += out_spikes.astype('int32')
@@ -509,6 +514,7 @@ def run_SNN_keras(X_test, Y_test, **kwargs):
                 plot_activity_distribution({'Spikerates': spikerates_batch,
                                             'Activations': activations_batch},
                                            path)
+                print("Saved plots to {}.\n".format(path))
 
     guesses = np.argmax(output, axis=1)
     total_acc = np.mean(guesses == truth)

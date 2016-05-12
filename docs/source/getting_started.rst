@@ -28,7 +28,7 @@ Development version
 ...................
 
 * To get the latest version, checkout the `repository <git@github.com:dannyneil/chimera_sim.git>`_
-* In the toolbox root directory ``SNN_toolbox/``, run `python setup.py develop`.
+* In the toolbox root directory ``SNN_toolbox/``, run ``python setup.py develop``.
 
 Running the toolbox
 -------------------

@@ -560,10 +560,12 @@ class snntoolboxGUI():
             return
         f = plt.figure(figsize=(30, 15))
         f.subplots_adjust(left=0.01, bottom=0.05, right=0.99, top=0.99,
-                          wspace=0.01, hspace=0.1)
-        gs = gridspec.GridSpec(4, 3)
-        self.a = [plt.subplot(gs[0:-1, i]) for i in range(3)]
-        self.a += [plt.subplot(gs[-1, i]) for i in range(3)]
+                          wspace=0.01, hspace=0.01)
+        num_rows = 3
+        num_cols = 4
+        gs = gridspec.GridSpec(num_rows, num_cols)
+        self.a = [plt.subplot(gs[i, 0:-1]) for i in range(3)]
+        self.a += [plt.subplot(gs[i, -1]) for i in range(3)]
         self.canvas = FigureCanvasTkAgg(f, self.main_container)
         graph_widget = self.canvas.get_tk_widget()
         graph_widget.pack(side='left', fill='both', expand=True)

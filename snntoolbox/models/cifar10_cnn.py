@@ -67,22 +67,22 @@ model.add(AveragePooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.25))
 
 model.add(Flatten())
-# model.add(Dense(512, b_constraint=maxnorm(0)))
-# model.add(Activation('relu'))
-# model.add(Dropout(0.5))
+model.add(Dense(512, b_constraint=maxnorm(0)))
+model.add(Activation('relu'))
+model.add(Dropout(0.5))
 model.add(Dense(nb_classes, b_constraint=maxnorm(0)))
 model.add(Activation('softmax'))
 
 # let's train the model using SGD + momentum (how original).
 sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-model.compile(loss='categorical_crossentropy', optimizer=sgd)
+model.compile(loss='categorical_crossentropy', optimizer=sgd,
+              metrics=['accuracy'])
 
 if not data_augmentation:
     print("Not using data augmentation or normalization")
 #    early_stopping = EarlyStopping(monitor='val_loss', patience=3)
     history = model.fit(X_train, Y_train, batch_size=batch_size,
-                        show_accuracy=True, validation_data=(X_test, Y_test),
-                        nb_epoch=nb_epoch)
+                        validation_data=(X_test, Y_test), nb_epoch=nb_epoch)
     plot_history(history)
 
 else:
@@ -115,8 +115,7 @@ else:
                         samples_per_epoch=X_train.shape[0], nb_epoch=nb_epoch,
                         validation_data=(X_test, Y_test))
 
-score = model.evaluate(X_test, Y_test, batch_size=batch_size,
-                       show_accuracy=True)
+score = model.evaluate(X_test, Y_test, batch_size=batch_size)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 
