@@ -73,7 +73,7 @@ def plot_spiketrains(layer, path=None):
     plt.xlabel('time [ms]')
     plt.ylabel('neuron index')
     if path is not None:
-        filename = '4Spiketrains'
+        filename = '7Spiketrains'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
     else:
         plt.show()
@@ -184,6 +184,7 @@ def plot_layer_activity(layer, title, path=None, limits=None):
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
     else:
         f.show()
+    plt.close()
 
 
 def plot_correlations(spikerates, layer_activations):
@@ -316,9 +317,12 @@ def plot_layer_summaries(spiketrains, spikerates, activations, path=None):
         plot_layer_activity(activations[i], 'Activations', newpath)
         plot_rates_minus_activations(spikerates[i][0], activations[i][0],
                                      label, newpath)
-        title = 'ANN-SNN correlations\n of layer ' + label
         plot_layer_correlation(spikerates[i][0].flatten(),
-                               activations[i][0].flatten(), title, newpath)
+                               activations[i][0].flatten(),
+                               'ANN-SNN correlations\n of layer ' + label,
+                               newpath)
+        plot_hist({'Spikerates': spikerates[i][0].flatten()}, 'Spikerates',
+                  label, newpath)
 
 
 def plot_activity_distribution(activity_dict, path=None):
@@ -328,22 +332,11 @@ def plot_activity_distribution(activity_dict, path=None):
         for a in val:
             l += list(a[0].flatten())
         h.update({key: l})
-    plot_hist(h, path=path)
+    plot_hist_combined(h, path=path)
 
 
-def plot_activity_distribution_layer(activity_dict, title, path=None):
-    h = {}
-    for (key, val) in activity_dict.items():
-        h.update({key: list(np.array(val).flatten())})
-    plot_hist(h, title, path)
-
-
-def plot_hist(h, title=None, path=None):
+def plot_hist_combined(h, path=None):
     keys = list(h.keys())
-    if title is not None and 'Activ' in title:
-        hist_range = (0.001, None)
-    else:
-        hist_range = None
     fig, ax = plt.subplots()
     ax.tick_params(axis='x', which='both')
     ax.get_xaxis().set_visible(False)
@@ -352,8 +345,8 @@ def plot_hist(h, title=None, path=None):
     colors = plt.cm.spectral(np.linspace(0, 0.9, len(keys)))
     for i in range(len(keys)):
         axes.append(ax.twiny())
-        axes[-1].hist(h[keys[i]], label=keys[i], color=colors[i],
-                      histtype='step', range=hist_range)
+        axes[-1].hist(h[keys[i]], label=keys[i], color=colors[i], log=True,
+                      histtype='step')
         unit = ' [Hz]' if keys[i] == 'Spikerates' else ''
         axes[-1].set_xlabel(keys[i] + unit, color=colors[i])
         axes[-1].tick_params(axis='x', colors=colors[i])
@@ -362,13 +355,29 @@ def plot_hist(h, title=None, path=None):
             axes[-1].patch.set_visible(False)
             axes[-1].xaxis.set_ticks_position('bottom')  # 1-i/10
             axes[-1].xaxis.set_label_position('bottom')
-    plt.title('Activity distribution \n for layer {}'.format(title), y=1.15)
+    plt.title('Distribution', y=1.15)
+    filename = 'Activity_distribution'
+    if path:
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
 
-    if path is not None:
-        if title is not None:
-            filename = title + '_Activity_distribution'
+
+def plot_hist(h, title=None, layer_label=None, path=None):
+    keys = list(h.keys())
+    plt.hist([h[key] for key in keys], label=keys, log=True)
+    plt.legend()
+    if title and layer_label:
+        plt.title('{} distribution of layer \n {}'.format(title, layer_label))
+        if 'Spikerates' in title:
+            filename = '4' + title + '_distribution'
         else:
-            filename = 'Activity_distribution'
+            filename = layer_label + '_' + title + '_distribution'
+    else:
+        plt.title('Distribution')
+        filename = 'Activity_distribution'
+    if path:
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
     else:
         plt.show()
@@ -431,7 +440,7 @@ def plot_layer_correlation(rates, activations, title, path=None):
     plt.xlabel('SNN spikerates (Hz)', fontsize=16)
     plt.ylabel('ANN activations', fontsize=16)
     if path is not None:
-        filename = '3Correlation'
+        filename = '5Correlation'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
     else:
         plt.show()

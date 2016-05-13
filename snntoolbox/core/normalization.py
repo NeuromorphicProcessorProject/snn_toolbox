@@ -17,7 +17,7 @@ import numpy as np
 from snntoolbox import echo
 from snntoolbox.config import globalparams
 from snntoolbox.io.save import save_model
-from snntoolbox.io.plotting import plot_activity_distribution_layer
+from snntoolbox.io.plotting import plot_hist
 import theano
 
 standard_library.install_aliases()
@@ -58,16 +58,18 @@ def normalize_weights(model, X_train, filename=None):
     """
 
     def get_activations(get_activ, X_train):
+        shape = list(get_activ(X_train[:1], 0).shape)
+        shape[0] = X_train.shape[0]
+        activations = np.empty(shape)
         num_batches = int(np.ceil(X_train.shape[0]/globalparams['batch_size']))
-        activations = []
         for batch_idx in range(num_batches):
             # Determine batch indices.
             max_idx = min((batch_idx + 1) * globalparams['batch_size'],
                           X_train.shape[0])
             batch_idxs = range(batch_idx * globalparams['batch_size'], max_idx)
             batch = X_train[batch_idxs, :]
-            activations.append(get_activ(batch, 0))
-        return np.array(activations)
+            activations[batch_idxs] = get_activ(batch, 0)
+        return activations
 
     def norm_weights(weights, activations, norm_fac):
         # Skip last batch if batch_size was chosen such that the dataset could
@@ -78,10 +80,11 @@ def normalize_weights(model, X_train, filename=None):
             activation_max = np.max(np.mean(activations, axis=0))
         weight_max = np.max(weights[0])  # Disregard biases
         total_max = np.max([weight_max, activation_max])
-        print("Done. Maximum value: {:.2f}.".format(total_max))
+        print("Done. \n Maximum value: {:.2f}.".format(total_max))
         # Normalization factor is the ratio of the max values of the
         # previous to this layer.
         norm_fac /= total_max
+        print("Applied divisor: {:.2f}.".format(1/norm_fac))
         return [x * norm_fac for x in weights], norm_fac
 
     echo("Normalizing weights:\n")
@@ -109,12 +112,19 @@ def normalize_weights(model, X_train, filename=None):
                 weights_norm, norm_fac = norm_weights(weights, activations,
                                                       norm_fac)
                 m.layers[idx-1].set_weights(weights_norm)
-                activation_dict = {'Activations': activations[0],  # Using only first batch of activations here for memory reasons
-                                   'Weights': weights[0],
-                                   'weights_norm': weights_norm[0]}
-                title = '0' + str(idx) + label if idx < 10 else str(idx)+label
-                plot_activity_distribution_layer(activation_dict, title,
-                                                 newpath)
+                activations_norm = get_activations(get_activ, X_train)
+                # For memory reasons, use only a fraction of samples for
+                # plotting a histogram of activations.
+                frac = int(len(activations) / 5000)
+                activation_dict = {'Activations': activations[:frac].flatten(),
+                                   'Activations_norm':
+                                       activations_norm[:frac].flatten()}
+                weight_dict = {'Weights': weights[0].flatten(),
+                               'Weights_norm': weights_norm[0].flatten()}
+                layer_label = '0' + str(idx-1) + label if idx < 10 else \
+                    str(idx-1) + label
+                plot_hist(activation_dict, 'Activation', layer_label, newpath)
+                plot_hist(weight_dict, 'Weight', layer_label, newpath)
     elif globalparams['model_lib'] == 'lasagne':
         import lasagne
         from snntoolbox.config import activation_layers

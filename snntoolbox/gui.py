@@ -543,15 +543,15 @@ class snntoolboxGUI():
               Select a layer to display plots like Spiketrains, Spikerates,
               Membrane Potential, Correlations, etc.""")
         ToolTip(self.graph_frame, text=tip, wraplength=750)
-        plots_dir = os.path.join(self.path.get(), 'log', 'gui')
-        if os.path.isdir(plots_dir):
-            layer_dirs = sorted(os.listdir(plots_dir))
+        self.plots_dir = os.path.join(self.path.get(), 'log', 'gui')
+        if os.path.isdir(self.plots_dir):
+            layer_dirs = sorted(os.listdir(self.plots_dir))
             [tk.Radiobutton(self.graph_frame, bg='white', text=name,
                             value=name, variable=self.layer_to_plot,
                             command=self.display_graphs).pack(
                             fill='both', side='bottom', expand=True)
-             for name in layer_dirs if os.path.isdir(os.path.join(plots_dir,
-                                                                  name))]
+             for name in layer_dirs if name != 'normalization' and
+             os.path.isdir(os.path.join(self.plots_dir, name))]
 
     def draw_canvas(self):
         # Create figure with subplots, a canvas to hold them, and add
@@ -562,9 +562,10 @@ class snntoolboxGUI():
         f.subplots_adjust(left=0.01, bottom=0.05, right=0.99, top=0.99,
                           wspace=0.01, hspace=0.01)
         num_rows = 3
-        num_cols = 4
+        num_cols = 5
         gs = gridspec.GridSpec(num_rows, num_cols)
-        self.a = [plt.subplot(gs[i, 0:-1]) for i in range(3)]
+        self.a = [plt.subplot(gs[i, 0:-2]) for i in range(3)]
+        self.a += [plt.subplot(gs[i, -2]) for i in range(3)]
         self.a += [plt.subplot(gs[i, -1]) for i in range(3)]
         self.canvas = FigureCanvasTkAgg(f, self.main_container)
         graph_widget = self.canvas.get_tk_widget()
@@ -580,8 +581,7 @@ class snntoolboxGUI():
                    "image files.")
             messagebox.showerror(title="Loading Error", message=msg)
             return
-        path_to_plots = os.path.join(self.path.get(), 'log', 'gui',
-                                     self.layer_to_plot.get())
+        path_to_plots = os.path.join(self.plots_dir, self.layer_to_plot.get())
         if not os.path.isdir(path_to_plots):
             msg = ("Failed to load images. Please set a working directory "
                    "that contains appropriate image files.")
@@ -589,14 +589,32 @@ class snntoolboxGUI():
             return
         saved_plots = sorted(os.listdir(path_to_plots))
         [a.clear() for a in self.a]
-        for (i, name) in enumerate(saved_plots):
+        for name in saved_plots:
+            i = int(name[:1])
             self.a[i].imshow(mpimg.imread(os.path.join(path_to_plots, name)))
-            self.a[i].get_xaxis().set_visible(False)
-            self.a[i].get_yaxis().set_visible(False)
-        self.a[-1].imshow(mpimg.imread(os.path.join(self.path.get(), 'log',
-                                                    'gui', 'Pearson.png')))
-        self.a[-1].get_xaxis().set_visible(False)
-        self.a[-1].get_yaxis().set_visible(False)
+
+        layer_idx = int(self.layer_to_plot.get()[:2])
+        normalization_plots = sorted(os.listdir(os.path.join(self.plots_dir,
+                                                             'normalization')))
+        activation_distr = None
+        weight_distr = None
+        for i in range(len(normalization_plots)):
+            if int(normalization_plots[i][:2]) == layer_idx:
+                activation_distr = normalization_plots[i]
+                weight_distr = normalization_plots[i+1]
+                break
+        if activation_distr and weight_distr:
+            self.a[3].imshow(mpimg.imread(os.path.join(self.plots_dir,
+                                                       'normalization',
+                                                       activation_distr)))
+            self.a[6].imshow(mpimg.imread(os.path.join(self.plots_dir,
+                                                       'normalization',
+                                                       weight_distr)))
+        self.a[-1].imshow(mpimg.imread(os.path.join(self.plots_dir,
+                                                    'Pearson.png')))
+        for a in self.a:
+            a.get_xaxis().set_visible(False)
+            a.get_yaxis().set_visible(False)
 
         self.canvas.draw()
         self.toolbar.update()
