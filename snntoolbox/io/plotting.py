@@ -169,7 +169,7 @@ def plot_layer_activity(layer, title, path=None, limits=None):
     f.suptitle('{} \n of layer {}'.format(title, name), fontsize=20)
     f.subplots_adjust(left=0, bottom=0, right=0.99, top=0.9,
                       wspace=0.05, hspace=0.05)
-    cax = f.add_axes([0.99, 0, 0.05 / fac, 0.95])
+    cax = f.add_axes([0.99, 0, 0.05 / fac, 0.99])
     cax.locator_params(nbins=8)
     f.colorbar(im, cax=cax, orientation='vertical')
     if path is not None:

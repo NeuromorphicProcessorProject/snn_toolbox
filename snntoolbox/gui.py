@@ -48,7 +48,6 @@ class snntoolboxGUI():
                           ("All files", '*.*'))
         self.default_path_to_pref = os.path.join(snntoolbox._dir,
                                                  'preferences')
-        self.layer_to_plot = tk.StringVar()
         self.padx = 10
         self.pady = 5
         fontFamily = 'clearlyu devagari'
@@ -64,14 +63,14 @@ class snntoolboxGUI():
         self.declare_parameter_vars()
         self.load_settings()
         self.toggle_state_pyNN()
-
+        self.layer_to_plot = tk.StringVar()
         self.main_container = tk.Frame(parent, bg='white')
         self.main_container.pack(side='top', fill='both', expand=True)
         self.globalparams_widgets()
         self.cellparams_widgets()
         self.simparams_widgets()
         self.action_widgets()
-        self.select_layer_rb()
+        self.graph_widgets()
         self.top_level_menu()
         self.initialized = True
 
@@ -513,8 +512,8 @@ class snntoolboxGUI():
         ToolTip(num_to_test_frame, text=tip, wraplength=750)
 
     def action_widgets(self):
-        self.action_frame = tk.Frame(self.main_container, background='white')
-        self.action_frame.pack(side='left', fill=None, expand=False)
+        self.action_frame = tk.Frame(self.globalparams_frame, bg='white')
+        self.action_frame.pack(side='bottom', fill='x', expand=False)
 
         # Start experiment
         tk.Button(self.action_frame, text="Start",
@@ -529,29 +528,56 @@ class snntoolboxGUI():
 #        tk.Button(self.action_frame, text="Abort", fg='red',
 #                  command=self.stop_processing).pack(**self.kwargs)
 
-    def select_layer_rb(self):
+    def graph_widgets(self):
         # Create a container for buttons that display plots for individual
         # layers.
         if hasattr(self, 'graph_frame'):
             self.graph_frame.pack_forget()
             self.graph_frame.destroy()
-        self.graph_frame = tk.LabelFrame(self.action_frame, labelanchor='nw',
-                                         text="Plot results", relief='raised',
-                                         borderwidth='3', bg='white')
-        self.graph_frame.pack(side='right', fill=None, expand=False)
+        self.graph_frame = tk.Frame(self.main_container, background='white')
+        self.graph_frame.pack(side='left', fill=None, expand=False)
         tip = textwrap.dedent("""\
               Select a layer to display plots like Spiketrains, Spikerates,
               Membrane Potential, Correlations, etc.""")
         ToolTip(self.graph_frame, text=tip, wraplength=750)
-        self.plots_dir = os.path.join(self.path.get(), 'log', 'gui')
+        self.select_plots_dir_rb()
+        self.select_layer_rb()
+
+    def select_plots_dir_rb(self):
+        self.plot_dir_frame = tk.LabelFrame(self.graph_frame, labelanchor='nw',
+                                            text="Select dir", relief='raised',
+                                            borderwidth='3', bg='white')
+        self.plot_dir_frame.pack(side='bottom', fill=None, expand=False)
+        self.gui_log = os.path.join(self.path.get(), 'log', 'gui')
+        if os.path.isdir(self.gui_log):
+            plot_dirs = [d for d in sorted(os.listdir(self.gui_log))
+                         if os.path.isdir(os.path.join(self.gui_log, d))]
+            self.selected_plots_dir = tk.StringVar(value=plot_dirs[0])
+            [tk.Radiobutton(self.plot_dir_frame, bg='white', text=name,
+                            value=name, variable=self.selected_plots_dir,
+                            command=self.select_layer_rb).pack(
+                            fill='both', side='bottom', expand=True)
+             for name in plot_dirs]
+
+    def select_layer_rb(self):
+        if hasattr(self, 'layer_frame'):
+            self.layer_frame.pack_forget()
+            self.layer_frame.destroy()
+        self.layer_frame = tk.LabelFrame(self.graph_frame, labelanchor='nw',
+                                         text="Select layer", relief='raised',
+                                         borderwidth='3', bg='white')
+        self.layer_frame.pack(side='bottom', fill=None, expand=False)
+        self.plots_dir = os.path.join(self.gui_log,
+                                      self.selected_plots_dir.get())
         if os.path.isdir(self.plots_dir):
-            layer_dirs = sorted(os.listdir(self.plots_dir))
-            [tk.Radiobutton(self.graph_frame, bg='white', text=name,
+            layer_dirs = [d for d in sorted(os.listdir(self.plots_dir))
+                          if d != 'normalization' and
+                          os.path.isdir(os.path.join(self.plots_dir, d))]
+            [tk.Radiobutton(self.layer_frame, bg='white', text=name,
                             value=name, variable=self.layer_to_plot,
                             command=self.display_graphs).pack(
                             fill='both', side='bottom', expand=True)
-             for name in layer_dirs if name != 'normalization' and
-             os.path.isdir(os.path.join(self.plots_dir, name))]
+             for name in layer_dirs]
 
     def draw_canvas(self):
         # Create figure with subplots, a canvas to hold them, and add
@@ -879,7 +905,8 @@ class snntoolboxGUI():
         if not self.initialized:
             return True
         # Look for plots in working directory to display
-        self.select_layer_rb()
+        self.graph_widgets()
+
         if not os.path.exists(P):
             msg = "Failed to set working directory:\n" + \
                   "Specified directory does not exist."
@@ -896,7 +923,7 @@ class snntoolboxGUI():
                                               initialdir=snntoolbox._dir))
         self.check_path(self.path.get())
         # Look for plots in working directory to display
-        self.select_layer_rb()
+        self.graph_widgets()
 
     def __scrollHandler(self, *L):
         op, howMany = L[0], L[1]
