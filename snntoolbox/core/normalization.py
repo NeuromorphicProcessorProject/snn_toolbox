@@ -71,27 +71,26 @@ def normalize_weights(model, X_train, filename=None):
             activations[batch_idxs] = get_activ(batch, 0)
         return activations
 
-    def norm_weights(weights, activations, norm_fac):
+    def norm_weights(weights, activations, previous_fac):
         # Skip last batch if batch_size was chosen such that the dataset could
         # not be divided into an integer number of equal-sized batches.
-        if len(activations[0]) != len(activations[-1]):
-            activation_max = np.max(np.mean(activations[:-1], axis=0))
-        else:
-            activation_max = np.max(np.mean(activations, axis=0))
+        end = -1 if len(activations[0]) != len(activations[-1]) else None
+        activation_max = np.percentile(activations[:end], 95)
         weight_max = np.max(weights[0])  # Disregard biases
-        total_max = np.max([weight_max, activation_max])
-        print("Done. \n Maximum value: {:.2f}.".format(total_max))
+        scale_fac = np.max([weight_max, activation_max])
+        print("Done. \n Maximum value: {:.2f}.".format(scale_fac))
         # Normalization factor is the ratio of the max values of the
         # previous to this layer.
-        norm_fac /= total_max
-        print("Applied divisor: {:.2f}.".format(1/norm_fac))
-        return [x * norm_fac for x in weights], norm_fac
+        applied_fac = scale_fac / previous_fac
+        print("Applied divisor: {:.2f}.".format(applied_fac))
+        return [x / applied_fac for x in weights], scale_fac, applied_fac
 
     echo("Normalizing weights:\n")
-    newpath = os.path.join(globalparams['path'], 'log', 'gui', 'normalization')
+    newpath = os.path.join(globalparams['log_dir_of_current_run'],
+                           'normalization')
     if not os.path.exists(newpath):
         os.makedirs(newpath)
-    norm_fac = 1
+    previous_fac = 1
     m = model['model']
     if globalparams['model_lib'] == 'keras':
         from keras import backend as K
@@ -109,8 +108,8 @@ def normalize_weights(model, X_train, filename=None):
                                             on_unused_input='ignore')
                 weights = m.layers[idx-1].get_weights()
                 activations = get_activations(get_activ, X_train)
-                weights_norm, norm_fac = norm_weights(weights, activations,
-                                                      norm_fac)
+                weights_norm, previous_fac, applied_fac = norm_weights(
+                    weights, activations, previous_fac)
                 m.layers[idx-1].set_weights(weights_norm)
                 activations_norm = get_activations(get_activ, X_train)
                 # For memory reasons, use only a fraction of samples for
@@ -123,7 +122,8 @@ def normalize_weights(model, X_train, filename=None):
                                'Weights_norm': weights_norm[0].flatten()}
                 layer_label = '0' + str(idx-1) + label if idx < 10 else \
                     str(idx-1) + label
-                plot_hist(activation_dict, 'Activation', layer_label, newpath)
+                plot_hist(activation_dict, 'Activation', layer_label, newpath,
+                          previous_fac, applied_fac)
                 plot_hist(weight_dict, 'Weight', layer_label, newpath)
     elif globalparams['model_lib'] == 'lasagne':
         import lasagne
@@ -141,8 +141,8 @@ def normalize_weights(model, X_train, filename=None):
                     allow_input_downcast=True)
                 weights = layer.W.get_value()
                 activations = get_activations(get_activ, X_train)
-                weights_norm, norm_fac = norm_weights(weights, activations,
-                                                      norm_fac)
+                weights_norm, previous_fac = norm_weights(weights, activations,
+                                                          previous_fac)
                 layer.W.set_value(weights_norm)
 
     # Write out weights

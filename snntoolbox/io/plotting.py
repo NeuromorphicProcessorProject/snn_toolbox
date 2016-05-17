@@ -166,7 +166,8 @@ def plot_layer_activity(layer, title, path=None, limits=None):
     # Replace 'name' by 'layer[1]' to get more info into the title
     # name = extract_label(layer[1])[1]
     name = layer[1]
-    f.suptitle('{} \n of layer {}'.format(title, name), fontsize=20)
+    unit = ' [Hz]' if title == 'Spikerates' else ''
+    f.suptitle('{} \n of layer {}'.format(title + unit, name), fontsize=20)
     f.subplots_adjust(left=0, bottom=0, right=0.99, top=0.9,
                       wspace=0.05, hspace=0.05)
     cax = f.add_axes([0.99, 0, 0.05 / fac, 0.99])
@@ -346,7 +347,7 @@ def plot_hist_combined(h, path=None):
     for i in range(len(keys)):
         axes.append(ax.twiny())
         axes[-1].hist(h[keys[i]], label=keys[i], color=colors[i], log=True,
-                      histtype='step')
+                      histtype='step', bottom=1)
         unit = ' [Hz]' if keys[i] == 'Spikerates' else ''
         axes[-1].set_xlabel(keys[i] + unit, color=colors[i])
         axes[-1].tick_params(axis='x', colors=colors[i])
@@ -364,16 +365,25 @@ def plot_hist_combined(h, path=None):
     plt.close()
 
 
-def plot_hist(h, title=None, layer_label=None, path=None):
-    keys = list(h.keys())
-    plt.hist([h[key] for key in keys], label=keys, log=True)
+def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None,
+              applied_fac=None):
+    keys = sorted(h.keys())
+    plt.hist([h[key] for key in keys], label=keys, log=True, bottom=1)
     plt.legend()
     if title and layer_label:
-        plt.title('{} distribution of layer \n {}'.format(title, layer_label))
         if 'Spikerates' in title:
             filename = '4' + title + '_distribution'
+            unit = '[Hz]'
         else:
             filename = layer_label + '_' + title + '_distribution'
+            unit = ''
+        if scale_fac and applied_fac:
+            facs = "Max (act, W): {:.2f}; applied divisor: {:.2f}".format(
+                scale_fac, applied_fac)
+        else:
+            facs = ''
+        plt.title('{} distribution {} \n of layer {} \n {}'.format(
+            title, unit, layer_label, facs))
     else:
         plt.title('Distribution')
         filename = 'Activity_distribution'
@@ -437,7 +447,7 @@ def plot_layer_correlation(rates, activations, title, path=None):
     plt.locator_params(nbins=4)
     plt.xlim([-max(rates) / 1000, max(rates) * 1.1])
     plt.ylim([None, max(activations) * 1.1])
-    plt.xlabel('SNN spikerates (Hz)', fontsize=16)
+    plt.xlabel('SNN spikerates [Hz]', fontsize=16)
     plt.ylabel('ANN activations', fontsize=16)
     if path is not None:
         filename = '5Correlation'

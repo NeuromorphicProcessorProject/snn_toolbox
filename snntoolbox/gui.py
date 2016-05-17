@@ -43,6 +43,8 @@ class snntoolboxGUI():
         self.parent = parent
         self.path = tk.StringVar(value=snntoolbox._dir)
         self.filename = tk.StringVar()
+        self.runlabel = tk.StringVar()
+        self.log_dir_of_current_run = tk.StringVar()
         self.filetypes = (("json files", '*.json'),
                           ("hdf5 files", '*.h5'),
                           ("All files", '*.*'))
@@ -511,6 +513,22 @@ class snntoolboxGUI():
               Only relevant in pyNN-simulators.""")
         ToolTip(num_to_test_frame, text=tip, wraplength=750)
 
+        # Name of directory where to save plots
+        runlabel_frame = tk.Frame(self.simparams_frame, bg='white')
+        runlabel_frame.pack(**self.kwargs)
+        tk.Label(runlabel_frame, text='run label', bg='white').pack(
+            fill='both', expand=True)
+        check_runlabel_command = runlabel_frame.register(self.check_runlabel)
+        runlabel_entry = tk.Entry(runlabel_frame, bg='white',
+                                  textvariable=self.runlabel,
+                                  validate='focusout',
+                                  validatecommand=(check_runlabel_command,
+                                                   '%P'))
+        runlabel_entry.pack(fill='both', expand=True, side='bottom')
+        tip = textwrap.dedent("""\
+            Give your simulation run a name. If verbosity is high, the
+            resulting plots will be saved in <cwd>/log/gui/<runlabel>.""")
+
     def action_widgets(self):
         self.action_frame = tk.Frame(self.globalparams_frame, bg='white')
         self.action_frame.pack(side='bottom', fill='x', expand=False)
@@ -541,13 +559,14 @@ class snntoolboxGUI():
               Membrane Potential, Correlations, etc.""")
         ToolTip(self.graph_frame, text=tip, wraplength=750)
         self.select_plots_dir_rb()
-        self.select_layer_rb()
+        if hasattr(self, 'selected_plots_dir'):
+            self.select_layer_rb()
 
     def select_plots_dir_rb(self):
         self.plot_dir_frame = tk.LabelFrame(self.graph_frame, labelanchor='nw',
                                             text="Select dir", relief='raised',
                                             borderwidth='3', bg='white')
-        self.plot_dir_frame.pack(side='bottom', fill=None, expand=False)
+        self.plot_dir_frame.pack(side='top', fill=None, expand=False)
         self.gui_log = os.path.join(self.path.get(), 'log', 'gui')
         if os.path.isdir(self.gui_log):
             plot_dirs = [d for d in sorted(os.listdir(self.gui_log))
@@ -620,8 +639,11 @@ class snntoolboxGUI():
             self.a[i].imshow(mpimg.imread(os.path.join(path_to_plots, name)))
 
         layer_idx = int(self.layer_to_plot.get()[:2])
-        normalization_plots = sorted(os.listdir(os.path.join(self.plots_dir,
-                                                             'normalization')))
+        plots_dir_norm = os.path.join(self.plots_dir, 'normalization')
+        if os.path.exists(plots_dir_norm):
+            normalization_plots = sorted(os.listdir(plots_dir_norm))
+        else:
+            normalization_plots = []
         activation_distr = None
         weight_distr = None
         for i in range(len(normalization_plots)):
@@ -755,6 +777,7 @@ class snntoolboxGUI():
         self.max_f.set(p['max_f'])
         self.delay.set(p['delay'])
         self.num_to_test.set(p['num_to_test'])
+        self.runlabel.set(p['runlabel'])
 
     def save_settings(self):
         self.globalparams = {'dataset': self.dataset.get(),
@@ -784,7 +807,8 @@ class snntoolboxGUI():
                           'dt': self.dt.get(),
                           'max_f': self.max_f.get(),
                           'delay': self.delay.get(),
-                          'num_to_test': self.num_to_test.get()}
+                          'num_to_test': self.num_to_test.get(),
+                          'runlabel': self.runlabel.get()}
 
         s = {'globalparams': self.globalparams,
              'cellparams': self.cellparams,
@@ -885,6 +909,7 @@ class snntoolboxGUI():
 
         self.store_last_settings = True
         self.save_settings()
+        self.check_runlabel(self.runlabel.get())
 
         update_setup(self.globalparams, self.cellparams, self.simparams)
 
@@ -917,6 +942,15 @@ class snntoolboxGUI():
             messagebox.showwarning(title="Warning", message=msg)
             return False
         return True
+
+    def check_runlabel(self, P):
+        if self.initialized:
+            # Set path to plots for the current simulation run
+            self.log_dir_of_current_run.set(os.path.join(self.gui_log, P))
+            self.globalparams.update({'log_dir_of_current_run':
+                                      self.log_dir_of_current_run.get()})
+            if not os.path.exists(self.log_dir_of_current_run.get()):
+                os.makedirs(self.log_dir_of_current_run.get())
 
     def set_cwd(self):
         self.path.set(filedialog.askdirectory(title="Set working directory",

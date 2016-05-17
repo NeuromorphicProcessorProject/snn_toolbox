@@ -499,7 +499,7 @@ def run_SNN_keras(X_test, Y_test, **kwargs):
             if batch_idx == 0 and globalparams['verbose'] > 2:
                 echo('\n')
                 echo("Saving plots for last image in first batch...\n")
-                path = os.path.join(globalparams['path'], 'log', 'gui')
+                path = globalparams['log_dir_of_current_run']
 
                 spiketrains = get_sample_activity_from_batch(spiketrains_batch)
                 spikerates_batch = spiketrains_to_rates(snn, spiketrains_batch)
