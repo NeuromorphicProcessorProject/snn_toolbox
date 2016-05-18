@@ -22,8 +22,6 @@ from snntoolbox.config import cellparams, simparams
 
 standard_library.install_aliases()
 
-plt.ion()
-
 
 def plot_spiketrains(layer, path=None):
     """

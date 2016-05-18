@@ -41,10 +41,6 @@ class snntoolboxGUI():
         self.layer_rb_set = False
         self.layer_rbs = []
         self.parent = parent
-        self.path = tk.StringVar(value=snntoolbox._dir)
-        self.filename = tk.StringVar()
-        self.runlabel = tk.StringVar()
-        self.log_dir_of_current_run = tk.StringVar()
         self.filetypes = (("json files", '*.json'),
                           ("hdf5 files", '*.h5'),
                           ("All files", '*.*'))
@@ -60,6 +56,7 @@ class snntoolboxGUI():
         font.nametofont('TkTextFont').configure(family=fontFamily, size=11)
         self.kwargs = {'fill': 'both', 'expand': True,
                        'padx': self.padx, 'pady': self.pady}
+        self.is_plot_container_destroyed = True
         self.store_last_settings = False
         self.restore_last_pref = True
         self.declare_parameter_vars()
@@ -577,6 +574,15 @@ class snntoolboxGUI():
                             command=self.select_layer_rb).pack(
                             fill='both', side='bottom', expand=True)
              for name in plot_dirs]
+        open_new_cb = tk.Checkbutton(self.graph_frame, bg='white', height=2,
+                                     width=20, text='open in new window',
+                                     variable=self.open_new)
+        open_new_cb.pack(**self.kwargs)
+        tip = textwrap.dedent("""\
+              If unchecked, the window showing graphs for a certain layer will
+              close and be replaced each time you select a layer to plot.
+              If checked, an additional window will pop up instead.""")
+        ToolTip(open_new_cb, text=tip, wraplength=750)
 
     def select_layer_rb(self):
         if hasattr(self, 'layer_frame'):
@@ -603,6 +609,19 @@ class snntoolboxGUI():
         # matplotlib navigation toolbar.
         if self.layer_to_plot.get() is '':
             return
+        if hasattr(self, 'plot_container') and not self.open_new.get() and \
+                not self.is_plot_container_destroyed:
+            self.plot_container.wm_withdraw()
+        self.plot_container = tk.Toplevel(bg='white')
+        self.plot_container.geometry('800x600')
+        self.is_plot_container_destroyed = False
+        self.plot_container.wm_title('Results from simulation run {}'.format(
+            self.runlabel.get()))
+        tk.Message(self.plot_container,
+                   text='Results from simulation run {}'.format(
+                       self.runlabel.get()), bg='white').pack()
+        tk.Button(self.plot_container, text='Close Window',
+                  command=self.close_window).pack()
         f = plt.figure(figsize=(30, 15))
         f.subplots_adjust(left=0.01, bottom=0.05, right=0.99, top=0.99,
                           wspace=0.01, hspace=0.01)
@@ -612,14 +631,17 @@ class snntoolboxGUI():
         self.a = [plt.subplot(gs[i, 0:-2]) for i in range(3)]
         self.a += [plt.subplot(gs[i, -2]) for i in range(3)]
         self.a += [plt.subplot(gs[i, -1]) for i in range(3)]
-        self.canvas = FigureCanvasTkAgg(f, self.main_container)
+        self.canvas = FigureCanvasTkAgg(f, self.plot_container)
         graph_widget = self.canvas.get_tk_widget()
-        graph_widget.pack(side='left', fill='both', expand=True)
+        graph_widget.pack(side='top', fill='both', expand=True)
         self.toolbar = NavigationToolbar2TkAgg(self.canvas, graph_widget)
 
+    def close_window(self):
+        self.plot_container.destroy()
+        self.is_plot_container_destroyed = True
+
     def display_graphs(self):
-        if not hasattr(self, 'a'):
-            self.draw_canvas()
+        self.draw_canvas()
         if self.layer_to_plot.get() is '':
             msg = ("Failed to load images. Please select a layer to plot, and "
                    "make sure your working directory contains appropriate "
@@ -734,6 +756,11 @@ class snntoolboxGUI():
         self.max_f = tk.IntVar()
         self.delay = tk.IntVar()
         self.num_to_test = tk.IntVar()
+        self.path = tk.StringVar(value=snntoolbox._dir)
+        self.filename = tk.StringVar()
+        self.runlabel = tk.StringVar()
+        self.open_new = tk.BooleanVar(value=True)
+        self.log_dir_of_current_run = tk.StringVar()
 
     def restore_default_params(self):
         L = [globalparams, cellparams, simparams,
@@ -778,6 +805,7 @@ class snntoolboxGUI():
         self.delay.set(p['delay'])
         self.num_to_test.set(p['num_to_test'])
         self.runlabel.set(p['runlabel'])
+        self.open_new.set(p['open_new'])
 
     def save_settings(self):
         self.globalparams = {'dataset': self.dataset.get(),
@@ -809,10 +837,12 @@ class snntoolboxGUI():
                           'delay': self.delay.get(),
                           'num_to_test': self.num_to_test.get(),
                           'runlabel': self.runlabel.get()}
+        self.guiparams = {'open_new': self.open_new.get()}
 
         s = {'globalparams': self.globalparams,
              'cellparams': self.cellparams,
-             'simparams': self.simparams}
+             'simparams': self.simparams,
+             'guiparams': self.guiparams}
 
         if self.store_last_settings:
             if not os.path.exists(self.default_path_to_pref):
@@ -847,9 +877,11 @@ class snntoolboxGUI():
         self.globalparams = s['globalparams']
         self.cellparams = s['cellparams']
         self.simparams = s['simparams']
+        self.guiparams = s['guiparams']
         self.set_preferences([self.globalparams,
                               self.cellparams,
-                              self.simparams])
+                              self.simparams,
+                              self.guiparams])
 
     # Execute main script as a new thread to be able to stop it.
     # Problem: Output is delayed, and stop function does not really terminate

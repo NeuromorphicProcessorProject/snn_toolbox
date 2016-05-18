@@ -115,6 +115,7 @@ def normalize_weights(model, X_train, filename=None):
                 # For memory reasons, use only a fraction of samples for
                 # plotting a histogram of activations.
                 frac = int(len(activations) / 5000)
+                print(frac)
                 activation_dict = {'Activations': activations[:frac].flatten(),
                                    'Activations_norm':
                                        activations_norm[:frac].flatten()}

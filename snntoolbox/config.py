@@ -179,15 +179,15 @@ import matplotlib as mpl
 # Define text sizes of various plot properties relative to font.size, using the
 # following values: xx-small, x-small, small, medium, large, x-large, xx-large,
 # larger, or smaller.
-plotproperties = {'font.size': 12,
+plotproperties = {'font.size': 13,
                   'axes.titlesize': 'xx-large',
                   'axes.labelsize': 'x-large',
                   'xtick.labelsize': 'x-large',
-                  'xtick.major.size': 6,
-                  'xtick.minor.size': 4,
+                  'xtick.major.size': 7,
+                  'xtick.minor.size': 5,
                   'ytick.labelsize': 'x-large',
-                  'ytick.major.size': 6,
-                  'ytick.minor.size': 4,
+                  'ytick.major.size': 7,
+                  'ytick.minor.size': 5,
                   'legend.fontsize': 'x-large',
                   'figure.figsize': (7, 6)}
 

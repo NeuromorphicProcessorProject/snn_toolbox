@@ -21,6 +21,10 @@ from snntoolbox.config import globalparams, cellparams, simparams
 standard_library.install_aliases()
 
 
+#class SNN():
+#    def __init__(self):
+
+
 def test_full(params=[cellparams['v_thresh']],
               param_name='v_thresh',
               param_logscale=False):
@@ -413,6 +417,7 @@ def get_activations_batch(X_batch):
     if os.path.isfile(os.path.join(globalparams['path'],
                                    filename+'_normWeights.h5')):
         filename += '_normWeights'
+        print("DebugMessage: Using normed weights for activations")
     model = load_model(filename)['model']
 
     activations_batch = []
