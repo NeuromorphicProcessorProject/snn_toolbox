@@ -18,285 +18,15 @@ import os
 import sys
 import numpy as np
 from six.moves import cPickle
-from snntoolbox import echo
-from snntoolbox.config import globalparams, architectures, datasets
+from importlib import import_module
+import snntoolbox
+from snntoolbox import echo, sim
+from snntoolbox.config import globalparams, cellparams, architectures, datasets
 
 standard_library.install_aliases()
 
-
-class ANN():
-    """
-    Represent a neural network.
-
-    Implements a class that contains essential information about the
-    architecture and weights of a neural network, while being independent of
-    the library from which the original network was built.
-
-    The constructor ``__init__()`` performs the extraction of the
-    attributes of interest.
-
-    Parameters
-    ----------
-
-        model : network object
-            A network object of the ``model_lib`` language, e.g. keras.
-
-    Attributes
-    ----------
-
-        - weights : array
-            Weights connecting the input layer.
-
-        - biases : array
-            Biases of the network. For conversion to spiking nets, zero biases
-            are found to work best.
-
-        - input_shape : list
-            The dimensions of the input sample.
-
-        - layers : list
-            List of all the layers of the network, where each layer contains a
-            dictionary with keys
-
-            - layer_num : int
-                Index of layer.
-
-            - layer_type : string
-                Describing the type, e.g. `Dense`, `Convolution`, `Pool`.
-
-            - output_shape : list
-                The output dimensions of the layer.
-
-            In addition, `Dense` and `Convolution` layer types contain
-
-            - weights : array
-                The weight parameters connecting the layer with the next.
-
-            `Convolution` layers contain further
-
-            - nb_col : int
-                The x-dimension of filters.
-
-            - nb_row : int
-                The y-dimension of filters.
-
-            - border_mode : string
-                How to handle borders during convolution, e.g. `full`, `valid`,
-                `same`.
-
-            `Pooling` layers contain
-
-            - pool_size : list
-                Specifies the subsampling factor in each dimension.
-
-            - strides : list
-                The stepsize in each dimension during pooling.
-
-    The initializer is meant to be extended by functionality to extract any
-    model written in any of the common neural network libraries, e.g. keras,
-    theano, caffe, torch, etc.
-
-    The simplified returned network can then be used in the SNN conversion and
-    simulation toolbox.
-
-    """
-
-    def __init__(self, model):
-        bn_layers = {'Dense', 'Convolution2D'}
-        if globalparams['model_lib'] == 'keras':
-            layers = model.layers
-            self.input_shape = model.input_shape
-            self.layers = []
-
-            # Label the input layer according to its shape.
-            if globalparams['architecture'] == 'mlp':
-                self.labels = ['InputLayer_{}'.format(self.input_shape[1])]
-            else:
-                self.labels = ['InputLayer_{}x{}x{}'.format(
-                                self.input_shape[1],
-                                self.input_shape[2],
-                                self.input_shape[3])]
-            for (layer_num, layer) in enumerate(layers):
-                attributes = {'layer_num': layer_num,
-                              'layer_type': layer.__class__.__name__,
-                              'output_shape': layer.output_shape}
-                if len(attributes['output_shape']) == 2:
-                    shape_string = '_{}'.format(attributes['output_shape'][1])
-                else:
-                    shape_string = '_{}x{}x{}'.format(
-                        attributes['output_shape'][1],
-                        attributes['output_shape'][2],
-                        attributes['output_shape'][3])
-                num_str = str(layer_num) if layer_num > 9 else \
-                    '0' + str(layer_num)
-                self.labels.append(num_str + attributes['layer_type'] +
-                                   shape_string)
-                attributes.update({'label': self.labels[-1]})
-
-                next_layer = layers[layer_num + 1] \
-                    if layer_num + 1 < len(layers) else None
-                next_layer_name = next_layer.__class__.__name__ \
-                    if next_layer else None
-                if next_layer_name == 'BatchNormalization' and \
-                        attributes['layer_type'] not in bn_layers:
-                    raise NotImplementedError(
-                        "A batchnormalization layer must follow a layer of " +
-                        "type {}, not {}.".format(bn_layers,
-                                                  attributes['layer_type']))
-                if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
-                    wb = layer.get_weights()
-                    if next_layer_name == 'BatchNormalization':
-                        weights = next_layer.get_weights()
-                        wb = absorb_bn(wb[0], wb[1],  # W, b
-                                       weights[0],  # gamma
-                                       weights[1],  # beta
-                                       weights[2],  # mean
-                                       weights[3],  # std
-                                       next_layer.epsilon)
-                    attributes.update({'weights': wb})
-                if attributes['layer_type'] == 'Convolution2D':
-                    attributes.update({'input_shape': layer.input_shape,
-                                       'nb_filter': layer.nb_filter,
-                                       'nb_col': layer.nb_col,
-                                       'nb_row': layer.nb_row,
-                                       'border_mode': layer.border_mode})
-                elif attributes['layer_type'] in {'MaxPooling2D',
-                                                  'AveragePooling2D'}:
-                    attributes.update({'input_shape': layer.input_shape,
-                                       'pool_size': layer.pool_size,
-                                       'strides': layer.strides,
-                                       'border_mode': layer.border_mode})
-                self.layers.append(attributes)
-        elif globalparams['model_lib'] == 'lasagne':
-            import lasagne
-            layers = lasagne.layers.get_all_layers(model)
-            weights = lasagne.layers.get_all_param_values(model)
-            self.input_shape = layers[0].shape
-            self.layers = []
-
-            # Label the input layer according to its shape.
-            if globalparams['architecture'] == 'mlp':
-                self.labels = ['InputLayer_{}'.format(self.input_shape[1])]
-            else:
-                self.labels = ['InputLayer_{}x{}x{}'.format(
-                                self.input_shape[1],
-                                self.input_shape[2],
-                                self.input_shape[3])]
-            weights_idx = 0
-            for (layer_num, layer) in enumerate(layers):
-                name = layer.__class__.__name__
-                if name == 'DenseLayer':
-                    layer_type = 'Dense'
-                elif name in {'Conv2DLayer', 'Conv2DDNNLayer'}:
-                    layer_type = 'Convolution2D'
-                elif name == 'MaxPool2DLayer':
-                    layer_type = 'MaxPooling2D'
-                elif name in {'Pool2DLayer'}:
-                    layer_type = 'AveragePooling2D'
-                elif name == 'DropoutLayer':
-                    layer_type = 'Dropout'
-                elif name == 'FlattenLayer':
-                    layer_type = 'Flatten'
-                elif name == 'BatchNormLayer':
-                    layer_type = 'BatchNorm'
-                elif name == 'InputLayer':
-                    continue
-                else:
-                    layer_type = layer.__class__.__name__
-                attributes = {'layer_num': layer_num,
-                              'layer_type': layer_type,
-                              'output_shape': layer.output_shape}
-                next_layer = layers[layer_num + 1] \
-                    if layer_num + 1 < len(layers) else None
-                next_layer_name = next_layer.__class__.__name__ \
-                    if next_layer else None
-                if next_layer_name == 'BatchNormLayer' and \
-                        layer_type not in bn_layers:
-                    raise NotImplementedError("A batchnormalization layer " +
-                                              "must follow a layer of type " +
-                                              "{}, not {}.".format(bn_layers,
-                                                                   layer_type))
-                if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
-                    wb = weights[weights_idx: weights_idx + 2]
-                    weights_idx += 2  # For weights and biases
-                    if next_layer_name == 'BatchNormLayer':
-                        wb = absorb_bn(wb[0], wb[1],  # W, b
-                                       weights[weights_idx + 0],  # gamma
-                                       weights[weights_idx + 1],  # beta
-                                       weights[weights_idx + 2],  # mean
-                                       weights[weights_idx + 3],  # std
-                                       next_layer.epsilon)
-                        weights_idx += 4
-                    attributes.update({'weights': wb})
-                if attributes['layer_type'] == 'Convolution2D':
-                    fs = layer.filter_size
-                    if layer.pad == (0, 0):
-                        border_mode = 'valid'
-                    elif layer.pad == (fs[0] // 2, fs[1] // 2):
-                        border_mode = 'same'
-                    elif layer.pad == (fs[0] - 1, fs[1] - 1):
-                        border_mode = 'full'
-                    else:
-                        raise NotImplementedError("Padding {} ".format(
-                            layer.pad) + "could not be interpreted as any " +
-                            "of the supported border modes 'valid', 'same' " +
-                            "or 'full'.")
-                    attributes.update({'input_shape': layer.input_shape,
-                                       'nb_filter': layer.num_filters,
-                                       'nb_col': fs[1],
-                                       'nb_row': fs[0],
-                                       'border_mode': border_mode})
-                elif attributes['layer_type'] in {'MaxPooling2D',
-                                                  'AveragePooling2D'}:
-                    ps = layer.pool_size
-                    if layer.pad == (0, 0):
-                        border_mode = 'valid'
-                    elif layer.pad == (ps[0] // 2, ps[1] // 2):
-                        border_mode = 'same'
-                    elif layer.pad == (ps[0] - 1, ps[1] - 1):
-                        border_mode = 'full'
-                    else:
-                        raise NotImplementedError("Padding {} ".format(
-                            layer.pad) + "could not be interpreted as any " +
-                            "of the supported border modes 'valid', 'same' " +
-                            "or 'full'.")
-                    attributes.update({'input_shape': layer.input_shape,
-                                       'pool_size': layer.pool_size,
-                                       'strides': layer.stride,
-                                       'border_mode': border_mode})
-                # Append layer label
-                if len(attributes['output_shape']) == 2:
-                    shape_string = '_{}'.format(attributes['output_shape'][1])
-                else:
-                    shape_string = '_{}x{}x{}'.format(
-                        attributes['output_shape'][1],
-                        attributes['output_shape'][2],
-                        attributes['output_shape'][3])
-                num_str = str(layer_num) if layer_num > 9 else \
-                    '0' + str(layer_num)
-                self.labels.append(num_str + attributes['layer_type'] +
-                                   shape_string)
-                attributes.update({'label': self.labels[-1]})
-                # Append layer
-                self.layers.append(attributes)
-
-    def get_config(self):
-        layer_config = []
-        for layer in self.layers:
-            layer_config.append([{key: layer[key]} for key in layer.keys()
-                                 if key not in ['weights']])
-        config = {'name': self.__class__.__name__,
-                  'input_shape': self.input_shape,
-                  'layers': layer_config}
-        return config
-
-
-def absorb_bn(w, b, gamma, beta, mean, std, epsilon):
-    ax = 0 if w.ndim < 3 else 1
-    w_normed = w*np.swapaxes(gamma, 0, ax) / (np.swapaxes(std, 0, ax)+epsilon)
-    b_normed = ((b - mean.flatten()) * gamma.flatten() /
-                (std.flatten() + epsilon) + beta.flatten())
-    return [w_normed, b_normed]
+model_lib = import_module('snntoolbox.model_libs.' +
+                          globalparams['model_lib'] + '_input_lib')
 
 
 def load_model(filename=None, spiking=False):
@@ -336,13 +66,10 @@ def load_model(filename=None, spiking=False):
     if spiking:
         return load_snn(filename)
     else:
-        return load_ann(filename)
+        return model_lib.load_ann(filename)
 
 
 def load_snn(filename):
-    import snntoolbox
-    from snntoolbox import sim
-
     if snntoolbox._SIMULATOR in snntoolbox.simulators_pyNN:
         layers = load_assembly()
         for i in range(len(layers)-1):
@@ -359,7 +86,6 @@ def load_snn(filename):
         import theano
         import theano.tensor as T
         from keras import models
-        from snntoolbox.config import cellparams
 
         path = os.path.join(globalparams['path'], filename + '.json')
         model = models.model_from_json(open(path).read(),
@@ -391,57 +117,6 @@ def load_snn(filename):
                                      [output_spikes, output_time],
                                      updates=updates)
         return {'model': model, 'get_output': get_output}
-
-
-def load_ann(filename):
-    import snntoolbox
-
-    if globalparams['model_lib'] == 'keras':
-        if globalparams['dataset'] == 'caltech101':
-            model = model_from_py(filename)['model']
-        else:
-            from keras import models
-            path = os.path.join(globalparams['path'], filename + '.json')
-            model = models.model_from_json(
-                open(path).read(), custom_objects=snntoolbox.custom_layers)
-        model.load_weights(os.path.join(globalparams['path'],
-                                        filename + '.h5'))
-        # Todo: Allow user to specify loss function here (optimizer is not
-        # relevant as we do not train any more). Unfortunately, Keras does not
-        # save these parameters. They can be obtained from the compiled model
-        # by calling 'model.loss' and 'model.optimizer'.
-        model.compile(loss='categorical_crossentropy', optimizer='sgd',
-                      metrics=['accuracy'])
-        return {'model': model}
-    elif globalparams['model_lib'] == 'lasagne':
-        return model_from_py(filename)
-
-
-def model_from_py(filename):
-    # Import script which builds the model
-    v = sys.version_info
-    if v >= (3, 5):
-        import importlib.util
-        path = os.path.join(globalparams['path'], filename + '.py')
-        spec = importlib.util.spec_from_file_location(filename, path)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-    elif v >= (3, 3):
-        from importlib.machinery import SourceFileLoader
-        mod = SourceFileLoader(filename, path).load_module()
-    else:
-        import imp
-        mod = imp.load_source(filename, path)
-
-    if globalparams['model_lib'] == 'keras':
-        return {'model': mod.build_network()}
-    elif globalparams['model_lib'] == 'lasagne':
-        import lasagne
-        model, train_fn, val_fn = mod.build_network()
-        params = load_weights(os.path.join(globalparams['path'],
-                                           filename + '.h5'))
-        lasagne.layers.set_all_param_values(model, params)
-        return {'model': model, 'train_fn': train_fn, 'val_fn': val_fn}
 
 
 def load_weights(filepath):
@@ -606,8 +281,6 @@ def load_assembly():
     populations : list
         List of pyNN ``Population`` objects
     """
-
-    from snntoolbox import sim
 
     file = os.path.join(globalparams['path'],
                         'snn_' + globalparams['filename'])

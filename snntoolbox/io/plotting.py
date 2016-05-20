@@ -18,7 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from snntoolbox.config import cellparams, simparams
-# from snntoolbox.core.util import extract_label
+from snntoolbox.io.util import wilson_score
 
 standard_library.install_aliases()
 
@@ -460,6 +460,44 @@ def plot_rates_minus_activations(rates, activations, label, path=None):
     activations_norm = activations / np.max(activations)
     plot_layer_activity((rates_norm - activations_norm, label),
                         'Spikerates_minus_Activations', path, limits=(-1, 1))
+
+
+def output_graphs(spiketrains_batch, ann, batch, path=None):
+    from snntoolbox.core.util import get_activations_batch
+    from snntoolbox.core.util import spiketrains_to_rates
+    from snntoolbox.core.util import get_sample_activity_from_batch
+
+    print('\n')
+    print("Saving plots of one sample to {}...\n".format(path))
+
+    spiketrains = get_sample_activity_from_batch(spiketrains_batch)
+    spikerates_batch = spiketrains_to_rates(spiketrains_batch)
+    spikerates = get_sample_activity_from_batch(spikerates_batch)
+    activations_batch = get_activations_batch(ann, batch)
+    activations = get_sample_activity_from_batch(activations_batch)
+
+    plot_layer_summaries(spiketrains, spikerates, activations, path)
+    plot_pearson_coefficients(spikerates_batch, activations_batch, path)
+    plot_activity_distribution({'Spikerates': spikerates_batch,
+                                'Activations': activations_batch}, path)
+    print("Done.\n")
+
+
+def plot_param_sweep(results, n, params, param_name, param_logscale):
+    # Compute confidence intervals of the experiments
+    ci = [wilson_score(q, n) for q in results]
+    ax = plt.subplot()
+    if param_logscale:
+        ax.set_xscale('log', nonposx='clip')
+    ax.errorbar(params, results, yerr=ci, fmt='x-')
+    ax.set_title('Accuracy vs Hyperparameter')
+    ax.set_xlabel(param_name)
+    ax.set_ylabel('accuracy')
+    fac = 0.9
+    if params[0] < 0:
+        fac += 0.2
+    ax.set_xlim(fac * params[0], 1.1 * params[-1])
+    ax.set_ylim(0, 1)
 
 
 def plot_history(h):

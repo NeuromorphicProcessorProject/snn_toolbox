@@ -36,61 +36,7 @@ def confirm_overwrite(filepath):
     return True
 
 
-def save_model(model, path=globalparams['path'],
-               filename=globalparams['filename'], spiking=None):
-    """
-    Write model architecture and weights to disk.
-
-    Parameters
-    ----------
-
-    model : network object
-        The network model object in the ``model_lib`` language, e.g. keras.
-    """
-
-    import snntoolbox
-
-    spiking = False if spiking is None else True
-
-    # Create directory if not existent yet.
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    echo("Saving model to {}\n".format(path))
-
-    if globalparams['model_lib'] == 'keras' or \
-            snntoolbox._SIMULATOR == 'INI' and spiking:
-        filepath = os.path.join(path, filename + '.json')
-        if confirm_overwrite(filepath):
-            open(filepath, 'w').write(model.to_json())
-            model.save_weights(os.path.join(path, filename + '.h5'),
-                               overwrite=globalparams['overwrite'])
-    elif globalparams['model_lib'] == 'lasagne':
-        import lasagne
-        params = lasagne.layers.get_all_param_values(model)
-        filepath = os.path.join(path, filename + '.h5')
-        if confirm_overwrite(filepath):
-            save_weights(params, filepath)
-    echo("Done.\n")
-
-
-def save_weights(params, filepath):
-    """
-    Dump all layer weights to a HDF5 file.
-    """
-
-    import h5py
-
-    f = h5py.File(filepath, 'w')
-
-    for i, p in enumerate(params):
-        idx = '0' + str(i) if i < 10 else str(i)
-        f.create_dataset('param_' + idx, data=p, dtype=p.dtype)
-    f.flush()
-    f.close()
-
-
-def save_assembly(assembly):
+def save_assembly(assembly, path, filename):
     """
     Write layers of neural network to disk.
 
@@ -113,8 +59,7 @@ def save_assembly(assembly):
         List of pyNN ``population`` objects
     """
 
-    filepath = os.path.join(globalparams['path'],
-                            'snn_' + globalparams['filename'])
+    filepath = os.path.join(path, 'snn_' + filename)
 
     if not confirm_overwrite(filepath):
         return
@@ -138,7 +83,7 @@ def save_assembly(assembly):
     echo("Done.\n")
 
 
-def save_connections(projections):
+def save_connections(projections, path):
     """
     Write weights of a neural network to disk.
 
@@ -161,12 +106,11 @@ def save_connections(projections):
     layers it connects, e.g. ``layer1_layer2.txt``
     """
 
-    echo("Saving connections to {}\n".format(globalparams['path']))
+    echo("Saving connections to {}\n".format(path))
 
     # Iterate over layers to save each projection in a separate txt file.
     for projection in projections:
-        filepath = os.path.join(globalparams['path'],
-                                projection.label.replace('→', '_'))
+        filepath = os.path.join(path, projection.label.replace('→', '_'))
         if confirm_overwrite(filepath):
             projection.save('connections', filepath)
     echo("Done.\n")

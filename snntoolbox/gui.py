@@ -15,11 +15,11 @@ import json
 
 import snntoolbox
 from snntoolbox.config import update_setup
-from snntoolbox.core.util import test_full
-from snntoolbox.tooltip import ToolTip
 from snntoolbox.config import datasets, architectures, model_libs
 from snntoolbox.config import globalparams, cellparams, simparams
 from snntoolbox.config import cellparams_pyNN, simparams_pyNN
+from snntoolbox.core.pipeline import test_full
+from snntoolbox.tooltip import ToolTip
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg
@@ -617,9 +617,7 @@ class snntoolboxGUI():
         self.is_plot_container_destroyed = False
         self.plot_container.wm_title('Results from simulation run {}'.format(
             self.runlabel.get()))
-        tk.Message(self.plot_container,
-                   text='Results from simulation run {}'.format(
-                       self.runlabel.get()), bg='white').pack()
+        self.plot_container.protocol('WM_DELETE_WINDOW', self.close_window)
         tk.Button(self.plot_container, text='Close Window',
                   command=self.close_window).pack()
         f = plt.figure(figsize=(30, 15))
@@ -767,8 +765,10 @@ class snntoolboxGUI():
              cellparams_pyNN, simparams_pyNN]
         self.set_preferences(L)
 
-    def set_preferences(self, L=[globalparams, cellparams, simparams,
-                                 cellparams_pyNN, simparams_pyNN]):
+    def set_preferences(self, L=None):
+        if L is None:
+            L = [globalparams, cellparams, simparams, cellparams_pyNN,
+                 simparams_pyNN]
         p = {}
         for d in L:
             p.update(d)

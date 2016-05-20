@@ -236,6 +236,8 @@ simparams_pyNN = {'delay': 1,  # duration must be longer than delay*num_layers
 # Lasagne layers followed by an Activation layer
 activation_layers = {'DenseLayer', 'Conv2DLayer', 'Conv2DDNNLayer'}
 
+bn_layers = {'Dense', 'Convolution2D'}
+
 
 def update_setup(global_params={}, cell_params={}, sim_params={}):
     """
