@@ -233,8 +233,8 @@ cellparams_pyNN = {'v_reset': 0,
 simparams_pyNN = {'delay': 1,  # duration must be longer than delay*num_layers
                   'num_to_test': 10}  # Constraint: delay >= dt
 
-# Lasagne layers followed by an Activation layer
-activation_layers = {'DenseLayer', 'Conv2DLayer', 'Conv2DDNNLayer'}
+# Layers followed by an Activation layer
+activation_layers = {'Dense', 'Convolution2D'}
 
 bn_layers = {'Dense', 'Convolution2D'}
 

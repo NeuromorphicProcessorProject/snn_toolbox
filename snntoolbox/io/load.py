@@ -18,15 +18,11 @@ import os
 import sys
 import numpy as np
 from six.moves import cPickle
-from importlib import import_module
 import snntoolbox
 from snntoolbox import echo, sim
 from snntoolbox.config import globalparams, cellparams, architectures, datasets
 
 standard_library.install_aliases()
-
-model_lib = import_module('snntoolbox.model_libs.' +
-                          globalparams['model_lib'] + '_input_lib')
 
 
 def load_model(filename=None, spiking=False):
@@ -66,6 +62,9 @@ def load_model(filename=None, spiking=False):
     if spiking:
         return load_snn(filename)
     else:
+        from importlib import import_module
+        model_lib = import_module('snntoolbox.model_libs.' +
+                                  globalparams['model_lib'] + '_input_lib')
         return model_lib.load_ann(filename)
 
 
@@ -265,7 +264,7 @@ def get_reshaped_dataset():
     return (X_train, Y_train, X_test, Y_test)
 
 
-def load_assembly():
+def load_assembly(filename):
     """
     Loads the populations in an assembly that was saved with the
     ``snntoolbox.io.save.save_assembly`` function.
@@ -282,31 +281,31 @@ def load_assembly():
         List of pyNN ``Population`` objects
     """
 
-    file = os.path.join(globalparams['path'],
-                        'snn_' + globalparams['filename'])
-    if os.path.isfile(file):
-        if sys.version_info < (3,):
-            s = cPickle.load(open(file, 'rb'))
-        else:
-            s = cPickle.load(open(file, 'rb'), encoding='bytes')
-        # Iterate over populations in assembly
-        populations = []
-        for label in s['labels']:
-            celltype = getattr(sim, s[label]['celltype'])
-            population = getattr(sim, 'Population')(
-                s[label]['size'], celltype, celltype.default_parameters,
-                structure=s[label]['structure'], label=label)
-            # Set the rest of the specified variables, if any.
-            for variable in s['variables']:
-                if getattr(population, variable, None) is None:
-                    setattr(population, variable, s[label][variable])
-            populations.append(population)
-        if globalparams['verbose'] > 1:
-            echo("Loaded spiking neuron layers from {}.\n".format(file))
-        return populations
+    file = os.path.join(globalparams['path'], filename)
+    assert os.path.isfile(file), \
+        "Spiking neuron layers were not found at specified location."
+    if sys.version_info < (3,):
+        s = cPickle.load(open(file, 'rb'))
     else:
-        echo("Spiking neuron layers were not found at specified location.\n")
-        return []
+        s = cPickle.load(open(file, 'rb'), encoding='bytes')
+
+    # Iterate over populations in assembly
+    populations = []
+    for label in s['labels']:
+        celltype = getattr(sim, s[label]['celltype'])
+        population = getattr(sim, 'Population')(
+            s[label]['size'], celltype, celltype.default_parameters,
+            structure=s[label]['structure'], label=label)
+        # Set the rest of the specified variables, if any.
+        for variable in s['variables']:
+            if getattr(population, variable, None) is None:
+                setattr(population, variable, s[label][variable])
+        populations.append(population)
+
+    if globalparams['verbose'] > 1:
+        echo("Loaded spiking neuron layers from {}.\n".format(file))
+
+    return populations
 
 
 def load_activations():

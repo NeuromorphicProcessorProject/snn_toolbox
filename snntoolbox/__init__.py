@@ -47,6 +47,10 @@ def initialize_simulator(simulator):
                      'SpikeConv2DReLU': SpikeConv2DReLU,
                      'AvgPool2DReLU': AvgPool2DReLU}
     if simulator in simulators_pyNN:
+        if simulator == 'nest':
+            # Workaround for missing link bug, see
+            # https://github.com/ContinuumIO/anaconda-issues/issues/152
+            import readline
         sim = import_module('pyNN.' + simulator)
         from snntoolbox.config import cellparams, cellparams_pyNN
         from snntoolbox.config import simparams, simparams_pyNN

@@ -14,6 +14,8 @@ from __future__ import division, absolute_import
 from future import standard_library
 
 import os
+import numpy as np
+import json
 from six.moves import cPickle
 from snntoolbox import echo
 from snntoolbox.config import globalparams
@@ -34,6 +36,21 @@ def confirm_overwrite(filepath):
             overwrite = input("Enter 'y' (overwrite) or 'n' (cancel).")
         return overwrite == 'y'
     return True
+
+
+def to_json(data, path):
+    def get_json_type(obj):
+        # if obj is any numpy type
+        if type(obj).__module__ == np.__name__:
+            return obj.item()
+
+        # if obj is a python 'type'
+        if type(obj).__name__ == type.__name__:
+            return obj.__name__
+
+        raise TypeError('Not JSON serializable')
+
+    json.dump(data, open(path, 'w'), default=get_json_type)
 
 
 def save_assembly(assembly, path, filename):
@@ -59,12 +76,12 @@ def save_assembly(assembly, path, filename):
         List of pyNN ``population`` objects
     """
 
-    filepath = os.path.join(path, 'snn_' + filename)
+    filepath = os.path.join(path, filename)
 
     if not confirm_overwrite(filepath):
         return
 
-    echo("Saving assembly to {}\n".format(filepath))
+    echo("Saving assembly to {}...\n".format(filepath))
 
     s = {}
     labels = []
@@ -106,11 +123,11 @@ def save_connections(projections, path):
     layers it connects, e.g. ``layer1_layer2.txt``
     """
 
-    echo("Saving connections to {}\n".format(path))
+    echo("Saving connections to {}...\n".format(path))
 
     # Iterate over layers to save each projection in a separate txt file.
     for projection in projections:
-        filepath = os.path.join(path, projection.label.replace('→', '_'))
+        filepath = os.path.join(path, projection.label.partition('→')[-1])
         if confirm_overwrite(filepath):
             projection.save('connections', filepath)
     echo("Done.\n")

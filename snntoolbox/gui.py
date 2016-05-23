@@ -944,7 +944,6 @@ class snntoolboxGUI():
         self.check_runlabel(self.runlabel.get())
 
         update_setup(self.globalparams, self.cellparams, self.simparams)
-
         test_full()
 
     def check_file(self, P):

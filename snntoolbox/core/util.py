@@ -119,7 +119,38 @@ def get_sample_activity_from_batch(activity_batch, i=0):
     return [(layer_act[0][i], layer_act[1]) for layer_act in activity_batch]
 
 
-def get_activations(X):
+def norm_weights(weights, activations, previous_fac):
+    # Skip last batch if batch_size was chosen such that the dataset
+    # could not be divided into an integer number of equal-sized
+    # batches.
+    end = -1 if len(activations[0]) != len(activations[-1]) else None
+    activation_max = np.percentile(activations[:end], 95)
+    weight_max = np.max(weights[0])  # Disregard biases
+    scale_fac = np.max([weight_max, activation_max])
+    print("Maximum value: {:.2f}.".format(scale_fac))
+    # Normalization factor is the ratio of the max values of the
+    # previous to this layer.
+    applied_fac = scale_fac / previous_fac
+    print("Applied divisor: {:.2f}.".format(applied_fac))
+    return [x / applied_fac for x in weights], scale_fac, applied_fac
+
+
+def get_activations_layer(get_activ, X_train):
+    shape = list(get_activ(X_train[:1]).shape)
+    shape[0] = X_train.shape[0]
+    activations = np.empty(shape)
+    num_batches = int(np.ceil(X_train.shape[0] / globalparams['batch_size']))
+    for batch_idx in range(num_batches):
+        # Determine batch indices.
+        max_idx = min((batch_idx + 1) * globalparams['batch_size'],
+                      X_train.shape[0])
+        batch_idxs = range(batch_idx * globalparams['batch_size'], max_idx)
+        batch = X_train[batch_idxs, :]
+        activations[batch_idxs] = get_activ(batch)
+    return activations
+
+
+def get_activations_sample(X):
     """ Returns layer activations for a single input X """
     activations_batch = get_activations_batch(np.array(X, ndmin=X.ndim+1))
     return get_sample_activity_from_batch(activations_batch)
