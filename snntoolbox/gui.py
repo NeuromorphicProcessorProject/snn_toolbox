@@ -16,6 +16,7 @@ import json
 import snntoolbox
 from snntoolbox.config import update_setup
 from snntoolbox.config import datasets, architectures, model_libs
+from snntoolbox.config import simulators, simulators_pyNN
 from snntoolbox.config import globalparams, cellparams, simparams
 from snntoolbox.config import cellparams_pyNN, simparams_pyNN
 from snntoolbox.core.pipeline import test_full
@@ -61,13 +62,13 @@ class snntoolboxGUI():
         self.restore_last_pref = True
         self.declare_parameter_vars()
         self.load_settings()
-        self.toggle_state_pyNN()
         self.layer_to_plot = tk.StringVar()
         self.main_container = tk.Frame(parent, bg='white')
         self.main_container.pack(side='top', fill='both', expand=True)
         self.globalparams_widgets()
         self.cellparams_widgets()
         self.simparams_widgets()
+        self.toggle_state_pyNN(self.simulator.get())
         self.action_widgets()
         self.graph_widgets()
         self.top_level_menu()
@@ -303,26 +304,28 @@ class snntoolboxGUI():
         # Reset
         v_reset_frame = tk.Frame(self.cellparams_frame, bg='white')
         v_reset_frame.pack(**self.kwargs)
-        tk.Label(v_reset_frame, text="v_reset", state=self.state_pyNN,
-                 bg='white').pack(fill='both', expand=True)
-        v_reset_sb = tk.Spinbox(v_reset_frame, textvariable=self.v_reset,
-                                from_=-1e3, to_=1e3, increment=0.1, width=10,
-                                state=self.state_pyNN,
-                                disabledbackground='#eee')
-        v_reset_sb.pack(fill='y', expand=True, ipady=3)
+        self.v_reset_label = tk.Label(v_reset_frame, text="v_reset",
+                                      state=self.state_pyNN.get(), bg='white')
+        self.v_reset_label.pack(fill='both', expand=True)
+        self.v_reset_sb = tk.Spinbox(v_reset_frame, textvariable=self.v_reset,
+                                     from_=-1e3, to_=1e3, increment=0.1,
+                                     width=10, state=self.state_pyNN.get(),
+                                     disabledbackground='#eee')
+        self.v_reset_sb.pack(fill='y', expand=True, ipady=3)
         tip = "Reset potential in mV of the neurons after spiking."
         ToolTip(v_reset_frame, text=tip, wraplength=750)
 
         # Resting potential
         v_rest_frame = tk.Frame(self.cellparams_frame, bg='white')
         v_rest_frame.pack(**self.kwargs)
-        tk.Label(v_rest_frame, text="v_rest", state=self.state_pyNN,
-                 bg='white').pack(fill='both', expand=True)
-        v_rest_sb = tk.Spinbox(v_rest_frame, textvariable=self.v_rest,
-                               from_=-1e3, to_=1e3, increment=0.1, width=10,
-                               state=self.state_pyNN,
-                               disabledbackground='#eee')
-        v_rest_sb.pack(fill='y', expand=True, ipady=3)
+        self.v_rest_label = tk.Label(v_rest_frame, text="v_rest",
+                                     state=self.state_pyNN.get(), bg='white')
+        self.v_rest_label.pack(fill='both', expand=True)
+        self.v_rest_sb = tk.Spinbox(v_rest_frame, textvariable=self.v_rest,
+                                    from_=-1e3, to_=1e3, increment=0.1,
+                                    width=10, state=self.state_pyNN.get(),
+                                    disabledbackground='#eee')
+        self.v_rest_sb.pack(fill='y', expand=True, ipady=3)
         tip = textwrap.dedent("""\
               Resting membrane potential in mV.
               Only relevant in pyNN-simulators.""")
@@ -331,13 +334,14 @@ class snntoolboxGUI():
         # e_rev_E
         e_rev_E_frame = tk.Frame(self.cellparams_frame, bg='white')
         e_rev_E_frame.pack(**self.kwargs)
-        tk.Label(e_rev_E_frame, text="e_rev_E", state=self.state_pyNN,
-                 bg='white').pack(fill='both', expand=True)
-        e_rev_E_sb = tk.Spinbox(e_rev_E_frame, textvariable=self.e_rev_E,
-                                from_=-1e-3, to_=1e3, increment=0.1, width=10,
-                                state=self.state_pyNN,
-                                disabledbackground='#eee')
-        e_rev_E_sb.pack(fill='y', expand=True, ipady=3)
+        self.e_rev_E_label = tk.Label(e_rev_E_frame, text="e_rev_E",
+                                      state=self.state_pyNN.get(), bg='white')
+        self.e_rev_E_label.pack(fill='both', expand=True)
+        self.e_rev_E_sb = tk.Spinbox(e_rev_E_frame, textvariable=self.e_rev_E,
+                                     from_=-1e-3, to_=1e3, increment=0.1,
+                                     width=10, state=self.state_pyNN.get(),
+                                     disabledbackground='#eee')
+        self.e_rev_E_sb.pack(fill='y', expand=True, ipady=3)
         tip = textwrap.dedent("""\
               Reversal potential for excitatory input in mV.
               Only relevant in pyNN-simulators.""")
@@ -346,13 +350,14 @@ class snntoolboxGUI():
         # e_rev_I
         e_rev_I_frame = tk.Frame(self.cellparams_frame, bg='white')
         e_rev_I_frame.pack(**self.kwargs)
-        tk.Label(e_rev_I_frame, text="e_rev_I", state=self.state_pyNN,
-                 bg='white').pack(fill='both', expand=True)
-        e_rev_I_sb = tk.Spinbox(e_rev_I_frame, textvariable=self.e_rev_I,
-                                from_=-1e3, to_=1e3, increment=0.1, width=10,
-                                state=self.state_pyNN,
-                                disabledbackground='#eee')
-        e_rev_I_sb.pack(fill='y', expand=True, ipady=3)
+        self.e_rev_I_label = tk.Label(e_rev_I_frame, text="e_rev_I",
+                                      state=self.state_pyNN.get(), bg='white')
+        self.e_rev_I_label.pack(fill='both', expand=True)
+        self.e_rev_I_sb = tk.Spinbox(e_rev_I_frame, textvariable=self.e_rev_I,
+                                     from_=-1e3, to_=1e3, increment=0.1,
+                                     width=10, state=self.state_pyNN.get(),
+                                     disabledbackground='#eee')
+        self.e_rev_I_sb.pack(fill='y', expand=True, ipady=3)
         tip = textwrap.dedent("""\
               Reversal potential for inhibitory input in mV.
               Only relevant in pyNN-simulators.""")
@@ -361,13 +366,15 @@ class snntoolboxGUI():
         # i_offset
         i_offset_frame = tk.Frame(self.cellparams_frame, bg='white')
         i_offset_frame.pack(**self.kwargs)
-        tk.Label(i_offset_frame, text="i_offset", state=self.state_pyNN,
-                 bg='white').pack(fill='both', expand=True)
-        i_offset_sb = tk.Spinbox(i_offset_frame, textvariable=self.i_offset,
-                                 from_=-1e3, to_=1e3, increment=1, width=10,
-                                 state=self.state_pyNN,
-                                 disabledbackground='#eee')
-        i_offset_sb.pack(fill='y', expand=True, ipady=3)
+        self.i_offset_label = tk.Label(i_offset_frame, text="i_offset",
+                                       state=self.state_pyNN.get(), bg='white')
+        self.i_offset_label.pack(fill='both', expand=True)
+        self.i_offset_sb = tk.Spinbox(i_offset_frame,
+                                      textvariable=self.i_offset, from_=-1e3,
+                                      to_=1e3, increment=1, width=10,
+                                      state=self.state_pyNN.get(),
+                                      disabledbackground='#eee')
+        self.i_offset_sb.pack(fill='y', expand=True, ipady=3)
         tip = textwrap.dedent("""\
               Offset current in nA.
               Only relevant in pyNN-simulators.""")
@@ -376,12 +383,14 @@ class snntoolboxGUI():
         # Membrane capacitance
         cm_frame = tk.Frame(self.cellparams_frame, bg='white')
         cm_frame.pack(**self.kwargs)
-        tk.Label(cm_frame, text="C_mem", state=self.state_pyNN,
-                 bg='white').pack(fill='both', expand=True)
-        cm_sb = tk.Spinbox(cm_frame, textvariable=self.cm,
-                           from_=1e-3, to_=1e3, increment=1e-3, width=10,
-                           state=self.state_pyNN, disabledbackground='#eee')
-        cm_sb.pack(fill='y', expand=True, ipady=3)
+        self.cm_label = tk.Label(cm_frame, text="C_mem",
+                                 state=self.state_pyNN.get(), bg='white')
+        self.cm_label.pack(fill='both', expand=True)
+        self.cm_sb = tk.Spinbox(cm_frame, textvariable=self.cm, from_=1e-3,
+                                to_=1e3, increment=1e-3, width=10,
+                                state=self.state_pyNN.get(),
+                                disabledbackground='#eee')
+        self.cm_sb.pack(fill='y', expand=True, ipady=3)
         tip = textwrap.dedent("""\
               Membrane capacitance in nF.
               Only relevant in pyNN-simulators.""")
@@ -390,12 +399,14 @@ class snntoolboxGUI():
         # tau_m
         tau_m_frame = tk.Frame(self.cellparams_frame, bg='white')
         tau_m_frame.pack(**self.kwargs)
-        tk.Label(tau_m_frame, text="tau_m", state=self.state_pyNN,
-                 bg='white').pack(fill='both', expand=True)
-        tau_m_sb = tk.Spinbox(tau_m_frame, textvariable=self.tau_m,
-                              from_=1, to_=1e6, increment=1, width=10,
-                              state=self.state_pyNN, disabledbackground='#eee')
-        tau_m_sb.pack(fill='y', expand=True, ipady=3)
+        self.tau_m_label = tk.Label(tau_m_frame, text="tau_m",
+                                    state=self.state_pyNN.get(), bg='white')
+        self.tau_m_label.pack(fill='both', expand=True)
+        self.tau_m_sb = tk.Spinbox(tau_m_frame, textvariable=self.tau_m,
+                                   from_=1, to_=1e6, increment=1, width=10,
+                                   state=self.state_pyNN.get(),
+                                   disabledbackground='#eee')
+        self.tau_m_sb.pack(fill='y', expand=True, ipady=3)
         tip = textwrap.dedent("""\
               Membrane time constant in milliseconds.
               Only relevant in pyNN-simulators.""")
@@ -404,13 +415,16 @@ class snntoolboxGUI():
         # tau_syn_E
         tau_syn_E_frame = tk.Frame(self.cellparams_frame, bg='white')
         tau_syn_E_frame.pack(**self.kwargs)
-        tk.Label(tau_syn_E_frame, text="tau_syn_E", state=self.state_pyNN,
-                 bg='white').pack(fill='both', expand=True)
-        tau_syn_E_sb = tk.Spinbox(tau_syn_E_frame, textvariable=self.tau_syn_E,
-                                  from_=1e-3, to_=1e3, increment=1e-3,
-                                  width=10, state=self.state_pyNN,
-                                  disabledbackground='#eee')
-        tau_syn_E_sb.pack(fill='y', expand=True, ipady=3)
+        self.tau_syn_E_label = tk.Label(tau_syn_E_frame, text="tau_syn_E",
+                                        state=self.state_pyNN.get(),
+                                        bg='white')
+        self.tau_syn_E_label.pack(fill='both', expand=True)
+        self.tau_syn_E_sb = tk.Spinbox(tau_syn_E_frame,
+                                       textvariable=self.tau_syn_E, from_=1e-3,
+                                       to_=1e3, increment=1e-3, width=10,
+                                       state=self.state_pyNN.get(),
+                                       disabledbackground='#eee')
+        self.tau_syn_E_sb.pack(fill='y', expand=True, ipady=3)
         tip = textwrap.dedent("""\
               Decay time of the excitatory synaptic conductance in
               milliseconds.
@@ -420,13 +434,16 @@ class snntoolboxGUI():
         # tau_syn_I
         tau_syn_I_frame = tk.Frame(self.cellparams_frame, bg='white')
         tau_syn_I_frame.pack(**self.kwargs)
-        tk.Label(tau_syn_I_frame, text="tau_syn_I", state=self.state_pyNN,
-                 bg='white').pack(fill='both', expand=True)
-        tau_syn_I_sb = tk.Spinbox(tau_syn_I_frame, textvariable=self.tau_syn_I,
-                                  from_=1e-3, to_=1e3, increment=1e-3,
-                                  width=10, state=self.state_pyNN,
-                                  disabledbackground='#eee')
-        tau_syn_I_sb.pack(fill='y', expand=True, ipady=3)
+        self.tau_syn_I_label = tk.Label(tau_syn_I_frame, text="tau_syn_I",
+                                        state=self.state_pyNN.get(),
+                                        bg='white')
+        self.tau_syn_I_label.pack(fill='both', expand=True)
+        self.tau_syn_I_sb = tk.Spinbox(tau_syn_I_frame,
+                                       textvariable=self.tau_syn_I,
+                                       from_=1e-3, to_=1e3, increment=1e-3,
+                                       width=10, state=self.state_pyNN.get(),
+                                       disabledbackground='#eee')
+        self.tau_syn_I_sb.pack(fill='y', expand=True, ipady=3)
         tip = textwrap.dedent("""\
               Decay time of the inhibitory synaptic conductance in
               milliseconds.
@@ -445,6 +462,19 @@ class snntoolboxGUI():
               Specify parameters concerning the simulation of the converted
               spiking network. Some are simulator specific.""")
         ToolTip(self.simparams_frame, text=tip, wraplength=750, delay=1499)
+
+        # Simulator
+        simulator_frame = tk.Frame(self.simparams_frame, bg='white')
+        simulator_frame.pack(**self.kwargs)
+        tip = textwrap.dedent("""\
+            Choose a simulator to run the converted spiking network with.""")
+        ToolTip(simulator_frame, text=tip, wraplength=750)
+        tk.Label(simulator_frame, text="Simulator", bg='white',
+                 font=self.header_font).pack(fill='both', expand=True)
+        simulator_om = tk.OptionMenu(simulator_frame, self.simulator,
+                                     *list(simulators),
+                                     command=self.toggle_state_pyNN)
+        simulator_om.pack(fill='both', expand=True)
 
         # Time resolution
         dt_frame = tk.Frame(self.simparams_frame, bg='white')
@@ -482,13 +512,15 @@ class snntoolboxGUI():
         # Delay
         delay_frame = tk.Frame(self.simparams_frame, bg='white')
         delay_frame.pack(**self.kwargs)
-        tk.Label(delay_frame, text="delay", state=self.state_pyNN,
-                 bg='white').pack(fill='both', expand=True)
-        delay_sb = tk.Spinbox(delay_frame, textvariable=self.delay,
-                              from_=self.duration.get(), to_=1000, increment=1,
-                              width=10, state=self.state_pyNN,
-                              disabledbackground='#eee')
-        delay_sb.pack(fill='y', expand=True, ipady=3)
+        self.delay_label = tk.Label(delay_frame, text="delay",
+                                    state=self.state_pyNN.get(), bg='white')
+        self.delay_label.pack(fill='both', expand=True)
+        self.delay_sb = tk.Spinbox(delay_frame, textvariable=self.delay,
+                                   from_=self.duration.get(), to_=1000,
+                                   increment=1, width=10,
+                                   state=self.state_pyNN.get(),
+                                   disabledbackground='#eee')
+        self.delay_sb.pack(fill='y', expand=True, ipady=3)
         tip = textwrap.dedent("""\
               Delay in milliseconds. Must be equal to or greater than the
               resolution.
@@ -498,13 +530,17 @@ class snntoolboxGUI():
         # Number of samples to test
         num_to_test_frame = tk.Frame(self.simparams_frame, bg='white')
         num_to_test_frame.pack(**self.kwargs)
-        tk.Label(num_to_test_frame, text="num_to_test", state=self.state_pyNN,
-                 bg='white').pack(fill='both', expand=True)
-        num_to_test_sb = tk.Spinbox(num_to_test_frame, state=self.state_pyNN,
-                                    textvariable=self.num_to_test,
-                                    from_=1, to_=1e9, increment=1, width=10,
-                                    disabledbackground='#eee')
-        num_to_test_sb.pack(fill='y', expand=True, ipady=3)
+        self.num_to_test_label = tk.Label(num_to_test_frame,
+                                          text="num_to_test",
+                                          state=self.state_pyNN.get(),
+                                          bg='white')
+        self.num_to_test_label.pack(fill='both', expand=True)
+        self.num_to_test_sb = tk.Spinbox(num_to_test_frame,
+                                         state=self.state_pyNN.get(),
+                                         textvariable=self.num_to_test,
+                                         from_=1, to_=1e9, increment=1,
+                                         width=10, disabledbackground='#eee')
+        self.num_to_test_sb.pack(fill='y', expand=True, ipady=3)
         tip = textwrap.dedent("""\
               Number of samples to test.
               Only relevant in pyNN-simulators.""")
@@ -750,6 +786,7 @@ class snntoolboxGUI():
         self.tau_syn_E = tk.DoubleVar()
         self.tau_syn_I = tk.DoubleVar()
         self.dt = tk.DoubleVar()
+        self.simulator = tk.StringVar()
         self.duration = tk.IntVar()
         self.max_f = tk.IntVar()
         self.delay = tk.IntVar()
@@ -759,6 +796,7 @@ class snntoolboxGUI():
         self.runlabel = tk.StringVar()
         self.open_new = tk.BooleanVar(value=True)
         self.log_dir_of_current_run = tk.StringVar()
+        self.state_pyNN = tk.StringVar(value='normal')
 
     def restore_default_params(self):
         L = [globalparams, cellparams, simparams,
@@ -799,6 +837,7 @@ class snntoolboxGUI():
         self.tau_m.set(p['tau_m'])
         self.tau_syn_E.set(p['tau_syn_E'])
         self.tau_syn_I.set(p['tau_syn_I'])
+        self.simulator.set(p['simulator'])
         self.duration.set(p['duration'])
         self.dt.set(p['dt'])
         self.max_f.set(p['max_f'])
@@ -831,7 +870,8 @@ class snntoolboxGUI():
                            'tau_m': self.tau_m.get(),
                            'tau_syn_E': self.tau_syn_E.get(),
                            'tau_syn_I': self.tau_syn_I.get()}
-        self.simparams = {'duration': self.duration.get(),
+        self.simparams = {'simulator': self.simulator.get(),
+                          'duration': self.duration.get(),
                           'dt': self.dt.get(),
                           'max_f': self.max_f.get(),
                           'delay': self.delay.get(),
@@ -1006,11 +1046,33 @@ class snntoolboxGUI():
             self.evaluateANN_cb.configure(state=tk.NORMAL)
             self.normalize_cb.configure(state=tk.NORMAL)
 
-    def toggle_state_pyNN(self):
-        if snntoolbox._SIMULATOR not in snntoolbox.simulators_pyNN:
-            self.state_pyNN = tk.DISABLED
+    def toggle_state_pyNN(self, val):
+        if val not in simulators_pyNN:
+            self.state_pyNN.set('disabled')
         else:
-            self.state_pyNN = tk.NORMAL
+            self.state_pyNN.set('normal')
+        self.v_reset_label.configure(state=self.state_pyNN.get())
+        self.v_reset_sb.configure(state=self.state_pyNN.get())
+        self.v_rest_label.configure(state=self.state_pyNN.get())
+        self.v_rest_sb.configure(state=self.state_pyNN.get())
+        self.e_rev_E_label.configure(state=self.state_pyNN.get())
+        self.e_rev_E_sb.configure(state=self.state_pyNN.get())
+        self.e_rev_I_label.configure(state=self.state_pyNN.get())
+        self.e_rev_I_sb.configure(state=self.state_pyNN.get())
+        self.i_offset_label.configure(state=self.state_pyNN.get())
+        self.i_offset_sb.configure(state=self.state_pyNN.get())
+        self.cm_label.configure(state=self.state_pyNN.get())
+        self.cm_sb.configure(state=self.state_pyNN.get())
+        self.tau_m_label.configure(state=self.state_pyNN.get())
+        self.tau_m_sb.configure(state=self.state_pyNN.get())
+        self.tau_syn_E_label.configure(state=self.state_pyNN.get())
+        self.tau_syn_E_sb.configure(state=self.state_pyNN.get())
+        self.tau_syn_I_label.configure(state=self.state_pyNN.get())
+        self.tau_syn_I_sb.configure(state=self.state_pyNN.get())
+        self.delay_label.configure(state=self.state_pyNN.get())
+        self.delay_sb.configure(state=self.state_pyNN.get())
+        self.num_to_test_label.configure(state=self.state_pyNN.get())
+        self.num_to_test_sb.configure(state=self.state_pyNN.get())
 
 
 def main():

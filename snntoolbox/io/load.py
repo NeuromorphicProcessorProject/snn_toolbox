@@ -18,14 +18,13 @@ import os
 import sys
 import numpy as np
 from six.moves import cPickle
-import snntoolbox
-from snntoolbox import echo, sim
-from snntoolbox.config import globalparams, cellparams, architectures, datasets
+from snntoolbox import echo
+from snntoolbox.config import globalparams, architectures, datasets
 
 standard_library.install_aliases()
 
 
-def load_model(filename=None, spiking=False):
+def load_model(filename=None):
     """
     Load model architecture.
 
@@ -57,65 +56,13 @@ def load_model(filename=None, spiking=False):
         'get_output' function, if the builtin INI simulator is used.
     """
 
+    from importlib import import_module
+
     if filename is None:
         filename = globalparams['filename']
-    if spiking:
-        return load_snn(filename)
-    else:
-        from importlib import import_module
-        model_lib = import_module('snntoolbox.model_libs.' +
-                                  globalparams['model_lib'] + '_input_lib')
-        return model_lib.load_ann(filename)
-
-
-def load_snn(filename):
-    if snntoolbox._SIMULATOR in snntoolbox.simulators_pyNN:
-        layers = load_assembly()
-        for i in range(len(layers)-1):
-            filename = os.path.join(globalparams['path'],
-                                    layers[i].label + '_' +
-                                    layers[i+1].label)
-            if os.path.isfile(filename):
-                sim.Projection(layers[i], layers[i+1],
-                               sim.FromFileConnector(filename))
-            else:
-                echo("Connections were not found at specified location.\n")
-        return {'layers': layers}
-    elif snntoolbox._SIMULATOR == 'INI':
-        import theano
-        import theano.tensor as T
-        from keras import models
-
-        path = os.path.join(globalparams['path'], filename + '.json')
-        model = models.model_from_json(open(path).read(),
-                                       custom_objects=snntoolbox.custom_layers)
-        model.load_weights(os.path.join(globalparams['path'], filename+'.h5'))
-        # Allocate input variables
-        input_time = T.scalar('time')
-        input_shape = list(model.input_shape)
-        input_shape[0] = globalparams['batch_size']
-        model.layers[0].batch_input_shape = input_shape
-        kwargs = {'time_var': input_time}
-        for layer in model.layers:
-            sim.init_neurons(layer,
-                             v_thresh=cellparams['v_thresh'],
-                             tau_refrac=cellparams['tau_refrac'],
-                             **kwargs)
-            kwargs = {}
-        # Compile model
-        # Todo: Allow user to specify loss function here (optimizer is not
-        # relevant as we do not train any more). Unfortunately, Keras does not
-        # save these parameters. They can be obtained from the compiled model
-        # by calling 'model.loss' and 'model.optimizer'.
-        model.compile(loss='categorical_crossentropy', optimizer='sgd',
-                      metrics=['accuracy'])
-        output_spikes = model.layers[-1].get_output()
-        output_time = sim.get_time(model.layers[-1])
-        updates = sim.get_updates(model.layers[-1])
-        get_output = theano.function([model.input, input_time],
-                                     [output_spikes, output_time],
-                                     updates=updates)
-        return {'model': model, 'get_output': get_output}
+    model_lib = import_module('snntoolbox.model_libs.' +
+                              globalparams['model_lib'] + '_input_lib')
+    return model_lib.load_ann(filename)
 
 
 def load_weights(filepath):
@@ -264,7 +211,7 @@ def get_reshaped_dataset():
     return (X_train, Y_train, X_test, Y_test)
 
 
-def load_assembly(filename):
+def load_assembly(sim, filename):
     """
     Loads the populations in an assembly that was saved with the
     ``snntoolbox.io.save.save_assembly`` function.

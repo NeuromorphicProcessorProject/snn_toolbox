@@ -48,3 +48,53 @@ def createPoissonSpikeInput(X_test, ind, layers):
                                          if j != 0]))
     # Insert poisson input.
     layers[0].set(spike_times=spike_sequences)
+
+
+# This used to be part of the __init__.py file in the root directory of
+# snntoolbox.
+
+def switch_simulator(_config_path):
+    """
+    Switching Simulators
+    --------------------
+
+    When running the SNN toolbox for the first time, it will create a
+    configuration file in your home directory:
+
+    ``~/.snntoolbox/snntoolbox.json``
+
+    (You can of course create it yourself.)
+
+    It contains a dictionary of configuration options:
+
+    ``{'simulator': 'brian'}``
+
+    Change the ``simulator`` key to any simulator you installed and which
+    supports pyNN. The modified settings will be loaded the next time you use
+    any part of the toolbox.
+
+    Simulators currently supported by pyNN include
+
+        - 'nest'
+        - 'brian'
+        - 'Neuron'.
+
+    In addition, we provide our own simulator 'INI'.
+
+    """
+
+    import os
+    import json
+
+    _config_file = os.path.join(_config_path, 'snntoolbox_config.json')
+    if os.path.exists(_config_file):
+        _config = json.load(open(_config_file))
+        _sim = _config.get('simulator')
+        _SIMULATOR = _sim
+    else:
+        # Save config file, for easy edition
+        _config = {'simulator': _SIMULATOR}
+        with open(_config_file, 'w') as f:
+            # Add new line in order for bash 'cat' display the content
+            # correctly
+            f.write(json.dumps(_config) + '\n')

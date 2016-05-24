@@ -145,33 +145,6 @@ Default values
                  'max_f': 1000,
                  'num_to_test': 10}
 
-
-Switching Simulators
-....................
-
-When running the SNN toolbox for the first time, it will create a configuration
-file in your home directory:
-
-``~/.snntoolbox/snntoolbox.json``
-
-(You can of course create it yourself.)
-
-It contains a dictionary of configuration options:
-
-``{'simulator': 'INI'}``
-
-Change the ``simulator`` key to any simulator you installed and which supports
-pyNN. The modified settings will be loaded the next time you use any part of
-the toolbox.
-
-Simulators currently supported by pyNN include
-
-    - ``'nest'``
-    - ``'brian'``
-    - ``'Neuron'``.
-
-In addition, the toolbox includes as default our own simulator ``'INI'``.
-
 """
 
 import matplotlib as mpl
@@ -193,12 +166,16 @@ plotproperties = {'font.size': 13,
 
 mpl.rcParams.update(plotproperties)
 
-# List supported datasets, model types and model libraries.
+# List supported datasets, model types, model libraries, simulators, etc.
 datasets = {'mnist', 'cifar10', 'caltech101'}
 datasetsGray = {'mnist'}
 datasetsRGB = {'cifar10', 'caltech101'}
 architectures = {'mlp', 'cnn'}
 model_libs = {'keras', 'lasagne'}
+simulators_pyNN = {'nest', 'brian', 'Neuron'}
+simulators_other = {'INI', 'brian2'}
+simulators = simulators_pyNN.copy()
+simulators.update(simulators_other)
 
 # Default parameters:
 globalparams = {'dataset': 'mnist',
@@ -215,7 +192,8 @@ globalparams = {'dataset': 'mnist',
                 'verbose': 2}
 cellparams = {'v_thresh': 1,
               'tau_refrac': 0}  # No refractory period
-simparams = {'duration': 200,
+simparams = {'simulator': 'INI',
+             'duration': 200,
              'dt': 1,
              'max_f': 1000}
 
@@ -239,7 +217,7 @@ activation_layers = {'Dense', 'Convolution2D'}
 bn_layers = {'Dense', 'Convolution2D'}
 
 
-def update_setup(global_params={}, cell_params={}, sim_params={}):
+def update_setup(global_params=None, cell_params=None, sim_params=None):
     """
     Update parameters
 
@@ -249,6 +227,13 @@ def update_setup(global_params={}, cell_params={}, sim_params={}):
 
     import os
     import snntoolbox
+
+    if global_params is None:
+        global_params = {}
+    if cell_params is None:
+        cell_params = {}
+    if sim_params is None:
+        sim_params = {}
 
     if 'dataset' in global_params:
         assert global_params['dataset'] in datasets, \
@@ -264,42 +249,69 @@ def update_setup(global_params={}, cell_params={}, sim_params={}):
             "not supported yet. Possible values: {}".format(model_libs)
     assert 'filename' in global_params, \
         "Filename of stored model not specified."
-    if 'path' not in global_params or global_params['path'] == '':
-        global_params['path'] = os.path.join(snntoolbox._dir, 'data',
-                                             global_params['dataset'],
-                                             global_params['architecture'],
-                                             global_params['filename'],
-                                             snntoolbox._SIMULATOR)
+    if 'simulator' in sim_params:
+        assert sim_params['simulator'] in simulators, \
+            "Simulator '{}' not supported.".format(sim_params['simulator']) + \
+            " Choose from {}".format(simulators)
     else:
-        if not os.path.exists(global_params['path']):
-            os.makedirs(global_params['path'])
-    if 'simulator' in global_params:
-        assert global_params['simulator'] in snntoolbox.simulators, \
-            "Simulator '{}' not supported. ".format(
-            global_params['simulator']) + "Choose from {}".format(
-                                                        snntoolbox.simulators)
-        snntoolbox.sim, snntoolbox.custom_layers = \
-            snntoolbox.initialize_simulator(global_params['simulator'])
-    if snntoolbox._SIMULATOR == 'brian2' and 'sim_only' in global_params and \
-            global_params['sim_only'] or 'sim_only' not in global_params and \
-            globalparams['sim_only']:
+        sim_params.update({'simulator': 'INI'})
+    if sim_params['simulator'] == 'brian2' and 'sim_only' in global_params \
+            and global_params['sim_only'] or 'sim_only' not in global_params \
+            and globalparams['sim_only']:
         print('\n')
         print("SNN toolbox Warning: When using Brian 2 simulator, you need " +
               "to convert the network each time you start a new session. " +
               "(No saving/reloading methods implemented.) Setting " +
               "globalparams['sim_only'] = False.\n")
         global_params['sim_only'] = False
-#    if snntoolbox._SIMULATOR == 'INI' and 'sim_only' in global_params and \
-#            global_params['sim_only'] or 'sim_only' not in global_params and \
-#            globalparams['sim_only']:
-#        print('\n')
-#        print("SNN toolbox Warning: When using INI simulator, you need " +
-#              "to convert the network each time you start a new session. " +
-#              "(No saving/reloading methods implemented yet.) Setting " +
-#              "globalparams['sim_only'] = False.\n")
-#        global_params['sim_only'] = False
+    if 'path' not in global_params or global_params['path'] == '':
+        global_params['path'] = os.path.join(snntoolbox._dir, 'data',
+                                             global_params['dataset'],
+                                             global_params['architecture'],
+                                             global_params['filename'],
+                                             sim_params['simulator'])
+    else:
+        if not os.path.exists(global_params['path']):
+            os.makedirs(global_params['path'])
 
     # If there are any parameters specified, merge with default parameters.
     globalparams.update(global_params)
     cellparams.update(cell_params)
     simparams.update(sim_params)
+
+
+def initialize_simulator(simulator):
+    from importlib import import_module
+
+    if simulator in simulators_pyNN:
+        if simulator == 'nest':
+            # Workaround for missing link bug, see
+            # https://github.com/ContinuumIO/anaconda-issues/issues/152
+            import readline
+        sim = import_module('pyNN.' + simulator)
+        from snntoolbox.config import cellparams, cellparams_pyNN
+        from snntoolbox.config import simparams, simparams_pyNN
+        cellparams.update(cellparams_pyNN)
+        simparams.update(simparams_pyNN)
+        # From the pyNN documentation:
+        # "Before using any other functions or classes from PyNN, the user
+        # must call the setup() function. Calling setup() a second time
+        # resets the simulator entirely, destroying any network that may
+        # have been created in the meantime."
+        sim.setup(timestep=simparams['dt'])
+    elif simulator == 'brian2':
+        sim = import_module('brian2')
+        from snntoolbox.config import cellparams, cellparams_pyNN
+        from snntoolbox.config import simparams, simparams_pyNN
+        cellparams.update(cellparams_pyNN)
+        simparams.update(simparams_pyNN)
+    elif simulator == 'INI':
+        sim = import_module('snntoolbox.core.inisim')
+        print('\n')
+        print("Heads-up: When using INI simulator, the batch size cannot be " +
+              "changed after loading a previously converted spiking network " +
+              "from file. To change the batch size, convert the ANN from " +
+              "scratch.\n")
+
+    print("Initialized {} simulator.\n".format(simulator))
+    return sim
