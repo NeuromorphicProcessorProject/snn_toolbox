@@ -13,7 +13,7 @@ from __future__ import division, absolute_import
 from future import standard_library
 
 import numpy as np
-from snntoolbox.config import globalparams, cellparams, simparams
+from snntoolbox.config import settings
 
 standard_library.install_aliases()
 
@@ -70,11 +70,7 @@ def print_description(snn=None):
     print("=============\n")
     print("PARAMETERS")
     print("----------\n")
-    print("Global parameters: {}".format(globalparams))
-    print('\n')
-    print("Cell parameters: {}".format(cellparams))
-    print('\n')
-    print("Simulation parameters: {}".format(simparams))
+    print(settings)
     print('\n')
     if snn is not None:
         print("NETWORK")
@@ -101,7 +97,7 @@ def spiketrains_to_rates(spiketrains_batch):
                 for jj in range(len(sp[0][ii])):
                     spikerates_batch[i][0][ii, jj] = \
                         (len(np.nonzero(sp[0][ii][jj])[0]) * 1000 /
-                         simparams['duration'])
+                         settings['duration'])
         elif len(shape) == 4:
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
@@ -109,7 +105,7 @@ def spiketrains_to_rates(spiketrains_batch):
                         for ll in range(len(sp[0][ii, jj, kk])):
                             spikerates_batch[i][0][ii, jj, kk, ll] = (
                                 len(np.nonzero(sp[0][ii, jj, kk, ll])[0]) /
-                                simparams['duration'] * 1000)
+                                settings['duration'] * 1000)
 
     return spikerates_batch
 
@@ -139,12 +135,12 @@ def get_activations_layer(get_activ, X_train):
     shape = list(get_activ(X_train[:1]).shape)
     shape[0] = X_train.shape[0]
     activations = np.empty(shape)
-    num_batches = int(np.ceil(X_train.shape[0] / globalparams['batch_size']))
+    num_batches = int(np.ceil(X_train.shape[0] / settings['batch_size']))
     for batch_idx in range(num_batches):
         # Determine batch indices.
-        max_idx = min((batch_idx + 1) * globalparams['batch_size'],
+        max_idx = min((batch_idx + 1) * settings['batch_size'],
                       X_train.shape[0])
-        batch_idxs = range(batch_idx * globalparams['batch_size'], max_idx)
+        batch_idxs = range(batch_idx * settings['batch_size'], max_idx)
         batch = X_train[batch_idxs, :]
         activations[batch_idxs] = get_activ(batch)
     return activations
@@ -196,3 +192,72 @@ def get_activations_batch(ann, X_batch):
         i = idx if 'Pooling' in ann.layers[idx]['label'] else idx-1
         activations_batch.append((get_activ(X_batch), ann.layers[i]['label']))
     return activations_batch
+
+
+def wilson_score(p, n):
+    """
+    Confidence interval of a binomial distribution.
+
+    See
+    ``https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval``
+
+    Parameters
+    ----------
+
+    p : float
+        The proportion of successes in ``n`` experiments.
+    n : int
+        The number of Bernoulli-trials (sample size).
+
+    Returns
+    -------
+
+    The confidence interval.
+
+    """
+
+    if n == 0:
+        return 0
+
+    # Quantile z of a standard normal distribution, for the error quantile a:
+    z = 1.96  # 1.44 for a == 85%, 1.96 for a == 95%
+    return (z*np.sqrt((p*(1-p) + z*z/(4*n))/n)) / (1 + z*z/n)
+
+
+def extract_label(label):
+    """
+    Get the layer number, name and shape from a string.
+
+    Parameters
+    ----------
+
+    label : string
+        Specifies both the layer type, index and shape, e.g.
+        ``'3Convolution2D_3x32x32'``.
+
+    Returns
+    -------
+
+    layer_num : int
+        The index of the layer in the network.
+
+    name : string
+        The type of the layer.
+
+    shape : tuple
+        The shape of the layer
+    """
+
+    l = label.split('_')
+    layer_num = None
+    for i in range(max(4, len(l) - 2)):
+        if l[0][:i].isnumeric():
+            layer_num = int(l[0][:i])
+    name = ''.join(s for s in l[0] if not s.isdigit())
+    if name[-1] == 'D':
+        name = name[:-1]
+    if len(l) > 1:
+        shape = tuple([int(s) for s in l[-1].split('x')])
+    else:
+        shape = ()
+    return (layer_num, name, shape)
