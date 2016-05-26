@@ -11,4 +11,6 @@ sympy
 pyNN
 keras
 
-# You may need to install 'freetype' (including 'libpng') manually before running 'pip install'.
+# You may need to install 'freetype' (including 'libpng') on system-level
+# to be able to install matplotlib:
+# sudo apt-get install libfreetype6-dev libxft-dev

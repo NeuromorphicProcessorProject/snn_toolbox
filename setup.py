@@ -3,18 +3,51 @@ Setup SNN toolbox
 
 """
 
+import os
+import sys
 from codecs import open
-from os import path
-import ez_setup
-ez_setup.use_setuptools()
-from setuptools import setup, find_packages  # noqa
+from setuptools import setup, find_packages
+from setuptools.command.test import test as TestCommand
 
-here = path.abspath(path.dirname(__file__))
+
+if 'PYTHONPATH' in os.environ.keys():
+    here = os.environ['PYTHONPATH'].split(os.pathsep)[-1]
+else:
+    here = os.path.abspath(os.path.dirname(__file__))
+
 
 # Get the long description from the README file
-with open(path.join(here, 'docs', 'source', 'index.rst'), encoding='utf-8') \
-        as f:
-            long_description = f.read()
+try:
+    f = open(os.path.join(here, 'docs', 'source', 'index.rst'),
+             encoding='utf-8')
+    long_description = f.read()
+except FileNotFoundError:
+    long_description = ''  # Tox can't find the file...
+
+
+# Tell setuptools to run 'tox' when calling 'python setup.py test'.
+class Tox(TestCommand):
+    user_options = [('tox-args=', 'a', "Arguments to pass to tox")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.tox_args = None
+
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        # import here, cause outside the eggs aren't loaded
+        import tox
+        import shlex
+        args = self.tox_args
+        if args:
+            args = shlex.split(self.tox_args)
+        errno = tox.cmdline(args=args)
+        sys.exit(errno)
+
 
 setup(
     name='snntoolbox',
@@ -62,8 +95,14 @@ setup(
         'lazyarray',
         'sympy',
         'keras',
-        'pyNN'],
+        'pyNN'
+    ],
 
+#    setup_requires=['pytest-runner'],
+
+    tests_require=['tox'],
+
+    cmdclass={'test': Tox},
 
     # Additional groups of dependencies (e.g. development dependencies).
     # Install them with $ pip install -e .[dev,test]
@@ -79,8 +118,8 @@ setup(
 
     # Include documentation
     data_files=[
-        ('', ['README.rst', 'requirements.txt']),
-        ('docs/', ['docs/Makefile']),
+        ('', ['README.rst']),
+        # ('docs/', ['docs/Makefile']),
         # ('docs/source', ['docs/source/*.rst', 'workflow.png'])
     ],
 
@@ -92,7 +131,7 @@ setup(
             'snntoolbox_example=snntoolbox.tests.example:main',
         ],
         'gui_scripts': [
-            'snntoolbox=snntoolbox.gui:main',
+            'snntoolbox=snntoolbox.gui:main'
         ],
     },
 )
