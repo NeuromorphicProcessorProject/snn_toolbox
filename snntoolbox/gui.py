@@ -7,17 +7,25 @@ Graphical user interface to set parameters, load models, display results, etc.
 @author: rbodo
 """
 
+from __future__ import with_statement
+
 import os
 import sys
 import textwrap
 import webbrowser
 import json
+from six.moves import cPickle
+
+from subprocess import Popen, PIPE, STDOUT
+from textwrap import dedent
+from threading import Thread
+from collections import deque
+from itertools import islice
 
 import snntoolbox
 from snntoolbox.config import settings, pyNN_settings, update_setup
 from snntoolbox.config import datasets, architectures, model_libs
 from snntoolbox.config import simulators, simulators_pyNN
-from snntoolbox.core.pipeline import test_full
 from snntoolbox.tooltip import ToolTip
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -29,22 +37,75 @@ import matplotlib.gridspec as gridspec
 if sys.version_info[0] < 3:
     import Tkinter as tk
     from Tkinter import filedialog, messagebox, font
+    from Queue import Queue, Empty
 else:
     import tkinter as tk
     from tkinter import filedialog, messagebox, font
+    from queue import Queue, Empty
 
 
-class snntoolboxGUI():
-    def __init__(self, parent):
+def iter_except(function, exception):
+    """Works like builtin 2-argument `iter()`, but stops on `exception`."""
+    try:
+        while True:
+            yield function()
+    except exception:
+        return
+
+
+def run_in_separate_process(func, *args, **kwds):
+    pread, pwrite = os.pipe()
+    pid = os.fork()
+    if pid > 0:
+        os.close(pwrite)
+        with os.fdopen(pread, 'rb') as f:
+            status, result = cPickle.load(f)
+        os.waitpid(pid, 0)
+        if status == 0:
+            return result
+        else:
+            raise result
+    else:
+        os.close(pread)
+        try:
+            result = func(*args, **kwds)
+            status = 0
+        except Exception:
+            result = Exception
+            status = 1
+        with os.fdopen(pwrite, 'wb') as f:
+            try:
+                cPickle.dump((status, result), f, cPickle.HIGHEST_PROTOCOL)
+            except cPickle.PicklingError:
+                cPickle.dump((2, cPickle.PicklingError), f,
+                             cPickle.HIGHEST_PROTOCOL)
+        os._exit(0)
+
+
+class SNNToolboxGUI():
+    def __init__(self, root):
         self.initialized = False
-        self.layer_rb_set = False
-        self.layer_rbs = []
-        self.parent = parent
+        self.root = root
         self.filetypes = (("json files", '*.json'),
                           ("hdf5 files", '*.h5'),
                           ("All files", '*.*'))
         self.default_path_to_pref = os.path.join(snntoolbox._dir,
                                                  'preferences')
+        self.define_style()
+        self.declare_parameter_vars()
+        self.load_settings()
+        self.main_container = tk.Frame(root, bg='white')
+        self.main_container.pack(side='top', fill='both', expand=True)
+        self.globalparams_widgets()
+        self.cellparams_widgets()
+        self.simparams_widgets()
+        self.action_widgets()
+        self.graph_widgets()
+        self.top_level_menu()
+        self.toggle_state_pyNN(self.settings['simulator'].get())
+        self.initialized = True
+
+    def define_style(self):
         self.padx = 10
         self.pady = 5
         fontFamily = 'clearlyu devagari'
@@ -55,22 +116,21 @@ class snntoolboxGUI():
         font.nametofont('TkTextFont').configure(family=fontFamily, size=11)
         self.kwargs = {'fill': 'both', 'expand': True,
                        'padx': self.padx, 'pady': self.pady}
-        self.is_plot_container_destroyed = True
-        self.store_last_settings = False
-        self.restore_last_pref = True
-        self.declare_parameter_vars()
-        self.load_settings()
-        self.layer_to_plot = tk.StringVar()
-        self.main_container = tk.Frame(parent, bg='white')
-        self.main_container.pack(side='top', fill='both', expand=True)
-        self.globalparams_widgets()
-        self.cellparams_widgets()
-        self.simparams_widgets()
-        self.toggle_state_pyNN(self.settings['simulator'].get())
-        self.action_widgets()
-        self.graph_widgets()
-        self.top_level_menu()
-        self.initialized = True
+
+    def initialize_thread(self):
+        # Limit output buffering (may stall subprocess)
+        self.queue = Queue(maxsize=1024)
+        self.thread = Thread(target=self.reader_thread, args=[self.queue])
+        self.thread.daemon = True  # Close pipe if GUI process exits
+        self.output_widget()
+
+    def output_widget(self):
+        # Show subprocess' stdout in GUI
+        self.output_label = tk.Label(self.root,
+                                     textvariable=self.console_output,
+                                     font=self.header_font, bg='white')
+        self.output_label.pack(fill='both', expand='True')
+        self.update(self.queue)  # Start update loop
 
     def globalparams_widgets(self):
         # Create a container for individual parameter widgets
@@ -568,17 +628,20 @@ class snntoolboxGUI():
         self.action_frame.pack(side='bottom', fill='x', expand=False)
 
         # Start experiment
-        tk.Button(self.action_frame, text="Start",
-                  font=self.header_font, foreground='red',
-                  command=self.start_processing).pack(**self.kwargs)
+        self.start_processing_bt = tk.Button(
+            self.action_frame, text="Start", font=self.header_font,
+            foreground='red', command=self.start_processing,
+            state=self.process_state.get())
+        self.start_processing_bt.pack(**self.kwargs)
         tip = textwrap.dedent("""\
               Start the conversion / simulation. Settings can not be changed
               during the run. Process can only aborted from the console.""")
         ToolTip(self.action_frame, text=tip, wraplength=750)
 
-#        # Stop experiment
-#        tk.Button(self.action_frame, text="Abort", fg='red',
-#                  command=self.stop_processing).pack(**self.kwargs)
+        # Stop experiment
+        tk.Button(self.action_frame, text="Abort", foreground='red',
+                  font=self.header_font, command=self.stop_processing).pack(
+                  **self.kwargs)
 
     def graph_widgets(self):
         # Create a container for buttons that display plots for individual
@@ -727,8 +790,8 @@ class snntoolboxGUI():
         self.canvas._tkcanvas.pack(side='left', fill='both', expand=True)
 
     def top_level_menu(self):
-        menubar = tk.Menu(self.parent)
-        self.parent.config(menu=menubar)
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
         filemenu = tk.Menu(menubar, tearoff=0)
         filemenu.add_command(label="Save preferences",
                              command=self.save_settings)
@@ -762,10 +825,13 @@ class snntoolboxGUI():
     def quit_toolbox(self):
         self.store_last_settings = True
         self.save_settings()
-        self.parent.destroy()
-        self.parent.quit()
+        if hasattr(self, 'process'):
+            self.process.kill()
+        self.root.destroy()
+        self.root.quit()
 
     def declare_parameter_vars(self):
+        # These will be written to disk as preferences.
         self.settings = {'dataset': tk.StringVar(),
                          'architecture': tk.StringVar(),
                          'model_lib': tk.StringVar(),
@@ -799,6 +865,15 @@ class snntoolboxGUI():
                          'open_new': tk.BooleanVar(value=True),
                          'log_dir_of_current_run': tk.StringVar(),
                          'state_pyNN': tk.StringVar(value='normal')}
+        # These will not be written to disk as preferences.
+        self.is_plot_container_destroyed = True
+        self.store_last_settings = False
+        self.restore_last_pref = True
+        self.layer_rb_set = False
+        self.layer_rbs = []
+        self.layer_to_plot = tk.StringVar()
+        self.process_state = tk.StringVar(value='normal')
+        self.console_output = tk.StringVar()
 
     def restore_default_params(self):
         defaults = settings
@@ -846,56 +921,6 @@ class snntoolboxGUI():
         s = json.load(open(path_to_pref))
         self.set_preferences(s)
 
-    # Execute main script as a new thread to be able to stop it.
-    # Problem: Output is delayed, and stop function does not really terminate
-    # thread: Would have to pass "self.stopped()" into "test_full()" (or make
-    # it a member of snntoolbox), and then call sys.exit() if self.stopped().
-    # Put "self.script_thread = None" in App initializer.
-#
-#    import threading
-#    from builtins import super
-#
-#    class MainScript(threading.Thread):
-#        def __init__(self, viewer):
-#            super().__init__()
-#            self.__stop = threading.Event()
-#            self.viewer = viewer
-#
-#        def stop(self):
-#            self.__stop.set()
-#
-#        def stopped(self):
-#            return self.__stop.isSet()
-#
-#        def run(self):
-#            if self.viewer.filename.get() == '':
-#                messagebox.showwarning(title="Warning",
-#                                       message="Please specify a filename " +
-#                                               "base.")
-#                return
-#
-#            self.viewer.store_last_settings = True
-#            self.viewer.save_settings()
-#
-#            snntoolbox.update_setup(self.viewer.globalparams,
-#                                    self.viewer.cellparams,
-#                                    self.viewer.simparams)
-#
-#            while not self.stopped():
-#                snntoolbox.test_full()
-#                self.stop()
-#
-#    def start_processing(self):
-#        if not self.script_thread:
-#            self.script_thread = self.MainScript(self)
-#            self.script_thread.start()
-#
-#    def stop_processing(self):
-#        if self.script_thread:
-#            print("User stopped execution of current run.")
-#            self.script_thread.stop()
-#            self.script_thread = None
-
     def start_processing(self):
         if self.settings['filename'].get() == '':
             messagebox.showwarning(title="Warning",
@@ -906,7 +931,52 @@ class snntoolboxGUI():
         self.save_settings()
         self.check_runlabel(self.settings['runlabel'].get())
         update_setup({key: self.settings[key].get() for key in self.settings})
-        test_full()
+
+        self.initialize_thread()
+
+        # Start subprocess generating some output
+        cmdstr = dedent("""
+            from snntoolbox.core.pipeline import test_full
+            print("Loading script")
+            try:
+                test_full()
+            except FileNotFoundError:
+                print("file not found")
+        """)
+        self.process = Popen([sys.executable, "-u", "-c", cmdstr],
+                             stdout=PIPE, stderr=STDOUT)
+
+        from snntoolbox.core.pipeline import test_full
+        run_in_separate_process(test_full())
+
+        # Launch thread to read the subprocess output.
+        # Put the subprocess output into the queue in a background thread, and
+        # get output from the queue in the GUI thread.
+        # (Output chain: process.readline -> queue -> label)
+        self.thread.start()
+        self.toggle_process_state(self.thread.is_alive())
+
+    def stop_processing(self):
+        """Stop subprocess and quit GUI."""
+
+        # Tell the subprocess to exit
+        self.process.terminate()
+
+        def kill_after(countdown):
+            if self.process.poll() is None:  # Subprocess hasn't exited yet
+                countdown -= 1
+                if countdown < 0:  # Do kill
+                    self.process.kill()
+                else:
+                    self.root.after(1000, kill_after, countdown)
+                    return  # continue countdown in a second
+            # clean up
+            self.process.stdout.close()  # close fd
+            self.process.wait()          # wait for the subprocess' exit
+            self.root.destroy()          # exit GUI
+
+        # Kill subprocess if it hasn't exited after a countdown
+        kill_after(countdown=5)
 
     def check_file(self, P):
         if not os.path.exists(self.settings['path'].get()) or \
@@ -980,11 +1050,37 @@ class snntoolboxGUI():
             getattr(self, name + '_sb').configure(
                 state=self.settings['state_pyNN'].get())
 
+    def toggle_process_state(self, val):
+        if val:
+            self.process_state.set('disabled')
+        else:
+            self.process_state.set('normal')
+        self.start_processing_bt.configure(state=self.process_state.get())
+
+    def reader_thread(self, q):
+        """Read subprocess output and put it into the queue."""
+        try:
+            with self.process.stdout as pipe:
+                for line in iter(pipe.readline, b''):
+                    q.put(line)
+        finally:
+            q.put(None)
+
+    def update(self, q):
+        """Update GUI with items from the queue."""
+        # read no more than 10000 lines, and use deque to discard lines except
+        # the last one.
+        for line in deque(islice(iter_except(q.get_nowait, Empty), 10000),
+                          maxlen=1):
+            self.console_output.set(line)  # update GUI
+        self.toggle_process_state(self.thread.is_alive())
+        self.root.after(1000, self.update, q)  # schedule next update
+
 
 def main():
     root = tk.Tk()
     root.title("SNN Toolbox")
-    app = snntoolboxGUI(root)
+    app = SNNToolboxGUI(root)
     root.protocol('WM_DELETE_WINDOW', app.quit_toolbox)
     root.mainloop()
 

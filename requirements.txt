@@ -8,6 +8,7 @@ future
 neo
 lazyarray
 sympy
+sphinx
 pyNN
 keras
 

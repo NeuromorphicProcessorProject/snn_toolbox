@@ -1,23 +1,23 @@
-conversion
-----------
+SNN class
+---------
 
-.. automodule:: core.conversion
+.. automodule:: core.SNN
     :members:
     :undoc-members:
     :show-inheritance:
 
-simulation
-----------
+pipeline
+--------
 
-.. automodule:: core.simulation
+.. automodule:: core.pipeline
     :members:
     :undoc-members:
     :show-inheritance:
 
-normalization 
--------------
+inisim
+------
 
-.. automodule:: core.normalization
+.. automodule:: core.inisim
     :members:
     :undoc-members:
     :show-inheritance:

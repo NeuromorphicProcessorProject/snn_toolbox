@@ -5,5 +5,5 @@ Tools
    :maxdepth: 4
 
    core
-   snntoolbox.io
+   snntoolbox.io_utils
 
