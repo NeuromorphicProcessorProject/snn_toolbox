@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 11 10:25:53 2016
+Graphical user interface for SNN toolbox.
 
-Graphical user interface to set parameters, load models, display results, etc.
+Features
+--------
+
+    - Allows setting parameters and what tools to use during an experiment.
+    - Performs basic checks that specified parameters are valid.
+    - Preferences can be saved and reloaded.
+    - Tooltips explain the functionality.
+    - Automatically recognizes result plots and allows displaying them in a
+      separate window.
+
+Created on Mon Apr 11 10:25:53 2016
 
 @author: rbodo
 """
@@ -11,37 +21,31 @@ from __future__ import with_statement
 
 import os
 import sys
-import textwrap
 import webbrowser
 import json
-from six.moves import cPickle
-
-from subprocess import Popen, PIPE, STDOUT
+import threading
 from textwrap import dedent
-from threading import Thread
-from collections import deque
-from itertools import islice
-
-import snntoolbox
-from snntoolbox.config import settings, pyNN_settings, update_setup
-from snntoolbox.config import datasets, architectures, model_libs
-from snntoolbox.config import simulators, simulators_pyNN
-from snntoolbox.tooltip import ToolTip
-
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib.gridspec as gridspec
 
+import snntoolbox
+from snntoolbox.config import settings, pyNN_settings, update_setup
+from snntoolbox.config import datasets, architectures, model_libs
+from snntoolbox.config import simulators, simulators_pyNN
+from snntoolbox.gui.tooltip import ToolTip
+from snntoolbox.core.pipeline import test_full
+
 if sys.version_info[0] < 3:
     import Tkinter as tk
     from Tkinter import filedialog, messagebox, font
-    from Queue import Queue, Empty
+    from Queue import Queue
 else:
     import tkinter as tk
     from tkinter import filedialog, messagebox, font
-    from queue import Queue, Empty
+    from queue import Queue
 
 
 def iter_except(function, exception):
@@ -51,35 +55,6 @@ def iter_except(function, exception):
             yield function()
     except exception:
         return
-
-
-def run_in_separate_process(func, *args, **kwds):
-    pread, pwrite = os.pipe()
-    pid = os.fork()
-    if pid > 0:
-        os.close(pwrite)
-        with os.fdopen(pread, 'rb') as f:
-            status, result = cPickle.load(f)
-        os.waitpid(pid, 0)
-        if status == 0:
-            return result
-        else:
-            raise result
-    else:
-        os.close(pread)
-        try:
-            result = func(*args, **kwds)
-            status = 0
-        except Exception:
-            result = Exception
-            status = 1
-        with os.fdopen(pwrite, 'wb') as f:
-            try:
-                cPickle.dump((status, result), f, cPickle.HIGHEST_PROTOCOL)
-            except cPickle.PicklingError:
-                cPickle.dump((2, cPickle.PicklingError), f,
-                             cPickle.HIGHEST_PROTOCOL)
-        os._exit(0)
 
 
 class SNNToolboxGUI():
@@ -118,19 +93,13 @@ class SNNToolboxGUI():
                        'padx': self.padx, 'pady': self.pady}
 
     def initialize_thread(self):
-        # Limit output buffering (may stall subprocess)
-        self.queue = Queue(maxsize=1024)
-        self.thread = Thread(target=self.reader_thread, args=[self.queue])
-        self.thread.daemon = True  # Close pipe if GUI process exits
-        self.output_widget()
-
-    def output_widget(self):
-        # Show subprocess' stdout in GUI
-        self.output_label = tk.Label(self.root,
-                                     textvariable=self.console_output,
-                                     font=self.header_font, bg='white')
-        self.output_label.pack(fill='both', expand='True')
-        self.update(self.queue)  # Start update loop
+        self.res_queue = Queue()
+        # Create thread for performing the conversion in the background.
+        # Make it a daemon so it is killed when the main application is closed.
+        self.process_thread = threading.Thread(target=test_full,
+                                               args=(self.res_queue,),
+                                               name='conversion process',
+                                               daemon=True)
 
     def globalparams_widgets(self):
         # Create a container for individual parameter widgets
@@ -141,7 +110,7 @@ class SNNToolboxGUI():
                                                 borderwidth='3', bg='white')
 
         self.globalparams_frame.pack(side='left', fill=None, expand=False)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Specify general properties of your model and the steps to
               include in your experiment.""")
         ToolTip(self.globalparams_frame, text=tip, wraplength=750, delay=1499)
@@ -185,7 +154,7 @@ class SNNToolboxGUI():
                                   variable=self.settings['debug'], height=2,
                                   width=20, bg='white')
         debug_cb.pack(**self.kwargs)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               If enabled, the dataset used for testing will be reduced to one
               'Batch size' (see parameter below).""")
         ToolTip(debug_cb, text=tip, wraplength=750)
@@ -200,7 +169,7 @@ class SNNToolboxGUI():
             variable=self.settings['evaluateANN'], height=2, width=20,
             state=state, bg='white')
         self.evaluateANN_cb.pack(**self.kwargs)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Only relevant when converting a network, not during
               simulation. If enabled, test the ANN before conversion. If you
               also enabled 'Normalization' (see parameter below), then the
@@ -213,7 +182,7 @@ class SNNToolboxGUI():
                                            variable=self.settings['normalize'],
                                            height=2, width=20, state=state)
         self.normalize_cb.pack(**self.kwargs)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Only relevant when converting a network, not during simulation.
               If enabled, the weights of the spiking network will be
               normalized by the highest weight or activation.""")
@@ -225,7 +194,7 @@ class SNNToolboxGUI():
                                       variable=self.settings['overwrite'],
                                       height=2, width=20, bg='white')
         overwrite_cb.pack(**self.kwargs)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               If disabled, the save methods will ask for permission to
               overwrite files before writing weights, activations, models etc.
               to disk.""")
@@ -238,7 +207,7 @@ class SNNToolboxGUI():
                                      height=2, width=20, bg='white')
         sim_only_cb.pack(**self.kwargs)
         sim_only_cb.bind('<Leave>', self.toggle_norm_and_eval_state)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               If true, skip conversion step and try to load SNN from the
               working directory (see below).""")
         ToolTip(sim_only_cb, text=tip, wraplength=750)
@@ -252,7 +221,7 @@ class SNNToolboxGUI():
                                    textvariable=self.settings['batch_size'],
                                    from_=1, to_=1e9, increment=1, width=10)
         batch_size_sb.pack(fill='y', expand=True, ipady=5)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Number of samples to test ANN with, if 'debug' enabled (see
               parameter above). If the builtin simulator 'INI' is used, the
               batch size specifies the number of test samples that will be
@@ -261,6 +230,23 @@ class SNNToolboxGUI():
               converted with. To run it with a different batch size, convert
               the ANN from scratch.""")
         ToolTip(batch_size_frame, text=tip, wraplength=700)
+
+        # Test specific samples
+        sample_frame = tk.Frame(self.globalparams_frame, bg='white')
+        sample_frame.pack(**self.kwargs)
+        tk.Label(sample_frame, text="Samples to test:", bg='white',
+                 font=self.header_font).pack(fill='both', expand=True)
+        check_sample_command = sample_frame.register(self.check_sample)
+        self.sample_entry = tk.Entry(
+            sample_frame, bg='white', width=20, validate='key',
+            textvariable=self.settings['samples_to_test'],
+            validatecommand=(check_sample_command, '%P'))
+        self.sample_entry.pack(fill='both', expand=True, side='bottom')
+        tip = dedent("""\
+              List the indices of specific samples you want to test
+              (Don't use brackets or any delimiters other than white spaces).
+              """)
+        ToolTip(sample_frame, text=tip, wraplength=750)
 
         # Verbosity
         verbose_frame = tk.Frame(self.globalparams_frame, bg='white')
@@ -272,7 +258,7 @@ class SNNToolboxGUI():
                                                                side='left',
                                                                expand=True)
          for i in range(4)]
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               0: No intermediate results or status reports.
               1: Print progress of simulation and intermediate results.
               2: After each batch, plot guessed classes per sample and show an
@@ -297,7 +283,7 @@ class SNNToolboxGUI():
                                command=self.__scrollHandler)
         scrollX.pack(fill='x', expand=True, side='bottom')
         self.path_entry['xscrollcommand'] = scrollX.set
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Specify the working directory. There, the toolbox will look for
               ANN models to convert or SNN models to test, load the weights it
               needs and store (normalized) weights.""")
@@ -315,7 +301,7 @@ class SNNToolboxGUI():
                                        validatecommand=(check_file_command,
                                                         '%P'))
         self.filename_entry.pack(fill='both', expand=True, side='bottom')
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Base name of all loaded and saved files during this run. The ANN
               model to be converted is expected to be named 'ann_<basename>'.
               The toolbox will save and load converted SNN models under the
@@ -329,7 +315,7 @@ class SNNToolboxGUI():
             self.main_container, labelanchor='nw', text="Cell\n parameters",
             relief='raised', borderwidth='3', bg='white')
         self.cellparams_frame.pack(side='left', fill=None, expand=False)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Specify parameters of individual neuron cells in the
               converted spiking network. Some are simulator specific.""")
         ToolTip(self.cellparams_frame, text=tip, wraplength=750, delay=1499)
@@ -355,7 +341,7 @@ class SNNToolboxGUI():
                                    textvariable=self.settings['tau_refrac'],
                                    width=10, from_=0, to_=1e3, increment=0.01)
         tau_refrac_sb.pack(fill='y', expand=True, ipady=3)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Duration of refractory period in milliseconds of the neurons
               after spiking.""")
         ToolTip(tau_refrac_frame, text=tip, wraplength=750)
@@ -386,7 +372,7 @@ class SNNToolboxGUI():
             textvariable=self.settings['v_rest'], from_=-1e3, to_=1e3,
             increment=0.1, state=self.settings['state_pyNN'].get())
         self.v_rest_sb.pack(fill='y', expand=True, ipady=3)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Resting membrane potential in mV.
               Only relevant in pyNN-simulators.""")
         ToolTip(v_rest_frame, text=tip, wraplength=750)
@@ -403,7 +389,7 @@ class SNNToolboxGUI():
             textvariable=self.settings['e_rev_E'], from_=-1e-3, to_=1e3,
             increment=0.1, state=self.settings['state_pyNN'].get())
         self.e_rev_E_sb.pack(fill='y', expand=True, ipady=3)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Reversal potential for excitatory input in mV.
               Only relevant in pyNN-simulators.""")
         ToolTip(e_rev_E_frame, text=tip, wraplength=750)
@@ -420,7 +406,7 @@ class SNNToolboxGUI():
             textvariable=self.settings['e_rev_I'], from_=-1e3, to_=1e3,
             increment=0.1, state=self.settings['state_pyNN'].get())
         self.e_rev_I_sb.pack(fill='y', expand=True, ipady=3)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Reversal potential for inhibitory input in mV.
               Only relevant in pyNN-simulators.""")
         ToolTip(e_rev_I_frame, text=tip, wraplength=750)
@@ -438,7 +424,7 @@ class SNNToolboxGUI():
                                       state=self.settings['state_pyNN'].get(),
                                       disabledbackground='#eee')
         self.i_offset_sb.pack(fill='y', expand=True, ipady=3)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Offset current in nA.
               Only relevant in pyNN-simulators.""")
         ToolTip(i_offset_frame, text=tip, wraplength=750)
@@ -454,7 +440,7 @@ class SNNToolboxGUI():
                                 state=self.settings['state_pyNN'].get(),
                                 disabledbackground='#eee')
         self.cm_sb.pack(fill='y', expand=True, ipady=3)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Membrane capacitance in nF.
               Only relevant in pyNN-simulators.""")
         ToolTip(cm_frame, text=tip, wraplength=750)
@@ -470,7 +456,7 @@ class SNNToolboxGUI():
                                    from_=1, to_=1e6, increment=1, width=10,
                                    state=self.settings['state_pyNN'].get())
         self.tau_m_sb.pack(fill='y', expand=True, ipady=3)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Membrane time constant in milliseconds.
               Only relevant in pyNN-simulators.""")
         ToolTip(tau_m_frame, text=tip, wraplength=750)
@@ -488,7 +474,7 @@ class SNNToolboxGUI():
                                        state=self.settings['state_pyNN'].get(),
                                        disabledbackground='#eee')
         self.tau_syn_E_sb.pack(fill='y', expand=True, ipady=3)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Decay time of the excitatory synaptic conductance in
               milliseconds.
               Only relevant in pyNN-simulators.""")
@@ -507,7 +493,7 @@ class SNNToolboxGUI():
                                        state=self.settings['state_pyNN'].get(),
                                        disabledbackground='#eee')
         self.tau_syn_I_sb.pack(fill='y', expand=True, ipady=3)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Decay time of the inhibitory synaptic conductance in
               milliseconds.
               Only relevant in pyNN-simulators.""")
@@ -521,7 +507,7 @@ class SNNToolboxGUI():
                                              relief='raised',
                                              borderwidth='3', bg='white')
         self.simparams_frame.pack(side='left', fill=None, expand=False)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Specify parameters concerning the simulation of the converted
               spiking network. Some are simulator specific.""")
         ToolTip(self.simparams_frame, text=tip, wraplength=750, delay=1499)
@@ -529,7 +515,7 @@ class SNNToolboxGUI():
         # Simulator
         simulator_frame = tk.Frame(self.simparams_frame, bg='white')
         simulator_frame.pack(**self.kwargs)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
             Choose a simulator to run the converted spiking network with.""")
         ToolTip(simulator_frame, text=tip, wraplength=750)
         tk.Label(simulator_frame, text="Simulator", bg='white',
@@ -585,7 +571,7 @@ class SNNToolboxGUI():
                                    increment=1, width=10,
                                    state=self.settings['state_pyNN'].get())
         self.delay_sb.pack(fill='y', expand=True, ipady=3)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Delay in milliseconds. Must be equal to or greater than the
               resolution.
               Only relevant in pyNN-simulators.""")
@@ -596,14 +582,14 @@ class SNNToolboxGUI():
         num_to_test_frame.pack(**self.kwargs)
         self.num_to_test_label = tk.Label(
             num_to_test_frame, bg='white', text="num_to_test",
-            state=self.settings['state_pyNN'].get())
+            state=self.settings['state_num_to_test'].get())
         self.num_to_test_label.pack(fill='both', expand=True)
         self.num_to_test_sb = tk.Spinbox(
-            num_to_test_frame, state=self.settings['state_pyNN'].get(),
+            num_to_test_frame, state=self.settings['state_num_to_test'].get(),
             textvariable=self.settings['num_to_test'], from_=1, to_=1e9,
             increment=1, width=10, disabledbackground='#eee')
         self.num_to_test_sb.pack(fill='y', expand=True, ipady=3)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Number of samples to test.
               Only relevant in pyNN-simulators.""")
         ToolTip(num_to_test_frame, text=tip, wraplength=750)
@@ -619,7 +605,7 @@ class SNNToolboxGUI():
             validate='focusout', validatecommand=(check_runlabel_command,
                                                   '%P'))
         runlabel_entry.pack(fill='both', expand=True, side='bottom')
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
             Give your simulation run a name. If verbosity is high, the
             resulting plots will be saved in <cwd>/log/gui/<runlabel>.""")
 
@@ -633,15 +619,10 @@ class SNNToolboxGUI():
             foreground='red', command=self.start_processing,
             state=self.process_state.get())
         self.start_processing_bt.pack(**self.kwargs)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Start the conversion / simulation. Settings can not be changed
               during the run. Process can only aborted from the console.""")
         ToolTip(self.action_frame, text=tip, wraplength=750)
-
-        # Stop experiment
-        tk.Button(self.action_frame, text="Abort", foreground='red',
-                  font=self.header_font, command=self.stop_processing).pack(
-                  **self.kwargs)
 
     def graph_widgets(self):
         # Create a container for buttons that display plots for individual
@@ -651,7 +632,7 @@ class SNNToolboxGUI():
             self.graph_frame.destroy()
         self.graph_frame = tk.Frame(self.main_container, background='white')
         self.graph_frame.pack(side='left', fill=None, expand=False)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               Select a layer to display plots like Spiketrains, Spikerates,
               Membrane Potential, Correlations, etc.""")
         ToolTip(self.graph_frame, text=tip, wraplength=750)
@@ -678,7 +659,7 @@ class SNNToolboxGUI():
                                      width=20, text='open in new window',
                                      variable=self.settings['open_new'])
         open_new_cb.pack(**self.kwargs)
-        tip = textwrap.dedent("""\
+        tip = dedent("""\
               If unchecked, the window showing graphs for a certain layer will
               close and be replaced each time you select a layer to plot.
               If checked, an additional window will pop up instead.""")
@@ -825,8 +806,6 @@ class SNNToolboxGUI():
     def quit_toolbox(self):
         self.store_last_settings = True
         self.save_settings()
-        if hasattr(self, 'process'):
-            self.process.kill()
         self.root.destroy()
         self.root.quit()
 
@@ -864,7 +843,9 @@ class SNNToolboxGUI():
                          'runlabel': tk.StringVar(),
                          'open_new': tk.BooleanVar(value=True),
                          'log_dir_of_current_run': tk.StringVar(),
-                         'state_pyNN': tk.StringVar(value='normal')}
+                         'state_pyNN': tk.StringVar(value='normal'),
+                         'samples_to_test': tk.StringVar(),
+                         'state_num_to_test': tk.StringVar(value='normal')}
         # These will not be written to disk as preferences.
         self.is_plot_container_destroyed = True
         self.store_last_settings = False
@@ -933,50 +914,33 @@ class SNNToolboxGUI():
         update_setup({key: self.settings[key].get() for key in self.settings})
 
         self.initialize_thread()
+        self.process_thread.start()
+        self.toggle_process_state(self.process_thread.is_alive())
+        self.update()
 
-        # Start subprocess generating some output
-        cmdstr = dedent("""
-            from snntoolbox.core.pipeline import test_full
-            print("Loading script")
-            try:
-                test_full()
-            except FileNotFoundError:
-                print("file not found")
-        """)
-        self.process = Popen([sys.executable, "-u", "-c", cmdstr],
-                             stdout=PIPE, stderr=STDOUT)
+    def update(self):
+        """Update GUI with items from the queue."""
+        if self.process_thread.is_alive():
+            # Schedule next update
+            self.root.after(1000, self.update)
+        else:
+            # Stop loop of watching process_thread.
+            self.toggle_process_state(self.process_thread.is_alive())
 
-        from snntoolbox.core.pipeline import test_full
-        run_in_separate_process(test_full())
-
-        # Launch thread to read the subprocess output.
-        # Put the subprocess output into the queue in a background thread, and
-        # get output from the queue in the GUI thread.
-        # (Output chain: process.readline -> queue -> label)
-        self.thread.start()
-        self.toggle_process_state(self.thread.is_alive())
-
-    def stop_processing(self):
-        """Stop subprocess and quit GUI."""
-
-        # Tell the subprocess to exit
-        self.process.terminate()
-
-        def kill_after(countdown):
-            if self.process.poll() is None:  # Subprocess hasn't exited yet
-                countdown -= 1
-                if countdown < 0:  # Do kill
-                    self.process.kill()
-                else:
-                    self.root.after(1000, kill_after, countdown)
-                    return  # continue countdown in a second
-            # clean up
-            self.process.stdout.close()  # close fd
-            self.process.wait()          # wait for the subprocess' exit
-            self.root.destroy()          # exit GUI
-
-        # Kill subprocess if it hasn't exited after a countdown
-        kill_after(countdown=5)
+    def check_sample(self, P):
+        if not self.initialized:
+            return True
+        elif P == '':
+            self.toggle_num_to_test_state(True)
+            return True
+        elif False:
+            # Put some other tests here
+            return False
+        else:
+            samples = [int(i) for i in P.split() if i.isnumeric()]
+            self.settings['num_to_test'].set(len(samples))
+            self.toggle_num_to_test_state(False)
+            return True
 
     def check_file(self, P):
         if not os.path.exists(self.settings['path'].get()) or \
@@ -1057,24 +1021,15 @@ class SNNToolboxGUI():
             self.process_state.set('normal')
         self.start_processing_bt.configure(state=self.process_state.get())
 
-    def reader_thread(self, q):
-        """Read subprocess output and put it into the queue."""
-        try:
-            with self.process.stdout as pipe:
-                for line in iter(pipe.readline, b''):
-                    q.put(line)
-        finally:
-            q.put(None)
-
-    def update(self, q):
-        """Update GUI with items from the queue."""
-        # read no more than 10000 lines, and use deque to discard lines except
-        # the last one.
-        for line in deque(islice(iter_except(q.get_nowait, Empty), 10000),
-                          maxlen=1):
-            self.console_output.set(line)  # update GUI
-        self.toggle_process_state(self.thread.is_alive())
-        self.root.after(1000, self.update, q)  # schedule next update
+    def toggle_num_to_test_state(self, val):
+        if val and not self.settings['state_pyNN'].get() == 'disabled':
+            self.settings['state_num_to_test'].set('normal')
+        else:
+            self.settings['state_num_to_test'].set('disabled')
+        self.num_to_test_label.configure(
+            state=self.settings['state_num_to_test'].get())
+        self.num_to_test_sb.configure(
+            state=self.settings['state_num_to_test'].get())
 
 
 def main():
@@ -1086,4 +1041,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main_thread = threading.Thread(target=main, name='main thread',
+                                   daemon=True)
+    main_thread.start()

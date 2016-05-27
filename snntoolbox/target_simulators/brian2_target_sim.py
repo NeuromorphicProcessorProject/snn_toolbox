@@ -266,8 +266,11 @@ class SNN_compiled():
 
         # Iterate over the number of samples to test
         for test_num in range(settings['num_to_test']):
-            # Pick a random test sample from among all possible input samples
-            ind = randint(0, len(X_test) - 1)
+            # If a list of specific input samples is given, iterate over that,
+            # and otherwise pick a random test sample from among all possible
+            # input samples in X_test.
+            si = settings['sample_indices_to_test']
+            ind = randint(0, len(X_test) - 1) if si == [] else si[test_num]
 
             # Add Poisson input.
             if settings['verbose'] > 1:

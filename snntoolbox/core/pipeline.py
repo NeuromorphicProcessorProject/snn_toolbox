@@ -12,7 +12,6 @@ from future import standard_library
 
 import os
 import numpy as np
-
 from snntoolbox import echo
 from snntoolbox.io_utils.plotting import plot_param_sweep
 from snntoolbox.io_utils.load import load_model, get_reshaped_dataset
@@ -23,7 +22,7 @@ from snntoolbox.config import settings
 standard_library.install_aliases()
 
 
-def test_full(params=[settings['v_thresh']], param_name='v_thresh',
+def test_full(queue, params=[settings['v_thresh']], param_name='v_thresh',
               param_logscale=False):
     """
     Convert an snn to a spiking neural network and simulate it.
@@ -119,12 +118,12 @@ def test_full(params=[settings['v_thresh']], param_name='v_thresh',
             snn.evaluate_ann(X_test, Y_test)
 
         # Write model to disk
-        snn.save(filename='snn_'+settings['filename'])
+        snn.save(filename=settings['filename_snn'])
 
         # Compile spiking network from ANN
         snn.build()
 
-        snn.export_to_sim(settings['path'], 'snn_' + settings['filename'])
+        snn.export_to_sim(settings['path'], settings['filename_snn'])
 
     # Simulate spiking network
     results = []
@@ -145,4 +144,6 @@ def test_full(params=[settings['v_thresh']], param_name='v_thresh',
     n = len(X_test) if settings['simulator'] == 'INI' \
         else settings['num_to_test']
     plot_param_sweep(results, n, params, param_name, param_logscale)
+
+    queue.put(results)
     return results

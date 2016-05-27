@@ -265,6 +265,14 @@ def update_setup(s=None):
         if not os.path.exists(s['path']):
             os.makedirs(s['path'])
 
+    # Convert string containing sample indices to list of indices
+        s['sample_indices_to_test'] = [
+            int(i) for i in s['samples_to_test'].split() if i.isnumeric()]
+
+    # Specify filenames for models at different stages of the conversion
+    s['filename_snn_exported'] = 'snn_' + s['filename'] + '_' + s['simulator']
+    s['filename_snn'] = 'snn_' + s['filename']
+
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)
 
@@ -288,11 +296,6 @@ def initialize_simulator(simulator):
         sim = import_module('brian2')
     elif simulator == 'INI':
         sim = import_module('snntoolbox.core.inisim')
-        print('\n')
-        print("Heads-up: When using INI simulator, the batch size cannot be " +
-              "changed after loading a previously converted spiking network " +
-              "from file. To change the batch size, convert the ANN from " +
-              "scratch.\n")
 
     print("Initialized {} simulator.\n".format(simulator))
     return sim

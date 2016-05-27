@@ -12,7 +12,9 @@ from future import standard_library
 from builtins import int, range
 
 import os
+import logging
 import theano
+from textwrap import dedent
 from keras.models import Sequential
 from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
@@ -157,7 +159,18 @@ class SNN_compiled():
         if self.get_output is None:
             if settings['verbose'] > 1:
                 echo("Restoring layer connections...\n")
-            self.load('snn_keras_' + settings['filename'])
+            self.load(settings['filename_snn_exported'])
+
+        si = settings['sample_indices_to_test']
+        if not si == []:
+            assert len(si) == settings['batch_size'], dedent("""
+                You attempted to test the SNN on a total number of samples that
+                is not compatible with the batch size with which the SNN was
+                converted. Either change the number of samples to test to be
+                equal to the batch size, or convert the ANN again using the
+                corresponding batch size.""")
+            X_test = np.array([X_test[i] for i in si])
+            Y_test = np.array([Y_test[i] for i in si])
 
         # Ground truth
         truth = np.argmax(Y_test, axis=1)
@@ -287,11 +300,10 @@ class SNN_compiled():
                                           custom_objects=custom_layers)
         self.snn.load_weights(os.path.join(settings['path'], filename + '.h5'))
 
+        self.assert_batch_size(self.snn.layers[0].batch_input_shape[0])
+
         # Allocate input variables
         input_time = theano.tensor.scalar('time')
-        input_shape = list(self.snn.input_shape)
-        input_shape[0] = settings['batch_size']
-        self.snn.layers[0].batch_input_shape = input_shape
         kwargs = {'time_var': input_time}
         for layer in self.snn.layers:
             self.sim.init_neurons(layer, v_thresh=settings['v_thresh'],
@@ -311,6 +323,19 @@ class SNN_compiled():
         self.get_output = theano.function([self.snn.input, input_time],
                                           [output_spikes, output_time],
                                           updates=updates)
+
+    def assert_batch_size(self, batch_size):
+        if batch_size != settings['batch_size']:
+            msg = dedent("""\
+                You attempted to use the SNN with a batch_size different than
+                the one with which it was converted. This is not supported when
+                using INI simulator: To change the batch size, convert the ANN
+                from scratch with the desired batch size. For now, the batch
+                size has been reset from {} to the original {}.\n""".format(
+                settings['batch_size'], batch_size))
+            # logging.warning(msg)
+            print(msg)
+            settings['batch_size'] = batch_size
 
     def end_sim(self):
         pass

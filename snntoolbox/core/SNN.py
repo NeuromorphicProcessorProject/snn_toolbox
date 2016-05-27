@@ -2,6 +2,8 @@
 """
 Created on Thu May 19 16:03:06 2016
 
+Class for neural networks that have been converted from analog to spiking.
+
 @author: rbodo
 """
 
@@ -21,76 +23,34 @@ class SNN():
     """
     Represent a neural network.
 
-    Implements a class that contains essential information about the
-    architecture and weights of a neural network, while being independent of
-    the library from which the original network was built.
-
-    The constructor ``__init__()`` performs the extraction of the
-    attributes of interest.
+    Instances of this class contains all essential information about a network,
+    independently of the model library in which the original network was built
+    (e.g. Keras).
+    This makes the SNN toolbox stable against changes in input formats.
+    Another advantage is extensibility: In order to add a new input language to
+    the toolbox (e.g. Caffe), a developer only needs to add a single module to
+    ``model_libs`` package, implementing a ``load`` and ``extract`` method (see
+    `Functions` section below for more details.)
 
     Parameters
     ----------
 
-        model : network object
-            A network object of the ``model_lib`` language, e.g. keras.
+        model : dict
+            A dictionary of objects that constitute the input model. It must
+            contain the following two keys:
+
+            - 'model': A model instance of the network in the respective
+              ``model_lib``.
+            - 'val_fn': A Theano function that allows evaluating the original
+              model.
+
+            For instance, if the input model was written using Keras, the
+            'model'-value would be an instance of ``keras.Model``, and
+            'val_fn' the ``keras.Model.evaluate`` method.
 
     Attributes
     ----------
 
-        - weights : array
-            Weights connecting the input layer.
-
-        - biases : array
-            Biases of the network. For conversion to spiking nets, zero biases
-            are found to work best.
-
-        - input_shape : list
-            The dimensions of the input sample.
-
-        - layers : list
-            List of all the layers of the network, where each layer contains a
-            dictionary with keys
-
-            - layer_num : int
-                Index of layer.
-
-            - layer_type : string
-                Describing the type, e.g. `Dense`, `Convolution`, `Pool`.
-
-            - output_shape : list
-                The output dimensions of the layer.
-
-            In addition, `Dense` and `Convolution` layer types contain
-
-            - weights : array
-                The weight parameters connecting the layer with the next.
-
-            `Convolution` layers contain further
-
-            - nb_col : int
-                The x-dimension of filters.
-
-            - nb_row : int
-                The y-dimension of filters.
-
-            - border_mode : string
-                How to handle borders during convolution, e.g. `full`, `valid`,
-                `same`.
-
-            `Pooling` layers contain
-
-            - pool_size : list
-                Specifies the subsampling factor in each dimension.
-
-            - strides : list
-                The stepsize in each dimension during pooling.
-
-    The initializer is meant to be extended by functionality to extract any
-    model written in any of the common neural network libraries, e.g. keras,
-    theano, caffe, torch, etc.
-
-    The simplified returned network can then be used in the SNN conversion and
-    simulation toolbox.
 
     """
 
@@ -241,7 +201,7 @@ class SNN():
         if not path:
             path = settings['path']
         if not filename:
-            filename = settings['filename']
+            filename = settings['filename_snn']
 
         print("Saving model to {}...".format(path))
         # Create directory if not existent yet.
@@ -306,8 +266,7 @@ class SNN():
         return self.compiled_snn.run(self, X_test, Y_test)
 
     def export_to_sim(self, path, filename):
-        self.compiled_snn.save(path, filename + '_' +
-                               self.target_sim.__short_name__)
+        self.compiled_snn.save(path, settings['filename_snn_exported'])
 
     def end_sim(self):
         self.compiled_snn.end_sim()

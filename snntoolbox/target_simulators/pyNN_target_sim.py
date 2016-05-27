@@ -154,8 +154,7 @@ class SNN_compiled():
         from snntoolbox.io_utils.load import load_assembly
 
         if filename is None:
-            filename = 'snn_' + settings['filename'] + '_' + \
-                settings['simulator']
+            filename = settings['filename_snn_exported']
         self.layers = load_assembly(self.sim, filename)
         for i in range(len(self.ann['layers'])):
             if 'get_activ' in self.ann['layers'][i].keys():
@@ -332,8 +331,11 @@ class SNN_compiled():
                     else:
                         layer.record(['spikes'])
 
-            # Pick a random test sample from among all possible input samples
-            ind = randint(0, len(X_test) - 1)
+            # If a list of specific input samples is given, iterate over that,
+            # and otherwise pick a random test sample from among all possible
+            # input samples in X_test.
+            si = settings['sample_indices_to_test']
+            ind = randint(0, len(X_test) - 1) if si == [] else si[test_num]
 
             # Add Poisson input.
             if settings['verbose'] > 1:

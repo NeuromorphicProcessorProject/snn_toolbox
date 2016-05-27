@@ -1,5 +1,18 @@
 # -*- coding: utf-8 -*-
 """
+Methods to parse an input model and prepare it for further processing in the
+SNN toolbox.
+
+The idea is to make all further steps in the conversion/simulation pipeline
+independent of the original model format. Therefore, when a developer adds a
+new input model library (e.g. Caffe) to the toolbox, the following methods must
+be implemented and satisfy the return requirements specified in their
+respective docstrings:
+
+    - extract
+    - evaluate
+    - load_ann
+
 Created on Thu May 19 08:21:05 2016
 
 @author: rbodo
@@ -13,6 +26,74 @@ from snntoolbox.model_libs.common import absorb_bn, import_script
 
 
 def extract(model):
+    """
+    Extract the essential information about a neural network.
+
+    This method serves to abstract the conversion process of a network from the
+    language the input model was built in (e.g. Keras or Lasagne).
+
+    To extend the toolbox by another input format (e.g. Caffe), this method has
+    to be implemented for the respective model library.
+
+    Attributes
+    ----------
+
+        - weights : array
+            Weights connecting the input layer.
+
+        - biases : array
+            Biases of the network. For conversion to spiking nets, zero biases
+            are found to work best.
+
+        - input_shape : list
+            The dimensions of the input sample.
+
+        - layers : list
+            List of all the layers of the network, where each layer contains a
+            dictionary with keys
+
+            - layer_num : int
+                Index of layer.
+
+            - layer_type : string
+                Describing the type, e.g. `Dense`, `Convolution`, `Pool`.
+
+            - output_shape : list
+                The output dimensions of the layer.
+
+            In addition, `Dense` and `Convolution` layer types contain
+
+            - weights : array
+                The weight parameters connecting the layer with the next.
+
+            `Convolution` layers contain further
+
+            - nb_col : int
+                The x-dimension of filters.
+
+            - nb_row : int
+                The y-dimension of filters.
+
+            - border_mode : string
+                How to handle borders during convolution, e.g. `full`, `valid`,
+                `same`.
+
+            `Pooling` layers contain
+
+            - pool_size : list
+                Specifies the subsampling factor in each dimension.
+
+            - strides : list
+                The stepsize in each dimension during pooling.
+
+    Returns
+    -------
+
+        ann : dict
+            Dictionary containing the parsed network.
+
+    """
+
     input_shape = model.input_shape
 
     layers = []
@@ -88,14 +169,37 @@ def model_from_py(filename):
     return {'model': mod.build_network()}
 
 
-def load_ann(filename):
+def load_ann(filename, path=None):
+    """
+    Load network from file.
+
+    Parameters
+    ----------
+
+    model : dict
+        A dictionary of objects that constitute the input model. It must
+        contain the following two keys:
+
+        - 'model': Model instance of the network in the respective
+          ``model_lib``.
+        - 'val_fn': Theano function that allows evaluating the original
+          model.
+
+        For instance, if the input model was written using Keras, the
+        'model'-value would be an instance of ``keras.Model``, and
+        'val_fn' the ``keras.Model.evaluate`` method.
+
+    """
+
+    if path is None:
+        path = settings['path']
     if settings['dataset'] == 'caltech101':
         model = model_from_py(filename)['model']
     else:
         from keras import models
-        path = os.path.join(settings['path'], filename + '.json')
-        model = models.model_from_json(open(path).read())
-    model.load_weights(os.path.join(settings['path'], filename + '.h5'))
+        model = models.model_from_json(open(
+            os.path.join(path, filename + '.json')).read())
+    model.load_weights(os.path.join(path, filename + '.h5'))
     # Todo: Allow user to specify loss function here (optimizer is not
     # relevant as we do not train any more). Unfortunately, Keras does not
     # save these parameters. They can be obtained from the compiled model
@@ -106,8 +210,10 @@ def load_ann(filename):
 
 
 def evaluate(val_fn, X_test, Y_test):
+    """Evaluate the original ANN."""
     return val_fn(X_test, Y_test)
 
 
 def set_layer_params(model, params, i):
+    """Set ``params`` of layer ``i`` of a given ``model``."""
     model.layers[i].set_weights(params)
