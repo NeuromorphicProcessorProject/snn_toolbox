@@ -1,13 +1,13 @@
 """
-The toolbox settings are grouped in three categories:
+In the GUI, the toolbox settings are grouped in three categories:
     1. Global parameters ``globalparams``, specifying global settings for
        loading / saving, and what steps of the workflow to include (evaluation,
        normalization, conversion, simulation, ...)
     2. Neuron cell parameters ``cellparams``, determining properties of the
        spiking neurons (e.g. threshold, refractory period, ...). Not all of
-       them are used in all simulators. For instance, our own simulaotr
+       them are used in all simulators. For instance, our own simulator
        ``'INI'`` only uses a threshold, reset and membrane time constant.
-    3. Simulation parameters ``simparams``, specifying e.g. length and
+    3. Simulation parameters ``simparams``, specifying for instance length and
        time resolution of the simulation run.
 
 Parameters
@@ -16,99 +16,122 @@ Parameters
 Global Parameters
 *****************
 
-dataset : string
+dataset: string
     The dataset to use for testing the network. Possible values:
 
     - 'mnist'
     - 'cifar10'
+    - 'caltech101'
 
-architecture : string
+architecture: string
     Specifies the network architecture. Possible values:
 
     - 'mlp' for Multi-Layer Perceptron
     - 'cnn' for Convolutional Neural Network
 
-model_lib : string
+model_lib: string
     The neural network library used to build the ANN, e.g.
 
     - 'keras'
     - 'lasagne'
     - 'caffe'
 
-path : string, optional
-    Location of the ANN model to load. If not specified, the toolbox will use
-    as destination for all files it needs to load and save:
-    ``<repo-root>/data/<dataset>/<architecture>/<filename>/<simulator>/``.
-    For instance, if the repo is in ``~/snntoolbox/`` and we specify as
-    filename of the ANN model to load: ``globalparams['filename'] = '98.29'``
+path: string, optional
+    Working directory. There, the toolbox will look for ANN models to convert
+    or SNN models to test, load the weights it needs and store (normalized)
+    weights.
+    If not specified, the toolbox will use as destination for all files it
+    needs to load and save:
+    ``~/.snntoolbox/data/<dataset>/<architecture>/<filename>/<simulator>/``.
+    For instance, if we give ``'98.29'`` as filename of the ANN model to load,
     and use default parameters otherwise, the toolbox will perform all
-    io-operations in ``~/snntoolbox/data/mnist/mlp/98.29/INI/``.
-filename : string
-    Name of the json file containing the model architecture and weights.
-batch_size : int, optional
-    Size of batch to test.
-debug : boolean, optional
-    If true, the input data is reduced to one batch_size to reduce
-    computation time.
-evaluateANN : boolean, optional
-    Whether or not to test the pretrained ANN before conversion to spiking net.
-sim_only : boolean, optional
+    io-operations in ``~/.snntoolbox/data/mnist/mlp/98.29/INI/``.
+log_dir_of_current_run: string, optional
+    Path to directory where the output plots are stored. If not specified, will
+    be ``<path>/log/gui/<runlabel>``. ``<runlabel>`` can be specified in the
+    GUI. Will be set to 'test' if None.
+filename: string
+    Base name of all loaded and saved files during this run. The ANN model to
+    be converted is expected to be named '<basename>'.
+filename_snn: string, optional
+    Name given to converted SNN models. If not specified by the user, the
+    toolbox sets it to 'snn_<basename>'.
+filename_snn_exported: string, optional
+    Name given to converted spiking nets when exported to test it in a specific
+    simulator. If not specified by the user, the toolbox set it to
+    ``snn_<basename>_<simulator>``.
+batch_size: int, optional
+    Number of samples to test ANN with, if 'debug' enabled (see parameter
+    below). If the builtin simulator 'INI' is used, the batch size specifies
+    the number of test samples that will be simulated in parallel. Important:
+    When using 'INI' simulator, the batch size can only be run usingthe batch
+    size it has been converted with. To run it with a different batch size,
+    convert the ANN from scratch.
+debug: boolean, optional
+    If enabled, the dataset used for testing will be reduced to one
+    'batch size' (see parameter batch_size above).
+evaluateANN: boolean, optional
+    Only relevant when converting a network, not during simulation. If enabled,
+    test the ANN before conversion. If you also enabled 'normalization' (see
+    parameter 'normalize' below), then the network will be evaluated again
+    after normalization.
+sim_only: boolean, optional
     If true, skip conversion step and try to load SNN from ``/<path>/``.
-normalize : boolean, optional
-    If true, the network will first perform a simulation using the original
-    weights, and then normalize the weights and run again both ANN and SNN
-    with modified weights to evaluate the impact of weight normalization
-    on accuracy.
-overwrite : boolean, optional
-    If false, the save methods will ask for permission to overwrite files
+normalize: boolean, optional
+    Only relevant when converting a network, not during simulation. If enabled,
+    the weights of the spiking network will be normalized by the highest weight
+    or activation.
+overwrite: boolean, optional
+    If disabled, the save methods will ask for permission to overwrite files
     before writing weights, activations, models etc. to disk.
-verbose : int, optional
-    :0: No intermediate results or status reports.
-    :1: Print progress of simulation and intermediate results.
-    :2: After each batch, plot guessed classes per sample and show an
-        input image. At the end of the simulation, plot the number of spikes
-        for each sample.
-    :3: Record, plot and return the membrane potential of all
-        layers for the last test sample. Very time consuming.
+verbose: int, optional
+    0: No intermediate results or status reports.
+    1: Print progress of simulation and intermediate results.
+    2: Record spiketrains of all layers for one sample, and save various plots
+       (spiketrains, spikerates, activations, correlations, ...)
+    3: Record, plot and return the membrane potential of all layers for the
+       last test sample. Very time consuming. Works only with pyNN simulators.
 
 Cell Parameters
 ***************
 
-v_thresh : float, optional
+v_thresh: float, optional
     Threshold in mV defining the voltage at which a spike is fired.
-v_reset : float, optional
+v_reset: float, optional
     Reset potential in mV of the neurons after spiking.
-v_rest : float, optional
+v_rest: float, optional
     Resting membrane potential in mV.
-e_rev_E : float, optional
+e_rev_E: float, optional
     Reversal potential for excitatory input in mV.
-e_rev_I : float, optional
+e_rev_I: float, optional
     Reversal potential for inhibitory input in mV.
-i_offset : float, optional
+i_offset: float, optional
     Offset current in nA.
-cm : float, optional
+cm: float, optional
     Membrane capacitance in nF.
-tau_m : float, optional
+tau_m: float, optional
     Membrane time constant in milliseconds.
-tau_refrac : float, optional
+tau_refrac: float, optional
     Duration of refractory period in milliseconds of the neurons after spiking.
-tau_syn_E : float, optional
+tau_syn_E: float, optional
     Decay time of the excitatory synaptic conductance in milliseconds.
-tau_syn_I : float, optional
+tau_syn_I: float, optional
     Decay time of the inhibitory synaptic conductance in milliseconds.
 
 Simulation Parameters
 *********************
 
-duration : float, optional
+simulator: string, optional
+    Simulator with which to run the converted spiking network.
+duration: float, optional
     Runtime of simulation of one input in milliseconds.
-dt : float, optional
+dt: float, optional
     Time resolution of spikes in milliseconds.
-delay : float, optional
+delay: float, optional
     Delay in milliseconds. Must be equal to or greater than the resolution.
-max_f : float, optional
+max_f: float, optional
     Spike rate in Hz for a fully-on pixel.
-num_to_test : int, optional
+num_to_test: int, optional
     How many samples to test.
 
 Default values
@@ -120,14 +143,17 @@ Default values
                     'architecture': 'mlp',
                     'model_lib': 'keras',
                     'path': '',
+                    'log_dir_of_current_run': '',
                     'filename': '',
+                    'filename_snn': 'snn_',
+                    'filename_snn_exported': 'snn_exported_',
                     'batch_size': 100,
                     'debug': False,
                     'evaluateANN': True,
                     'normalize': True,
                     'overwrite': True,
                     'sim_only': False,
-                    'verbose': 2}
+                    'verbose': 3}
     cellparams = {'v_thresh': 1,
                   'v_reset': 0,
                   'v_rest': 0,
@@ -139,7 +165,8 @@ Default values
                   'tau_refrac': 0,
                   'tau_syn_E': 0.01,
                   'tau_syn_I': 0.01}
-    simparams = {'duration': 200,
+    simparams = {'simulator': 'INI',
+                 'duration': 200,
                  'dt': 1,
                  'delay': 1,
                  'max_f': 1000,
@@ -163,7 +190,6 @@ plotproperties = {'font.size': 13,
                   'ytick.minor.size': 5,
                   'legend.fontsize': 'x-large',
                   'figure.figsize': (7, 6)}
-
 mpl.rcParams.update(plotproperties)
 
 # List supported datasets, model types, model libraries, simulators, etc.
@@ -182,8 +208,12 @@ settings = {'dataset': 'mnist',
             'architecture': 'mlp',
             'model_lib': 'keras',
             'path': '',
+            'log_dir_of_current_run': '',
             'filename': '',
+            'filename_snn': 'snn_',
+            'filename_snn_exported': 'snn_exported_',
             'batch_size': 100,
+            'samples_to_test': '',
             'debug': False,
             'evaluateANN': True,
             'normalize': True,
@@ -220,8 +250,9 @@ def update_setup(s=None):
     """
     Update parameters
 
-    Check that parameter choices are valid and update the default parameters
-    with the user-specified values.
+    Check that parameter choices ``s`` are valid and update the global
+    parameter settings ``snntoolbox.config.settings`` with the user-specified
+    values. Default values are filled in where user did not give any.
     """
 
     import os
@@ -230,54 +261,74 @@ def update_setup(s=None):
     if s is None:
         s = {}
 
+    # Check that choice of dataset is valid (not really needed when
+    # using GUI because options are hardwired in dropdown list).
     if 'dataset' in s:
         assert s['dataset'] in datasets, \
             "Dataset '{}' not known. Supported datasets: {}".format(
                 s['dataset'], datasets)
+    # Check that specified architecture is valid (not really needed when
+    # using GUI because options are hardwired in dropdown list).
     if 'architecture' in s:
         assert s['architecture'] in architectures, \
             "Network architecture '{}' not understood. Supported architectures:\
                 {}".format(s['architecture'], architectures)
+    # Check that choice of input model library is valid (not really needed when
+    # using GUI because options are hardwired in dropdown list).
     if 'model_lib' in s:
         assert s['model_lib'] in model_libs, \
             "Input model library '{}' ".format(s['model_lib']) + \
             "not supported yet. Possible values: {}".format(model_libs)
+    # Name of input file must be given.
     assert 'filename' in s, "Filename of stored model not specified."
+    # Check that simulator choice is valid (not really needed when using GUI
+    # because options are hardwired in dropdown list).
     if 'simulator' in s:
         assert s['simulator'] in simulators, \
             "Simulator '{}' not supported.".format(s['simulator']) + \
             " Choose from {}".format(simulators)
     else:
+        # Fall back on default if none specified.
         s.update({'simulator': 'INI'})
+    # Warn user that it is not possible to use Brian2 simulator by loading a
+    # pre-converted network from disk.
     if s['simulator'] == 'brian2' and 'sim_only' in s and s['sim_only'] \
             or 'sim_only' not in s and settings['sim_only']:
         print('\n')
-        print("SNN toolbox Warning: When using Brian 2 simulator, you need " +
-              "to convert the network each time you start a new session. " +
-              "(No saving/reloading methods implemented.) Setting " +
-              "globalparams['sim_only'] = False.\n")
+        print("""SNN toolbox Warning: When using Brian 2 simulator, you need to
+              convert the network each time you start a new session. (No
+              saving/reloading methods implemented.)
+              Setting sim_only = False.\n""")
         s['sim_only'] = False
+    # Set default path if user did not specify one.
     if 'path' not in s or s['path'] == '':
         s['path'] = os.path.join(snntoolbox._dir, 'data', s['dataset'],
                                  s['architecture'], s['filename'],
                                  s['simulator'])
-    else:
-        if not os.path.exists(s['path']):
-            os.makedirs(s['path'])
+    # Create directory if not there yet.
+    if not os.path.exists(s['path']):
+        os.makedirs(s['path'])
 
-    # Convert string containing sample indices to list of indices
-        s['sample_indices_to_test'] = [
-            int(i) for i in s['samples_to_test'].split() if i.isnumeric()]
+    # Convert string containing sample indices to list of indices.
+    if 'samples_to_test' not in s:
+        s['samples_to_test'] = ''
+    s['sample_indices_to_test'] = [
+        int(i) for i in s['samples_to_test'].split() if i.isnumeric()]
 
-    # Specify filenames for models at different stages of the conversion
-    s['filename_snn_exported'] = 'snn_' + s['filename'] + '_' + s['simulator']
+    if 'log_dir_of_current_run' not in s:
+        s['log_dir_of_current_run'] = os.path.join(s['path'], 'log', 'gui',
+                                                   'test')
+
+    # Specify filenames for models at different stages of the conversion.
     s['filename_snn'] = 'snn_' + s['filename']
+    s['filename_snn_exported'] = s['filename_snn'] + '_' + s['simulator']
 
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)
 
 
-def initialize_simulator(simulator):
+def initialize_simulator(simulator=settings['simulator']):
+    """ Import module containing utility functions of spiking simulator"""
     from importlib import import_module
 
     if simulator in simulators_pyNN:

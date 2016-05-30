@@ -25,47 +25,119 @@ class SNN():
 
     Instances of this class contains all essential information about a network,
     independently of the model library in which the original network was built
-    (e.g. Keras).
-    This makes the SNN toolbox stable against changes in input formats.
-    Another advantage is extensibility: In order to add a new input language to
-    the toolbox (e.g. Caffe), a developer only needs to add a single module to
-    ``model_libs`` package, implementing a ``load`` and ``extract`` method (see
-    `Functions` section below for more details.)
+    (e.g. Keras). This makes the SNN toolbox stable against changes in input
+    formats. Another advantage is extensibility: In order to add a new input
+    language to the toolbox (e.g. Caffe), a developer only needs to add a
+    single module to ``model_libs`` package, implementing a number of methods
+    (see the respective functions in 'keras_input_lib.py' for more details.)
 
     Parameters
     ----------
 
-        model : dict
-            A dictionary of objects that constitute the input model. It must
-            contain the following two keys:
+        path: string, optional
+            Path to directory where to load model from. Defaults to
+            ``settings['path']``.
 
-            - 'model': A model instance of the network in the respective
-              ``model_lib``.
-            - 'val_fn': A Theano function that allows evaluating the original
-              model.
-
-            For instance, if the input model was written using Keras, the
-            'model'-value would be an instance of ``keras.Model``, and
-            'val_fn' the ``keras.Model.evaluate`` method.
+        filename: string, optional
+            Name of file to load model from. Defaults to
+            ``settings['filename']``.
 
     Attributes
     ----------
 
+        model: Model
+            A model instance of the network in the respective ``model_lib``.
+
+        val_fn: Theano function
+            A Theano function that allows evaluating the original model.
+
+        input_shape: list
+            The dimensions of the input sample:
+            [batch_size, n_chnls, n_rows, n_cols]. For instance, mnist would
+            have input shape [Null, 1, 28, 28].
+
+        layers: list
+            List of all the layers of the network, where each layer contains a
+            dictionary with keys
+
+            - layer_num (int): Index of layer.
+            - layer_type (string): Describing the type, e.g. `Dense`,
+              `Convolution`, `Pool`.
+            - output_shape (list): The output dimensions of the layer.
+
+            In addition, `Dense` and `Convolution` layer types contain
+
+            - weights (array): The weight parameters connecting this layer with
+              the previous.
+
+            `Convolution` layers contain further
+
+            - nb_col (int): The x-dimension of filters.
+            - nb_row (int): The y-dimension of filters.
+            - border_mode (string): How to handle borders during convolution,
+              e.g. `full`, `valid`, `same`.
+
+            `Pooling` layers contain
+
+            - pool_size (list): Specifies the subsampling factor in each
+              dimension.
+            - strides (list): The stepsize in each dimension during pooling.
+
+            `Activation` layers (including Pooling) contain
+
+            - get_activ: A Theano function computing the activations of a
+              layer.
+
+        labels: list
+            The layer labels.
+
+        layer_idx_map: list
+            A list mapping the layer indices of the original network to the
+            parsed network. (Not all layers of the original model are needed in
+            the parsed model.) For instance: To get the layer index i of the
+            original input ``model`` that corresponds to layer j of the parsed
+            network ``layers``, one would use ``i = layer_idx_map[j]``.
+
+        compiled_snn: SNN_compiled
+            Object containing the compiled spiking network (ready for
+            simulation).
 
     """
 
-    def __init__(self, model):
+    def __init__(self, path=None, filename=None):
+        if path is None:
+            path = settings['path']
+        if filename is None:
+            filename = settings['filename']
+
+        # Import utility functions of input model library ('model_lib') and
+        # of the simulator to use ('target_sim')
         self.import_modules()
+
+        # Load input model structure and weights.
+        model = self.model_lib.load_ann(path, filename)
         self.model = model['model']
+        self.val_fn = model['val_fn']
+
+        # Parse input model to our common format, extracting all necessary
+        # information about layers.
         ann = self.model_lib.extract(model['model'])
-        self.compiled_snn = self.target_sim.SNN_compiled(ann)
         self.input_shape = ann['input_shape']
         self.layers = ann['layers']
         self.labels = ann['labels']
         self.layer_idx_map = ann['layer_idx_map']
-        self.val_fn = model['val_fn']
+
+        # Allocate an object which will contain the compiled spiking network
+        # (ready for simulation)
+        self.compiled_snn = self.target_sim.SNN_compiled(ann)
 
     def import_modules(self):
+        """
+        Import utility functions of input model library ('model_lib') and of
+        the simulator to use ('target_sim')
+
+        """
+
         from importlib import import_module
         self.model_lib = import_module('snntoolbox.model_libs.' +
                                        settings['model_lib'] + '_input_lib')
@@ -77,15 +149,11 @@ class SNN():
         Evaluate the performance of a network.
 
         Wrapper for the evaluation functions of specific input neural network
-        libraries ``globalparams['model_lib']`` like keras, caffe, torch, etc.
-
-        Needs to be extended further: Supports only keras so far.
+        libraries ``settings['model_lib']`` like keras, caffe, torch, etc.
 
         Parameters
         ----------
 
-        ann : network object
-            The neural network of ``backend`` type.
         X_test : float32 array
             The input samples to test.
             With data of the form (channels, num_rows, num_cols),
@@ -100,7 +168,7 @@ class SNN():
         -------
 
         The output of the ``model_lib`` specific evaluation function, e.g. the
-        score of a keras model.
+        score of a Keras model.
 
         """
 
@@ -116,7 +184,7 @@ class SNN():
         Normalize the weights of a network.
 
         The weights of each layer are normalized with respect to the maximum
-        activation.
+        activation or weight.
 
         Parameters
         ----------
@@ -179,12 +247,23 @@ class SNN():
                       previous_fac, applied_fac)
             plot_hist(weight_dict, 'Weight', label, newpath)
 
-    def set_layer_params(self, params, i):
-        self.layers[i]['weights'] = params
-        self.model_lib.set_layer_params(self.model, params,
+    def set_layer_params(self, parameters, i):
+        """
+        Set ``parameters`` of layer ``i``.
+
+        """
+
+        self.layers[i]['weights'] = parameters
+        self.model_lib.set_layer_params(self.model, parameters,
                                         self.layer_idx_map[i])
 
     def get_params(self):
+        """
+        Return list where each entry contains the parameters of a layer of the
+        model.
+
+        """
+
         return [l['weights'] for l in self.layers if 'weights' in l.keys()]
 
     def save(self, path=None, filename=None):
@@ -194,13 +273,21 @@ class SNN():
         Parameters
         ----------
 
+        path: string, optional
+            Path to directory where to save model. Defaults to
+            ``settings['path']``.
+
+        filename: string, optional
+            Name of file to write model to. Defaults to
+            ``settings['filename_snn']``.
+
         """
 
         from snntoolbox.io_utils.save import confirm_overwrite
 
-        if not path:
+        if path is None:
             path = settings['path']
-        if not filename:
+        if filename is None:
             filename = settings['filename_snn']
 
         print("Saving model to {}...".format(path))
@@ -218,6 +305,10 @@ class SNN():
         print("Done.\n")
 
     def get_config(self):
+        """
+        Return a dictionary describing the model.
+
+        """
         skip_keys = ['weights', 'get_activ', 'get_activ_norm', 'model']
         layer_config = []
         for layer in self.layers:
@@ -227,16 +318,28 @@ class SNN():
                 'input_shape': self.input_shape,
                 'layers': layer_config}
 
-    def save_config(self, path):
+    def save_config(self, path=None):
+        """
+        Save model configuration to disk.
+        """
+
         from snntoolbox.io_utils.save import to_json
+
+        if path is None:
+            path = settings['path']
+
         to_json(self.get_config(), path)
 
-    def save_weights(self, path):
+    def save_weights(self, path=None):
         """
         Dump all layer weights to a HDF5 file.
+
         """
 
         import h5py
+
+        if path is None:
+            path = settings['path']
 
         f = h5py.File(path, 'w')
 
@@ -265,8 +368,14 @@ class SNN():
     def run(self, X_test, Y_test):
         return self.compiled_snn.run(self, X_test, Y_test)
 
-    def export_to_sim(self, path, filename):
-        self.compiled_snn.save(path, settings['filename_snn_exported'])
+    def export_to_sim(self, path=None, filename=None):
+
+        if path is None:
+            path = settings['path']
+        if filename is None:
+            filename = settings['filename_snn_exported']
+
+        self.compiled_snn.save(path, filename)
 
     def end_sim(self):
         self.compiled_snn.end_sim()

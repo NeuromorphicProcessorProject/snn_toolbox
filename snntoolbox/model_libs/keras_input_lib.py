@@ -35,62 +35,73 @@ def extract(model):
     To extend the toolbox by another input format (e.g. Caffe), this method has
     to be implemented for the respective model library.
 
-    Attributes
+    Parameters
     ----------
 
-        - weights : array
-            Weights connecting the input layer.
+        model: dict
+            A dictionary of objects that constitute the input model. It must
+            contain the following two keys:
 
-        - biases : array
-            Biases of the network. For conversion to spiking nets, zero biases
-            are found to work best.
+            - 'model': A model instance of the network in the respective
+              ``model_lib``.
+            - 'val_fn': A Theano function that allows evaluating the original
+              model.
 
-        - input_shape : list
-            The dimensions of the input sample.
-
-        - layers : list
-            List of all the layers of the network, where each layer contains a
-            dictionary with keys
-
-            - layer_num : int
-                Index of layer.
-
-            - layer_type : string
-                Describing the type, e.g. `Dense`, `Convolution`, `Pool`.
-
-            - output_shape : list
-                The output dimensions of the layer.
-
-            In addition, `Dense` and `Convolution` layer types contain
-
-            - weights : array
-                The weight parameters connecting the layer with the next.
-
-            `Convolution` layers contain further
-
-            - nb_col : int
-                The x-dimension of filters.
-
-            - nb_row : int
-                The y-dimension of filters.
-
-            - border_mode : string
-                How to handle borders during convolution, e.g. `full`, `valid`,
-                `same`.
-
-            `Pooling` layers contain
-
-            - pool_size : list
-                Specifies the subsampling factor in each dimension.
-
-            - strides : list
-                The stepsize in each dimension during pooling.
+            For instance, if the input model was written using Keras, the
+            'model'-value would be an instance of ``keras.Model``, and
+            'val_fn' the ``keras.Model.evaluate`` method.
 
     Returns
     -------
 
-        ann : dict
-            Dictionary containing the parsed network.
+        Dictionary containing the parsed network.
+
+        input_shape: list
+            The dimensions of the input sample
+            [batch_size, n_chnls, n_rows, n_cols]. For instance, mnist would
+            have input shape [Null, 1, 28, 28].
+
+        layers: list
+            List of all the layers of the network, where each layer contains a
+            dictionary with keys
+
+            - layer_num (int): Index of layer.
+            - layer_type (string): Describing the type, e.g. `Dense`,
+              `Convolution`, `Pool`.
+            - output_shape (list): The output dimensions of the layer.
+
+            In addition, `Dense` and `Convolution` layer types contain
+
+            - weights (array): The weight parameters connecting this layer with
+              the previous.
+
+            `Convolution` layers contain further
+
+            - nb_col (int): The x-dimension of filters.
+            - nb_row (int): The y-dimension of filters.
+            - border_mode (string): How to handle borders during convolution,
+              e.g. `full`, `valid`, `same`.
+
+            `Pooling` layers contain
+
+            - pool_size (list): Specifies the subsampling factor in each
+              dimension.
+            - strides (list): The stepsize in each dimension during pooling.
+
+            `Activation` layers (including Pooling) contain
+
+            - get_activ: A Theano function computing the activations of a
+              layer.
+
+        labels: list
+            The layer labels.
+
+        layer_idx_map: list
+            A list mapping the layer indices of the original network to the
+            parsed network. (Not all layers of the original model are needed in
+            the parsed model.) For instance: To get the layer index i of the
+            original input ``model`` that corresponds to layer j of the parsed
+            network ``layers``, one would use ``i = layer_idx_map[j]``.
 
     """
 
@@ -164,19 +175,34 @@ def get_activ_fn_for_layer(model, i):
         on_unused_input='ignore')
 
 
-def model_from_py(filename):
-    mod = import_script(filename)
+def model_from_py(path=None, filename=None):
+    if path is None:
+        path = settings['path']
+    if filename is None:
+        filename = settings['filename']
+    mod = import_script(path, filename)
     return {'model': mod.build_network()}
 
 
-def load_ann(filename, path=None):
+def load_ann(path=None, filename=None):
     """
     Load network from file.
 
     Parameters
     ----------
 
-    model : dict
+        path: string, optional
+            Path to directory where to load model from. Defaults to
+            ``settings['path']``.
+
+        filename: string, optional
+            Name of file to load model from. Defaults to
+            ``settings['filename']``.
+
+    Returns
+    -------
+
+    model: dict
         A dictionary of objects that constitute the input model. It must
         contain the following two keys:
 
@@ -193,6 +219,9 @@ def load_ann(filename, path=None):
 
     if path is None:
         path = settings['path']
+    if filename is None:
+        filename = settings['filename']
+
     if settings['dataset'] == 'caltech101':
         model = model_from_py(filename)['model']
     else:

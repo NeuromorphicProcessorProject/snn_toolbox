@@ -18,51 +18,9 @@ import os
 import sys
 import numpy as np
 from six.moves import cPickle
-from snntoolbox import echo
 from snntoolbox.config import settings, architectures, datasets
 
 standard_library.install_aliases()
-
-
-def load_model(filename=None):
-    """
-    Load model architecture.
-
-    Parameters
-    ----------
-
-    filename : string, optional
-        If no filename is given, the method assumes the model is named
-        ``globalparams['filename']``. This will be true most of the time; it
-        can be useful to specify a different name e.g. when loading a
-        normalized net, where the filename is appended with ``_normWeights``.
-    spiking : boolean, optional
-        Tells the function if the model to load is a spiking network. In that
-        case, various initialization steps are performed, depending on the
-        simulator.
-
-    Returns
-    -------
-
-    model : dict
-        If ``spiking==False``, the returned dictionary contains a key 'model'
-        with value the network model object in the ``model_lib`` language, e.g.
-        keras. If globalparams['model_lib']=='lasagne', the ``model`` dict
-        additionally contains a train and test function (keys 'train_fn',
-        'val_fn').
-        In case ``spiking==True``, a converted spiking network is loaded from
-        disk, and the ``model`` dict contains a key 'layers' with pyNN layers
-        (if a pyNN simulator is used), or a keras 'model' and theano
-        'get_output' function, if the builtin INI simulator is used.
-    """
-
-    from importlib import import_module
-
-    if filename is None:
-        filename = settings['filename']
-    model_lib = import_module('snntoolbox.model_libs.' +
-                              settings['model_lib'] + '_input_lib')
-    return model_lib.load_ann(filename)
 
 
 def load_weights(filepath):
@@ -105,7 +63,7 @@ def get_dataset():
 
     Returns
     -------
-    dataset : tuple
+    dataset: tuple
         The dataset as a tuple containing the training and test sample arrays
         (X_train, Y_train, X_test, Y_test)
 
@@ -210,74 +168,6 @@ def get_reshaped_dataset():
     return (X_train, Y_train, X_test, Y_test)
 
 
-def load_assembly(sim, filename):
-    """
-    Loads the populations in an assembly that was saved with the
-    ``snntoolbox.io.save.save_assembly`` function.
-
-    The term "assembly" refers
-    to pyNN internal nomenclature, where ``Assembly`` is a collection of
-    layers (``Populations``), which in turn consist of a number of neurons
-    (``cells``).
-
-    Returns
-    -------
-
-    populations : list
-        List of pyNN ``Population`` objects
-    """
-
-    file = os.path.join(settings['path'], filename)
-    assert os.path.isfile(file), \
-        "Spiking neuron layers were not found at specified location."
-    if sys.version_info < (3,):
-        s = cPickle.load(open(file, 'rb'))
-    else:
-        s = cPickle.load(open(file, 'rb'), encoding='bytes')
-
-    # Iterate over populations in assembly
-    populations = []
-    for label in s['labels']:
-        celltype = getattr(sim, s[label]['celltype'])
-        population = sim.Population(s[label]['size'], celltype,
-                                    celltype.default_parameters,
-                                    structure=s[label]['structure'],
-                                    label=label)
-        # Set the rest of the specified variables, if any.
-        for variable in s['variables']:
-            if getattr(population, variable, None) is None:
-                setattr(population, variable, s[label][variable])
-        populations.append(population)
-
-    if settings['verbose'] > 1:
-        echo("Loaded spiking neuron layers from {}.\n".format(file))
-
-    return populations
-
-
-def load_activations():
-    """
-    Read network activations from file.
-
-    The method attempts to import the file
-    ``<path>/<dataset>/<architecture>/<filename>/activations.json``
-    containing the activations of the ANN.
-    """
-
-    file = os.path.join(settings['path'], 'activations')
-    if os.path.isfile(file):
-        if sys.version_info < (3,):
-            activations = cPickle.load(open(file, 'rb'))
-        else:
-            activations = cPickle.load(open(file, 'rb'), encoding='bytes')
-    else:
-        echo("Activations were not found. Call the 'normalize_weights'" +
-             "function on the ANN to create an activation file.\n")
-        return []
-
-    return activations
-
-
 def download_dataset(fname, origin, untar=False):
     """
     Download a dataset, if not already there.
@@ -285,21 +175,21 @@ def download_dataset(fname, origin, untar=False):
     Parameters
     ----------
 
-    fname : string
+    fname: string
         Full filename of dataset, e.g. ``mnist.pkl.gz``.
-    origin : string
+    origin: string
         Location of dataset, e.g. url
         https://s3.amazonaws.com/img-datasets/mnist.pkl.gz
-    untar : boolean, optional
-        If true, untar file.
+    untar: boolean, optional
+        If ``True``, untar file.
 
     Returns
     -------
 
-    fpath : string
+    fpath: string
         The path to the downloaded dataset. If the user has write access to
         ``home``, the dataset will be stored in ``~/.snntoolbox/datasets/``,
-        otherwise in ``/tmp/.snntoolbox/datasets/``
+        otherwise in ``/tmp/.snntoolbox/datasets/``.
 
     Todo
     ----
@@ -328,7 +218,7 @@ def download_dataset(fname, origin, untar=False):
         fpath = os.path.join(datadir, fname)
 
     if not os.path.exists(fpath):
-        echo("Downloading data from {}\n".format(origin))
+        print("Downloading data from {}".format(origin))
         error_msg = 'URL fetch failure on {}: {} -- {}'
         try:
             try:
@@ -344,7 +234,7 @@ def download_dataset(fname, origin, untar=False):
 
     if untar:
         if not os.path.exists(untar_fpath):
-            echo("Untaring file...\n")
+            print("Untaring file...\n")
             tfile = tarfile.open(fpath, 'r:gz')
             try:
                 tfile.extractall(path=datadir)

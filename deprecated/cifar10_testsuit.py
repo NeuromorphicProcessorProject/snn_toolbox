@@ -5,17 +5,8 @@ Created on Wed Nov 18 14:50:36 2015
 @author: rbodo
 """
 
-# For compatibility with python2
-from __future__ import print_function, unicode_literals
-from __future__ import division, absolute_import
-from future import standard_library
-standard_library.install_aliases()
-
 
 if __name__ == '__main__':
-
-    from snntoolbox.config import update_setup
-    from snntoolbox.io.load import load_model
     from keras.datasets import cifar10
     import matplotlib.pyplot as plt
     from random import randint
@@ -23,12 +14,6 @@ if __name__ == '__main__':
     # For compatibility with python2
     from builtins import range
 
-    globalparams = {'dataset': 'cifar10',
-                    'architecture': 'cnn',
-                    'model_lib': 'lasagne',
-                    'filename': 'lasagne'}
-    update_setup(globalparams)
-    ann = load_model('ann_'+globalparams['filename'])['model']
     (X_train, y_train), (X_test, y_test) = cifar10.load_data()
 
     plt.figure(figsize=(17, 9))

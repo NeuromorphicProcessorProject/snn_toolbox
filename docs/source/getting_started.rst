@@ -35,12 +35,12 @@ Running the toolbox
 
 In a terminal window, type ``snntoolbox`` to start the main GUI containing all tools.
 
+Alternitively, read and run example.py in snntoolbox/tests/, which contains a number of typical usecases.
+
 Extending the toolbox
 ---------------------
 
-Have a look at the :doc:`tests </tests>` to see how loading, converting and
-simulating a network is implemented. The module ``snntoolbox/core/util.py``
-contains a helper function combining the complete pipeline of
+Have a look at the :doc:`pipeline </core/pipeline>` module to examine the complete pipeline of
 
     1. loading and testing a pretrained ANN,
     2. normalizing weights
@@ -49,30 +49,28 @@ contains a helper function combining the complete pipeline of
     5. if given a specified hyperparameter range ``params``,
        repeat simulations with modified parameters.
 
-Adding a new model library
-..........................
+Input side: Adding a new model library
+......................................
 
 So far, the toolbox supports input models written in Keras and Lasagne.
-Code that needs to be extended when adding another language (e.g. caffe, torch)
-includes:
 
-    - io.load.ANN
-    - io.load.load_model
-    - io.save.save_model
-    - core.util.evaluate
-    - core.util.get_activations_batch
-    - core.normalization.normalize_weights
+The philosophy behind the architecture is to make all steps in the conversion/simulation
+pipeline independent of the original model format. Therefore, in order to add a
+new input model library (e.g. Caffe) to the toolbox, put a module named ``caffe_input_lib``
+into the ``model_libs`` package. Have a look at one of the existing files there to get an idea
+what functions have to be implemented. The return requirements are specified in their
+respective docstrings. Basically, all it needs is a function to parse the essential
+information about layers into a common format used by the toolbox further down the line.
 
-Adding a custom simulator
-.........................
+Output side: Adding a custom simulator
+......................................
 
-Have a look at the following files to see how pyNN simulators, Brian2, and our
-custom simulator 'INI' are integrated in the toolbox.
+Similarly, adding another simulator to run converted networks implies adding a file to the
+``target_simulators`` package. Each file in there allow building a spiking network
+and exporting it for use in a specific spiking simulator.
 
-    - io.load.load_model
-    - io.save.save_model
-    - core.conversion.convert_to_SNN
-    - core.simulation.run_SNN
+To add a simulator called 'custom', put a file named ``custom_target_sim.py`` into ``target_simulators``. Then implement the class ``SNN_compiled`` with its
+methods (``load``, ``save``, ``build``, ``run``) tailored to 'custom' simulator.
 
 Examples - Fully Connected Network on MNIST
 -------------------------------------------
@@ -88,21 +86,22 @@ then call :py:func:`tests.util.test_full`, like this:
     import snntoolbox
 
     # Define parameters
-    globalparams = {'dataset': 'mnist',  # Dataset
-                    'architecture': 'mlp',  # Model type
-                    'filename': '98.05',  # Name of file containing the model
-                    'evaluateANN': True,  # Test accuracy of input model
-                    'normalize': True,  # Normalize weights before conversion
-                    'sim_only': False,  # Skip conversion and simulate SNN directly
-                    'verbose': 2}  # Show plots and temporary results
-    cellparams = {'v_thresh': 1.0,  # Threshold potential
-                  'v_reset': 0.0}  # Reset potential
-    simparams = {'duration': 100.0,  # Simulation time
-                 'num_to_test': 2}  # Samples to evaluate
+    settings = {'dataset': 'mnist',
+                'architecture': 'cnn',
+                'filename': '99.16',
+                'path': 'example/mnist/cnn/99.16/INI/',
+                'evaluateANN': True,  # Test accuracy of input model
+                'normalize': True,  # Normalize weights to get better perf.
+                'convert': True,  # Convert analog net to spiking
+                'simulate': True,  # Simulate converted net
+                'verbose': 3,  # Show plots and temporary results
+                'v_thresh': 1,  # Threshold potential
+                'simulator': 'INI',  # Reset potential
+                'duration': 100.0}  # Simulation time
     
     # Run network (including loading the model, weight normalization, conversion
     # and simulation)
-    snntoolbox.update_setup(globalparams, cellparams, simparams)
+    snntoolbox.update_setup(settings)
     snntoolbox.test_full()
 
 
@@ -112,7 +111,7 @@ However, here are three usecases that allow some more insight into the applicati
     B. `Simulation only`_
     C. `Parameter sweep`_
 
-For a description of ``global_params``, ``cell_params``, and ``sim_params``,
+For a description of the possible values for the parameters in ``settings``,
 see :doc:`configure_toolbox`.
 
 .. _Conversion only:
@@ -121,70 +120,18 @@ see :doc:`configure_toolbox`.
 Usecase A - Conversion only
 ...........................
 
-Pipeline:
-    1. Load and test a pretrained ANN
-    2. Normalize weights
-    3. Convert to SNN
-    4. Save SNN to disk
+Steps:
+    1. Set ``convert = True`` and ``simulate = False``
+    2. Specify other parameters (working directory, filename, ...)
+    3. Update settings: ``update_setup(settings)``
+    4. Call ``test_full()``. This will
 
-.. code-block:: python
-
-    # For compatibility with python2
-    from __future__ import print_function, unicode_literals
-    from __future__ import division, absolute_import
-    from future import standard_library
-
-    from SNN_toolbox import sim
-    from SNN_toolbox.config import update_setup, globalparams
-    from SNN_toolbox.core.conversion import convert_to_SNN
-    from SNN_toolbox.core.normalization import normalize_weights
-    from SNN_toolbox.io.load import load_model, get_reshaped_dataset, ANN
-    from SNN_toolbox.tests.util import evaluate
-
-    standard_library.install_aliases()
-
-    # Parameters
-    global_params = {'dataset': 'mnist',
-                     'architecture': 'cnn',
-                     'path': '../data/',
-                     'filename': '99.06'}
-
-    # Check that parameter choices are valid. Parameters that were not
-    # specified above are filled in from the default parameters.
-    update_setup(global_params=global_params)
-
-    sim.setup()
-
-    # Load dataset, reshaped according to network architecture
-    (X_train, Y_train, X_test, Y_test) = get_reshaped_dataset()
-
-    # Load model structure and weights
-    model = load_model()
-
-    # Evaluate ANN before normalization to ensure it doesn't affect accuracy
-    score = evaluate(model, X_test, Y_test, **{'show_accuracy': True})
-    print('\n Before weight normalization:')
-    print('Test score: {:.2f}'.format(score[0]))
-    print('Test accuracy: {:.2%} \n'.format(score[1]))
-
-    # Normalize ANN
-    model = normalize_weights(model,
-                              X_train[:int(len(X_train) *
-                                      globalparams['fracNorm']), :],
-                              globalparams['path'])
-
-    # Re-evaluate ANN
-    score = evaluate(model, X_test, Y_test, **{'show_accuracy': True})
-    print('Test score: {:.2f}'.format(score[0]))
-    print('Test accuracy: {:.2%} \n'.format(score[1]))
-
-    # Extract architecture and weights from model.
-    ann = ANN(model)
-
-    # Compile spiking network from ANN. SNN is written to
-	# <path>/<dataset>/<architecture>/<filename>/<simulator>.
-    convert_to_SNN(ann)
-
+        - load the dataset,
+        - load a pretrained ANN from ``<path>/<filename>``
+        - optionally evaluate it (``evaluate = True``),
+        - optionally normalize weights (``normalize = True``),
+        - convert to spiking,
+        - save SNN to disk.
 
 .. _Simulation only:
 .. _evaluated:
@@ -192,104 +139,76 @@ Pipeline:
 Usecase B - Simulation only
 ...........................
 
-Pipeline:
-    1. Specify parameters
-    2. Load dataset
-    3. Call ``run_SNN``. This will
+Steps:
+    1. Set ``convert = False`` and ``simulate = True``
+    2. Specify other parameters (working directory, simulator to use, ...)
+    3. Update settings: ``update_setup(settings)``
+    4. Call ``test_full()``. This will
 
-        - load your already converted SNN
-        - run it on a spiking simulator
-        - Plot spikerates, spiketrains and membrane voltage.
+        - load the dataset,
+        - load your already converted SNN,
+        - run the net on a spiking simulator,
+        - plot spikerates, spiketrains, activations, correlations, etc.
 
-It is assumed that a network has been converted using for instance the script
-``convert_only.py``. (There should be a folder in
-``<repo_root>/<path>/<dataset>/<architecture>/`` containing the converted
-network.)
-
-.. code-block:: python
-
-    # For compatibility with python2
-    from __future__ import print_function, unicode_literals
-    from __future__ import division, absolute_import
-    from future import standard_library
-
-    from SNN_toolbox.config import update_setup
-    from SNN_toolbox.io.load import get_reshaped_dataset
-    from SNN_toolbox.core.simulation import run_SNN
-
-    standard_library.install_aliases()
-
-    # Parameters
-    global_params = {'dataset': 'mnist',
-                     'architecture': 'cnn',
-                     'path': '../data/',
-                     'filename': '99.06'}
-    cell_params = {'v_thresh': 1.0,
-                   'v_reset': 0.0}
-    sim_params = {'duration': 1000.0,
-                  'dt': 10,
-                  'num_to_test': 2}
-
-    # Check that parameter choices are valid. Parameters that were not
-    # specified above are filled in from the default parameters.
-    update_setup(global_params, cell_params, sim_params)
-
-    # Load dataset, reshaped according to network architecture
-    (X_train, Y_train, X_test, Y_test) = get_reshaped_dataset()
-
-    # Simulate spiking network
-    run_SNN(X_test, Y_test)
-
+    Note: It is assumed that a network has already been converted (e.g. with
+    Usecase A). I.e. there should be a folder in ``<path>`` containing the
+    converted network, named ``snn_<filename>_<simulator>``.
 
 .. _Parameter sweep:
 
 Usecase C - Parameter sweep
 ...........................
 
-Pipeline:
-    1. Specify parameters
-    2. Define a parameter range to sweep, e.g. for `v_thresh`
+Steps:
+    1. Specify parameters and update settings with ``update_setup(settings)``
+    2. Define a parameter range to sweep, e.g. for `v_thresh`, using for
+       instance the helper function ``get_range()``
     3. Call ``test_full``. This will
 
-        - load an already converted SNN
-        - run it repeatedly on a spiking simulator while varying the hyperparameter
+        - load an already converted SNN or perform a conversion as specified in
+          settings.
+        - run the SNN repeatedly on a spiking simulator while varying the
+          hyperparameter
         - plot accuracy vs. hyperparameter
+
+Usecase C is shown in full in the example below.
 
 .. code-block:: python
 
-    # For compatibility with python2
-    from __future__ import print_function, unicode_literals
-    from __future__ import division, absolute_import
-    from future import standard_library
-
-    from SNN_toolbox.tests.util import get_range, test_full
-    from SNN_toolbox.config import update_setup
-
-    standard_library.install_aliases()
+    import snntoolbox
 
     # Parameters
-    global_params = {'dataset': 'mnist',
-                     'architecture': 'cnn',
-                     'path': '../data/',
-                     'filename': '99.06',
-                     'sim_only': True}  # This skips loading, normalizing and converting the ann
-    cell_params = {'v_reset': 0.0}
-    sim_params = {'duration': 100.0,
-                  'dt': 5.0,
-                  'num_to_test': 2}
-
-    update_setup(global_params=global_params,
-                 cell_params=cell_params,
-                 sim_params=sim_params)
-
-    # Define parameter values to sweep
-    thresholds = get_range(0.4, 1.5, 2, method='linear')
-
-    # Run simulation for each value in the specified parameter range.
-    # The method `test_full` combines and generalizes loading, normalization,
-    # evaluation, conversion and simulation steps. It also plots accuracy vs
-    # hyperparameter.
-    (results, spiketrains, vmem) = test_full(thresholds, 'v_thresh')
+    settings = {'dataset': 'mnist',
+                'architecture': 'cnn',
+                'filename': '99.16',
+                'path': 'example/mnist/cnn/99.16/INI/',
+                'evaluateANN': True,  # Test accuracy of input model
+                'normalize': True,  # Normalize weights to get better perf.
+                'convert': True,  # Convert analog net to spiking
+                'simulate': True,  # Simulate converted net
+                'verbose': 3,  # Show plots and temporary results
+                'v_thresh': 1,  # Threshold potential
+                'simulator': 'INI',  # Reset potential
+                'duration': 100.0}  # Simulation time
+    
+    # Update defaults with parameters specified above:
+    snntoolbox.update_setup(settings)
+    
+    # Run network (including loading the model, weight normalization,
+    # conversion and simulation).
+    
+    # If set True, the converted model is simulated for three different values
+    # of v_thresh. Otherwise use parameters as specified above,
+    # for a single run.
+    do_param_sweep = True
+    if do_param_sweep:
+        param_name = 'v_thresh'
+        params = snntoolbox.get_range(0.1, 1.5, 3, method='linear')
+        snntoolbox.test_full(params=params,
+                             param_name=param_name,
+                             param_logscale=False)
+    else:
+        snntoolbox.test_full()
 
 
 

@@ -28,20 +28,20 @@ def get_range(start=0.0, stop=1.0, num=5, method='linear'):
     Parameters
     ----------
 
-    start : scalar, optional
+    start: scalar, optional
         The starting value of the sequence
-    stop : scalar, optional
+    stop: scalar, optional
         End value of the sequence.
-    num : int, optional
+    num: int, optional
         Number of samples to generate. Must be non-negative.
-    method : string, optional
+    method: string, optional
         The sequence will be computed on either a linear, logarithmic or random
         grid.
 
     Returns
     -------
 
-    samples : ndarray
+    samples: ndarray
         There are ``num`` samples in the closed interval [start, stop].
     """
 
@@ -82,6 +82,15 @@ def print_description(snn=None):
 
 
 def spiketrains_to_rates(spiketrains_batch):
+    """
+    Convert spiketrains to spikerates.
+
+    The output will have the same shape as the input except for the last
+    dimension, which is removed by replacing a sequence of spiketimes by a
+    single rate value.
+
+    """
+
     spikerates_batch = []
     for (i, sp) in enumerate(spiketrains_batch):
         shape = sp[0].shape[:-1]  # output_shape of layer
@@ -111,11 +120,45 @@ def spiketrains_to_rates(spiketrains_batch):
 
 
 def get_sample_activity_from_batch(activity_batch, i=0):
-    """ Returns layer activity for the first sample of a batch. """
+    """
+    Returns layer activity for sample ``i`` of an ``activity_batch``.
+
+    """
+
     return [(layer_act[0][i], layer_act[1]) for layer_act in activity_batch]
 
 
 def norm_weights(weights, activations, previous_fac):
+    """
+    Normalize weights
+
+    Determine the maximum activation or weight of a layer and apply this factor
+    to normalize the weights.
+
+    Parameters
+    ----------
+        weights: array
+            The parameters of a layer.
+        activations: array
+            The activations of cells in a specific layer. Has the same shape as
+            the layer.
+        previous_fac: float
+            Maximum activation or weight of the previous layer. Normalization
+            factor ``applied_fac`` is the ratio of the max values of the
+            previous to this layer.
+
+    Returns
+    -------
+
+        weights_norm: array
+            The parameters of a layer, divided by ``applied_fac``.
+        scale_fac: float
+            Maximum activation or weight of this layer.
+        applied_fac: float
+            Divisor with which the weights were normalized.
+
+    """
+
     # Skip last batch if batch_size was chosen such that the dataset
     # could not be divided into an integer number of equal-sized
     # batches.
@@ -132,6 +175,31 @@ def norm_weights(weights, activations, previous_fac):
 
 
 def get_activations_layer(get_activ, X_train):
+    """
+    Get activations of a specific layer.
+
+    Parameters
+    ----------
+
+        get_activ: Theano function
+            A Theano function computing the activations of a layer.
+
+        X_train: float32 array
+            The samples to compute activations for. With data of the form
+            (channels, num_rows, num_cols), X_train has dimension
+            (num_samples, channels*num_rows*num_cols) for a multi-layer
+            perceptron, and (num_samples, channels, num_rows, num_cols) for a
+            convolutional net.
+
+    Returns
+    -------
+
+        activations: array
+            The activations of cells in a specific layer. Has the same shape as
+            the layer.
+
+    """
+
     shape = list(get_activ(X_train[:1]).shape)
     shape[0] = X_train.shape[0]
     activations = np.empty(shape)
@@ -146,12 +214,6 @@ def get_activations_layer(get_activ, X_train):
     return activations
 
 
-def get_activations_sample(X):
-    """ Returns layer activations for a single input X """
-    activations_batch = get_activations_batch(np.array(X, ndmin=X.ndim+1))
-    return get_sample_activity_from_batch(activations_batch)
-
-
 def get_activations_batch(ann, X_batch):
     """
     Compute layer activations of an ANN.
@@ -159,23 +221,29 @@ def get_activations_batch(ann, X_batch):
     Parameters
     ----------
 
-    X_batch : float32 array
-        The input samples to use for determining the layer activations.
-        With data of the form (channels, num_rows, num_cols), X has dimension
-        (1, channels*num_rows*num_cols) for a multi-layer perceptron, and
-        (1, channels, num_rows, num_cols) for a convolutional net.
+        ann: SNN
+            An instance of the SNN class. Contains the ``get_activ`` Theano
+            functions which allow computation of layer activations of the
+            original input model (hence the name 'ann'). Needed in
+            activation and correlation plots.
+
+        X_batch: float32 array
+            The input samples to use for determining the layer activations.
+            With data of the form (channels, num_rows, num_cols), X has
+            dimension (batch_size, channels*num_rows*num_cols) for a
+            multi-layer perceptron, and
+            (batch_size, channels, num_rows, num_cols) for a convolutional net.
 
     Returns
     -------
 
-    activations_batch : list of tuples ``(activations, label)``
-        Each entry represents a layer in the ANN for which an activation can be
-        calculated (e.g. ``Dense``, ``Convolution2D``).
-
-        ``activations`` is an array of the same dimension as the corresponding
-        layer, containing the activations of Dense or Convolution layers.
-
-        ``label`` is a string specifying the layer type, e.g. ``'Dense'``.
+        activations_batch: list of tuples ``(activations, label)``
+            Each entry represents a layer in the ANN for which an activation
+            can be calculated (e.g. ``Dense``, ``Convolution2D``).
+            ``activations`` containing the activations of a layer. It has the
+            same shape as the original layer, e.g.
+            (batch_size, n_features, n_rows, n_cols) for a convolution layer.
+            ``label`` is a string specifying the layer type, e.g. ``'Dense'``.
 
     """
 
@@ -198,15 +266,14 @@ def wilson_score(p, n):
     """
     Confidence interval of a binomial distribution.
 
-    See
-    ``https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval``
+    See https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval.
 
     Parameters
     ----------
 
-    p : float
+    p: float
         The proportion of successes in ``n`` experiments.
-    n : int
+    n: int
         The number of Bernoulli-trials (sample size).
 
     Returns
@@ -231,20 +298,20 @@ def extract_label(label):
     Parameters
     ----------
 
-    label : string
+    label: string
         Specifies both the layer type, index and shape, e.g.
-        ``'3Convolution2D_3x32x32'``.
+        ``'03Convolution2D_3x32x32'``.
 
     Returns
     -------
 
-    layer_num : int
+    layer_num: int
         The index of the layer in the network.
 
-    name : string
+    name: string
         The type of the layer.
 
-    shape : tuple
+    shape: tuple
         The shape of the layer
     """
 

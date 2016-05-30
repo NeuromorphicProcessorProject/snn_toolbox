@@ -48,15 +48,6 @@ else:
     from queue import Queue
 
 
-def iter_except(function, exception):
-    """Works like builtin 2-argument `iter()`, but stops on `exception`."""
-    try:
-        while True:
-            yield function()
-    except exception:
-        return
-
-
 class SNNToolboxGUI():
     def __init__(self, root):
         self.initialized = False
@@ -156,7 +147,7 @@ class SNNToolboxGUI():
         debug_cb.pack(**self.kwargs)
         tip = dedent("""\
               If enabled, the dataset used for testing will be reduced to one
-              'Batch size' (see parameter below).""")
+              'batch size' (see parameter batch_size below).""")
         ToolTip(debug_cb, text=tip, wraplength=750)
 
         # Evaluate ANN
@@ -226,7 +217,7 @@ class SNNToolboxGUI():
               parameter above). If the builtin simulator 'INI' is used, the
               batch size specifies the number of test samples that will be
               simulated in parallel. Important: When using 'INI' simulator,
-              the batch size can only be run with the batch size it has been
+              the batch size can only be run using the batch size it has been
               converted with. To run it with a different batch size, convert
               the ANN from scratch.""")
         ToolTip(batch_size_frame, text=tip, wraplength=700)
@@ -261,11 +252,12 @@ class SNNToolboxGUI():
         tip = dedent("""\
               0: No intermediate results or status reports.
               1: Print progress of simulation and intermediate results.
-              2: After each batch, plot guessed classes per sample and show an
-                 input image. At the end of the simulation, plot the number of
-                 spikes for each sample.
+              2: Record spiketrains of all layers for one sample, and save
+                 various plots (spiketrains, spikerates, activations,
+                 correlations, ...)
               3: Record, plot and return the membrane potential of all layers
-                 for the last test sample. Very time consuming.""")
+                 for the last test sample. Very time consuming. Works only with
+                 pyNN simulators.""")
         ToolTip(verbose_frame, text=tip, wraplength=750)
 
         # Set and display working directory
@@ -303,10 +295,11 @@ class SNNToolboxGUI():
         self.filename_entry.pack(fill='both', expand=True, side='bottom')
         tip = dedent("""\
               Base name of all loaded and saved files during this run. The ANN
-              model to be converted is expected to be named 'ann_<basename>'.
+              model to be converted is expected to be named '<basename>'.
               The toolbox will save and load converted SNN models under the
-              name 'snn_<basename>'. Normalized weights will follow the naming
-              scheme 'ann_<basename>_normWeights'.""")
+              name 'snn_<basename>'. When exporting a converted spiking net to
+              test it in a specific simulator, the toolbox writes the exported
+              SNN to files named ``snn_<basename>_<simulator>``.""")
         ToolTip(filename_frame, text=tip, wraplength=750)
 
     def cellparams_widgets(self):

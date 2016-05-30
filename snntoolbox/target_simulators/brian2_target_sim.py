@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
 """
+
+The modules in ``target_simulators`` package allow building a spiking network
+and exporting it for use in a spiking simulator.
+
+This particular module offers functionality for Brian2 simulator. Adding
+another simulator requires implementing the class ``SNN_compiled`` with its
+methods tailored to the specific simulator.
+
 Created on Thu May 19 15:00:02 2016
 
 @author: rbodo
@@ -11,7 +19,6 @@ from __future__ import division, absolute_import
 from future import standard_library
 from builtins import int, range
 
-import warnings
 import numpy as np
 from random import randint
 
@@ -22,9 +29,82 @@ standard_library.install_aliases()
 
 
 class SNN_compiled():
+    """
+    Class to hold the compiled spiking neural network, ready for testing in a
+    spiking simulator.
+
+    Parameters
+    ----------
+
+        ann: dict
+            Parsed input model; result of applying ``model_lib.extract(in)``
+            to the input model ``in``.
+
+    Attributes
+    ----------
+
+        ann: dict
+            Parsed input model; result of applying ``model_lib.extract(in)``
+            to the input model ``in``.
+
+        sim: Simulator
+            Module containing utility functions of spiking simulator. Result of
+            calling ``snntoolbox.config.initialize_simulator()``. For instance,
+            if using Brian simulator, this initialization would be equivalent
+            to ``import pyNN.brian as sim``.
+
+        layers: list
+            Each entry represents a layer, i.e. a population of neurons, in
+            form of Brian2 ``NeuronGroup`` objects.
+
+        threshold: string
+            Defines spiking threshold.
+
+        reset: string
+            Defines reset potential.
+
+        eqs: string
+            Differential equation for membrane potential.
+
+        spikemonitors: list
+            Brian2 ``SpikeMonitor`` s for each layer that records spikes.
+
+        statemonitors: list
+            Brian2 ``StateMonitor`` s for each layer that records membrane
+            potential.
+
+        labels: list
+            The layer labels.
+
+        output_shapes: list
+            The output shapes of each layer. During conversion, all layers are
+            flattened. Need output shapes to reshape the output of layers back
+            to original form when plotting results later.
+
+        cellparams: dict
+            Neuron cell parameters determining properties of the spiking
+            neurons in pyNN simulators.
+
+    Methods
+    -------
+
+        build:
+            Convert an ANN to a spiking neural network, using layers derived
+            from Keras base classes.
+        run:
+            Simulate a spiking network.
+        save:
+            Write model architecture and weights to disk.
+        load:
+            Load model architecture and weights from disk.
+        end_sim:
+            Clean up after simulation.
+
+    """
+
     def __init__(self, ann):
         self.ann = ann
-        self.sim = initialize_simulator(settings['simulator'])
+        self.sim = initialize_simulator()
         self.layers = [self.sim.PoissonGroup(np.prod(ann['input_shape'][1:]),
                                              rates=0*self.sim.Hz,
                                              dt=settings['dt']*self.sim.ms)]
@@ -34,6 +114,41 @@ class SNN_compiled():
         self.spikemonitors = [self.sim.SpikeMonitor(self.layers[0])]
         self.statemonitors = []
         self.labels = ['InputLayer']
+
+    def build(self):
+        """
+        Compile a spiking neural network to prepare for simulation with Brian2.
+
+        """
+
+        echo('\n')
+        echo("Compiling spiking network...\n")
+
+        # Iterate over hidden layers to create spiking neurons and store
+        # connections.
+        for layer in self.ann['layers']:
+            if layer['layer_type'] in {'Dense', 'Convolution2D',
+                                       'MaxPooling2D', 'AveragePooling2D'}:
+                self.add_layer(layer)
+            else:
+                echo("Skipped layer:  {}\n".format(layer['layer_type']))
+                continue
+            if layer['layer_type'] == 'Dense':
+                self.build_dense(layer)
+            elif layer['layer_type'] == 'Convolution2D':
+                self.build_convolution(layer)
+            elif layer['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
+                self.build_pooling(layer)
+
+        echo("Compilation finished.\n\n")
+
+        # Track the output layer spikes. Add monitor here if it was not already
+        # appended above (because globalparams['verbose'] < 1)
+        if len(self.spikemonitors) < len(self.layers):
+            self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[-1]))
+
+        # Create snapshot of network
+        self.store()
 
     def add_layer(self, layer):
         echo("Building layer: {}\n".format(layer['label']))
@@ -129,94 +244,30 @@ class SNN_compiled():
         self.snn = self.sim.Network(self.layers, self.connections,
                                     self.spikemonitors, self.statemonitors)
 
-    def build(self):
-        """
-        Convert an `analog` to a `spiking` neural network.
-
-        Written in pyNN (http://neuralensemble.org/docs/PyNN/).
-        pyNN is a simulator-independent language for building neural network
-        models. It allows running the converted net in a Spiking Simulator like
-        Brian, NEURON, or NEST.
-
-        During conversion, two lists are created and stored to disk: ``layers``
-        and ``connections``. Each entry in ``layers`` represents a population
-        of neurons, given by a pyNN ``Population`` object. The neurons in these
-        layers are connected by pyNN ``Projection`` s, stored in
-        ``connections`` list.
-        This conversion method performs the connection process between layers.
-        This means, if the session was started with a call to ``sim.setup()``,
-        the converted network can be tested right away, using the simulator
-        ``sim``.
-        However, when starting a new session (calling ``sim.setup()`` after
-        conversion), the ``layers`` have to be reloaded from disk using
-        ``io.load.load_assembly``, and the connections reestablished
-        manually. This is implemented in ``simulation.run_SNN``, go there for
-        details. See ``tests.util.test_full`` about how to simulate after
-        converting. The script ``tests.parameter_sweep`` wraps all these
-        functions in one and allows toggling them by setting a few parameters.
-
-        Parameters
-        ----------
-        ann : ANN model
-            The network architecture and weights as ``snntoolbox.io.load.ANN``
-            object.
-
-        Returns
-        -------
-        layers : list
-            Each entry represents a layer, i.e. a population of neurons, in
-            form of pyNN ``Population`` objects.
-        """
-
-        echo('\n')
-        echo("Compiling spiking network...\n")
-
-        # Iterate over hidden layers to create spiking neurons and store
-        # connections.
-        for layer in self.ann['layers']:
-            if layer['layer_type'] in {'Dense', 'Convolution2D',
-                                       'MaxPooling2D', 'AveragePooling2D'}:
-                self.add_layer(layer)
-            else:
-                echo("Skipped layer:  {}\n".format(layer['layer_type']))
-                continue
-            if layer['layer_type'] == 'Dense':
-                self.build_dense(layer)
-            elif layer['layer_type'] == 'Convolution2D':
-                self.build_convolution(layer)
-            elif layer['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
-                self.build_pooling(layer)
-
-        echo("Compilation finished.\n\n")
-
-        # Track the output layer spikes. Add monitor here if it was not already
-        # appended above (because globalparams['verbose'] < 1)
-        if len(self.spikemonitors) < len(self.layers):
-            self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[-1]))
-
-        # Create snapshot of network
-        self.store()
-
-    def run(self, net, X_test, Y_test):
+    def run(self, snn_precomp, X_test, Y_test):
         """
         Simulate a spiking network with IF units and Poisson input in pyNN,
         using a simulator like Brian, NEST, NEURON, etc.
 
-        This function will randomly select ``simparams['num_to_test']`` test
+        This function will randomly select ``settings['num_to_test']`` test
         samples among ``X_test`` and simulate the network on those.
 
-        If ``globalparams['verbose'] > 1``, the simulator records the
-        spiketrains and membrane potential of each neuron in each layer.
-        Doing so for all ``simparams['num_to_test']`` test samples is very
-        costly in terms of memory and time, but can be useful for debugging the
-        network's general functioning. This function returns only the
-        recordings of the last test sample. To get detailed information about
-        the network's behavior for a particular sample, replace the test set
-        ``X_test, Y_test`` with this sample of interest.
+        Alternatively, a list of specific input samples can be given to the
+        toolbox GUI, which will then be used for testing.
+
+        If ``settings['verbose'] > 1``, the simulator records the
+        spiketrains and membrane potential of each neuron in each layer, for
+        the last sample.
+
+        This is somewhat costly in terms of memory and time, but can be useful
+        for debugging the network's general functioning.
 
         Parameters
         ----------
 
+        snn_precomp: SNN
+            The converted spiking network, before compilation (i.e. independent
+            of simulator).
         X_test : float32 array
             The input samples to test.
             With data of the form (channels, num_rows, num_cols),
@@ -227,9 +278,6 @@ class SNN_compiled():
         Y_test : float32 array
             Ground truth of test data. Has dimension
             (num_samples, num_classes).
-        layers : list, possible kwarg
-            Each entry represents a layer, i.e. a population of neurons, in
-            form of pyNN ``Population`` objects.
 
         Returns
         -------
@@ -237,28 +285,15 @@ class SNN_compiled():
         total_acc : float
             Number of correctly classified samples divided by total number of
             test samples.
-        spiketrains : list of tuples
-            Each entry in ``spiketrains`` contains a tuple
-            ``(spiketimes, label)`` for each layer of the network
-            (for the last test sample only).
-            ``spiketimes`` is a 2D array where the first index runs over the
-            number of neurons in the layer, and the second index contains the
-            spike times of the specific neuron.
-            ``label`` is a string specifying both the layer type and the index,
-            e.g. ``'03Dense'``.
-        vmem : list of tuples
-            Each entry in ``vmem`` contains a tuple ``(vm, label)`` for each
-            layer of the network (for the first test sample only). ``vm`` is a
-            2D array where the first index runs over the number of neurons in
-            the layer, and the second index contains the membrane voltage of
-            the specific neuron.
-            ``label`` is a string specifying both the layer type and the index,
-            e.g. ``'03Dense'``.
+
         """
 
+        # Load input layer
         for obj in self.snn.objects:
             if 'poissongroup' in obj.name and 'thresholder' not in obj.name:
                 input_layer = obj
+
+        # Update parameters
         namespace = {'v_thresh': settings['v_thresh'] * self.sim.volt,
                      'v_reset': settings['v_reset'] * self.sim.volt,
                      'tau_m': settings['tau_m'] * self.sim.ms}
@@ -299,7 +334,7 @@ class SNN_compiled():
             if settings['verbose'] > 1 and \
                     test_num == settings['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
-                self.collect_plot_results(net, X_test[ind])
+                self.collect_plot_results(snn_precomp, X_test[ind])
 
             # Reset simulation time and recorded network variables for next
             # run.
@@ -321,66 +356,76 @@ class SNN_compiled():
         return total_acc
 
     def end_sim(self):
+        """ Clean up after simulation. """
         pass
 
-    def collect_plot_results(self, net, X):
-        # Plot spikerates and spiketrains of layers. To visualize the
-        # spikerates, neurons in hidden layers are spatially arranged on a 2d
-        # rectangular grid, and the firing rate of each neuron on the grid is
-        # encoded by color. Also plot the membrane potential vs time (except
-        # for the input layer).
+    def collect_plot_results(self, layers, output_shapes, ann, X):
+        """
+        Collect spiketrains of all ``layers`` of a net from one simulation run,
+        and plot results.
+
+        Plots include: Spiketrains, activations, spikerates, membrane
+        potential, correlations.
+
+        To visualize the spikerates, neurons in hidden layers are spatially
+        arranged on a 2d rectangular grid, and the firing rate of each neuron
+        on the grid is encoded by color.
+
+        Membrane potential vs time is plotted for all except the input layer.
+
+        The activations are obtained by evaluating the original ANN ``ann`` on
+        a sample ``X``.
+
+        The ``output shapes`` of each layer are needed to reshape the output of
+        layers back to original form when plotting results (During conversion,
+        all layers are flattened).
+
+        """
 
         from snntoolbox.io_utils.plotting import output_graphs, plot_potential
-        # Turn off warning because we have no influence on it:
-        # "FutureWarning: elementwise comparison failed; returning scalar
-        #  instead, but in the future will perform elementwise comparison"
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            warnings.warn('deprecated', FutureWarning)
 
-        # Allocate a list 'spiketrains' with the following specification:
-        # Each entry in ``spiketrains`` contains a tuple
-        # ``(spiketimes, label)`` for each layer of the network (for the
-        # first batch only, and excluding ``Flatten`` layers).
-        # ``spiketimes`` is an array where the first indices run over the
-        # number of neurons in the layer, and the last index contains the
-        # spike times of the specific neuron.
-        # ``label`` is a string specifying both the layer type and the
-        # index, e.g. ``'03Dense'``.
+        # Collect spiketrains of all layers, for the last test sample.
+        vmem = []
+        showLegend = False
+
+        # Allocate a list 'spiketrains_batch' with the following specification:
+        # Each entry in ``spiketrains_batch`` contains a tuple
+        # ``(spiketimes, label)`` for each layer of the network (for the first
+        # batch only, and excluding ``Flatten`` layers).
+        # ``spiketimes`` is an array where the last index contains the spike
+        # times of the specific neuron, and the first indices run over the
+        # number of neurons in the layer:
+        # (num_to_test, n_chnls*n_rows*n_cols, duration)
+        # ``label`` is a string specifying both the layer type and the index,
+        # e.g. ``'03Dense'``.
         spiketrains_batch = []
-        for (i, layer) in enumerate(net.layers):
-            if 'get_activ' in layer.keys():
-                shape = list(layer['output_shape']) + \
-                             [int(settings['duration'] / settings['dt'])]
-                shape[0] = 1  # simparams['num_to_test']
-                idx = i if 'Pool' in layer['label'] else i-1
-                spiketrains_batch.append((np.zeros(shape),
-                                          net.layers[idx]['label']))
-
-            # Collect spiketrains of all layers, for the last test sample.
-            for i in range(len(self.labels)-1):
-                shape = spiketrains_batch[i][0].shape
-                spiketrains = np.array(
-                    self.spikemonitors[i+1].spike_trains() / self.sim.ms)
-                spiketrains2 = np.empty((np.prod(shape[:-1]), shape[-1]))
-                for j in range(len(spiketrains)):
-                    spiketrain = np.zeros(shape[-1])
-                    spiketrain[:len(spiketrains[j])] = np.array(spiketrains[j])
-                    spiketrains2[j] = spiketrain
-                spiketrains_batch[i][0][:] = np.reshape(spiketrains2, shape)
-            output_graphs(spiketrains_batch, net, np.array(X, ndmin=4),
-                          settings['log_dir_of_current_run'])
+        j = 0
+        for (i, layer) in enumerate(layers):
+            if i == 0 or 'Flatten' in layer.label:
+                continue
+            shape = list(output_shapes[j]) + \
+                [int(settings['duration'] / settings['dt'])]
+            shape[0] = 1  # simparams['num_to_test']
+            spiketrains_batch.append((np.zeros(shape), layer.label))
+            spiketrains = np.array(
+                self.spikemonitors[i+1].spike_trains() / self.sim.ms)
+            spiketrains_full = np.empty((np.prod(shape[:-1]), shape[-1]))
+            for k in range(len(spiketrains)):
+                spiketrain = np.zeros(shape[-1])
+                spiketrain[:len(spiketrains[k])] = np.array(
+                    spiketrains[k][:shape[-1]])
+                spiketrains_full[k] = spiketrain
+            spiketrains_batch[j][0][:] = np.reshape(spiketrains_full, shape)
             # Maybe repeat for membrane potential, skipping input layer
-            vmem = []
-            if settings['verbose'] == 3:
-                showLegend = False
-                for i in range(len(self.labels)-1):
-                    vm = []
-                    for v in self.statemonitors[i].v:
-                        vm.append(np.array(v/1e6/self.sim.mV).transpose())
-                    vmem.append((vm, self.labels[i+1]))
-                    times = self.statemonitors[0].t / self.sim.ms
-                    if settings['verbose'] == 3:
-                        if i == len(self.labels) - 2:
-                            showLegend = True
-                        plot_potential(times, vmem[i], showLegend=showLegend)
+            if settings['verbose'] == 3 and i > 0:
+                vm = [np.array(v/1e6/self.sim.mV).transpose() for v in
+                      self.statemonitors[i].v]
+                vmem.append((vm, layer.label))
+                times = self.statemonitors[0].t / self.sim.ms
+                if i == len(layers) - 2:
+                    showLegend = True
+                plot_potential(times, vmem[-1], showLegend=showLegend)
+            j += 1
+
+        output_graphs(spiketrains_batch, ann, np.array(X, ndmin=4),
+                      settings['log_dir_of_current_run'])

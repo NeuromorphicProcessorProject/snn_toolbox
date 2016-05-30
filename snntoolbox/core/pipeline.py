@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Wrapper script that combines all tools of SNN Toolbox.
+
 Created on Thu May 19 16:37:29 2016
 
 @author: rbodo
@@ -14,15 +16,15 @@ import os
 import numpy as np
 from snntoolbox import echo
 from snntoolbox.io_utils.plotting import plot_param_sweep
-from snntoolbox.io_utils.load import load_model, get_reshaped_dataset
-from snntoolbox.core.SNN import SNN
+from snntoolbox.io_utils.load import get_reshaped_dataset
+from snntoolbox.core.model import SNN
 from snntoolbox.core.util import print_description
 from snntoolbox.config import settings
 
 standard_library.install_aliases()
 
 
-def test_full(queue, params=[settings['v_thresh']], param_name='v_thresh',
+def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
               param_logscale=False):
     """
     Convert an snn to a spiking neural network and simulate it.
@@ -38,7 +40,8 @@ def test_full(queue, params=[settings['v_thresh']], param_name='v_thresh',
     The testsuit allows specification of
         - the network architecture (convolutional and fully-connected networks)
         - the dataset (e.g. MNIST or CIFAR10)
-        - the spiking simulator to use (currently brian, nest, or Neuron)
+        - the spiking simulator to use (currently Brian, Brian2, Nest, Neuron,
+          or INI's simulator.)
 
     Perform simulations of a spiking network, while optionally sweeping over a
     specified hyper-parameter range. If the keyword arguments are not given,
@@ -48,25 +51,28 @@ def test_full(queue, params=[settings['v_thresh']], param_name='v_thresh',
     Parameters
     ----------
 
-    params : ndarray, optional
+    queue: Queue, optional
+        Results are added to the queue to be displayed in the GUI.
+    params: ndarray, optional
         Contains the parameter values for which the simulation will be
         repeated.
-    param_name : string, optional
+    param_name: string, optional
         Label indicating the parameter to sweep, e.g. ``'v_thresh'``.
         Must be identical to the parameter's label in ``globalparams``.
-    param_logscale : boolean, optional
+    param_logscale: boolean, optional
         If ``True``, plot test accuracy vs ``params`` in log scale.
         Defaults to ``False``.
 
     Returns
     -------
 
-    results : list
+    results: list
         List of the accuracies obtained after simulating with each parameter
         value in param_range.
 
     """
 
+    # ____________________________ LOAD DATASET _____________________________ #
     # Load modified dataset if it has already been stored during previous run,
     # otherwise load it from scratch and perform necessary adaptations (e.g.
     # reducing dataset size for debugging or reshaping according to network
@@ -89,16 +95,16 @@ def test_full(queue, params=[settings['v_thresh']], param_name='v_thresh',
             Y_test = Y_test[ind:ind + settings['batch_size']]
         np.save(samples, np.array([X_train, Y_train, X_test, Y_test]))
 
-    # Load model structure and weights.
-    model = load_model(settings['filename'])
+    # _____________________________ LOAD MODEL ______________________________ #
+    # Extract architecture and weights from input model.
+    snn = SNN(settings['path'], settings['filename'])
 
-    # Extract architecture and weights from model.
-    snn = SNN(model)
     if settings['verbose'] > 0:
         print_description(snn)
 
     if not settings['sim_only']:
 
+        # ____________________________ NORMALIZE ____________________________ #
         # Normalize model
         if settings['normalize']:
             # Evaluate ANN before normalization to ensure it doesn't affect
@@ -113,37 +119,57 @@ def test_full(queue, params=[settings['v_thresh']], param_name='v_thresh',
             n = 10
             snn.normalize_weights(X_train[:n*settings['batch_size']])
 
+        # ____________________________ EVALUATE _____________________________ #
         # (Re-) evaluate ANN
         if settings['evaluateANN']:
             snn.evaluate_ann(X_test, Y_test)
 
+        # _____________________________ EXPORT ______________________________ #
         # Write model to disk
-        snn.save(filename=settings['filename_snn'])
+        snn.save()
 
         # Compile spiking network from ANN
         snn.build()
 
-        snn.export_to_sim(settings['path'], settings['filename_snn'])
+        # Export network in a format specific to the simulator with wich it
+        # will be tested later.
+        snn.export_to_sim()
 
-    # Simulate spiking network
+    # ______________________________ SIMULATE ______________________________ #
     results = []
+
+    if len(params) > 1 and settings['verbose'] > 0:
+        print("Testing SNN for hyperparameter values {} = ".format(param_name))
+        print(['{:.2f}'.format(i) for i in params])
+        print('\n')
+
+    # Loop over parameter to sweep
     for p in params:
         assert param_name in settings, "Unkown parameter"
         settings[param_name] = p
 
+        # Display current parameter value
         if len(params) > 1 and settings['verbose'] > 0:
             echo("Current value of parameter to sweep: {} = {:.2f}\n".format(
                                                                param_name, p))
+        # Simulate network
         total_acc = snn.run(X_test, Y_test)
 
+        # Write out results
         results.append(total_acc)
 
+    # Clean up
     snn.end_sim()
 
-    # Plot and return results of parameter sweep
+    # _______________________________ OUTPUT _______________________________ #
+    # Number of samples used in one run:
     n = len(X_test) if settings['simulator'] == 'INI' \
         else settings['num_to_test']
+    # Plot and return results of parameter sweep.
     plot_param_sweep(results, n, params, param_name, param_logscale)
 
-    queue.put(results)
+    # Add results to queue to be displayed in GUI.
+    if queue:
+        queue.put(results)
+
     return results

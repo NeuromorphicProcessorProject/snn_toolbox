@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """
+INI spiking neuron simulator
+
 A collection of helper functions, including spiking layer classes derived from
 Keras layers, which were used to implement our own IF spiking simulator.
+
 Not needed when converting and running the SNN in pyNN.
 
 Created on Tue Dec  8 10:41:10 2015

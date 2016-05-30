@@ -8,13 +8,6 @@ Created on Wed Mar  9 18:16:00 2016
 @author: rbodo
 """
 
-# For compatibility with python2
-from __future__ import print_function, unicode_literals
-from __future__ import division, absolute_import
-from future import standard_library
-standard_library.install_aliases()
-
-
 if __name__ == '__main__':
 
     import pyNN.nest as sim

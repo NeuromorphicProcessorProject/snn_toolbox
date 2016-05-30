@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
 """
+
+The modules in ``target_simulators`` package allow building a spiking network
+and exporting it for use in a spiking simulator.
+
+This particular module offers functionality for pyNN simulators Brian, Nest,
+Neuron. Adding another simulator requires implementing the class
+``SNN_compiled`` with its methods tailored to the specific simulator.
+
 Created on Thu May 19 15:00:02 2016
 
 @author: rbodo
@@ -12,8 +20,10 @@ from future import standard_library
 from builtins import int, range
 
 import os
+import sys
 import numpy as np
 from random import randint
+from six.moves import cPickle
 
 # Turn off warning because we have no influence on it:
 # "UserWarning: ConvergentConnect is deprecated and will be removed
@@ -22,6 +32,7 @@ import warnings
 
 from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
+from snntoolbox.io_utils.save import confirm_overwrite
 
 standard_library.install_aliases()
 
@@ -30,9 +41,70 @@ cellparams_pyNN = {'v_thresh', 'v_reset', 'v_rest', 'e_rev_E', 'e_rev_I', 'cm',
 
 
 class SNN_compiled():
+    """
+    Class to hold the compiled spiking neural network, ready for testing in a
+    spiking simulator.
+
+    Parameters
+    ----------
+
+        ann: dict
+            Parsed input model; result of applying ``model_lib.extract(in)``
+            to the input model ``in``.
+
+    Attributes
+    ----------
+
+        ann: dict
+            Parsed input model; result of applying ``model_lib.extract(in)``
+            to the input model ``in``.
+
+        sim: Simulator
+            Module containing utility functions of spiking simulator. Result of
+            calling ``snntoolbox.config.initialize_simulator()``. For instance,
+            if using Brian simulator, this initialization would be equivalent
+            to ``import pyNN.brian as sim``.
+
+        layers: list
+            Each entry represents a layer, i.e. a population of neurons, in
+            form of pyNN ``Population`` objects.
+
+        connections: list
+            pyNN ``Projection`` objects representing the connections between
+            individual layers.
+
+        labels: list
+            The layer labels.
+
+        output_shapes: list
+            The output shapes of each layer. During conversion, all layers are
+            flattened. Need output shapes to reshape the output of layers back
+            to original form when plotting results later.
+
+        cellparams: dict
+            Neuron cell parameters determining properties of the spiking
+            neurons in pyNN simulators.
+
+    Methods
+    -------
+
+        build:
+            Convert an ANN to a spiking neural network, using layers derived
+            from Keras base classes.
+        run:
+            Simulate a spiking network.
+        save:
+            Write model architecture and weights to disk.
+        load:
+            Load model architecture and weights from disk.
+        end_sim:
+            Clean up after simulation.
+
+    """
+
     def __init__(self, ann):
         self.ann = ann
-        self.sim = initialize_simulator(settings['simulator'])
+        self.sim = initialize_simulator()
         self.layers = [self.sim.Population(
             int(np.prod(ann['input_shape'][1:])),
             self.sim.SpikeSourcePoisson(), label='InputLayer')]
@@ -40,6 +112,57 @@ class SNN_compiled():
         self.labels = []
         self.output_shapes = []
         self.cellparams = {key: settings[key] for key in cellparams_pyNN}
+
+    def build(self):
+        """
+        Compile a spiking neural network to prepare for simulation.
+
+        Written in pyNN (http://neuralensemble.org/docs/PyNN/).
+        pyNN is a simulator-independent language for building neural network
+        models. It allows running the converted net in a Spiking Simulator like
+        Brian, NEURON, or NEST.
+
+        During compilation, two lists are created and stored to disk:
+        ``layers`` and ``connections``. Each entry in ``layers`` represents a
+        population of neurons, given by a pyNN ``Population`` object. The
+        neurons in these layers are connected by pyNN ``Projection`` s, stored
+        in ``connections`` list.
+
+        This compilation method performs the connection process between layers.
+        This means, if the session was started with a call to ``sim.setup()``,
+        the converted network can be tested right away, using the simulator
+        ``sim``.
+
+        However, when starting a new session (calling ``sim.setup()`` after
+        conversion), the ``layers`` have to be reloaded from disk using
+        ``load_assembly``, and the connections reestablished manually. This is
+        implemented in ``run`` method, go there for details.
+        See ``snntoolbox.core.pipeline.test_full`` about how to simulate after
+        converting.
+
+        """
+
+        echo('\n')
+        echo("Compiling spiking network...\n")
+
+        # Iterate over hidden layers to create spiking neurons and store
+        # connections.
+        for layer in self.ann['layers']:
+            if layer['layer_type'] in {'Dense', 'Convolution2D',
+                                       'MaxPooling2D', 'AveragePooling2D'}:
+                self.add_layer(layer)
+            else:
+                echo("Skipped layer:  {}\n".format(layer['layer_type']))
+                continue
+            if layer['layer_type'] == 'Dense':
+                self.build_dense(layer)
+            elif layer['layer_type'] == 'Convolution2D':
+                self.build_convolution(layer)
+            elif layer['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
+                self.build_pooling(layer)
+            self.connect_layer()
+
+        echo("Compilation finished.\n\n")
 
     def add_layer(self, layer):
         echo("Building layer: {}\n".format(layer['label']))
@@ -134,165 +257,48 @@ class SNN_compiled():
                 self.layers[-2], self.layers[-1],
                 self.sim.FromListConnector(self.conns, ['weight', 'delay'])))
 
-    def save(self, path, filename):
-        """
-        Write model architecture and weights to disk.
-
-        Parameters
-        ----------
-
-        model : network object
-            The network model object in the ``model_lib`` language, e.g. keras.
-        """
-
-        from snntoolbox.io_utils.save import save_assembly, save_connections
-
-        save_assembly(self.layers, path, filename)
-        save_connections(self.connections, path)
-
-    def load(self, filename=None):
-        from snntoolbox.io_utils.load import load_assembly
-
-        if filename is None:
-            filename = settings['filename_snn_exported']
-        self.layers = load_assembly(self.sim, filename)
-        for i in range(len(self.ann['layers'])):
-            if 'get_activ' in self.ann['layers'][i].keys():
-                idx = i if 'Pool' in self.ann['labels'][i] else i-1
-                self.output_shapes.append(
-                    self.ann['layers'][idx]['output_shape'])
-        if settings['verbose'] > 1:
-            echo("Restoring layer connections...\n")
-        for i in range(len(self.layers)-1):
-            filename = os.path.join(settings['path'],
-                                    self.layers[i+1].label)
-            assert os.path.isfile(filename), \
-                "Connections were not found at specified location.\n"
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                warnings.warn('deprecated', UserWarning)
-
-                self.sim.Projection(self.layers[i], self.layers[i+1],
-                                    self.sim.FromFileConnector(filename))
-
-    def build(self):
-        """
-        Convert an `analog` to a `spiking` neural network.
-
-        Written in pyNN (http://neuralensemble.org/docs/PyNN/).
-        pyNN is a simulator-independent language for building neural network
-        models. It allows running the converted net in a Spiking Simulator like
-        Brian, NEURON, or NEST.
-
-        During conversion, two lists are created and stored to disk: ``layers``
-        and ``connections``. Each entry in ``layers`` represents a population
-        of neurons, given by a pyNN ``Population`` object. The neurons in these
-        layers are connected by pyNN ``Projection`` s, stored in
-        ``connections`` list.
-        This conversion method performs the connection process between layers.
-        This means, if the session was started with a call to ``sim.setup()``,
-        the converted network can be tested right away, using the simulator
-        ``sim``.
-        However, when starting a new session (calling ``sim.setup()`` after
-        conversion), the ``layers`` have to be reloaded from disk using
-        ``io_utils.load.load_assembly``, and the connections reestablished
-        manually. This is implemented in ``simulation.run_SNN``, go there for
-        details. See ``tests.util.test_full`` about how to simulate after
-        converting. The script ``tests.parameter_sweep`` wraps all these
-        functions in one and allows toggling them by setting a few parameters.
-
-        Parameters
-        ----------
-        ann : ANN model
-            The network architecture and weights as
-            ``snntoolbox.io_utils.load.ANN`` object.
-
-        Returns
-        -------
-        layers : list
-            Each entry represents a layer, i.e. a population of neurons, in
-            form of pyNN ``Population`` objects.
-        """
-
-        echo('\n')
-        echo("Compiling spiking network...\n")
-
-        # Iterate over hidden layers to create spiking neurons and store
-        # connections.
-        for layer in self.ann['layers']:
-            if layer['layer_type'] in {'Dense', 'Convolution2D',
-                                       'MaxPooling2D', 'AveragePooling2D'}:
-                self.add_layer(layer)
-            else:
-                echo("Skipped layer:  {}\n".format(layer['layer_type']))
-                continue
-            if layer['layer_type'] == 'Dense':
-                self.build_dense(layer)
-            elif layer['layer_type'] == 'Convolution2D':
-                self.build_convolution(layer)
-            elif layer['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
-                self.build_pooling(layer)
-            self.connect_layer()
-
-        echo("Compilation finished.\n\n")
-
-    def run(self, net, X_test, Y_test):
+    def run(self, snn_precomp, X_test, Y_test):
         """
         Simulate a spiking network with IF units and Poisson input in pyNN,
         using a simulator like Brian, NEST, NEURON, etc.
 
-        This function will randomly select ``simparams['num_to_test']`` test
+        This function will randomly select ``settings['num_to_test']`` test
         samples among ``X_test`` and simulate the network on those.
 
-        If ``globalparams['verbose'] > 1``, the simulator records the
-        spiketrains and membrane potential of each neuron in each layer.
-        Doing so for all ``simparams['num_to_test']`` test samples is very
-        costly in terms of memory and time, but can be useful for debugging the
-        network's general functioning. This function returns only the
-        recordings of the last test sample. To get detailed information about
-        the network's behavior for a particular sample, replace the test set
-        ``X_test, Y_test`` with this sample of interest.
+        Alternatively, a list of specific input samples can be given to the
+        toolbox GUI, which will then be used for testing.
+
+        If ``settings['verbose'] > 1``, the simulator records the
+        spiketrains and membrane potential of each neuron in each layer, for
+        the last sample.
+
+        This is somewhat costly in terms of memory and time, but can be useful
+        for debugging the network's general functioning.
 
         Parameters
         ----------
 
-        X_test : float32 array
+        snn_precomp: SNN
+            The converted spiking network, before compilation (i.e. independent
+            of simulator).
+        X_test: float32 array
             The input samples to test.
             With data of the form (channels, num_rows, num_cols),
             X_test has dimension (num_samples, channels*num_rows*num_cols)
             for a multi-layer perceptron, and
             (num_samples, channels, num_rows, num_cols)
             for a convolutional net.
-        Y_test : float32 array
+        Y_test: float32 array
             Ground truth of test data. Has dimension
             (num_samples, num_classes).
-        layers : list, possible kwarg
-            Each entry represents a layer, i.e. a population of neurons, in
-            form of pyNN ``Population`` objects.
 
         Returns
         -------
 
-        total_acc : float
+        total_acc: float
             Number of correctly classified samples divided by total number of
             test samples.
-        spiketrains : list of tuples
-            Each entry in ``spiketrains`` contains a tuple
-            ``(spiketimes, label)`` for each layer of the network
-            (for the last test sample only).
-            ``spiketimes`` is a 2D array where the first index runs over the
-            number of neurons in the layer, and the second index contains the
-            spike times of the specific neuron.
-            ``label`` is a string specifying both the layer type and the index,
-            e.g. ``'03Dense'``.
-        vmem : list of tuples
-            Each entry in ``vmem`` contains a tuple ``(vm, label)`` for each
-            layer of the network (for the first test sample only). ``vm`` is a
-            2D array where the first index runs over the number of neurons in
-            the layer, and the second index contains the membrane voltage of
-            the specific neuron.
-            ``label`` is a string specifying both the layer type and the index,
-            e.g. ``'03Dense'``.
+
         """
 
         # Setup pyNN simulator if it was not passed on from a previous session.
@@ -365,8 +371,8 @@ class SNN_compiled():
             if settings['verbose'] > 1 and \
                     test_num == settings['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
-                collect_plot_results(self.layers, self.output_shapes, net,
-                                     X_test[ind])
+                collect_plot_results(self.layers, self.output_shapes,
+                                     snn_precomp, X_test[ind])
 
             # Reset simulation time and recorded network variables for next run
             if settings['verbose'] > 1:
@@ -383,29 +389,265 @@ class SNN_compiled():
         return total_acc
 
     def end_sim(self):
+        """ Clean up after simulation. """
         self.sim.end()
 
+    def save(self, path=None, filename=None):
+        """
+        Write model architecture and weights to disk.
 
-def collect_plot_results(layers, output_shapes, net, X):
+        Parameters
+        ----------
+
+        path: string, optional
+            Path to directory where to save model. Defaults to
+            ``settings['path']``.
+
+        filename: string, optional
+            Name of file to write model to. Defaults to
+            ``settings['filename_snn_exported']``.
+        """
+
+        if path is None:
+            path = settings['path']
+        if filename is None:
+            filename = settings['filename_snn_exported']
+
+        self.save_assembly(path, filename)
+        self.save_connections(path)
+
+    def save_assembly(self, path=None, filename=None):
+        """
+        Write layers of neural network to disk.
+
+        The size, structure, labels of all the population of an assembly are
+        stored in a dictionary such that one can load them again using the
+        ``snntoolbox.io.load.load_assembly`` function.
+
+        The term "assembly" refers to pyNN internal nomenclature, where
+        ``Assembly`` is a collection of layers (``Populations``), which in turn
+        consist of a number of neurons (``cells``).
+
+        Parameters
+        ----------
+
+        path: string, optional
+            Path to directory where to save layers. Defaults to
+            ``settings['path']``.
+
+        filename: string, optional
+            Name of file to write layers to. Defaults to
+            ``settings['filename_snn_exported']``.
+
+        """
+
+        if path is None:
+            path = settings['path']
+        if filename is None:
+            filename = settings['filename_snn_exported']
+
+        filepath = os.path.join(path, filename)
+
+        if not confirm_overwrite(filepath):
+            return
+
+        print("Saving assembly to {}...".format(filepath))
+
+        s = {}
+        labels = []
+        variables = ['size', 'structure', 'label']
+        for population in self.layers:
+            labels.append(population.label)
+            data = {}
+            for variable in variables:
+                data[variable] = getattr(population, variable)
+            data['celltype'] = population.celltype.describe()
+            s[population.label] = data
+        s['labels'] = labels  # List of population labels describing the net.
+        s['variables'] = variables  # List of variable names.
+        s['size'] = len(self.layers)  # Number of populations in assembly.
+        cPickle.dump(s, open(filepath, 'wb'))
+        print("Done.\n")
+
+    def save_connections(self, path=None):
+        """
+        Write weights of a neural network to disk.
+
+        The weights between two layers are saved in a text file.
+        They can then be used to connect pyNN populations e.g. with
+        ``sim.Projection(layer1, layer2, sim.FromListConnector(filename))``,
+        where ``sim`` is a simulator supported by pyNN, e.g. Brian, NEURON, or
+        NEST.
+
+        Parameters
+        ----------
+
+        path: string, optional
+            Path to directory where connections are saved. Defaults to
+            ``settings['path']``.
+
+        Return
+        ------
+            Text files containing the layer connections. Each file is named
+            after the layer it connects to, e.g. ``layer2.txt`` if connecting
+            layer1 to layer2.
+
+        """
+
+        if path is None:
+            path = settings['path']
+
+        echo("Saving connections to {}...\n".format(path))
+
+        # Iterate over layers to save each projection in a separate txt file.
+        for projection in self.connections:
+            filepath = os.path.join(path, projection.label.partition('→')[-1])
+            if confirm_overwrite(filepath):
+                projection.save('connections', filepath)
+        echo("Done.\n")
+
+    def load_assembly(self, path=None, filename=None):
+        """
+        Loads the populations in an assembly that was saved with the
+        ``save_assembly`` function.
+
+        The term "assembly" refers to pyNN internal nomenclature, where
+        ``Assembly`` is a collection of layers (``Populations``), which in turn
+        consist of a number of neurons (``cells``).
+
+        Parameters
+        ----------
+
+        path: string, optional
+            Path to directory where to load model from. Defaults to
+            ``settings['path']``.
+
+        filename: string, optional
+            Name of file to load model from. Defaults to
+            ``settings['filename_snn_exported']``.
+
+        Returns
+        -------
+
+        layers: list
+            List of pyNN ``Population`` objects.
+        """
+
+        if path is None:
+            path = settings['path']
+        if filename is None:
+            filename = settings['filename_snn_exported']
+
+        filepath = os.path.join(path, filename)
+        assert os.path.isfile(filepath), \
+            "Spiking neuron layers were not found at specified location."
+        if sys.version_info < (3,):
+            s = cPickle.load(open(filepath, 'rb'))
+        else:
+            s = cPickle.load(open(filepath, 'rb'), encoding='bytes')
+
+        # Iterate over populations in assembly
+        layers = []
+        for label in s['labels']:
+            celltype = getattr(self.sim, s[label]['celltype'])
+            population = self.sim.Population(s[label]['size'], celltype,
+                                             celltype.default_parameters,
+                                             structure=s[label]['structure'],
+                                             label=label)
+            # Set the rest of the specified variables, if any.
+            for variable in s['variables']:
+                if getattr(population, variable, None) is None:
+                    setattr(population, variable, s[label][variable])
+            layers.append(population)
+
+        if settings['verbose'] > 1:
+            echo("Loaded spiking neuron layers from {}.\n".format(filepath))
+
+        return layers
+
+    def load(self, path=None, filename=None):
+        """
+        Load model architecture and weights from disk.
+
+        Sets the ``snn`` and ``get_output`` attributes of this class.
+
+        Parameters
+        ----------
+
+        path: string, optional
+            Path to directory where to load model from. Defaults to
+            ``settings['path']``.
+
+        filename: string, optional
+            Name of file to load model from. Defaults to
+            ``settings['filename_snn_exported']``.
+
+        """
+
+        if path is None:
+            path = settings['path']
+        if filename is None:
+            filename = settings['filename_snn_exported']
+
+        self.layers = self.load_assembly(filename)
+        for i in range(len(self.ann['layers'])):
+            if 'get_activ' in self.ann['layers'][i].keys():
+                idx = i if 'Pool' in self.ann['labels'][i] else i-1
+                self.output_shapes.append(
+                    self.ann['layers'][idx]['output_shape'])
+        if settings['verbose'] > 1:
+            echo("Restoring layer connections...\n")
+        for i in range(len(self.layers)-1):
+            filepath = os.path.join(path, self.layers[i+1].label)
+            assert os.path.isfile(filepath), \
+                "Connections were not found at specified location.\n"
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                warnings.warn('deprecated', UserWarning)
+
+                self.sim.Projection(self.layers[i], self.layers[i+1],
+                                    self.sim.FromFileConnector(filepath))
+
+
+def collect_plot_results(layers, output_shapes, ann, X):
+    """
+    Collect spiketrains of all ``layers`` of a net from one simulation run, and
+    plot results.
+
+    Plots include: Spiketrains, activations, spikerates, membrane potential,
+    correlations.
+
+    To visualize the spikerates, neurons in hidden layers are spatially
+    arranged on a 2d rectangular grid, and the firing rate of each neuron on
+    the grid is encoded by color.
+
+    Membrane potential vs time is plotted for all except the input layer.
+
+    The activations are obtained by evaluating the original ANN ``ann`` on a
+    sample ``X``.
+
+    The ``output shapes`` of each layer are needed to reshape the output of
+    layers back to original form when plotting results (During conversion, all
+    layers are flattened).
+
+    """
+
     from snntoolbox.io_utils.plotting import output_graphs, plot_potential
 
-    # Plot spikerates and spiketrains of layers. To visualize the
-    # spikerates, neurons in hidden layers are spatially arranged on a 2d
-    # rectangular grid, and the firing rate of each neuron on the grid is
-    # encoded by color. Also plot the membrane potential vs time (except
-    # for the input layer).
-    # Allocate a list 'spiketrains' with the following specification:
-    # Each entry in ``spiketrains`` contains a tuple
-    # ``(spiketimes, label)`` for each layer of the network (for the
-    # first batch only, and excluding ``Flatten`` layers).
-    # ``spiketimes`` is an array where the first indices run over the
-    # number of neurons in the layer, and the last index contains the
-    # spike times of the specific neuron.
-    # ``label`` is a string specifying both the layer type and the
-    # index, e.g. ``'03Dense'``.
     # Collect spiketrains of all layers, for the last test sample.
     vmem = []
     showLegend = False
+
+    # Allocate a list 'spiketrains_batch' with the following specification:
+    # Each entry in ``spiketrains_batch`` contains a tuple
+    # ``(spiketimes, label)`` for each layer of the network (for the first
+    # batch only, and excluding ``Flatten`` layers).
+    # ``spiketimes`` is an array where the last index contains the spike
+    # times of the specific neuron, and the first indices run over the
+    # number of neurons in the layer:
+    # (num_to_test, n_chnls*n_rows*n_cols, duration)
+    # ``label`` is a string specifying both the layer type and the index,
+    # e.g. ``'03Dense'``.
     spiketrains_batch = []
     j = 0
     for (i, layer) in enumerate(layers):
@@ -434,5 +676,5 @@ def collect_plot_results(layers, output_shapes, net, X):
             plot_potential(times, vmem[-1], showLegend=showLegend)
         j += 1
 
-    output_graphs(spiketrains_batch, net, np.array(X, ndmin=4),
+    output_graphs(spiketrains_batch, ann, np.array(X, ndmin=4),
                   settings['log_dir_of_current_run'])

@@ -1,7 +1,7 @@
 SNN class
 ---------
 
-.. automodule:: core.SNN
+.. automodule:: core.model
     :members:
     :undoc-members:
     :show-inheritance:
