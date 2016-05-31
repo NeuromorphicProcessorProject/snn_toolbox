@@ -60,30 +60,28 @@ filename_snn_exported: string, optional
     Name given to converted spiking nets when exported to test it in a specific
     simulator. If not specified by the user, the toolbox set it to
     ``snn_<basename>_<simulator>``.
-batch_size: int, optional
-    Number of samples to test ANN with, if 'debug' enabled (see parameter
-    below). If the builtin simulator 'INI' is used, the batch size specifies
-    the number of test samples that will be simulated in parallel. Important:
-    When using 'INI' simulator, the batch size can only be run usingthe batch
-    size it has been converted with. To run it with a different batch size,
-    convert the ANN from scratch.
-debug: boolean, optional
-    If enabled, the dataset used for testing will be reduced to one
-    'batch size' (see parameter batch_size above).
 evaluateANN: boolean, optional
-    Only relevant when converting a network, not during simulation. If enabled,
-    test the ANN before conversion. If you also enabled 'normalization' (see
-    parameter 'normalize' below), then the network will be evaluated again
-    after normalization.
-sim_only: boolean, optional
-    If true, skip conversion step and try to load SNN from ``/<path>/``.
+    If enabled, test the ANN before conversion. If you also enabled
+    'normalization' (see parameter ``normalize`` below), then the network will
+    be evaluated again after normalization.
 normalize: boolean, optional
     Only relevant when converting a network, not during simulation. If enabled,
     the weights of the spiking network will be normalized by the highest weight
     or activation.
+convert: boolean, optional
+    If enabled, load an ANN from ``<path>`` and convert it to spiking.
+simulate: boolean, optional
+    If enabled, try to load SNN from ``<path>`` and test it on the specified
+    simulator (see parameter ``simulator``).
 overwrite: boolean, optional
     If disabled, the save methods will ask for permission to overwrite files
     before writing weights, activations, models etc. to disk.
+batch_size: int, optional
+    If the builtin simulator 'INI' is used, the batch size specifies
+    the number of test samples that will be simulated in parallel. Important:
+    When using 'INI' simulator, the batch size can only be run usingthe batch
+    size it has been converted with. To run it with a different batch size,
+    convert the ANN from scratch.
 verbose: int, optional
     0: No intermediate results or status reports.
     1: Print progress of simulation and intermediate results.
@@ -148,11 +146,11 @@ Default values
                     'filename_snn': 'snn_',
                     'filename_snn_exported': 'snn_exported_',
                     'batch_size': 100,
-                    'debug': False,
                     'evaluateANN': True,
                     'normalize': True,
+                    'convert': True,
                     'overwrite': True,
-                    'sim_only': False,
+                    'simulate': True,
                     'verbose': 3}
     cellparams = {'v_thresh': 1,
                   'v_reset': 0,
@@ -214,11 +212,11 @@ settings = {'dataset': 'mnist',
             'filename_snn_exported': 'snn_exported_',
             'batch_size': 100,
             'samples_to_test': '',
-            'debug': False,
             'evaluateANN': True,
             'normalize': True,
             'overwrite': True,
-            'sim_only': False,
+            'convert': True,
+            'simulate': True,
             'verbose': 3,
             'v_thresh': 1,
             'tau_refrac': 0,
@@ -292,14 +290,14 @@ def update_setup(s=None):
         s.update({'simulator': 'INI'})
     # Warn user that it is not possible to use Brian2 simulator by loading a
     # pre-converted network from disk.
-    if s['simulator'] == 'brian2' and 'sim_only' in s and s['sim_only'] \
-            or 'sim_only' not in s and settings['sim_only']:
+    if s['simulator'] == 'brian2' and 'convert' in s and not s['convert'] \
+            or 'convert' not in s and not settings['convert']:
         print('\n')
         print("""SNN toolbox Warning: When using Brian 2 simulator, you need to
               convert the network each time you start a new session. (No
               saving/reloading methods implemented.)
-              Setting sim_only = False.\n""")
-        s['sim_only'] = False
+              Setting convert = True.\n""")
+        s['convert'] = True
     # Set default path if user did not specify one.
     if 'path' not in s or s['path'] == '':
         s['path'] = os.path.join(snntoolbox._dir, 'data', s['dataset'],

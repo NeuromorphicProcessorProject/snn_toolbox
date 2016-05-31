@@ -75,8 +75,8 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
     # ____________________________ LOAD DATASET _____________________________ #
     # Load modified dataset if it has already been stored during previous run,
     # otherwise load it from scratch and perform necessary adaptations (e.g.
-    # reducing dataset size for debugging or reshaping according to network
-    # architecture). Then save it to disk.
+    # reducing dataset size for reshaping according to network architecture).
+    # Then save it to disk.
     datadir_base = os.path.expanduser(os.path.join('~', '.snntoolbox'))
     datadir = os.path.join(datadir_base, 'datasets', settings['dataset'],
                            settings['architecture'])
@@ -87,12 +87,6 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
         (X_train, Y_train, X_test, Y_test) = tuple(np.load(samples))
     else:
         (X_train, Y_train, X_test, Y_test) = get_reshaped_dataset()
-        # Decrease dataset for debugging
-        if settings['debug']:
-            from random import randint
-            ind = randint(0, len(X_test) - settings['batch_size'] - 1)
-            X_test = X_test[ind:ind + settings['batch_size']]
-            Y_test = Y_test[ind:ind + settings['batch_size']]
         np.save(samples, np.array([X_train, Y_train, X_test, Y_test]))
 
     # _____________________________ LOAD MODEL ______________________________ #
@@ -102,14 +96,14 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
     if settings['verbose'] > 0:
         print_description(snn)
 
-    if not settings['sim_only']:
+    if settings['convert'] and not is_stop(queue):
 
         # ____________________________ NORMALIZE ____________________________ #
         # Normalize model
-        if settings['normalize']:
+        if settings['normalize'] and not is_stop(queue):
             # Evaluate ANN before normalization to ensure it doesn't affect
             # accuracy
-            if settings['evaluateANN']:
+            if settings['evaluateANN'] and not is_stop(queue):
                 echo('\n')
                 echo("Before weight normalization:\n")
                 snn.evaluate_ann(X_test, Y_test)
@@ -121,7 +115,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
         # ____________________________ EVALUATE _____________________________ #
         # (Re-) evaluate ANN
-        if settings['evaluateANN']:
+        if settings['evaluateANN'] and not is_stop(queue):
             snn.evaluate_ann(X_test, Y_test)
 
         # _____________________________ EXPORT ______________________________ #
@@ -129,47 +123,64 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
         snn.save()
 
         # Compile spiking network from ANN
-        snn.build()
+        if not is_stop(queue):
+            snn.build()
 
         # Export network in a format specific to the simulator with wich it
         # will be tested later.
-        snn.export_to_sim()
+        if not is_stop(queue):
+            snn.export_to_sim()
 
-    # ______________________________ SIMULATE ______________________________ #
+    # ______________________________ SIMULATE _______________________________ #
     results = []
+    if settings['simulate'] and not is_stop(queue):
 
-    if len(params) > 1 and settings['verbose'] > 0:
-        print("Testing SNN for hyperparameter values {} = ".format(param_name))
-        print(['{:.2f}'.format(i) for i in params])
-        print('\n')
-
-    # Loop over parameter to sweep
-    for p in params:
-        assert param_name in settings, "Unkown parameter"
-        settings[param_name] = p
-
-        # Display current parameter value
         if len(params) > 1 and settings['verbose'] > 0:
-            echo("Current value of parameter to sweep: {} = {:.2f}\n".format(
-                                                               param_name, p))
-        # Simulate network
-        total_acc = snn.run(X_test, Y_test)
+            print("Testing SNN for hyperparameter values {} = ".format(
+                param_name))
+            print(['{:.2f}'.format(i) for i in params])
+            print('\n')
 
-        # Write out results
-        results.append(total_acc)
+        # Loop over parameter to sweep
+        for p in params:
+            if is_stop(queue):
+                break
 
-    # Clean up
-    snn.end_sim()
+            assert param_name in settings, "Unkown parameter"
+            settings[param_name] = p
+
+            # Display current parameter value
+            if len(params) > 1 and settings['verbose'] > 0:
+                echo("Current value of parameter to sweep: " +
+                     "{} = {:.2f}\n".format(param_name, p))
+            # Simulate network
+            total_acc = snn.run(X_test, Y_test)
+
+            # Write out results
+            results.append(total_acc)
+
+        # Clean up
+        snn.end_sim()
 
     # _______________________________ OUTPUT _______________________________ #
     # Number of samples used in one run:
     n = len(X_test) if settings['simulator'] == 'INI' \
         else settings['num_to_test']
     # Plot and return results of parameter sweep.
-    plot_param_sweep(results, n, params, param_name, param_logscale)
+    if results != []:
+        plot_param_sweep(results, n, params, param_name, param_logscale)
 
     # Add results to queue to be displayed in GUI.
     if queue:
         queue.put(results)
 
     return results
+
+
+def is_stop(queue):
+    if queue.empty():
+        return False
+    elif queue.get_nowait() == 'stop':
+        print("Skipped step after user interrupt")
+        queue.put('stop')
+        return True

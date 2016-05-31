@@ -140,38 +140,22 @@ class SNNToolboxGUI():
                                      *list(model_libs))
         model_lib_om.pack(fill='both', expand=True)
 
-        # Debug mode
-        debug_cb = tk.Checkbutton(self.globalparams_frame, text=" Debug",
-                                  variable=self.settings['debug'], height=2,
-                                  width=20, bg='white')
-        debug_cb.pack(**self.kwargs)
-        tip = dedent("""\
-              If enabled, the dataset used for testing will be reduced to one
-              'batch size' (see parameter batch_size below).""")
-        ToolTip(debug_cb, text=tip, wraplength=750)
-
         # Evaluate ANN
-        if self.settings['sim_only'].get():
-            state = tk.DISABLED
-        else:
-            state = tk.NORMAL
         self.evaluateANN_cb = tk.Checkbutton(
-            self.globalparams_frame, text=" Evaluate ANN",
-            variable=self.settings['evaluateANN'], height=2, width=20,
-            state=state, bg='white')
+            self.globalparams_frame, text="Evaluate ANN", bg='white',
+            variable=self.settings['evaluateANN'], height=2, width=20)
         self.evaluateANN_cb.pack(**self.kwargs)
         tip = dedent("""\
-              Only relevant when converting a network, not during
-              simulation. If enabled, test the ANN before conversion. If you
-              also enabled 'Normalization' (see parameter below), then the
-              network will be evaluated again after normalization.""")
+            If enabled, test the ANN before conversion. If you also enabled
+            'normalization' (see parameter 'normalize' below), then the network
+            will be evaluated again after normalization.""")
         ToolTip(self.evaluateANN_cb, text=tip, wraplength=750)
 
         # Normalize
         self.normalize_cb = tk.Checkbutton(self.globalparams_frame,
-                                           text=" Normalize", bg='white',
+                                           text="Normalize", bg='white',
                                            variable=self.settings['normalize'],
-                                           height=2, width=20, state=state)
+                                           height=2, width=20)
         self.normalize_cb.pack(**self.kwargs)
         tip = dedent("""\
               Only relevant when converting a network, not during simulation.
@@ -179,9 +163,31 @@ class SNNToolboxGUI():
               normalized by the highest weight or activation.""")
         ToolTip(self.normalize_cb, text=tip, wraplength=750)
 
+        # Convert ANN
+        convert_cb = tk.Checkbutton(self.globalparams_frame, text="Convert",
+                                    variable=self.settings['convert'],
+                                    height=2, width=20, bg='white')
+        convert_cb.pack(**self.kwargs)
+        tip = dedent("""\
+              If enabled, load an ANN from working directory (see setting
+              'working dir') and convert it to spiking.""")
+        ToolTip(convert_cb, text=tip, wraplength=750)
+
+        # Simulate
+        simulate_cb = tk.Checkbutton(self.globalparams_frame,
+                                     text="Simulate",
+                                     variable=self.settings['simulate'],
+                                     height=2, width=20, bg='white')
+        simulate_cb.pack(**self.kwargs)
+        tip = dedent("""\
+              If enabled, try to load SNN from working directory (see setting
+              'working dir') and test it on the specified simulator (see
+              parameter 'simulator').""")
+        ToolTip(simulate_cb, text=tip, wraplength=750)
+
         # Overwrite
         overwrite_cb = tk.Checkbutton(self.globalparams_frame,
-                                      text=" Overwrite",
+                                      text="Overwrite",
                                       variable=self.settings['overwrite'],
                                       height=2, width=20, bg='white')
         overwrite_cb.pack(**self.kwargs)
@@ -190,18 +196,6 @@ class SNNToolboxGUI():
               overwrite files before writing weights, activations, models etc.
               to disk.""")
         ToolTip(overwrite_cb, text=tip, wraplength=750)
-
-        # Simulate only
-        sim_only_cb = tk.Checkbutton(self.globalparams_frame,
-                                     text=" Simulate only",
-                                     variable=self.settings['sim_only'],
-                                     height=2, width=20, bg='white')
-        sim_only_cb.pack(**self.kwargs)
-        sim_only_cb.bind('<Leave>', self.toggle_norm_and_eval_state)
-        tip = dedent("""\
-              If true, skip conversion step and try to load SNN from the
-              working directory (see below).""")
-        ToolTip(sim_only_cb, text=tip, wraplength=750)
 
         # Batch size
         batch_size_frame = tk.Frame(self.globalparams_frame, bg='white')
@@ -213,13 +207,11 @@ class SNNToolboxGUI():
                                    from_=1, to_=1e9, increment=1, width=10)
         batch_size_sb.pack(fill='y', expand=True, ipady=5)
         tip = dedent("""\
-              Number of samples to test ANN with, if 'debug' enabled (see
-              parameter above). If the builtin simulator 'INI' is used, the
-              batch size specifies the number of test samples that will be
-              simulated in parallel. Important: When using 'INI' simulator,
-              the batch size can only be run using the batch size it has been
-              converted with. To run it with a different batch size, convert
-              the ANN from scratch.""")
+              If the builtin simulator 'INI' is used, the batch size specifies
+              the number of test samples that will be simulated in parallel.
+              Important: When using 'INI' simulator, the batch size can only be
+              run using the batch size it has been converted with. To run it
+              with a different batch size, convert the ANN from scratch.""")
         ToolTip(batch_size_frame, text=tip, wraplength=700)
 
         # Test specific samples
@@ -609,12 +601,23 @@ class SNNToolboxGUI():
         # Start experiment
         self.start_processing_bt = tk.Button(
             self.action_frame, text="Start", font=self.header_font,
-            foreground='red', command=self.start_processing,
-            state=self.process_state.get())
+            foreground='#008000', command=self.start_processing,
+            state=self.start_state.get())
         self.start_processing_bt.pack(**self.kwargs)
         tip = dedent("""\
-              Start the conversion / simulation. Settings can not be changed
-              during the run. Process can only aborted from the console.""")
+              Start processing the steps specified above. Settings can not be
+              changed during the run.""")
+        ToolTip(self.action_frame, text=tip, wraplength=750)
+
+        # Stop experiment
+        self.stop_processing_bt = tk.Button(
+            self.action_frame, text="Stop", font=self.header_font,
+            foreground='red', command=self.stop_processing)
+        self.stop_processing_bt.pack(**self.kwargs)
+        tip = dedent("""\
+              Stop the process at the next opportunity. This will usually be
+              between steps of normalization, evaluation, conversion and
+              simulation.""")
         ToolTip(self.action_frame, text=tip, wraplength=750)
 
     def graph_widgets(self):
@@ -807,15 +810,17 @@ class SNNToolboxGUI():
         self.settings = {'dataset': tk.StringVar(),
                          'architecture': tk.StringVar(),
                          'model_lib': tk.StringVar(),
-                         'debug': tk.BooleanVar(),
                          'evaluateANN': tk.BooleanVar(),
                          'normalize': tk.BooleanVar(),
+                         'convert': tk.BooleanVar(),
+                         'simulate': tk.BooleanVar(),
                          'overwrite': tk.BooleanVar(),
-                         'sim_only': tk.BooleanVar(),
                          'batch_size': tk.IntVar(),
                          'verbose': tk.IntVar(),
                          'path': tk.StringVar(value=snntoolbox._dir),
                          'filename': tk.StringVar(),
+                         'filename_snn': tk.StringVar(),
+                         'filename_snn_exported': tk.StringVar(),
                          'v_thresh': tk.DoubleVar(),
                          'tau_refrac': tk.DoubleVar(),
                          'v_reset': tk.DoubleVar(),
@@ -846,7 +851,8 @@ class SNNToolboxGUI():
         self.layer_rb_set = False
         self.layer_rbs = []
         self.layer_to_plot = tk.StringVar()
-        self.process_state = tk.StringVar(value='normal')
+        self.start_state = tk.StringVar(value='normal')
+        self.stop_state = tk.StringVar(value='normal')
         self.console_output = tk.StringVar()
 
     def restore_default_params(self):
@@ -908,8 +914,13 @@ class SNNToolboxGUI():
 
         self.initialize_thread()
         self.process_thread.start()
-        self.toggle_process_state(self.process_thread.is_alive())
+        self.toggle_start_state(True)
         self.update()
+
+    def stop_processing(self):
+        if self.process_thread.is_alive():
+            self.res_queue.put('stop')
+        self.toggle_stop_state(True)
 
     def update(self):
         """Update GUI with items from the queue."""
@@ -918,7 +929,8 @@ class SNNToolboxGUI():
             self.root.after(1000, self.update)
         else:
             # Stop loop of watching process_thread.
-            self.toggle_process_state(self.process_thread.is_alive())
+            self.toggle_start_state(False)
+            self.toggle_stop_state(False)
 
     def check_sample(self, P):
         if not self.initialized:
@@ -988,14 +1000,6 @@ class SNNToolboxGUI():
         elif op == 'moveto':
             self.path_entry.xview_moveto(howMany)
 
-    def toggle_norm_and_eval_state(self, event):
-        if self.settings['sim_only'].get():
-            self.evaluateANN_cb.configure(state=tk.DISABLED)
-            self.normalize_cb.configure(state=tk.DISABLED)
-        else:
-            self.evaluateANN_cb.configure(state=tk.NORMAL)
-            self.normalize_cb.configure(state=tk.NORMAL)
-
     def toggle_state_pyNN(self, val):
         if val not in simulators_pyNN:
             self.settings['state_pyNN'].set('disabled')
@@ -1007,12 +1011,19 @@ class SNNToolboxGUI():
             getattr(self, name + '_sb').configure(
                 state=self.settings['state_pyNN'].get())
 
-    def toggle_process_state(self, val):
+    def toggle_start_state(self, val):
         if val:
-            self.process_state.set('disabled')
+            self.start_state.set('disabled')
         else:
-            self.process_state.set('normal')
-        self.start_processing_bt.configure(state=self.process_state.get())
+            self.start_state.set('normal')
+        self.start_processing_bt.configure(state=self.start_state.get())
+
+    def toggle_stop_state(self, val):
+        if val:
+            self.stop_state.set('disabled')
+        else:
+            self.stop_state.set('normal')
+        self.stop_processing_bt.configure(state=self.stop_state.get())
 
     def toggle_num_to_test_state(self, val):
         if val and not self.settings['state_pyNN'].get() == 'disabled':
