@@ -641,10 +641,11 @@ class SNNToolboxGUI():
                                             text="Select dir", relief='raised',
                                             borderwidth='3', bg='white')
         self.plot_dir_frame.pack(side='top', fill=None, expand=False)
-        self.gui_log = os.path.join(self.settings['path'].get(), 'log', 'gui')
-        if os.path.isdir(self.gui_log):
-            plot_dirs = [d for d in sorted(os.listdir(self.gui_log))
-                         if os.path.isdir(os.path.join(self.gui_log, d))]
+        self.gui_log.set(os.path.join(self.settings['path'].get(),
+                                      'log', 'gui'))
+        if os.path.isdir(self.gui_log.get()):
+            plot_dirs = [d for d in sorted(os.listdir(self.gui_log.get()))
+                         if os.path.isdir(os.path.join(self.gui_log.get(), d))]
             self.selected_plots_dir = tk.StringVar(value=plot_dirs[0])
             [tk.Radiobutton(self.plot_dir_frame, bg='white', text=name,
                             value=name, command=self.select_layer_rb,
@@ -669,7 +670,7 @@ class SNNToolboxGUI():
                                          text="Select layer", relief='raised',
                                          borderwidth='3', bg='white')
         self.layer_frame.pack(side='bottom', fill=None, expand=False)
-        self.plots_dir = os.path.join(self.gui_log,
+        self.plots_dir = os.path.join(self.gui_log.get(),
                                       self.selected_plots_dir.get())
         if os.path.isdir(self.plots_dir):
             layer_dirs = [d for d in sorted(os.listdir(self.plots_dir))
@@ -854,6 +855,7 @@ class SNNToolboxGUI():
         self.start_state = tk.StringVar(value='normal')
         self.stop_state = tk.StringVar(value='normal')
         self.console_output = tk.StringVar()
+        self.gui_log = tk.StringVar()
 
     def restore_default_params(self):
         defaults = settings
@@ -980,7 +982,7 @@ class SNNToolboxGUI():
         if self.initialized:
             # Set path to plots for the current simulation run
             self.settings['log_dir_of_current_run'].set(
-                os.path.join(self.gui_log, P))
+                os.path.join(self.gui_log.get(), P))
             if not os.path.exists(
                     self.settings['log_dir_of_current_run'].get()):
                 os.makedirs(self.settings['log_dir_of_current_run'].get())
@@ -989,6 +991,8 @@ class SNNToolboxGUI():
         self.settings['path'].set(filedialog.askdirectory(
             title="Set working directory", initialdir=snntoolbox._dir))
         self.check_path(self.settings['path'].get())
+        self.gui_log.set(os.path.join(self.settings['path'].get(),
+                                      'log', 'gui'))
         # Look for plots in working directory to display
         self.graph_widgets()
 
@@ -1045,6 +1049,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main_thread = threading.Thread(target=main, name='main thread',
-                                   daemon=True)
+    main_thread = threading.Thread(target=main, name='main thread')
+    main_thread.setDaemon(True)
     main_thread.start()

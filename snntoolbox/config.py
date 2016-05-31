@@ -325,9 +325,12 @@ def update_setup(s=None):
     settings.update(s)
 
 
-def initialize_simulator(simulator=settings['simulator']):
+def initialize_simulator(simulator=None):
     """ Import module containing utility functions of spiking simulator"""
     from importlib import import_module
+
+    if simulator is None:
+        simulator = settings['simulator']
 
     if simulator in simulators_pyNN:
         if simulator == 'nest':

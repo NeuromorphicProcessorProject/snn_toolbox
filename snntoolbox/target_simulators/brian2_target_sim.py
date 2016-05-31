@@ -57,6 +57,10 @@ class SNN_compiled():
             Each entry represents a layer, i.e. a population of neurons, in
             form of Brian2 ``NeuronGroup`` objects.
 
+        connections: list
+            Brian2 ``Synapses`` objects representing the connections between
+            individual layers.
+
         threshold: string
             Defines spiking threshold.
 
@@ -108,6 +112,7 @@ class SNN_compiled():
         self.layers = [self.sim.PoissonGroup(np.prod(ann['input_shape'][1:]),
                                              rates=0*self.sim.Hz,
                                              dt=settings['dt']*self.sim.ms)]
+        self.connections = []
         self.threshold = 'v > v_thresh'
         self.reset = 'v = v_reset'
         self.eqs = 'dv/dt = -v/tau_m : volt'
@@ -288,6 +293,8 @@ class SNN_compiled():
 
         """
 
+        from snntoolbox.io_utils.plotting import plot_confusion_matrix
+
         # Load input layer
         for obj in self.snn.objects:
             if 'poissongroup' in obj.name and 'thresholder' not in obj.name:
@@ -298,6 +305,8 @@ class SNN_compiled():
                      'v_reset': settings['v_reset'] * self.sim.volt,
                      'tau_m': settings['tau_m'] * self.sim.ms}
         results = []
+        guesses = []
+        truth = []
 
         # Iterate over the number of samples to test
         for test_num in range(settings['num_to_test']):
@@ -322,9 +331,10 @@ class SNN_compiled():
 
             # Get result by comparing the guessed class (i.e. the index of the
             # neuron in the last layer which spiked most) to the ground truth.
-            guesses = np.argmax(self.spikemonitors[-1].count)
-            truth = np.argmax(Y_test[ind, :])
-            results.append(guesses == truth)
+            guesses.append(np.argmax(self.spikemonitors[-1].count))
+            truth.append(np.argmax(Y_test[ind, :]))
+            results.append(guesses[-1] == truth[-1])
+
             if settings['verbose'] > 0:
                 echo("Sample {} of {} completed.\n".format(test_num + 1,
                      settings['num_to_test']))
@@ -347,6 +357,11 @@ class SNN_compiled():
                 echo("Done.\n")
 
         total_acc = np.mean(results)
+
+        if settings['verbose'] > 1:
+            plot_confusion_matrix(truth, guesses,
+                                  settings['log_dir_of_current_run'])
+
         s = '' if settings['num_to_test'] == 1 else 's'
         echo("Total accuracy: {:.2%} on {} test sample{}.\n\n".format(
              total_acc, settings['num_to_test'], s))

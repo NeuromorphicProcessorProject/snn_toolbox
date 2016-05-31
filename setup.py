@@ -93,6 +93,7 @@ setup(
         'future',
         'neo',
         'lazyarray',
+        'sklearn',
         'sympy',
         'keras',
         'pyNN'
@@ -127,7 +128,8 @@ setup(
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
-        'console_scripts': ['snntoolbox_example=snntoolbox.tests.example:main'],
-        'gui_scripts': ['snntoolbox=snntoolbox.gui:main']
+        'console_scripts':
+            ['snntoolbox_example=snntoolbox.tests.example:main'],
+        'gui_scripts': ['snntoolbox=snntoolbox.gui.gui:main']
     },
 )

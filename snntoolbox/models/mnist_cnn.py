@@ -1,15 +1,15 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from keras.datasets import mnist
+
+from keras.datasets import cifar10 as dataset
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers.convolutional import Convolution2D, MaxPooling2D
+from keras.layers.convolutional import Convolution2D, AveragePooling2D
 from keras.utils import np_utils
 from keras.callbacks import EarlyStopping
 from keras.constraints import maxnorm
-from snntoolbox.io.save import save_model
-from snntoolbox.io.plotting import plot_history
-import os
+
+from snntoolbox.io_utils.plotting import plot_history
 
 
 """
@@ -26,22 +26,24 @@ import os
 
 batch_size = 128
 nb_classes = 10
-nb_epoch = 12
+nb_epoch = 40
 
 # input image dimensions
-img_rows, img_cols = 28, 28
+img_rows, img_cols = 32, 32
 # number of convolutional filters to use
 nb_filters = 32
 # size of pooling area for max pooling
 nb_pool = 2
 # convolution kernel size
 nb_conv = 3
+# color channels
+chnls = 3
 
 # the data, shuffled and split between train and test sets
-(X_train, y_train), (X_test, y_test) = mnist.load_data()
+(X_train, y_train), (X_test, y_test) = dataset.load_data()
 
-X_train = X_train.reshape(X_train.shape[0], 1, img_rows, img_cols)
-X_test = X_test.reshape(X_test.shape[0], 1, img_rows, img_cols)
+X_train = X_train.reshape(X_train.shape[0], chnls, img_rows, img_cols)
+X_test = X_test.reshape(X_test.shape[0], chnls, img_rows, img_cols)
 X_train = X_train.astype("float32")
 X_test = X_test.astype("float32")
 X_train /= 255
@@ -58,13 +60,13 @@ print(X_test.shape[0], 'test samples')
 model = Sequential()
 
 model.add(Convolution2D(nb_filters, nb_conv, nb_conv,
-                        input_shape=(1, img_rows, img_cols),
+                        input_shape=(chnls, img_rows, img_cols),
                         b_constraint=maxnorm(0)))
 model.add(Activation('relu'))
 model.add(Convolution2D(nb_filters, nb_conv, nb_conv,
                         b_constraint=maxnorm(0)))
 model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(nb_pool, nb_pool)))
+model.add(AveragePooling2D(pool_size=(nb_pool, nb_pool)))
 model.add(Dropout(0.25))
 
 model.add(Flatten())
@@ -78,14 +80,14 @@ model.compile(loss='categorical_crossentropy', optimizer='adadelta',
               metrics=['accuracy'])
 early_stopping = EarlyStopping(monitor='val_loss', patience=3)
 history = model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
-                    verbose=1, validation_data=(X_test, Y_test),
-                    callbacks=[early_stopping])
+                    verbose=1, validation_data=(X_test, Y_test))
+#                    callbacks=[early_stopping])
 score = model.evaluate(X_test, Y_test, verbose=0)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 
 plot_history(history)
 
-path = '~/Documents/snntoolbox/data/mnist/cnn/'
 filename = '{:2.2f}'.format(score[1] * 100)
-save_model(model, path=os.path.join(path, filename), filename=filename)
+open(filename + '.json', 'w').write(model.to_json())
+model.save_weights(filename + '.h5', overwrite=True)

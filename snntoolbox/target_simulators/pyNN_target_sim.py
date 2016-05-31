@@ -301,9 +301,11 @@ class SNN_compiled():
 
         """
 
+        from snntoolbox.io_utils.plotting import plot_confusion_matrix
+
         # Setup pyNN simulator if it was not passed on from a previous session.
         if len(self.layers) == 1:  # Contains only input layer
-            self.load()
+            self.load(settings['path'], settings['filename_snn_exported'])
 
         # Set cellparameters of neurons in each layer and initialize membrane
         # potential.
@@ -315,6 +317,8 @@ class SNN_compiled():
         self.layers[-1].record(['spikes'])
 
         results = []
+        guesses = []
+        truth = []
 
         # Iterate over the number of samples to test
         for test_num in range(settings['num_to_test']):
@@ -346,9 +350,9 @@ class SNN_compiled():
             # Add Poisson input.
             if settings['verbose'] > 1:
                 echo("Creating poisson input...\n")
-            rates = X_test[ind, :].flatten() * settings['max_f']
+            rates = X_test[ind, :].flatten()
             for (i, ss) in enumerate(self.layers[0]):
-                ss.rate = rates[i]
+                ss.rate = rates[i] * settings['max_f']
 
             # Run simulation for 'duration'.
             if settings['verbose'] > 1:
@@ -357,11 +361,12 @@ class SNN_compiled():
 
             # Get result by comparing the guessed class (i.e. the index of the
             # neuron in the last layer which spiked most) to the ground truth.
-            outspikes = [len(spiketrain) for spiketrain in
-                         self.layers[-1].get_data().segments[-1].spiketrains]
-            guesses = np.argmax(outspikes)
-            truth = np.argmax(Y_test[ind, :])
-            results.append(guesses == truth)
+            output = [len(spiketrain) for spiketrain in
+                      self.layers[-1].get_data().segments[-1].spiketrains]
+            guesses.append(np.argmax(output))
+            truth.append(np.argmax(Y_test[ind, :]))
+            results.append(guesses[-1] == truth[-1])
+
             if settings['verbose'] > 0:
                 echo("Sample {} of {} completed.\n".format(test_num + 1,
                      settings['num_to_test']))
@@ -380,6 +385,10 @@ class SNN_compiled():
             self.sim.reset()
             if settings['verbose'] > 1:
                 echo("Done.\n")
+
+        if settings['verbose'] > 1:
+            plot_confusion_matrix(truth, guesses,
+                                  settings['log_dir_of_current_run'])
 
         total_acc = np.mean(results)
         s = '' if settings['num_to_test'] == 1 else 's'
@@ -589,7 +598,7 @@ class SNN_compiled():
         if filename is None:
             filename = settings['filename_snn_exported']
 
-        self.layers = self.load_assembly(filename)
+        self.layers = self.load_assembly(path, filename)
         for i in range(len(self.ann['layers'])):
             if 'get_activ' in self.ann['layers'][i].keys():
                 idx = i if 'Pool' in self.ann['labels'][i] else i-1

@@ -25,7 +25,6 @@ from textwrap import dedent
 from keras.models import Sequential
 from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
-from snntoolbox.io_utils.plotting import output_graphs
 
 standard_library.install_aliases()
 
@@ -187,6 +186,8 @@ class SNN_compiled():
         """
 
         import numpy as np
+        from snntoolbox.io_utils.plotting import output_graphs
+        from snntoolbox.io_utils.plotting import plot_confusion_matrix
 
         # Load neuron layers and connections if conversion was done during a
         # previous session.
@@ -208,7 +209,6 @@ class SNN_compiled():
 
         # Ground truth
         truth = np.argmax(Y_test, axis=1)
-
         # This factor determines the probability threshold for cells in the
         # input layer to fire a spike. Increasing ``max_f`` increases the
         # firing rate.
@@ -283,11 +283,16 @@ class SNN_compiled():
                 echo("Moving average accuracy: {:.2%}.\n".format(
                       np.sum(guesses[:max_idx] == truth[:max_idx]) / max_idx))
                 if batch_idx == 0 and settings['verbose'] > 2:
+                    plot_confusion_matrix(truth[:max_idx], guesses[:max_idx],
+                                          settings['log_dir_of_current_run'])
                     output_graphs(spiketrains_batch, snn_precomp, batch,
                                   settings['log_dir_of_current_run'])
 
         guesses = np.argmax(output, axis=1)
         total_acc = np.mean(guesses == truth)
+        if settings['verbose'] > 2:
+            plot_confusion_matrix(truth, guesses,
+                                  settings['log_dir_of_current_run'])
         echo("Simulation finished.\n\n")
         echo("Total output spikes: {}\n".format(np.sum(output)))
         echo("Average output spikes per sample: {:.2f}\n".format(

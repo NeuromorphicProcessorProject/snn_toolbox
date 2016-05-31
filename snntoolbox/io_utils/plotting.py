@@ -23,6 +23,29 @@ from snntoolbox.core.util import wilson_score
 standard_library.install_aliases()
 
 
+def plot_confusion_matrix(Y_test, Y_pred, path=None, class_labels=None):
+    from sklearn.metrics import confusion_matrix
+
+    cm = confusion_matrix(Y_test, Y_pred)
+    plt.figure()
+    plt.imshow(cm, interpolation='nearest')
+    plt.title('Confusion Matrix')
+    plt.colorbar()
+    if class_labels:
+        tick_marks = np.arange(len(class_labels))
+        plt.xticks(tick_marks, class_labels, rotation=45)
+        plt.yticks(tick_marks, class_labels)
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    if path is not None:
+        filename = 'Confusion'
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
 def plot_spiketrains(layer, path=None):
     """
     Plot which neuron fired at what time during the simulation.
