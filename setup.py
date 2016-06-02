@@ -48,7 +48,6 @@ class Tox(TestCommand):
         errno = tox.cmdline(args=args)
         sys.exit(errno)
 
-
 setup(
     name='snntoolbox',
     version='0.2.0',  # see https://www.python.org/dev/peps/pep-0440/
@@ -120,8 +119,7 @@ setup(
     # Include documentation
     data_files=[
         ('', ['README.rst']),
-        # ('docs/', ['docs/Makefile']),
-        # ('docs/source', ['docs/source/*.rst', 'workflow.png'])
+        ('docs', ['Documentation.html'])
     ],
 
     # To provide executable scripts, use entry points in preference to the

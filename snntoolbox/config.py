@@ -127,8 +127,8 @@ dt: float, optional
     Time resolution of spikes in milliseconds.
 delay: float, optional
     Delay in milliseconds. Must be equal to or greater than the resolution.
-max_f: float, optional
-    Spike rate in Hz for a fully-on pixel.
+input_rate: float, optional
+    Poisson spike rate in Hz for a fully-on pixel of the input image.
 num_to_test: int, optional
     How many samples to test.
 
@@ -167,7 +167,7 @@ Default values
                  'duration': 200,
                  'dt': 1,
                  'delay': 1,
-                 'max_f': 1000,
+                 'input_rate': 1000,
                  'num_to_test': 10}
 
 """
@@ -223,7 +223,7 @@ settings = {'dataset': 'mnist',
             'simulator': 'INI',
             'duration': 200,
             'dt': 1,
-            'max_f': 1000}
+            'input_rate': 1000}
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,

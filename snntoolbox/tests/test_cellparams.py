@@ -38,12 +38,12 @@ if __name__ == '__main__':
     simparams = {'duration': 100,
                  'dt': 1,
                  'delay': 1,
-                 'max_f': 1000}
+                 'input_rate': 1000}
 
     sim.setup()
 
     inp = sim.Population(1, sim.SpikeSourcePoisson(
-        duration=simparams['duration'], rate=simparams['max_f']))
+        duration=simparams['duration'], rate=simparams['input_rate']))
 
     inp.label = 'input cell'
     outp = sim.Population(1, sim.IF_cond_exp, cellparams=cellparams)
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     for p in [0.01, 0.1, 1]:
         outp.set(**{par: p})
         cellparams[par] = p
-        inp.set(rate=simparams['max_f'])
+        inp.set(rate=simparams['input_rate'])
         outp.initialize(v=cellparams['v_rest'])
         sim.run(simparams['duration'])
         sim.reset(annotations={par: p})

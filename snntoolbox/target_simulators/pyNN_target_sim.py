@@ -352,7 +352,7 @@ class SNN_compiled():
                 echo("Creating poisson input...\n")
             rates = X_test[ind, :].flatten()
             for (i, ss) in enumerate(self.layers[0]):
-                ss.rate = rates[i] * settings['max_f']
+                ss.rate = rates[i] * settings['input_rate']
 
             # Run simulation for 'duration'.
             if settings['verbose'] > 1:

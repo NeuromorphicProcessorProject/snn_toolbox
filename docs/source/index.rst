@@ -22,17 +22,18 @@ Citation
    :scale: 50 %
    :alt: Workflow diagram of the SNN toolbox.
 
-   **SNN toolbox workflow.** The input network (e.g. a Keras model) is transformed into an instance of the
-   ``ANN`` class. The ``core.conversion`` module turns this into a spiking network. Finally, the 
-   network can be evaluated in any spiking simulator that supports pyNN_ as input. At any stage of the 
-   pipeline, models and results can be written to disk (see :py:mod:`io.save` in :doc:`modules`).
+   **SNN toolbox workflow.** The input network (e.g. a Keras model) is parsed and all the necessary information
+   stored in an object that is independent of the input. This makes all following steps stable against changes
+   in the input, and allows straight-forward extension of the toolbox to include other input model libraries.
+   The abstract ``ANN`` model can then be converted into a spiking network. The resulting SNN can be exported
+   for evaluation in a spiking simulator. At any stage of the pipeline, models and results can be written to disk.
 
 
 Features
 --------
 
-* Before conversion, the input model is parsed into a custom class :py:class:`core.SNN.SNN`
-  containing only essential model structure and weights in common python containers.
+* Before conversion, the input model is parsed into a custom class containing only essential model structure and
+  weights in common python containers. This serves to abstract the core conversion process from possible input types.
   The conversion toolbox currently supports input networks generated with Keras or Lasagne.
   See :doc:`getting_started` on how to extend the relevant methods to handle models from other 
   common libraries like caffe, torch etc.
@@ -59,7 +60,7 @@ Features
   the ``io.load.get_dataset`` module needs to be extended.
 
 .. figure:: gui_parameters.png
-   :scale: 50 %
+   :scale: 100 %
    :alt: Snapshot of the SNN toolbox GUI.
 
    **SNN toolbox GUI.** In the main window, the user can specify which tools to use during the experiment (e.g. whether or not to normalize weights prior to conversion, to evaluate the ANN before converting, to load an already converted net and simulate only, etc.). Also, parameters of the neuron cells used during simulation can be set. The GUI saves and reloads last settings automatically, and allows saving and loading preferences manually. Tooltips explain all functionality.

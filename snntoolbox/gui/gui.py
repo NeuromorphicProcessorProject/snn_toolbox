@@ -534,15 +534,16 @@ class SNNToolboxGUI():
         ToolTip(duration_frame, text=tip, wraplength=750)
 
         # Maximum firing rate
-        max_f_frame = tk.Frame(self.simparams_frame, bg='white')
-        max_f_frame.pack(**self.kwargs)
-        tk.Label(max_f_frame, text="max_f", bg='white').pack(fill='both',
-                                                             expand=True)
-        max_f_sb = tk.Spinbox(max_f_frame, textvariable=self.settings['max_f'],
-                              from_=1, to_=10000, increment=1, width=10)
-        max_f_sb.pack(fill='y', expand=True, ipady=3)
-        tip = "Spike rate in Hz for a fully-on pixel."
-        ToolTip(max_f_frame, text=tip, wraplength=750)
+        input_rate_frame = tk.Frame(self.simparams_frame, bg='white')
+        input_rate_frame.pack(**self.kwargs)
+        tk.Label(input_rate_frame, text="input_rate", bg='white').pack(
+            fill='both', expand=True)
+        input_rate_sb = tk.Spinbox(input_rate_frame,
+                                   textvariable=self.settings['input_rate'],
+                                   from_=1, to_=10000, increment=1, width=10)
+        input_rate_sb.pack(fill='y', expand=True, ipady=3)
+        tip = "Poisson spike rate in Hz for a fully-on pixel of input image."
+        ToolTip(input_rate_frame, text=tip, wraplength=750)
 
         # Delay
         delay_frame = tk.Frame(self.simparams_frame, bg='white')
@@ -787,7 +788,8 @@ class SNNToolboxGUI():
         menubar.add_cascade(label="Help", menu=helpmenu)
 
     def documentation(self):
-        webbrowser.open('../Documentation.html')
+        webbrowser.open(os.path.join(sys.exec_prefix, 'docs',
+                                     'Documentation.html'))
 
     def about(self):
         msg = ("This is a collection of tools to convert analog neural "
@@ -836,7 +838,7 @@ class SNNToolboxGUI():
                          'dt': tk.DoubleVar(),
                          'simulator': tk.StringVar(),
                          'duration': tk.IntVar(),
-                         'max_f': tk.IntVar(),
+                         'input_rate': tk.IntVar(),
                          'delay': tk.IntVar(),
                          'num_to_test': tk.IntVar(),
                          'runlabel': tk.StringVar(),

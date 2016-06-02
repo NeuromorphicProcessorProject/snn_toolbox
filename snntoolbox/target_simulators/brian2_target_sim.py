@@ -320,7 +320,7 @@ class SNN_compiled():
             if settings['verbose'] > 1:
                 echo("Creating poisson input...\n")
             input_layer.rates = X_test[ind, :].flatten() * \
-                settings['max_f'] * self.sim.Hz
+                settings['input_rate'] * self.sim.Hz
 
             # Run simulation for 'duration'.
             if settings['verbose'] > 1:

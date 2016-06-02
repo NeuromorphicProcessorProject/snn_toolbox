@@ -103,7 +103,8 @@ class SNN_compiled():
             echo("Iterating over ANN layers to add spiking layers...\n")
         for (layer_num, layer) in enumerate(self.ann['layers']):
             kwargs = {'name': layer['label'], 'trainable': False}
-            kwargs2 = {}
+            kwargs2 = {'activation_type': layer['activation_type']} \
+                if 'activation_type' in layer else {}
             if layer_num == 0:
                 # For the input layer, pass extra keyword argument
                 # 'batch_input_shape' to layer constructor.
@@ -210,9 +211,9 @@ class SNN_compiled():
         # Ground truth
         truth = np.argmax(Y_test, axis=1)
         # This factor determines the probability threshold for cells in the
-        # input layer to fire a spike. Increasing ``max_f`` increases the
-        # firing rate.
-        rescale_fac = 1000 / (settings['max_f'] * settings['dt'])
+        # input layer to fire a spike. Increasing ``input_rate`` increases the
+        # firing rate of the input and subsequent layers.
+        rescale_fac = 1000 / (settings['input_rate'] * settings['dt'])
 
         # Divide the test set into batches and run all samples in a batch in
         # parallel.

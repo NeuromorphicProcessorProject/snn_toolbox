@@ -142,6 +142,9 @@ def extract(model):
                 # W, b, gamma, beta, mean, std, epsilon
                 wb = absorb_bn(wb[0], wb[1], weights[0], weights[1],
                                weights[2], weights[3], next_layer.epsilon)
+            if next_layer_name == 'Activation':
+                activation = next_layer.get_config()['activation']
+                attributes.update({'activation_type': activation})
             attributes.update({'weights': wb})
 
         if attributes['layer_type'] == 'Convolution2D':
