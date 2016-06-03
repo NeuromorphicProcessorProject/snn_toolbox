@@ -110,8 +110,8 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
             # For memory reasons, reduce number of samples to use during
             # normalization.
-            n = 10
-            snn.normalize_weights(X_train[:n*settings['batch_size']])
+            frac = 1
+            snn.normalize_weights(X_train[:int(len(X_train)/frac)])
 
         # ____________________________ EVALUATE _____________________________ #
         # (Re-) evaluate ANN

@@ -163,7 +163,7 @@ def norm_weights(weights, activations, previous_fac):
     # could not be divided into an integer number of equal-sized
     # batches.
     end = -1 if len(activations[0]) != len(activations[-1]) else None
-    activation_max = np.percentile(activations[:end], 95)
+    activation_max = np.percentile(activations[:end], settings['percentile'])
     weight_max = np.max(weights[0])  # Disregard biases
     scale_fac = np.max([weight_max, activation_max])
     print("Maximum value: {:.2f}.".format(scale_fac))

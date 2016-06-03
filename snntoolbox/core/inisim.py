@@ -48,13 +48,13 @@ if on_gpu():
 
 
 def update_neurons(self, impulse, time, updates):
-    if not hasattr(self, 'activation_type') or self.activation_type == 'relu':
-        return relu(self, impulse, time, updates)
-    elif self.activation_type == 'softmax':
-        return softmax(self, impulse, time, updates)
+    if 'activation' in self.get_config() and \
+            self.get_config()['activation'] == 'softmax':
+        return softmax_activation(self, impulse, time, updates)
+    return linear_activation(self, impulse, time, updates)
 
 
-def relu(self, impulse, time, updates):
+def linear_activation(self, impulse, time, updates):
     # Destroy impulse if in refractory period
     masked_imp = T.set_subtensor(
         impulse[(self.refrac_until > time).nonzero()], 0.)
@@ -73,19 +73,19 @@ def relu(self, impulse, time, updates):
     return output_spikes
 
 
-def softmax(self, impulse, time, updates):
+def softmax_activation(self, impulse, time, updates):
     # Destroy impulse if in refractory period
     masked_imp = T.set_subtensor(
         impulse[(self.refrac_until > time).nonzero()], 0.)
     # Add impulse
     new_mem = self.mem + masked_imp
     # Store spiking
-    output_spikes = theano.ifelse.ifelse(
+    output_spikes, new_and_reset_mem = theano.ifelse.ifelse(
         T.le(rng.uniform(), 100 * settings['dt'] / 1000),  # Ext. Poisson clock
-        trigger_spike(new_mem), T.zeros_like(self.mem))  # Then, else condition
-    # Reset neuron
-    new_and_reset_mem = T.set_subtensor(new_mem[output_spikes.nonzero()], 0.)
-    # Store refractory
+        trigger_spike(new_mem), skip_spike(new_mem))  # Then and else condition
+    # Store refractory. In case of a spike we are resetting all neurons, even
+    # the ones that didn't spike. However, in the refractory period we only
+    # consider those that spiked. May have to change that...
     new_refractory = T.set_subtensor(
         self.refrac_until[output_spikes.nonzero()], time + self.tau_refrac)
     updates.append((self.refrac_until, new_refractory))
@@ -98,7 +98,11 @@ def trigger_spike(new_mem):
     activ = T.nnet.softmax(new_mem)
     max_activ = T.max(activ, axis=1, keepdims=True)
     output_spikes = T.eq(activ, max_activ).astype('float32')
-    return output_spikes
+    return output_spikes, T.zeros_like(new_mem)
+
+
+def skip_spike(new_mem):
+    return T.zeros_like(new_mem), new_mem
 
 
 def reset(self):
@@ -147,8 +151,6 @@ def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
     self.mem = shared_zeros(self.output_shape)
     self.spiketrain = shared_zeros(self.output_shape)
     self.updates = []
-    if 'activation_type' in kwargs:
-        self.activation_type = kwargs['activation_type']
     if 'time_var' in kwargs:
         input_layer = self.inbound_nodes[0].inbound_layers[0]
         input_layer.v_thresh = v_thresh

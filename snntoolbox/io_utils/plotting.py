@@ -243,16 +243,7 @@ def plot_correlations(spikerates, layer_activations):
 
     """
 
-    rates = []
-    labels = []
     num_layers = len(layer_activations)
-    for layer in spikerates:
-        # Replace 'name' by 'layer[1]' to get more info into the title
-        # name = extract_label(layer[1])[1]
-        name = layer[1]
-        label = name
-        rates.append(layer[0])
-        labels.append(label)
     # Determine optimal shape for rectangular arrangement of plots
     num_rows = int(np.ceil(np.sqrt(num_layers)))
     num_cols = int(np.ceil(num_layers / num_rows))
@@ -263,14 +254,13 @@ def plot_correlations(spikerates, layer_activations):
             layer_num = j + i * num_cols
             if layer_num >= num_layers:
                 break
-            ax[i, j].plot(rates[layer_num],
-                          layer_activations[layer_num][0].flatten(), '.')
-            ax[i, j].set_title(labels[layer_num], fontsize='medium')
+            ax[i, j].plot(layer_activations[layer_num][0].flatten(),
+                          spikerates[layer_num][0], '.')
+            ax[i, j].set_title(spikerates[layer_num][1], fontsize='medium')
             ax[i, j].locator_params(nbins=4)
-            ax[i, j].set_xlim([-max(rates[layer_num]) / 1000,
-                               max(rates[layer_num]) * 1.1])
-            ax[i, j].set_ylim([None,
+            ax[i, j].set_xlim([None,
                                np.max(layer_activations[layer_num][0]) * 1.1])
+            ax[i, j].set_ylim([None, max(spikerates[layer_num][0]) * 1.1])
     f.suptitle('ANN-SNN correlations', fontsize=20)
     f.subplots_adjust(wspace=0.3, hspace=0.3)
     f.text(0.5, 0.04, 'SNN spikerates (Hz)', ha='center', fontsize=16)
@@ -385,13 +375,13 @@ def plot_layer_correlation(rates, activations, title, path=None):
     """
 
     plt.figure()
-    plt.plot(rates, activations, '.')
+    plt.plot(activations, rates, '.')
     plt.title(title, fontsize=20)
     plt.locator_params(nbins=4)
-    plt.xlim([-max(rates) / 1000, max(rates) * 1.1])
-    plt.ylim([None, max(activations) * 1.1])
-    plt.xlabel('SNN spikerates [Hz]', fontsize=16)
-    plt.ylabel('ANN activations', fontsize=16)
+    plt.xlim([None, max(activations) * 1.1])
+    plt.ylim([None, max(rates) * 1.1])
+    plt.xlabel('ANN activations', fontsize=16)
+    plt.ylabel('SNN spikerates [Hz]', fontsize=16)
     if path is not None:
         filename = '5Correlation'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')

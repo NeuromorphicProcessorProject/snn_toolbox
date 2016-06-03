@@ -68,6 +68,9 @@ normalize: boolean, optional
     Only relevant when converting a network, not during simulation. If enabled,
     the weights of the spiking network will be normalized by the highest weight
     or activation.
+percentile: int, optional
+    Use the activation value in the specified percentile for normalization.
+    Set to ``50`` for the median, ``100`` for the max.
 convert: boolean, optional
     If enabled, load an ANN from ``<path>`` and convert it to spiking.
 simulate: boolean, optional
@@ -148,6 +151,7 @@ Default values
                     'batch_size': 100,
                     'evaluateANN': True,
                     'normalize': True,
+                    'percentile': 99,
                     'convert': True,
                     'overwrite': True,
                     'simulate': True,
@@ -214,6 +218,7 @@ settings = {'dataset': 'mnist',
             'samples_to_test': '',
             'evaluateANN': True,
             'normalize': True,
+            'percentile': 99,
             'overwrite': True,
             'convert': True,
             'simulate': True,

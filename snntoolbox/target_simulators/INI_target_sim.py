@@ -103,8 +103,9 @@ class SNN_compiled():
             echo("Iterating over ANN layers to add spiking layers...\n")
         for (layer_num, layer) in enumerate(self.ann['layers']):
             kwargs = {'name': layer['label'], 'trainable': False}
-            kwargs2 = {'activation_type': layer['activation_type']} \
-                if 'activation_type' in layer else {}
+            kwargs2 = {}
+            if 'activation' in layer:
+                kwargs.update({'activation': layer['activation']})
             if layer_num == 0:
                 # For the input layer, pass extra keyword argument
                 # 'batch_input_shape' to layer constructor.

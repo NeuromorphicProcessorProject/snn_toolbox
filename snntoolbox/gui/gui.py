@@ -69,6 +69,7 @@ class SNNToolboxGUI():
         self.graph_widgets()
         self.top_level_menu()
         self.toggle_state_pyNN(self.settings['simulator'].get())
+        self.toggle_percentile_state()
         self.initialized = True
 
     def define_style(self):
@@ -152,10 +153,12 @@ class SNNToolboxGUI():
         ToolTip(self.evaluateANN_cb, text=tip, wraplength=750)
 
         # Normalize
-        self.normalize_cb = tk.Checkbutton(self.globalparams_frame,
-                                           text="Normalize", bg='white',
-                                           variable=self.settings['normalize'],
-                                           height=2, width=20)
+        normalize_frame = tk.Frame(self.globalparams_frame, bg='white')
+        normalize_frame.pack(**self.kwargs)
+        self.normalize_cb = tk.Checkbutton(
+            normalize_frame, text="Normalize", height=2, width=20, bg='white',
+            variable=self.settings['normalize'],
+            command=self.toggle_percentile_state)
         self.normalize_cb.pack(**self.kwargs)
         tip = dedent("""\
               Only relevant when converting a network, not during simulation.
@@ -196,6 +199,22 @@ class SNNToolboxGUI():
               overwrite files before writing weights, activations, models etc.
               to disk.""")
         ToolTip(overwrite_cb, text=tip, wraplength=750)
+
+        # Percentile
+        percentile_frame = tk.Frame(self.globalparams_frame, bg='white')
+        percentile_frame.pack(**self.kwargs)
+        self.percentile_label = tk.Label(percentile_frame, text="Percentile",
+                                         font=self.header_font, bg='white')
+        self.percentile_label.pack(fill='both', expand=True)
+        self.percentile_sb = tk.Spinbox(
+            percentile_frame, bg='white', from_=0, to_=100, increment=1,
+            textvariable=self.settings['percentile'], width=10)
+        self.percentile_sb.pack(fill='y', expand=True, ipady=5)
+        tip = dedent("""\
+              Use the activation value in the specified percentile for
+              normalization. Set to '50' for the median, '100' for the max.
+              Default: '99'.""")
+        ToolTip(percentile_frame, text=tip, wraplength=700)
 
         # Batch size
         batch_size_frame = tk.Frame(self.globalparams_frame, bg='white')
@@ -608,7 +627,7 @@ class SNNToolboxGUI():
         tip = dedent("""\
               Start processing the steps specified above. Settings can not be
               changed during the run.""")
-        ToolTip(self.action_frame, text=tip, wraplength=750)
+        ToolTip(self.start_processing_bt, text=tip, wraplength=750)
 
         # Stop experiment
         self.stop_processing_bt = tk.Button(
@@ -619,7 +638,7 @@ class SNNToolboxGUI():
               Stop the process at the next opportunity. This will usually be
               between steps of normalization, evaluation, conversion and
               simulation.""")
-        ToolTip(self.action_frame, text=tip, wraplength=750)
+        ToolTip(self.stop_processing_bt, text=tip, wraplength=750)
 
     def graph_widgets(self):
         # Create a container for buttons that display plots for individual
@@ -696,7 +715,7 @@ class SNNToolboxGUI():
         self.plot_container.geometry('800x600')
         self.is_plot_container_destroyed = False
         self.plot_container.wm_title('Results from simulation run {}'.format(
-            self.settings['runlabel'].get()))
+            self.selected_plots_dir.get()))
         self.plot_container.protocol('WM_DELETE_WINDOW', self.close_window)
         tk.Button(self.plot_container, text='Close Window',
                   command=self.close_window).pack()
@@ -715,6 +734,7 @@ class SNNToolboxGUI():
         self.toolbar = NavigationToolbar2TkAgg(self.canvas, graph_widget)
 
     def close_window(self):
+        plt.close()
         self.plot_container.destroy()
         self.is_plot_container_destroyed = True
 
@@ -815,6 +835,7 @@ class SNNToolboxGUI():
                          'model_lib': tk.StringVar(),
                          'evaluateANN': tk.BooleanVar(),
                          'normalize': tk.BooleanVar(),
+                         'percentile': tk.IntVar(),
                          'convert': tk.BooleanVar(),
                          'simulate': tk.BooleanVar(),
                          'overwrite': tk.BooleanVar(),
@@ -856,6 +877,7 @@ class SNNToolboxGUI():
         self.layer_to_plot = tk.StringVar()
         self.start_state = tk.StringVar(value='normal')
         self.stop_state = tk.StringVar(value='normal')
+        self.percentile_state = tk.StringVar()
         self.console_output = tk.StringVar()
         self.gui_log = tk.StringVar()
 
@@ -1040,6 +1062,14 @@ class SNNToolboxGUI():
             state=self.settings['state_num_to_test'].get())
         self.num_to_test_sb.configure(
             state=self.settings['state_num_to_test'].get())
+
+    def toggle_percentile_state(self):
+        if self.settings['normalize'].get():
+            self.percentile_state.set('normal')
+        else:
+            self.percentile_state.set('disabled')
+        self.percentile_label.configure(state=self.percentile_state.get())
+        self.percentile_sb.configure(state=self.percentile_state.get())
 
 
 def main():
