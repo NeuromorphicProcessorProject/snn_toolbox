@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun  6 12:55:20 2016
+Created on Mon Jun  6 12:54:49 2016
 
 @author: rbodo
 """
@@ -9,18 +9,21 @@ Created on Mon Jun  6 12:55:20 2016
 from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
 from future import standard_library
+from builtins import open
 
+import sys
 import os
+import gzip
 import numpy as np
-from snntoolbox.io_utils.datasets import caltech101_utils
-from snntoolbox.io_utils.load import to_categorical
+from six.moves import cPickle
+from snntoolbox.io_utils.load import download_dataset, to_categorical
 
 standard_library.install_aliases()
 
 
-def get_caltech101(path=None, filename=None, flat=False):
+def get_mnist(path=None, filename=None, flat=False):
     """
-    Load caltech101 classification dataset.
+    Load mnist classification dataset.
 
     Values are normalized and saved as ``float32`` type. Class vectors are
     converted to binary class matrices. Output can be flattened for use in
@@ -34,8 +37,7 @@ def get_caltech101(path=None, filename=None, flat=False):
         ``path`` directory.
     filename: string, optional
         If a ``path`` is given, the dataset will be written to ``filename``.
-        If ``filename`` is not specified, use ``caltech101`` or
-        ``caltech101_flat``.
+        If ``filename`` is not specified, use ``mnist`` or ``mnist_flat``.
     flat: Boolean, optional
         If ``True``, the output is flattened. Defaults to ``False``.
 
@@ -52,33 +54,39 @@ def get_caltech101(path=None, filename=None, flat=False):
 
     """
 
-    nb_classes = 102
-    flat = False
+    nb_classes = 10
 
-    # Download & untar or get local path
-    base_path = caltech101_utils.download(dataset='img-gen-resized')
+    d = download_dataset(
+        'mnist.pkl.gz',
+        origin='https://s3.amazonaws.com/img-datasets/mnist.pkl.gz')
 
-    # Path to image folder
-    base_path = os.path.join(base_path, caltech101_utils.tar_inner_dirname)
+    if d.endswith('.gz'):
+        f = gzip.open(d, 'rb')
+    else:
+        f = open(d, 'rb')
 
-    # X_test contains only paths to images
-    (X_test, y_test) = caltech101_utils.load_paths_from_files(base_path,
-                                                              'X_test.txt',
-                                                              'y_test.txt')
-    (X_train, y_train), (X_val, y_val) = caltech101_utils.load_cv_split_paths(
-                                                                base_path, 0)
-    print("Warning: Used only 200 samples for X_train.")
-    X_train = caltech101_utils.load_samples(X_train, 200)
-    X_test = caltech101_utils.load_samples(X_test, 200)
+    if sys.version_info < (3,):
+        (X_train, y_train), (X_test, y_test) = cPickle.load(f)
+    else:
+        (X_train, y_train), (X_test, y_test) = cPickle.load(f,
+                                                            encoding='bytes')
+    f.close()
 
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
     X_train /= 255
     X_test /= 255
 
-    # convert class vectors to binary class matrices
+    # Convert class vectors to binary class matrices
     Y_train = to_categorical(y_train, nb_classes)
     Y_test = to_categorical(y_test, nb_classes)
+
+    # Data container has no channel dimension, but we need 4D input for CNN:
+    if X_train.ndim < 4 and not flat:
+        X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1],
+                                  X_train.shape[2])
+        X_test = X_test.reshape(X_test.shape[0], 1, X_test.shape[1],
+                                X_test.shape[2])
 
     if flat:
         X_train = X_train.reshape(X_train.shape[0], np.prod(X_train.shape[1:]))
@@ -86,7 +94,7 @@ def get_caltech101(path=None, filename=None, flat=False):
 
     if path is not None:
         if filename is None:
-            filename = 'caltech101_flat' if flat else 'caltech101'
+            filename = 'mnist_flat' if flat else 'mnist'
         filepath = os.path.join(path, filename)
         np.save(filepath, (X_train, Y_train, X_test, Y_test))
 

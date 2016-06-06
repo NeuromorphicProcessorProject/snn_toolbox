@@ -33,7 +33,7 @@ import matplotlib.gridspec as gridspec
 
 import snntoolbox
 from snntoolbox.config import settings, pyNN_settings, update_setup
-from snntoolbox.config import datasets, architectures, model_libs
+from snntoolbox.config import model_libs
 from snntoolbox.config import simulators, simulators_pyNN
 from snntoolbox.gui.tooltip import ToolTip
 from snntoolbox.core.pipeline import test_full
@@ -65,7 +65,7 @@ class SNNToolboxGUI():
         self.globalparams_widgets()
         self.cellparams_widgets()
         self.simparams_widgets()
-        self.action_widgets()
+        self.tools_widgets()
         self.graph_widgets()
         self.top_level_menu()
         self.toggle_state_pyNN(self.settings['simulator'].get())
@@ -110,24 +110,30 @@ class SNNToolboxGUI():
         # Dataset
         dataset_frame = tk.Frame(self.globalparams_frame, bg='white')
         dataset_frame.pack(**self.kwargs)
-        ToolTip(dataset_frame, text="Choose dataset to test.", wraplength=750)
-        tk.Label(dataset_frame, text="Dataset", bg='white',
-                 font=self.header_font).pack(fill='both', expand=True)
-        dataset_om = tk.OptionMenu(dataset_frame, self.settings['dataset'],
-                                   *list(datasets))
-        dataset_om.pack(fill='both', expand=True)
-
-        # Architecture
-        architecture_frame = tk.Frame(self.globalparams_frame, bg='white')
-        architecture_frame.pack(**self.kwargs)
-        tip = "The type of model architecture."
-        ToolTip(architecture_frame, text=tip, wraplength=750)
-        tk.Label(architecture_frame, text="Architecture", bg='white',
-                 font=self.header_font).pack(fill='both', expand=True)
-        architecture_om = tk.OptionMenu(architecture_frame,
-                                        self.settings['architecture'],
-                                        *list(architectures))
-        architecture_om.pack(fill='both', expand=True)
+        tk.Button(dataset_frame, text="Load dataset",
+                  command=self.set_dataset,
+                  font=self.header_font).pack(side='top')
+        check_dataset_command = dataset_frame.register(self.check_dataset)
+        self.dataset_entry = tk.Entry(
+            dataset_frame, textvariable=self.settings['dataset_path'],
+            width=20, validate='focusout', bg='white',
+            validatecommand=(check_dataset_command, '%P'))
+        self.dataset_entry.pack(fill='both', expand=True, side='left')
+        scrollX = tk.Scrollbar(dataset_frame, orient=tk.HORIZONTAL,
+                               command=self.__scrollHandler)
+        scrollX.pack(fill='x', expand=True, side='bottom')
+        self.dataset_entry['xscrollcommand'] = scrollX.set
+        tip = dedent("""\
+            Select a .npy file containing the dataset in form of a tuple
+            (X_train, Y_train, X_test, Y_test) of training and test sample
+            arrays. With original data of the form
+            (channels, num_rows, num_cols), X_train and X_test have dimension
+            (num_samples, channels*num_rows*num_cols) for a fully-connected
+            network, and (num_samples, channels, num_rows, num_cols) otherwise.
+            Y_train and Y_test have dimension (num_samples, num_classes).
+            See snntoolbox.io_utils.datasets for examples how to prepare a
+            dataset for use in the toolbox.""")
+        ToolTip(dataset_frame, text=tip, wraplength=750)
 
         # Model library
         model_lib_frame = tk.Frame(self.globalparams_frame, bg='white')
@@ -140,65 +146,6 @@ class SNNToolboxGUI():
                                      self.settings['model_lib'],
                                      *list(model_libs))
         model_lib_om.pack(fill='both', expand=True)
-
-        # Evaluate ANN
-        self.evaluateANN_cb = tk.Checkbutton(
-            self.globalparams_frame, text="Evaluate ANN", bg='white',
-            variable=self.settings['evaluateANN'], height=2, width=20)
-        self.evaluateANN_cb.pack(**self.kwargs)
-        tip = dedent("""\
-            If enabled, test the ANN before conversion. If you also enabled
-            'normalization' (see parameter 'normalize' below), then the network
-            will be evaluated again after normalization.""")
-        ToolTip(self.evaluateANN_cb, text=tip, wraplength=750)
-
-        # Normalize
-        normalize_frame = tk.Frame(self.globalparams_frame, bg='white')
-        normalize_frame.pack(**self.kwargs)
-        self.normalize_cb = tk.Checkbutton(
-            normalize_frame, text="Normalize", height=2, width=20, bg='white',
-            variable=self.settings['normalize'],
-            command=self.toggle_percentile_state)
-        self.normalize_cb.pack(**self.kwargs)
-        tip = dedent("""\
-              Only relevant when converting a network, not during simulation.
-              If enabled, the weights of the spiking network will be
-              normalized by the highest weight or activation.""")
-        ToolTip(self.normalize_cb, text=tip, wraplength=750)
-
-        # Convert ANN
-        convert_cb = tk.Checkbutton(self.globalparams_frame, text="Convert",
-                                    variable=self.settings['convert'],
-                                    height=2, width=20, bg='white')
-        convert_cb.pack(**self.kwargs)
-        tip = dedent("""\
-              If enabled, load an ANN from working directory (see setting
-              'working dir') and convert it to spiking.""")
-        ToolTip(convert_cb, text=tip, wraplength=750)
-
-        # Simulate
-        simulate_cb = tk.Checkbutton(self.globalparams_frame,
-                                     text="Simulate",
-                                     variable=self.settings['simulate'],
-                                     height=2, width=20, bg='white')
-        simulate_cb.pack(**self.kwargs)
-        tip = dedent("""\
-              If enabled, try to load SNN from working directory (see setting
-              'working dir') and test it on the specified simulator (see
-              parameter 'simulator').""")
-        ToolTip(simulate_cb, text=tip, wraplength=750)
-
-        # Overwrite
-        overwrite_cb = tk.Checkbutton(self.globalparams_frame,
-                                      text="Overwrite",
-                                      variable=self.settings['overwrite'],
-                                      height=2, width=20, bg='white')
-        overwrite_cb.pack(**self.kwargs)
-        tip = dedent("""\
-              If disabled, the save methods will ask for permission to
-              overwrite files before writing weights, activations, models etc.
-              to disk.""")
-        ToolTip(overwrite_cb, text=tip, wraplength=750)
 
         # Percentile
         percentile_frame = tk.Frame(self.globalparams_frame, bg='white')
@@ -614,13 +561,73 @@ class SNNToolboxGUI():
             Give your simulation run a name. If verbosity is high, the
             resulting plots will be saved in <cwd>/log/gui/<runlabel>.""")
 
-    def action_widgets(self):
-        self.action_frame = tk.Frame(self.globalparams_frame, bg='white')
-        self.action_frame.pack(side='bottom', fill='x', expand=False)
+    def tools_widgets(self):
+        self.tools_frame = tk.LabelFrame(self.main_container, labelanchor='nw',
+                                         text='Tools', relief='raised',
+                                         borderwidth='3', bg='white')
+        self.tools_frame.pack(side='left', fill=None, expand=False)
+        tip = dedent("""\
+              Specify the tools to apply in your experiment.""")
+        ToolTip(self.tools_frame, text=tip, wraplength=750, delay=1499)
+
+        # Evaluate ANN
+        self.evaluateANN_cb = tk.Checkbutton(
+            self.tools_frame, text="Evaluate ANN", bg='white',
+            variable=self.settings['evaluateANN'], height=2, width=20)
+        self.evaluateANN_cb.pack(**self.kwargs)
+        tip = dedent("""\
+            If enabled, test the ANN before conversion. If you also enabled
+            'normalization' (see parameter 'normalize' below), then the network
+            will be evaluated again after normalization.""")
+        ToolTip(self.evaluateANN_cb, text=tip, wraplength=750)
+
+        # Normalize
+        self.normalize_cb = tk.Checkbutton(
+            self.tools_frame, text="Normalize", height=2, width=20,
+            bg='white', variable=self.settings['normalize'],
+            command=self.toggle_percentile_state)
+        self.normalize_cb.pack(**self.kwargs)
+        tip = dedent("""\
+              Only relevant when converting a network, not during simulation.
+              If enabled, the weights of the spiking network will be
+              normalized by the highest weight or activation.""")
+        ToolTip(self.normalize_cb, text=tip, wraplength=750)
+
+        # Convert ANN
+        convert_cb = tk.Checkbutton(self.tools_frame, text="Convert",
+                                    variable=self.settings['convert'],
+                                    height=2, width=20, bg='white')
+        convert_cb.pack(**self.kwargs)
+        tip = dedent("""\
+              If enabled, load an ANN from working directory (see setting
+              'working dir') and convert it to spiking.""")
+        ToolTip(convert_cb, text=tip, wraplength=750)
+
+        # Simulate
+        simulate_cb = tk.Checkbutton(self.tools_frame, text="Simulate",
+                                     variable=self.settings['simulate'],
+                                     height=2, width=20, bg='white')
+        simulate_cb.pack(**self.kwargs)
+        tip = dedent("""\
+              If enabled, try to load SNN from working directory (see setting
+              'working dir') and test it on the specified simulator (see
+              parameter 'simulator').""")
+        ToolTip(simulate_cb, text=tip, wraplength=750)
+
+        # Overwrite
+        overwrite_cb = tk.Checkbutton(self.tools_frame, text="Overwrite",
+                                      variable=self.settings['overwrite'],
+                                      height=2, width=20, bg='white')
+        overwrite_cb.pack(**self.kwargs)
+        tip = dedent("""\
+              If disabled, the save methods will ask for permission to
+              overwrite files before writing weights, activations, models etc.
+              to disk.""")
+        ToolTip(overwrite_cb, text=tip, wraplength=750)
 
         # Start experiment
         self.start_processing_bt = tk.Button(
-            self.action_frame, text="Start", font=self.header_font,
+            self.tools_frame, text="Start", font=self.header_font,
             foreground='#008000', command=self.start_processing,
             state=self.start_state.get())
         self.start_processing_bt.pack(**self.kwargs)
@@ -631,7 +638,7 @@ class SNNToolboxGUI():
 
         # Stop experiment
         self.stop_processing_bt = tk.Button(
-            self.action_frame, text="Stop", font=self.header_font,
+            self.tools_frame, text="Stop", font=self.header_font,
             foreground='red', command=self.stop_processing)
         self.stop_processing_bt.pack(**self.kwargs)
         tip = dedent("""\
@@ -830,8 +837,7 @@ class SNNToolboxGUI():
 
     def declare_parameter_vars(self):
         # These will be written to disk as preferences.
-        self.settings = {'dataset': tk.StringVar(),
-                         'architecture': tk.StringVar(),
+        self.settings = {'dataset_path': tk.StringVar(),
                          'model_lib': tk.StringVar(),
                          'evaluateANN': tk.BooleanVar(),
                          'normalize': tk.BooleanVar(),
@@ -1019,6 +1025,20 @@ class SNNToolboxGUI():
                                       'log', 'gui'))
         # Look for plots in working directory to display
         self.graph_widgets()
+
+    def set_dataset(self):
+        self.settings['dataset_path'].set(filedialog.askopenfilename(
+            title="Choose dataset to load", initialdir=snntoolbox._dir,
+            defaultextension='npy', multiple=False,
+            filetypes=[('all files', '.*'), ('numpy', '.npy')]))
+
+    def check_dataset(self, P):
+        if os.path.isfile(P):
+            return True
+        else:
+            messagebox.showerror(title="Error loading dataset",
+                                 message="Not a file")
+            return False
 
     def __scrollHandler(self, *L):
         op, howMany = L[0], L[1]

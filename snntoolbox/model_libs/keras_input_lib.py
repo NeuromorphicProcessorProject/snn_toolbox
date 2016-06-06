@@ -225,12 +225,9 @@ def load_ann(path=None, filename=None):
     if filename is None:
         filename = settings['filename']
 
-    if settings['dataset'] == 'caltech101':
-        model = model_from_py(filename)['model']
-    else:
-        from keras import models
-        model = models.model_from_json(open(
-            os.path.join(path, filename + '.json')).read())
+    from keras import models
+    model = models.model_from_json(open(os.path.join(
+        path, filename + '.json')).read())
     model.load_weights(os.path.join(path, filename + '.h5'))
     # Todo: Allow user to specify loss function here (optimizer is not
     # relevant as we do not train any more). Unfortunately, Keras does not

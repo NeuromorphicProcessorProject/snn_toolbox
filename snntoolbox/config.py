@@ -16,18 +16,9 @@ Parameters
 Global Parameters
 *****************
 
-dataset: string
-    The dataset to use for testing the network. Possible values:
-
-    - 'mnist'
-    - 'cifar10'
-    - 'caltech101'
-
-architecture: string
-    Specifies the network architecture. Possible values:
-
-    - 'mlp' for Multi-Layer Perceptron
-    - 'cnn' for Convolutional Neural Network
+dataset_path: string
+    Where to load the dataset from. Used for testing the network. Dataset needs
+    to be in ... format.
 
 model_lib: string
     The neural network library used to build the ANN, e.g.
@@ -42,7 +33,7 @@ path: string, optional
     weights.
     If not specified, the toolbox will use as destination for all files it
     needs to load and save:
-    ``~/.snntoolbox/data/<dataset>/<architecture>/<filename>/<simulator>/``.
+    ``~/.snntoolbox/data/<filename>/<simulator>/``.
     For instance, if we give ``'98.29'`` as filename of the ANN model to load,
     and use default parameters otherwise, the toolbox will perform all
     io-operations in ``~/.snntoolbox/data/mnist/mlp/98.29/INI/``.
@@ -140,8 +131,7 @@ Default values
 
 ::
 
-    globalparams = {'dataset': 'mnist',
-                    'architecture': 'mlp',
+    globalparams = {'dataset_path': '',
                     'model_lib': 'keras',
                     'path': '',
                     'log_dir_of_current_run': '',
@@ -194,11 +184,7 @@ plotproperties = {'font.size': 13,
                   'figure.figsize': (7, 6)}
 mpl.rcParams.update(plotproperties)
 
-# List supported datasets, model types, model libraries, simulators, etc.
-datasets = {'mnist', 'cifar10', 'caltech101'}
-datasetsGray = {'mnist'}
-datasetsRGB = {'cifar10', 'caltech101'}
-architectures = {'mlp', 'cnn'}
+# List supported model libraries, simulators, etc.
 model_libs = {'keras', 'lasagne'}
 simulators_pyNN = {'nest', 'brian', 'Neuron'}
 simulators_other = {'INI', 'brian2'}
@@ -206,8 +192,7 @@ simulators = simulators_pyNN.copy()
 simulators.update(simulators_other)
 
 # Default parameters:
-settings = {'dataset': 'mnist',
-            'architecture': 'mlp',
+settings = {'dataset_path': '',
             'model_lib': 'keras',
             'path': '',
             'log_dir_of_current_run': '',
@@ -264,18 +249,6 @@ def update_setup(s=None):
     if s is None:
         s = {}
 
-    # Check that choice of dataset is valid (not really needed when
-    # using GUI because options are hardwired in dropdown list).
-    if 'dataset' in s:
-        assert s['dataset'] in datasets, \
-            "Dataset '{}' not known. Supported datasets: {}".format(
-                s['dataset'], datasets)
-    # Check that specified architecture is valid (not really needed when
-    # using GUI because options are hardwired in dropdown list).
-    if 'architecture' in s:
-        assert s['architecture'] in architectures, \
-            "Network architecture '{}' not understood. Supported architectures:\
-                {}".format(s['architecture'], architectures)
     # Check that choice of input model library is valid (not really needed when
     # using GUI because options are hardwired in dropdown list).
     if 'model_lib' in s:
@@ -305,8 +278,7 @@ def update_setup(s=None):
         s['convert'] = True
     # Set default path if user did not specify one.
     if 'path' not in s or s['path'] == '':
-        s['path'] = os.path.join(snntoolbox._dir, 'data', s['dataset'],
-                                 s['architecture'], s['filename'],
+        s['path'] = os.path.join(snntoolbox._dir, 'data', s['filename'],
                                  s['simulator'])
     # Create directory if not there yet.
     if not os.path.exists(s['path']):

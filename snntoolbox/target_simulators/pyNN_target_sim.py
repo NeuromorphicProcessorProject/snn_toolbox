@@ -172,6 +172,9 @@ class SNN_compiled():
             int(np.prod(layer['output_shape'][1:])), self.sim.IF_cond_exp,
             self.cellparams, label=layer['label']))
         self.output_shapes.append(layer['output_shape'])
+        if 'activation' in layer and layer['activation'] == 'softmax':
+            echo("WARNING: Activation 'softmax' not implemented. " +
+                 "Using 'relu' activation instead.\n")
 
     def build_dense(self, layer):
         weights = layer['weights'][0]  # [W, b][0]
@@ -377,7 +380,7 @@ class SNN_compiled():
                     test_num == settings['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
                 collect_plot_results(self.layers, self.output_shapes,
-                                     snn_precomp, X_test[ind])
+                                     snn_precomp, X_test[ind:ind+1])
 
             # Reset simulation time and recorded network variables for next run
             if settings['verbose'] > 1:
@@ -613,7 +616,6 @@ class SNN_compiled():
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 warnings.warn('deprecated', UserWarning)
-
                 self.sim.Projection(self.layers[i], self.layers[i+1],
                                     self.sim.FromFileConnector(filepath))
 
@@ -685,5 +687,5 @@ def collect_plot_results(layers, output_shapes, ann, X):
             plot_potential(times, vmem[-1], showLegend=showLegend)
         j += 1
 
-    output_graphs(spiketrains_batch, ann, np.array(X, ndmin=4),
+    output_graphs(spiketrains_batch, ann, X,
                   settings['log_dir_of_current_run'])

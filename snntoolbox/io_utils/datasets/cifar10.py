@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun  6 12:55:20 2016
+Created on Mon Jun  6 12:55:10 2016
 
 @author: rbodo
 """
@@ -12,15 +12,15 @@ from future import standard_library
 
 import os
 import numpy as np
-from snntoolbox.io_utils.datasets import caltech101_utils
+from keras.datasets import cifar10
 from snntoolbox.io_utils.load import to_categorical
 
 standard_library.install_aliases()
 
 
-def get_caltech101(path=None, filename=None, flat=False):
+def get_cifar10(path=None, filename=None, flat=False):
     """
-    Load caltech101 classification dataset.
+    Load cifar10 classification dataset.
 
     Values are normalized and saved as ``float32`` type. Class vectors are
     converted to binary class matrices. Output can be flattened for use in
@@ -34,8 +34,7 @@ def get_caltech101(path=None, filename=None, flat=False):
         ``path`` directory.
     filename: string, optional
         If a ``path`` is given, the dataset will be written to ``filename``.
-        If ``filename`` is not specified, use ``caltech101`` or
-        ``caltech101_flat``.
+        If ``filename`` is not specified, use ``cifar10`` or ``cifar10_flat``.
     flat: Boolean, optional
         If ``True``, the output is flattened. Defaults to ``False``.
 
@@ -52,24 +51,9 @@ def get_caltech101(path=None, filename=None, flat=False):
 
     """
 
-    nb_classes = 102
-    flat = False
+    nb_classes = 10
 
-    # Download & untar or get local path
-    base_path = caltech101_utils.download(dataset='img-gen-resized')
-
-    # Path to image folder
-    base_path = os.path.join(base_path, caltech101_utils.tar_inner_dirname)
-
-    # X_test contains only paths to images
-    (X_test, y_test) = caltech101_utils.load_paths_from_files(base_path,
-                                                              'X_test.txt',
-                                                              'y_test.txt')
-    (X_train, y_train), (X_val, y_val) = caltech101_utils.load_cv_split_paths(
-                                                                base_path, 0)
-    print("Warning: Used only 200 samples for X_train.")
-    X_train = caltech101_utils.load_samples(X_train, 200)
-    X_test = caltech101_utils.load_samples(X_test, 200)
+    (X_train, y_train), (X_test, y_test) = cifar10.load_data()
 
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
@@ -86,7 +70,7 @@ def get_caltech101(path=None, filename=None, flat=False):
 
     if path is not None:
         if filename is None:
-            filename = 'caltech101_flat' if flat else 'caltech101'
+            filename = 'cifar10_flat' if flat else 'cifar10'
         filepath = os.path.join(path, filename)
         np.save(filepath, (X_train, Y_train, X_test, Y_test))
 

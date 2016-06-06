@@ -12,13 +12,10 @@ Created on Wed Nov 18 13:38:46 2015
 from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
 from future import standard_library
-from builtins import open
 
 import os
-import sys
 import numpy as np
-from six.moves import cPickle
-from snntoolbox.config import settings, architectures, datasets
+from snntoolbox.config import settings
 
 standard_library.install_aliases()
 
@@ -57,115 +54,33 @@ def to_categorical(y, nb_classes):
     return Y
 
 
-def get_dataset():
+def load_dataset(path=None):
     """
-    Load a classification dataset.
+    Load dataset from an ``.npy`` file.
 
-    Returns
-    -------
-    dataset: tuple
-        The dataset as a tuple containing the training and test sample arrays
-        (X_train, Y_train, X_test, Y_test)
+    Parameters
+    ----------
 
-    Todo
-    ----
-
-    @Iulia: Discuss how to support non-classification datasets.
-    """
-
-    import gzip
-
-    assert settings['dataset'] in datasets, \
-        "Dataset {} not known. Supported datasets: {}".format(
-            settings['dataset'], datasets)
-
-    nb_classes = 10
-
-    if settings['dataset'] == 'mnist':
-        fname = settings['dataset'] + '.pkl.gz'
-        path = download_dataset(
-                fname, origin='https://s3.amazonaws.com/img-datasets/' + fname)
-
-        if path.endswith('.gz'):
-            f = gzip.open(path, 'rb')
-        else:
-            f = open(path, 'rb')
-
-        if sys.version_info < (3,):
-            (X_train, y_train), (X_test, y_test) = cPickle.load(f)
-        else:
-            (X_train, y_train), (X_test, y_test) = \
-                cPickle.load(f, encoding='bytes')
-
-        f.close()
-
-    elif settings['dataset'] == 'cifar10':
-        from keras.datasets import cifar10
-        (X_train, y_train), (X_test, y_test) = cifar10.load_data()
-
-    elif settings['dataset'] == 'caltech101':
-        from snntoolbox.io_utils.datasets import caltech101
-        nb_classes = 102
-
-        # Download & untar or get local path
-        base_path = caltech101.download(dataset='img-gen-resized')
-
-        # Path to image folder
-        base_path = os.path.join(base_path, caltech101.tar_inner_dirname)
-
-        # X_test contains only paths to images
-        (X_test, y_test) = caltech101.load_paths_from_files(base_path,
-                                                            'X_test.txt',
-                                                            'y_test.txt')
-        (X_train, y_train), (X_val, y_val) = caltech101.load_cv_split_paths(
-                                                                base_path, 0)
-        print("Warning: Used only a total of two batch sizes for X_train.")
-        X_train = caltech101.load_samples(X_train, 2*settings['batch_size'])
-        X_test = caltech101.load_samples(X_test, 2*settings['batch_size'])
-
-    X_train = X_train.astype('float32')
-    X_test = X_test.astype('float32')
-    X_train /= 255
-    X_test /= 255
-
-    # convert class vectors to binary class matrices
-    Y_train = to_categorical(y_train, nb_classes)
-    Y_test = to_categorical(y_test, nb_classes)
-
-    return (X_train, Y_train, X_test, Y_test)
-
-
-def get_reshaped_dataset():
-    """
-    Load a classification dataset and shape it to fit a specific network model.
+    path: string, optional
+        Location of dataset to load.
 
     Returns
     -------
 
     The dataset as a tuple containing the training and test sample arrays
     (X_train, Y_train, X_test, Y_test).
-    With data of the form (channels, num_rows, num_cols), ``X_train`` and
-    ``X_test`` have dimension (num_samples, channels*num_rows*num_cols)
-    for a multi-layer perceptron, and
-    (num_samples, channels, num_rows, num_cols) for a convolutional net.
+    With original data of the form (channels, num_rows, num_cols), ``X_train``
+    and ``X_test`` have dimension (num_samples, channels*num_rows*num_cols) for
+    a fully-connected network, and (num_samples, channels, num_rows, num_cols)
+    otherwise.
     ``Y_train`` and ``Y_test`` have dimension (num_samples, num_classes).
+
     """
 
-    (X_train, Y_train, X_test, Y_test) = get_dataset()
+    if path is None:
+        path = settings['dataset_path']
 
-    assert settings['architecture'] in architectures, "Network \
-        architecture {} not understood. Supported architectures: {}".format(
-            settings['architecture'], architectures)
-    if settings['architecture'] == 'mlp':
-        X_train = X_train.reshape(X_train.shape[0], np.prod(X_train.shape[1:]))
-        X_test = X_test.reshape(X_test.shape[0], np.prod(X_test.shape[1:]))
-    # Data container has no channel dimension, but we need 4D input for CNN:
-    elif settings['architecture'] == 'cnn' and X_train.ndim < 4:
-        X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1],
-                                  X_train.shape[2])
-        X_test = X_test.reshape(X_test.shape[0], 1, X_test.shape[1],
-                                X_test.shape[2])
-    return (X_train, Y_train, X_test, Y_test)
+    return np.load(path)
 
 
 def download_dataset(fname, origin, untar=False):

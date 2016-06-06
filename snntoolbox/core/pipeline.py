@@ -12,11 +12,8 @@ from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
 from future import standard_library
 
-import os
-import numpy as np
-from snntoolbox import echo
 from snntoolbox.io_utils.plotting import plot_param_sweep
-from snntoolbox.io_utils.load import get_reshaped_dataset
+from snntoolbox.io_utils.load import load_dataset
 from snntoolbox.core.model import SNN
 from snntoolbox.core.util import print_description
 from snntoolbox.config import settings
@@ -38,7 +35,6 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
            repeat simulations with modified parameters.
 
     The testsuit allows specification of
-        - the network architecture (convolutional and fully-connected networks)
         - the dataset (e.g. MNIST or CIFAR10)
         - the spiking simulator to use (currently Brian, Brian2, Nest, Neuron,
           or INI's simulator.)
@@ -73,21 +69,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
     """
 
     # ____________________________ LOAD DATASET _____________________________ #
-    # Load modified dataset if it has already been stored during previous run,
-    # otherwise load it from scratch and perform necessary adaptations (e.g.
-    # reducing dataset size for reshaping according to network architecture).
-    # Then save it to disk.
-    datadir_base = os.path.expanduser(os.path.join('~', '.snntoolbox'))
-    datadir = os.path.join(datadir_base, 'datasets', settings['dataset'],
-                           settings['architecture'])
-    if not os.path.exists(datadir):
-        os.makedirs(datadir)
-    samples = os.path.join(datadir, settings['dataset'] + '.npy')
-    if os.path.isfile(samples):
-        (X_train, Y_train, X_test, Y_test) = tuple(np.load(samples))
-    else:
-        (X_train, Y_train, X_test, Y_test) = get_reshaped_dataset()
-        np.save(samples, np.array([X_train, Y_train, X_test, Y_test]))
+    (X_train, Y_train, X_test, Y_test) = load_dataset(settings['dataset_path'])
 
     # _____________________________ LOAD MODEL ______________________________ #
     # Extract architecture and weights from input model.
@@ -104,8 +86,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
             # Evaluate ANN before normalization to ensure it doesn't affect
             # accuracy
             if settings['evaluateANN'] and not is_stop(queue):
-                echo('\n')
-                echo("Before weight normalization:\n")
+                print("Before weight normalization:")
                 snn.evaluate_ann(X_test, Y_test)
 
             # For memory reasons, reduce number of samples to use during
@@ -151,8 +132,8 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
             # Display current parameter value
             if len(params) > 1 and settings['verbose'] > 0:
-                echo("Current value of parameter to sweep: " +
-                     "{} = {:.2f}\n".format(param_name, p))
+                print("Current value of parameter to sweep: " +
+                      "{} = {:.2f}\n".format(param_name, p))
             # Simulate network
             total_acc = snn.run(X_test, Y_test)
 

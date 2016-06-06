@@ -62,8 +62,7 @@ import snntoolbox
 def main():
 
     # Parameters
-    settings = {'dataset': 'mnist',
-                'architecture': 'cnn',
+    settings = {'dataset_path': 'example/mnist/dataset/',
                 'filename': '99.16',
                 'path': 'example/mnist/cnn/99.16/INI/',
                 'evaluateANN': True,  # Test accuracy of input model
