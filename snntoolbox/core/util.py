@@ -160,9 +160,8 @@ def norm_weights(weights, activations, previous_fac):
 
     """
 
-    # Skip last batch if batch_size was chosen such that the dataset
-    # could not be divided into an integer number of equal-sized
-    # batches.
+    # Skip last batch if batch_size was chosen such that the dataset could not
+    # be divided into an integer number of equal-sized batches.
     end = -1 if len(activations[0]) != len(activations[-1]) else None
     activation_max = np.percentile(activations[:end], settings['percentile'])
     weight_max = np.max(weights[0])  # Disregard biases
@@ -175,7 +174,7 @@ def norm_weights(weights, activations, previous_fac):
     return [x / applied_fac for x in weights], scale_fac, applied_fac
 
 
-def get_activations_layer(get_activ, X_train):
+def get_activations_layer(get_activ, X_test):
     """
     Get activations of a specific layer.
 
@@ -185,9 +184,9 @@ def get_activations_layer(get_activ, X_train):
         get_activ: Theano function
             A Theano function computing the activations of a layer.
 
-        X_train: float32 array
+        X_test: float32 array
             The samples to compute activations for. With data of the form
-            (channels, num_rows, num_cols), X_train has dimension
+            (channels, num_rows, num_cols), X_test has dimension
             (num_samples, channels*num_rows*num_cols) for a multi-layer
             perceptron, and (num_samples, channels, num_rows, num_cols) for a
             convolutional net.
@@ -201,17 +200,21 @@ def get_activations_layer(get_activ, X_train):
 
     """
 
-    shape = list(get_activ(X_train[:1]).shape)
-    shape[0] = X_train.shape[0]
+    shape = list(get_activ(X_test[:settings['batch_size']]).shape)
+    shape[0] = X_test.shape[0]
     activations = np.empty(shape)
-    num_batches = int(np.ceil(X_train.shape[0] / settings['batch_size']))
+    num_batches = int(np.ceil(X_test.shape[0] / settings['batch_size']))
     for batch_idx in range(num_batches):
         # Determine batch indices.
         max_idx = min((batch_idx + 1) * settings['batch_size'],
-                      X_train.shape[0])
+                      X_test.shape[0])
         batch_idxs = range(batch_idx * settings['batch_size'], max_idx)
-        batch = X_train[batch_idxs, :]
-        activations[batch_idxs] = get_activ(batch)
+        batch = X_test[batch_idxs, :]
+        if len(batch_idxs) < settings['batch_size']:
+            batch.resize(X_test[:settings['batch_size']].shape)
+            activations[batch_idxs] = get_activ(batch)[:len(batch_idxs)]
+        else:
+            activations[batch_idxs] = get_activ(batch)
     return activations
 
 

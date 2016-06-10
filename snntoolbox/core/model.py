@@ -170,13 +170,12 @@ class SNN():
 
         score = self.model_lib.evaluate(self.val_fn, X_test, Y_test)
 
-        print('\n')
         print("Test score: {:.2f}".format(score[0]))
         print("Test accuracy: {:.2%}\n".format(score[1]))
 
         return score
 
-    def normalize_weights(self, X_train):
+    def normalize_weights(self, X_test):
         """
         Normalize the weights of a network.
 
@@ -186,7 +185,7 @@ class SNN():
         Parameters
         ----------
 
-        X_train : float32 array
+        X_test : float32 array
             The input samples to use for determining the layer activations.
             With data of the form (channels, num_rows, num_cols),
             X_test has dimension (1, channels*num_rows*num_cols) for a
@@ -204,7 +203,7 @@ class SNN():
         if not os.path.exists(newpath):
             os.makedirs(newpath)
         previous_fac = 1
-        # Loop through all layers, looking for activation layers
+        # Loop through all layers, looking for layers with weights
         for idx, layer in enumerate(self.layers):
             # Skip layer if not preceeded by a layer with weights
             if idx == 0 or 'weights' not in self.layers[idx-1].keys():
@@ -222,24 +221,24 @@ class SNN():
                   " following layer {} with shape {}...".format(
                   label, layer['output_shape']))
             weights = self.layers[idx-1]['weights']
-            activations = get_activations_layer(layer['get_activ'], X_train)
+            activations = get_activations_layer(layer['get_activ'], X_test)
             weights_norm, previous_fac, applied_fac = norm_weights(
                 weights, activations, previous_fac)
+            weight_dict = {'Weights': weights[0].flatten(),
+                           'Weights_norm': weights_norm[0].flatten()}
             # Update model with modified weights
             self.set_layer_params(weights_norm, idx-1)
             # Compile new theano function with modified weights
             get_activ_norm = self.model_lib.get_activ_fn_for_layer(
                 self.model, self.layer_idx_map[idx])
             layer.update({'get_activ_norm': get_activ_norm})
-            activations_norm = get_activations_layer(get_activ_norm, X_train)
+            activations_norm = get_activations_layer(get_activ_norm, X_test)
             # For memory reasons, use only a fraction of samples for
             # plotting a histogram of activations.
             frac = 10  # int(len(activations) / 100)
             activation_dict = {'Activations': activations[:frac].flatten(),
                                'Activations_norm':
                                    activations_norm[:frac].flatten()}
-            weight_dict = {'Weights': weights[0].flatten(),
-                           'Weights_norm': weights_norm[0].flatten()}
             plot_hist(activation_dict, 'Activation', label, newpath,
                       previous_fac, applied_fac)
             plot_hist(weight_dict, 'Weight', label, newpath)
@@ -306,7 +305,11 @@ class SNN():
         Return a dictionary describing the model.
 
         """
-        skip_keys = ['weights', 'get_activ', 'get_activ_norm', 'model']
+
+        # When adding a parser for a new input model format, you may need to
+        # supplement the following list by non-JSON-serializable objects.
+        skip_keys = ['weights', 'get_activ', 'get_activ_norm', 'model',
+                     'model_protobuf']
         layer_config = []
         for layer in self.layers:
             layer_config.append([{key: layer[key]} for key in layer.keys()

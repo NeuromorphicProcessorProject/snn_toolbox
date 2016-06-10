@@ -52,9 +52,6 @@ class SNNToolboxGUI():
     def __init__(self, root):
         self.initialized = False
         self.root = root
-        self.filetypes = (("json files", '*.json'),
-                          ("hdf5 files", '*.h5'),
-                          ("All files", '*.*'))
         self.default_path_to_pref = os.path.join(snntoolbox._dir,
                                                  'preferences')
         self.define_style()
@@ -1002,7 +999,18 @@ class SNNToolboxGUI():
                   "Specified directory does not exist."
             messagebox.showwarning(title="Warning", message=msg)
             return False
-        if not any(fname.endswith('.json') for fname in os.listdir(P)):
+        if self.settings['model_lib'].get() == 'caffe':
+            if not any(fname.endswith('.caffemodel') for fname in
+                       os.listdir(P)):
+                msg = "No '*.caffemodel' file found in \n {}".format(P)
+                messagebox.showwarning(title="Warning", message=msg)
+                return False
+            elif not any(fname.endswith('.prototxt') for fname in
+                         os.listdir(P)):
+                msg = "No '*.prototxt' file found in \n {}".format(P)
+                messagebox.showwarning(title="Warning", message=msg)
+                return False
+        elif not any(fname.endswith('.json') for fname in os.listdir(P)):
             msg = "No model file '*.json' found in \n {}".format(P)
             messagebox.showwarning(title="Warning", message=msg)
             return False

@@ -178,7 +178,7 @@ def extract(model):
                                'nb_row': layer.filter_size[0],
                                'border_mode': border_mode})
 
-        elif attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
+        if attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
             border_mode = border_mode_string(layer.pad, layer.pool_size)
             attributes.update({'input_shape': layer.input_shape,
                                'pool_size': layer.pool_size,

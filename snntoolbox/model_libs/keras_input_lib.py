@@ -149,7 +149,7 @@ def extract(model):
                                'nb_row': layer.nb_row,
                                'border_mode': layer.border_mode})
 
-        elif attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
+        if attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
             attributes.update({'input_shape': layer.input_shape,
                                'pool_size': layer.pool_size,
                                'strides': layer.strides,

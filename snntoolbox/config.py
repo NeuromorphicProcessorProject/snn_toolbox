@@ -185,7 +185,7 @@ plotproperties = {'font.size': 13,
 mpl.rcParams.update(plotproperties)
 
 # List supported model libraries, simulators, etc.
-model_libs = {'keras', 'lasagne'}
+model_libs = {'keras', 'lasagne', 'caffe'}
 simulators_pyNN = {'nest', 'brian', 'Neuron'}
 simulators_other = {'INI', 'brian2'}
 simulators = simulators_pyNN.copy()

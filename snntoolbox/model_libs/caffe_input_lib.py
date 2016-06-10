@@ -19,11 +19,12 @@ Created on Thu Jun  9 08:11:09 2016
 """
 
 import os
-import theano
 import caffe
 import numpy as np
 from snntoolbox.config import settings, bn_layers
 from snntoolbox.model_libs.common import absorb_bn, border_mode_string
+
+caffe.set_mode_gpu()
 
 
 def extract(model):
@@ -106,7 +107,10 @@ def extract(model):
     model_protobuf = model['model_protobuf']
     model = model['model']
 
-    input_shape = model_protobuf.input_dim
+    input_shape = list(model_protobuf.input_dim)
+
+    global layer_keys
+    layer_keys = [layer.name for layer in model_protobuf.layer]
 
     layers = []
     labels = []
@@ -125,7 +129,7 @@ def extract(model):
                 layer_type = 'MaxPooling2D'
             else:
                 layer_type = 'AveragePooling2D'
-        if name in {'ReLU', 'Softmax'}:
+        elif name in {'ReLU', 'Softmax'}:
             layer_type = 'Activation'
         elif name == 'Data':
             continue
@@ -163,7 +167,8 @@ def extract(model):
                 "{}, not {}.".format(bn_layers, attributes['layer_type']))
 
         if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
-            wb = [model.params[layer_key][0], model.params[layer_key][1]]
+            wb = [model.params[layer_key][0].data,
+                  model.params[layer_key][1].data]
             if next_layer_type == 'BatchNormalization':
                 weights = [next_layer.blobs[0].data, next_layer.blobs[1].data]
                 # W, b, gamma, beta, mean, std, epsilon
@@ -189,7 +194,7 @@ def extract(model):
                                'nb_row': filter_size[1],
                                'border_mode': border_mode})
 
-        elif attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
+        if attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
             p = layer.pooling_param
             # Take maximum here because sometimes not not all fields are set
             # (e.g. kernel_h == 0 even though kernel_size == 2)
@@ -206,21 +211,19 @@ def extract(model):
 
         if attributes['layer_type'] in {'Activation', 'AveragePooling2D',
                                         'MaxPooling2D'}:
+            if attributes['layer_type'] == 'Activation':
+                layer_key = model_protobuf.layer[layer_num-1].name
             attributes.update({'get_activ': get_activ_fn_for_layer(model,
                                                                    layer_key)})
         layers.append(attributes)
-        layer_idx_map.append(layer_num)
+        layer_idx_map.append(layer_key)
 
     return {'input_shape': input_shape, 'layers': layers, 'labels': labels,
             'layer_idx_map': layer_idx_map}
 
 
-def get_activ_fn_for_layer(model, i):
-    input_var = theano.tensor.tensor4('inputs')
-    return theano.function(
-        [input_var, theano.In(theano.tensor.scalar(), value=0)],
-        model.forward_all(end=i, data=input_var),
-        allow_input_downcast=True, on_unused_input='ignore')
+def get_activ_fn_for_layer(model, layer_key):
+    return lambda x: model.forward(data=x, end=layer_key)[layer_key]
 
 
 def load_ann(path=None, filename=None):
@@ -277,11 +280,14 @@ def evaluate(val_fn, X_test, Y_test):
     guesses = np.argmax(val_fn(data=X_test)['prob'], axis=1)
     truth = np.argmax(Y_test, axis=1)
     accuracy = np.mean(guesses == truth)
-    loss = None
+    loss = -1
     return [loss, accuracy]
 
 
-def set_layer_params(model, params, i):
+def set_layer_params(model, params, layer_key):
     """Set ``params`` of layer ``i`` of a given ``model``."""
-    model.params[i][0] = params[0]
-    model.params[i][1] = params[1]
+    i = layer_keys.index(layer_key) + 1
+    model.params[layer_key][0].data[...] = params[0]
+    model.params[layer_key][1].data[...] = params[1]
+    model.layers[i].blobs[0].data[...] = params[0]
+    model.layers[i].blobs[1].data[...] = params[1]
