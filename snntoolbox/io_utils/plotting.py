@@ -481,7 +481,6 @@ def output_graphs(spiketrains_batch, ann, X_batch, path=None):
     from snntoolbox.core.util import spiketrains_to_rates
     from snntoolbox.core.util import get_sample_activity_from_batch
 
-    print('\n')
     print("Saving plots of one sample to {}...\n".format(path))
 
     spiketrains = get_sample_activity_from_batch(spiketrains_batch)

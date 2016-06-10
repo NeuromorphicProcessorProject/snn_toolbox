@@ -62,20 +62,24 @@ import snntoolbox
 def main():
 
     # Parameters
-    settings = {'dataset_path': 'example/mnist/dataset/',
+    settings = {'dataset_path': 'example/dataset/mnist.npy',  # Dataset file
                 'filename': '99.16',
-                'path': 'example/mnist/cnn/99.16/INI/',
+                'path': 'example/',  # Working directory
                 'evaluateANN': True,  # Test accuracy of input model
                 'normalize': True,  # Normalize weights to get better perf.
                 'convert': True,  # Convert analog net to spiking
                 'simulate': True,  # Simulate converted net
                 'verbose': 3,  # Show plots and temporary results
                 'v_thresh': 1,  # Threshold potential
-                'simulator': 'INI',  # Reset potential
+                'simulator': 'INI',  # Use built-in simulator
                 'duration': 100.0}  # Simulation time
 
     # Update defaults with parameters specified above:
     snntoolbox.update_setup(settings)
+
+    # Download and save dataset in npy format which the toolbox can load later.
+    from snntoolbox.io_utils.datasets.mnist import get_mnist
+    get_mnist('example/dataset/')
 
     # Run network (including loading the model, weight normalization,
     # conversion and simulation).

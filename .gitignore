@@ -55,4 +55,4 @@ Thumbs.db
 
 # Datasets #
 ############
-SNN_tooblox/data/datasets/*
+snntoolbox/tests/example/dataset/*

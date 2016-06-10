@@ -18,7 +18,7 @@ Global Parameters
 
 dataset_path: string
     Where to load the dataset from. Used for testing the network. Dataset needs
-    to be in ... format.
+    to be in npy format.
 
 model_lib: string
     The neural network library used to build the ANN, e.g.

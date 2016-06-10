@@ -221,7 +221,7 @@ class SNN_compiled():
         output = np.zeros(Y_test.shape).astype('int32')
         num_batches = int(np.ceil(X_test.shape[0] / settings['batch_size']))
         if settings['verbose'] > 1:
-            echo("Starting new simulation...\n")
+            print("Starting new simulation...\n")
         # Allocate a list 'spiketrains_batch' with the following specification:
         # Each entry in ``spiketrains_batch`` contains a tuple
         # ``(spiketimes, label)`` for each layer of the network (for the first

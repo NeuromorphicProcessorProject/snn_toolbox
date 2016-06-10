@@ -159,6 +159,8 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
 
 def is_stop(queue):
+    if not queue:
+        return False
     if queue.empty():
         return False
     elif queue.get_nowait() == 'stop':

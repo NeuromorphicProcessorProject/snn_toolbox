@@ -170,7 +170,8 @@ class SNN():
 
         score = self.model_lib.evaluate(self.val_fn, X_test, Y_test)
 
-        print("Test score: {:.2f}\n".format(score[0]))
+        print('\n')
+        print("Test score: {:.2f}".format(score[0]))
         print("Test accuracy: {:.2%}\n".format(score[1]))
 
         return score
