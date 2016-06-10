@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-from keras.datasets import cifar10 as dataset
+from keras.datasets import mnist as dataset
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Convolution2D, AveragePooling2D
@@ -29,7 +29,7 @@ nb_classes = 10
 nb_epoch = 40
 
 # input image dimensions
-img_rows, img_cols = 32, 32
+img_rows, img_cols = 28, 28
 # number of convolutional filters to use
 nb_filters = 32
 # size of pooling area for max pooling
@@ -37,7 +37,7 @@ nb_pool = 2
 # convolution kernel size
 nb_conv = 3
 # color channels
-chnls = 3
+chnls = 1
 
 # the data, shuffled and split between train and test sets
 (X_train, y_train), (X_test, y_test) = dataset.load_data()

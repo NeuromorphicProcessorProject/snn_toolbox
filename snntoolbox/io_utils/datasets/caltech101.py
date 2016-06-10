@@ -53,7 +53,6 @@ def get_caltech101(path=None, filename=None, flat=False):
     """
 
     nb_classes = 102
-    flat = False
 
     # Download & untar or get local path
     base_path = caltech101_utils.download(dataset='img-gen-resized')

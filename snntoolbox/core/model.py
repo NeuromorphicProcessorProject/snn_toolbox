@@ -34,73 +34,69 @@ class SNN():
     Parameters
     ----------
 
-        path: string, optional
-            Path to directory where to load model from. Defaults to
-            ``settings['path']``.
+    path: string, optional
+        Path to directory where to load model from. Defaults to
+        ``settings['path']``.
 
-        filename: string, optional
-            Name of file to load model from. Defaults to
-            ``settings['filename']``.
+    filename: string, optional
+        Name of file to load model from. Defaults to ``settings['filename']``.
 
     Attributes
     ----------
 
-        model: Model
-            A model instance of the network in the respective ``model_lib``.
+    model: Model
+        A model instance of the network in the respective ``model_lib``.
 
-        val_fn: Theano function
-            A Theano function that allows evaluating the original model.
+    val_fn: Theano function
+        A Theano function that allows evaluating the original model.
 
-        input_shape: list
-            The dimensions of the input sample:
-            [batch_size, n_chnls, n_rows, n_cols]. For instance, mnist would
-            have input shape [Null, 1, 28, 28].
+    input_shape: list
+        The dimensions of the input sample:
+        [batch_size, n_chnls, n_rows, n_cols]. For instance, mnist would have
+        input shape [Null, 1, 28, 28].
 
-        layers: list
-            List of all the layers of the network, where each layer contains a
-            dictionary with keys
+    layers: list
+        List of all the layers of the network, where each layer contains a
+        dictionary with keys
 
-            - layer_num (int): Index of layer.
-            - layer_type (string): Describing the type, e.g. `Dense`,
-              `Convolution`, `Pool`.
-            - output_shape (list): The output dimensions of the layer.
+        - layer_num (int): Index of layer.
+        - layer_type (string): Describing the type, e.g. `Dense`,
+          `Convolution`, `Pool`.
+        - output_shape (list): The output dimensions of the layer.
 
-            In addition, `Dense` and `Convolution` layer types contain
+        In addition, `Dense` and `Convolution` layer types contain
 
-            - weights (array): The weight parameters connecting this layer with
-              the previous.
+        - weights (array): The weight parameters connecting this layer with the
+          previous.
 
-            `Convolution` layers contain further
+        `Convolution` layers contain further
 
-            - nb_col (int): The x-dimension of filters.
-            - nb_row (int): The y-dimension of filters.
-            - border_mode (string): How to handle borders during convolution,
-              e.g. `full`, `valid`, `same`.
+        - nb_col (int): The x-dimension of filters.
+        - nb_row (int): The y-dimension of filters.
+        - border_mode (string): How to handle borders during convolution, e.g.
+          `full`, `valid`, `same`.
 
-            `Pooling` layers contain
+        `Pooling` layers contain
 
-            - pool_size (list): Specifies the subsampling factor in each
-              dimension.
-            - strides (list): The stepsize in each dimension during pooling.
+        - pool_size (list): Specifies the subsampling factor in each dimension.
+        - strides (list): The stepsize in each dimension during pooling.
 
-            `Activation` layers (including Pooling) contain
+        `Activation` layers (including Pooling) contain
 
-            - get_activ: A Theano function computing the activations of a
-              layer.
+        - get_activ: A Theano function computing the activations of a layer.
 
-        labels: list
-            The layer labels.
+    labels: list
+        The layer labels.
 
-        layer_idx_map: list
-            A list mapping the layer indices of the original network to the
-            parsed network. (Not all layers of the original model are needed in
-            the parsed model.) For instance: To get the layer index i of the
-            original input ``model`` that corresponds to layer j of the parsed
-            network ``layers``, one would use ``i = layer_idx_map[j]``.
+    layer_idx_map: list
+        A list mapping the layer indices of the original network to the parsed
+        network. (Not all layers of the original model are needed in the parsed
+        model.) For instance: To get the layer index i of the original input
+        ``model`` that corresponds to layer j of the parsed network ``layers``,
+        one would use ``i = layer_idx_map[j]``.
 
-        compiled_snn: SNN_compiled
-            Object containing the compiled spiking network (ready for
-            simulation).
+    compiled_snn: SNN_compiled
+        Object containing the compiled spiking network (ready for simulation).
 
     """
 
@@ -121,7 +117,7 @@ class SNN():
 
         # Parse input model to our common format, extracting all necessary
         # information about layers.
-        ann = self.model_lib.extract(model['model'])
+        ann = self.model_lib.extract(model)
         self.input_shape = ann['input_shape']
         self.layers = ann['layers']
         self.labels = ann['labels']

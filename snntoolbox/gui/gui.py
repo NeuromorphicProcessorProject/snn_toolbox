@@ -1100,7 +1100,7 @@ def main():
     root.mainloop()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main_thread = threading.Thread(target=main, name='main thread')
     main_thread.setDaemon(True)
     main_thread.start()

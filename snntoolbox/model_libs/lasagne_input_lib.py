@@ -1,6 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu May 19 08:26:00 2016
+Methods to parse an input model written in Lasagne and prepare it for further
+processing in the SNN toolbox.
+
+The idea is to make all further steps in the conversion/simulation pipeline
+independent of the original model format. Therefore, when a developer adds a
+new input model library (e.g. torch) to the toolbox, the following methods must
+be implemented and satisfy the return requirements specified in their
+respective docstrings:
+
+    - extract
+    - evaluate
+    - load_ann
+
+Created on Thu Jun  9 08:11:09 2016
 
 @author: rbodo
 """
@@ -11,6 +24,7 @@ import theano
 from snntoolbox.config import settings, activation_layers, bn_layers
 from snntoolbox.io.load import load_weights
 from snntoolbox.model_libs.common import absorb_bn, import_script
+from snntoolbox.model_libs.common import border_mode_string
 
 
 def extract(model):
@@ -26,72 +40,67 @@ def extract(model):
     Parameters
     ----------
 
-        model: dict
-            A dictionary of objects that constitute the input model. It must
-            contain the following two keys:
-
-            - 'model': A model instance of the network in the respective
-              ``model_lib``.
-            - 'val_fn': A Theano function that allows evaluating the original
-              model.
-
-            For instance, if the input model was written using Keras, the
-            'model'-value would be an instance of ``keras.Model``, and
-            'val_fn' the ``keras.Model.evaluate`` method.
+    model: dict
+        A dictionary of objects that constitute the input model. Contains at
+        least the key
+        - 'model': A model instance of the network in the respective
+          ``model_lib``.
+        For instance, if the input model was written using Keras, the 'model'-
+        value would be an instance of ``keras.Model``.
 
     Returns
     -------
 
-        Dictionary containing the parsed network.
+    Dictionary containing the parsed network.
 
-        input_shape: list
-            The dimensions of the input sample
-            [batch_size, n_chnls, n_rows, n_cols]. For instance, mnist would
-            have input shape [Null, 1, 28, 28].
+    input_shape: list
+        The dimensions of the input sample
+        [batch_size, n_chnls, n_rows, n_cols]. For instance, mnist would have
+        input shape [Null, 1, 28, 28].
 
-        layers: list
-            List of all the layers of the network, where each layer contains a
-            dictionary with keys
+    layers: list
+        List of all the layers of the network, where each layer contains a
+        dictionary with keys
 
-            - layer_num (int): Index of layer.
-            - layer_type (string): Describing the type, e.g. `Dense`,
-              `Convolution`, `Pool`.
-            - output_shape (list): The output dimensions of the layer.
+        - layer_num (int): Index of layer.
+        - layer_type (string): Describing the type, e.g. `Dense`,
+          `Convolution`, `Pool`.
+        - output_shape (list): The output dimensions of the layer.
 
-            In addition, `Dense` and `Convolution` layer types contain
+        In addition, `Dense` and `Convolution` layer types contain
 
-            - weights (array): The weight parameters connecting this layer with
-              the previous.
+        - weights (array): The weight parameters connecting this layer with the
+          previous.
 
-            `Convolution` layers contain further
+        `Convolution` layers contain further
 
-            - nb_col (int): The x-dimension of filters.
-            - nb_row (int): The y-dimension of filters.
-            - border_mode (string): How to handle borders during convolution,
-              e.g. `full`, `valid`, `same`.
+        - nb_col (int): The x-dimension of filters.
+        - nb_row (int): The y-dimension of filters.
+        - border_mode (string): How to handle borders during convolution, e.g.
+          `full`, `valid`, `same`.
 
-            `Pooling` layers contain
+        `Pooling` layers contain
 
-            - pool_size (list): Specifies the subsampling factor in each
-              dimension.
-            - strides (list): The stepsize in each dimension during pooling.
+        - pool_size (list): Specifies the subsampling factor in each dimension.
+        - strides (list): The stepsize in each dimension during pooling.
 
-            `Activation` layers (including Pooling) contain
+        `Activation` layers (including Pooling) contain
 
-            - get_activ: A Theano function computing the activations of a
-              layer.
+        - get_activ: A Theano function computing the activations of a layer.
 
-        labels: list
-            The layer labels.
+    labels: list
+        The layer labels.
 
-        layer_idx_map: list
-            A list mapping the layer indices of the original network to the
-            parsed network. (Not all layers of the original model are needed in
-            the parsed model.) For instance: To get the layer index i of the
-            original input ``model`` that corresponds to layer j of the parsed
-            network ``layers``, one would use ``i = layer_idx_map[j]``.
+    layer_idx_map: list
+        A list mapping the layer indices of the original network to the parsed
+        network. (Not all layers of the original model are needed in the parsed
+        model.) For instance: To get the layer index i of the original input
+        ``model`` that corresponds to layer j of the parsed network ``layers``,
+        one would use ``i = layer_idx_map[j]``.
 
     """
+
+    model = model['model']
 
     lasagne_layers = lasagne.layers.get_all_layers(model)
     weights = lasagne.layers.get_all_param_values(model)
@@ -162,37 +171,15 @@ def extract(model):
             attributes.update({'weights': wb})
 
         if attributes['layer_type'] == 'Convolution2D':
-            fs = layer.filter_size
-            if layer.pad == (0, 0):
-                border_mode = 'valid'
-            elif layer.pad == (fs[0] // 2, fs[1] // 2):
-                border_mode = 'same'
-            elif layer.pad == (fs[0] - 1, fs[1] - 1):
-                border_mode = 'full'
-            else:
-                raise NotImplementedError("Padding {} ".format(layer.pad) +
-                                          "could not be interpreted as any " +
-                                          "of the supported border modes " +
-                                          "'valid', 'same' or 'full'.")
+            border_mode = border_mode_string(layer.pad, layer.filter_size)
             attributes.update({'input_shape': layer.input_shape,
                                'nb_filter': layer.num_filters,
-                               'nb_col': fs[1],
-                               'nb_row': fs[0],
+                               'nb_col': layer.filter_size[1],
+                               'nb_row': layer.filter_size[0],
                                'border_mode': border_mode})
 
         elif attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
-            ps = layer.pool_size
-            if layer.pad == (0, 0):
-                border_mode = 'valid'
-            elif layer.pad == (ps[0] // 2, ps[1] // 2):
-                border_mode = 'same'
-            elif layer.pad == (ps[0] - 1, ps[1] - 1):
-                border_mode = 'full'
-            else:
-                raise NotImplementedError("Padding {} ".format(layer.pad) +
-                                          "could not be interpreted as any " +
-                                          "of the supported border modes " +
-                                          "'valid', 'same' or 'full'.")
+            border_mode = border_mode_string(layer.pad, layer.pool_size)
             attributes.update({'input_shape': layer.input_shape,
                                'pool_size': layer.pool_size,
                                'strides': layer.stride,
