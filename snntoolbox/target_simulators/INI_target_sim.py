@@ -92,7 +92,7 @@ class SNN_compiled():
         Keras base classes.
 
         Aims at simulating the network on a self-implemented Integrate-and-Fire
-        simulator using mean pooling and a timestepped approach.
+        simulator using a timestepped approach.
 
         Sets the ``snn`` and ``get_output`` attributes of this class.
 

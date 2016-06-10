@@ -2,6 +2,8 @@
 
 Helper modules to load and save properties of models, import and modify datasets,
 visualize results of simulation runs, plot training history, visualize layer connectivity, etc.
+Note that most of the saving / loading functions of networks have been migrated to the respective
+ANN/SNN classes in a later version of the toolbox.
 
 ### File overview
 

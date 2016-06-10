@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Helper functions to run various tests on spiking networks.
+Helper functions to handle parameters and variables of interest during
+conversion and simulation of an SNN.
 
 Created on Wed Mar  9 16:18:33 2016
 

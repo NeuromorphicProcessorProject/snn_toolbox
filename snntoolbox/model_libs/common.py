@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Functions common to all input model libraries.
+Functions common to several input model parsers.
 
 Created on Thu May 19 08:26:49 2016
 
