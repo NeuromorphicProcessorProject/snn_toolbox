@@ -115,6 +115,7 @@ def extract(model):
     layers = []
     labels = []
     layer_idx_map = []
+    idx = 0
     for (layer_num, layer) in enumerate(model_protobuf.layer):
 
         # Convert Caffe layer names to our 'standard' names.
@@ -142,7 +143,7 @@ def extract(model):
             output_shape = layers[-1]['output_shape']
         else:
             output_shape = list(model.blobs[layer_key].shape)
-        attributes = {'layer_num': layer_num,
+        attributes = {'layer_num': idx,
                       'layer_type': layer_type,
                       'output_shape': output_shape}
 
@@ -153,7 +154,7 @@ def extract(model):
             shape_string = '_{}x{}x{}'.format(attributes['output_shape'][1],
                                               attributes['output_shape'][2],
                                               attributes['output_shape'][3])
-        num_str = str(layer_num) if layer_num > 9 else '0' + str(layer_num)
+        num_str = str(idx) if idx > 9 else '0' + str(idx)
         labels.append(num_str + attributes['layer_type'] + shape_string)
         attributes.update({'label': labels[-1]})
 
@@ -177,6 +178,8 @@ def extract(model):
             if next_layer_type in {'ReLU', 'Softmax'}:
                 a = 'softmax' if next_layer_type == 'Softmax' else 'relu'
                 attributes.update({'activation': a})
+            if attributes['layer_type'] == 'Dense':
+                wb[0] = np.transpose(wb[0])
             attributes.update({'weights': wb})
 
         if attributes['layer_type'] == 'Convolution2D':
@@ -217,13 +220,36 @@ def extract(model):
                                                                    layer_key)})
         layers.append(attributes)
         layer_idx_map.append(layer_key)
+        idx += 1
+
+        # Insert Flatten layer
+        if layer_num + 1 == len(model_protobuf.layer):
+            continue
+        next_layer_key = model_protobuf.layer[layer_num+1].name
+        if next_layer_key not in model.blobs:
+            # Assume shape is unchanged if not explicitly given
+            next_layer_output_shape = layers[-1]['output_shape']
+        else:
+            next_layer_output_shape = list(model.blobs[next_layer_key].shape)
+        if len(attributes['output_shape']) > len(next_layer_output_shape):
+            attributes = {'layer_num': idx,
+                          'layer_type': 'Flatten',
+                          'output_shape': next_layer_output_shape}
+            # Append layer label
+            num_str = str(idx) if idx > 9 else '0' + str(idx)
+            shape_string = '_{}'.format(attributes['output_shape'][1])
+            labels.append(num_str + attributes['layer_type'] + shape_string)
+            attributes.update({'label': labels[-1]})
+            layers.append(attributes)
+            layer_idx_map.append('flat')
+            idx += 1
 
     return {'input_shape': input_shape, 'layers': layers, 'labels': labels,
             'layer_idx_map': layer_idx_map}
 
 
 def get_activ_fn_for_layer(model, layer_key):
-    return lambda x: model.forward(data=x, end=layer_key)[layer_key]
+    return lambda x: model.forward(data=x, blobs=[layer_key])[layer_key]
 
 
 def load_ann(path=None, filename=None):
@@ -287,7 +313,8 @@ def evaluate(val_fn, X_test, Y_test):
 def set_layer_params(model, params, layer_key):
     """Set ``params`` of layer ``i`` of a given ``model``."""
     i = layer_keys.index(layer_key) + 1
-    model.params[layer_key][0].data[...] = params[0]
+    params0 = np.transpose(params[0]) if 'ip' in layer_key else params[0]
+    model.params[layer_key][0].data[...] = params0
     model.params[layer_key][1].data[...] = params[1]
-    model.layers[i].blobs[0].data[...] = params[0]
+    model.layers[i].blobs[0].data[...] = params0
     model.layers[i].blobs[1].data[...] = params[1]

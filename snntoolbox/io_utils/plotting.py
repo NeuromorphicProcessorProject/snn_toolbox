@@ -348,7 +348,7 @@ def plot_rates_minus_activations(rates, activations, label, path=None):
 
     """
 
-    rates_norm = rates / np.max(rates)
+    rates_norm = rates / np.max(rates) if np.max(rates) != 0 else rates
     activations_norm = activations / np.max(activations)
     plot_layer_activity((rates_norm - activations_norm, label),
                         'Spikerates_minus_Activations', path, limits=(-1, 1))
