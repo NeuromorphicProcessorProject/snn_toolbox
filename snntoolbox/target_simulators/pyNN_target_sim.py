@@ -380,7 +380,8 @@ class SNN_compiled():
                     test_num == settings['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
                 collect_plot_results(self.layers, self.output_shapes,
-                                     snn_precomp, X_test[ind:ind+1])
+                                     snn_precomp,
+                                     X_test[ind:ind+settings['batch_size']])
 
             # Reset simulation time and recorded network variables for next run
             if settings['verbose'] > 1:
@@ -620,7 +621,7 @@ class SNN_compiled():
                                     self.sim.FromFileConnector(filepath))
 
 
-def collect_plot_results(layers, output_shapes, ann, X):
+def collect_plot_results(layers, output_shapes, ann, X_batch, idx=0):
     """
     Collect spiketrains of all ``layers`` of a net from one simulation run, and
     plot results.
@@ -635,7 +636,8 @@ def collect_plot_results(layers, output_shapes, ann, X):
     Membrane potential vs time is plotted for all except the input layer.
 
     The activations are obtained by evaluating the original ANN ``ann`` on a
-    sample ``X``.
+    batch of samples ``X_batch``. The optional integer ``idx`` represents the
+    index of a specific sample to plot.
 
     The ``output shapes`` of each layer are needed to reshape the output of
     layers back to original form when plotting results (During conversion, all
@@ -687,5 +689,5 @@ def collect_plot_results(layers, output_shapes, ann, X):
             plot_potential(times, vmem[-1], showLegend=showLegend)
         j += 1
 
-    output_graphs(spiketrains_batch, ann, X,
-                  settings['log_dir_of_current_run'])
+    output_graphs(spiketrains_batch, ann, X_batch,
+                  settings['log_dir_of_current_run'], idx)

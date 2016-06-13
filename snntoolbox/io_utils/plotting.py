@@ -443,7 +443,7 @@ def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None,
     plt.close()
 
 
-def output_graphs(spiketrains_batch, ann, X_batch, path=None):
+def output_graphs(spiketrains_batch, ann, X_batch, path=None, i=0):
     """
     Wrapper function to display / save a number of plots.
 
@@ -474,6 +474,8 @@ def output_graphs(spiketrains_batch, ann, X_batch, path=None):
         path: string, optional
             If not ``None``, specifies where to save the resulting image. Else,
             display plots without saving.
+        i: int, optional
+            Index of sample to plot.
 
     """
 
