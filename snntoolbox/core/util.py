@@ -138,25 +138,26 @@ def norm_weights(weights, activations, previous_fac):
 
     Parameters
     ----------
-        weights: array
-            The parameters of a layer.
-        activations: array
-            The activations of cells in a specific layer. Has the same shape as
-            the layer.
-        previous_fac: float
-            Maximum activation or weight of the previous layer. Normalization
-            factor ``applied_fac`` is the ratio of the max values of the
-            previous to this layer.
+
+    weights: array
+        The parameters of a layer.
+    activations: array
+        The activations of cells in a specific layer. Has the same shape as the
+        layer.
+    previous_fac: float
+        Maximum activation or weight of the previous layer. Normalization
+        factor ``applied_fac`` is the ratio of the max values of the previous
+        to this layer.
 
     Returns
     -------
 
-        weights_norm: array
-            The parameters of a layer, divided by ``applied_fac``.
-        scale_fac: float
-            Maximum activation or weight of this layer.
-        applied_fac: float
-            Divisor with which the weights were normalized.
+    weights_norm: array
+        The parameters of a layer, divided by ``applied_fac``.
+    scale_fac: float
+        Maximum activation or weight of this layer.
+    applied_fac: float
+        Divisor with which the weights were normalized.
 
     """
 
@@ -181,22 +182,21 @@ def get_activations_layer(get_activ, X_test):
     Parameters
     ----------
 
-        get_activ: Theano function
-            A Theano function computing the activations of a layer.
+    get_activ: Theano function
+        A Theano function computing the activations of a layer.
 
-        X_test: float32 array
-            The samples to compute activations for. With data of the form
-            (channels, num_rows, num_cols), X_test has dimension
-            (num_samples, channels*num_rows*num_cols) for a multi-layer
-            perceptron, and (num_samples, channels, num_rows, num_cols) for a
-            convolutional net.
+    X_test: float32 array
+        The samples to compute activations for. With data of the form
+        (channels, num_rows, num_cols), X_test has dimension
+        (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
+        and (batch_size, channels, num_rows, num_cols) for a convolutional net.
 
     Returns
     -------
 
-        activations: array
-            The activations of cells in a specific layer. Has the same shape as
-            the layer.
+    activations: array
+        The activations of cells in a specific layer. Has the same shape as the
+        layer.
 
     """
 
@@ -225,44 +225,38 @@ def get_activations_batch(ann, X_batch):
     Parameters
     ----------
 
-        ann: SNN
-            An instance of the SNN class. Contains the ``get_activ`` Theano
-            functions which allow computation of layer activations of the
-            original input model (hence the name 'ann'). Needed in
-            activation and correlation plots.
+    ann: SNN
+        An instance of the SNN class. Contains the ``get_activ`` function that
+        allow computation of layer activations of the original input model
+        (hence the name 'ann'). Needed in activation and correlation plots.
 
-        X_batch: float32 array
-            The input samples to use for determining the layer activations.
-            With data of the form (channels, num_rows, num_cols), X has
-            dimension (batch_size, channels*num_rows*num_cols) for a
-            multi-layer perceptron, and
-            (batch_size, channels, num_rows, num_cols) for a convolutional net.
+    X_batch: float32 array
+        The input samples to use for determining the layer activations. With
+        data of the form (channels, num_rows, num_cols), X has dimension
+        (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
+        and (batch_size, channels, num_rows, num_cols) for a convolutional net.
 
     Returns
     -------
 
-        activations_batch: list of tuples ``(activations, label)``
-            Each entry represents a layer in the ANN for which an activation
-            can be calculated (e.g. ``Dense``, ``Convolution2D``).
-            ``activations`` containing the activations of a layer. It has the
-            same shape as the original layer, e.g.
-            (batch_size, n_features, n_rows, n_cols) for a convolution layer.
-            ``label`` is a string specifying the layer type, e.g. ``'Dense'``.
+    activations_batch: list of tuples ``(activations, label)``
+        Each entry represents a layer in the ANN for which an activation can be
+        calculated (e.g. ``Dense``, ``Convolution2D``).
+        ``activations`` containing the activations of a layer. It has the same
+        shape as the original layer, e.g.
+        (batch_size, n_features, n_rows, n_cols) for a convolution layer.
+        ``label`` is a string specifying the layer type, e.g. ``'Dense'``.
 
     """
 
     activations_batch = []
     # Loop through all layers, looking for activation layers
     for idx in range(len(ann.layers)):
-        # Use normalized model if possible.
-        if 'get_activ_norm' in ann.layers[idx].keys():
-            get_activ = ann.layers[idx]['get_activ_norm']
-        elif 'get_activ' in ann.layers[idx].keys():
-            get_activ = ann.layers[idx]['get_activ']
-        else:
+        if 'get_activ' not in ann.layers[idx].keys():
             continue
         i = idx if 'Pooling' in ann.layers[idx]['label'] else idx-1
-        activations_batch.append((get_activ(X_batch), ann.layers[i]['label']))
+        activations_batch.append((ann.layers[idx]['get_activ'](X_batch),
+                                  ann.layers[i]['label']))
     return activations_batch
 
 

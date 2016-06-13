@@ -108,10 +108,11 @@ def extract(model):
     model = model['model']
 
     input_shape = list(model_protobuf.input_dim)
+    if input_shape == []:
+        input_shape = list(model_protobuf.layer[0].input_param.shape[0].dim)
 
     global layer_keys
     layer_keys = [layer.name for layer in model_protobuf.layer]
-
     layers = []
     labels = []
     layer_idx_map = []
@@ -132,7 +133,7 @@ def extract(model):
                 layer_type = 'AveragePooling2D'
         elif name in {'ReLU', 'Softmax'}:
             layer_type = 'Activation'
-        elif name == 'Data':
+        elif name == 'Input':
             continue
         else:
             layer_type = name
@@ -190,8 +191,9 @@ def extract(model):
                            max(p.kernel_h, p.kernel_size[-1])]
             pad = (p.pad_w, p.pad_h)
             border_mode = border_mode_string(pad, filter_size)
-            ins = input_shape if layer_num == 0 else layers[-1]['output_shape']
-            attributes.update({'input_shape': ins,
+            inp_shape = input_shape if len(layers) == 0 else \
+                layers[-1]['output_shape']
+            attributes.update({'input_shape': inp_shape,
                                'nb_filter': p.num_output,
                                'nb_col': filter_size[0],
                                'nb_row': filter_size[1],
@@ -206,15 +208,17 @@ def extract(model):
             pad = (max(p.pad_w, p.pad), max(p.pad_h, p.pad))
             border_mode = border_mode_string(pad, pool_size)
             strides = [max(p.stride_w, p.stride), max(p.stride_h, p.stride)]
-            ins = input_shape if layer_num == 0 else layers[-1]['output_shape']
-            attributes.update({'input_shape': ins,
+            inp_shape = input_shape if len(layers) == 0 else \
+                layers[-1]['output_shape']
+            attributes.update({'input_shape': inp_shape,
                                'pool_size': pool_size,
                                'strides': strides,
                                'border_mode': border_mode})
 
         if attributes['layer_type'] in {'Activation', 'AveragePooling2D',
                                         'MaxPooling2D'}:
-            if attributes['layer_type'] == 'Activation':
+            if attributes['layer_type'] == 'Activation' and \
+                    layer.name != 'prob':
                 layer_key = model_protobuf.layer[layer_num-1].name
             attributes.update({'get_activ': get_activ_fn_for_layer(model,
                                                                    layer_key)})
@@ -259,13 +263,12 @@ def load_ann(path=None, filename=None):
     Parameters
     ----------
 
-        path: string, optional
-            Path to directory where to load model from. Defaults to
-            ``settings['path']``.
+    path: string, optional
+        Path to directory where to load model from. Defaults to
+        ``settings['path']``.
 
-        filename: string, optional
-            Name of file to load model from. Defaults to
-            ``settings['filename']``.
+    filename: string, optional
+        Name of file to load model from. Defaults to ``settings['filename']``.
 
     Returns
     -------
@@ -276,12 +279,11 @@ def load_ann(path=None, filename=None):
 
         - 'model': Model instance of the network in the respective
           ``model_lib``.
-        - 'val_fn': Theano function that allows evaluating the original
-          model.
+        - 'val_fn': Theano function that allows evaluating the original model.
 
-        For instance, if the input model was written using Keras, the
-        'model'-value would be an instance of ``keras.Model``, and
-        'val_fn' the ``keras.Model.evaluate`` method.
+        For instance, if the input model was written using Keras, the 'model'-
+        value would be an instance of ``keras.Model``, and 'val_fn' the
+        ``keras.Model.evaluate`` method.
 
     """
 
@@ -312,7 +314,8 @@ def evaluate(val_fn, X_test, Y_test):
 
 def set_layer_params(model, params, layer_key):
     """Set ``params`` of layer ``i`` of a given ``model``."""
-    i = layer_keys.index(layer_key) + 1
+    input_offset = 0 if layer_keys[0] == 'data' else 1
+    i = layer_keys.index(layer_key) + input_offset
     params0 = np.transpose(params[0]) if 'ip' in layer_key else params[0]
     model.params[layer_key][0].data[...] = params0
     model.params[layer_key][1].data[...] = params[1]

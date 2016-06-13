@@ -89,10 +89,7 @@ def plot_spiketrains(layer, path=None):
             plt.plot(spiketrain, y, '.')
     plt.gca().set_xlim(0, settings['duration'])
     plt.gca().set_ylim([-0.1, neuron + 1])
-    # Replace 'name' by 'layer[1]' to get more info into the title
-    # name = extract_label(layer[1])[1]
-    name = layer[1]
-    plt.title('Spiketrains \n of layer {}'.format(name))
+    plt.title('Spiketrains \n of layer {}'.format(layer[1]))
     plt.xlabel('time [ms]')
     plt.ylabel('neuron index')
     if path is not None:
@@ -188,11 +185,8 @@ def plot_layer_activity(layer, title, path=None, limits=None):
                                      clim=limits)
                 ax[i, j].get_xaxis().set_visible(False)
                 ax[i, j].get_yaxis().set_visible(False)
-    # Replace 'name' by 'layer[1]' to get more info into the title
-    # name = extract_label(layer[1])[1]
-    name = layer[1]
     unit = ' [Hz]' if title == 'Spikerates' else ''
-    f.suptitle('{} \n of layer {}'.format(title + unit, name), fontsize=20)
+    f.suptitle('{} \n of layer {}'.format(title + unit, layer[1]), fontsize=20)
     f.subplots_adjust(left=0, bottom=0, right=0.99, top=0.9,
                       wspace=0.05, hspace=0.05)
     cax = f.add_axes([0.99, 0, 0.05 / fac, 0.99])
@@ -696,10 +690,7 @@ def plot_potential(times, layer, showLegend=False, path=None):
         plt.legend(loc='upper left', prop={'size': 15})
     plt.xlabel('Time [ms]')
     plt.ylabel('Membrane potential')
-    # Replace 'name' by 'layer[1]' to get more info into the title
-    # name = extract_label(layer[1])[1]
-    name = layer[1]
-    plt.title('Membrane potential for neurons \n in layer {}\n'.format(name))
+    plt.title('Membrane potential for neurons \n in layer {}'.format(layer[1]))
     if path is not None:
         filename = 'Potential'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')

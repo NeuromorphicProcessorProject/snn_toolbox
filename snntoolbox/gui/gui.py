@@ -1109,6 +1109,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main_thread = threading.Thread(target=main, name='main thread')
-    main_thread.setDaemon(True)
-    main_thread.start()
+    # main_thread = threading.Thread(target=main, name='main thread')
+    # main_thread.setDaemon(True)
+    # main_thread.start()
+    main()

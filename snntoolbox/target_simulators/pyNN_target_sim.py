@@ -48,42 +48,42 @@ class SNN_compiled():
     Parameters
     ----------
 
-        ann: dict
-            Parsed input model; result of applying ``model_lib.extract(in)``
-            to the input model ``in``.
+    ann: dict
+        Parsed input model; result of applying ``model_lib.extract(in)`` to the
+        input model ``in``.
 
     Attributes
     ----------
 
-        ann: dict
-            Parsed input model; result of applying ``model_lib.extract(in)``
-            to the input model ``in``.
+    ann: dict
+        Parsed input model; result of applying ``model_lib.extract(in)`` to the
+        input model ``in``.
 
-        sim: Simulator
-            Module containing utility functions of spiking simulator. Result of
-            calling ``snntoolbox.config.initialize_simulator()``. For instance,
-            if using Brian simulator, this initialization would be equivalent
-            to ``import pyNN.brian as sim``.
+    sim: Simulator
+        Module containing utility functions of spiking simulator. Result of
+        calling ``snntoolbox.config.initialize_simulator()``. For instance, if
+        using Brian simulator, this initialization would be equivalent to
+        ``import pyNN.brian as sim``.
 
-        layers: list
-            Each entry represents a layer, i.e. a population of neurons, in
-            form of pyNN ``Population`` objects.
+    layers: list
+        Each entry represents a layer, i.e. a population of neurons, in form of
+        pyNN ``Population`` objects.
 
-        connections: list
-            pyNN ``Projection`` objects representing the connections between
-            individual layers.
+    connections: list
+        pyNN ``Projection`` objects representing the connections between
+        individual layers.
 
-        labels: list
-            The layer labels.
+    labels: list
+        The layer labels.
 
-        output_shapes: list
-            The output shapes of each layer. During conversion, all layers are
-            flattened. Need output shapes to reshape the output of layers back
-            to original form when plotting results later.
+    output_shapes: list
+        The output shapes of each layer. During conversion, all layers are
+        flattened. Need output shapes to reshape the output of layers back to
+        original form when plotting results later.
 
-        cellparams: dict
-            Neuron cell parameters determining properties of the spiking
-            neurons in pyNN simulators.
+    cellparams: dict
+        Neuron cell parameters determining properties of the spiking neurons in
+        pyNN simulators.
 
     Methods
     -------
@@ -285,15 +285,13 @@ class SNN_compiled():
             The converted spiking network, before compilation (i.e. independent
             of simulator).
         X_test: float32 array
-            The input samples to test.
-            With data of the form (channels, num_rows, num_cols),
-            X_test has dimension (num_samples, channels*num_rows*num_cols)
-            for a multi-layer perceptron, and
-            (num_samples, channels, num_rows, num_cols)
-            for a convolutional net.
+            The input samples to test. With data of the form
+            (channels, num_rows, num_cols), X_test has dimension
+            (num_samples, channels*num_rows*num_cols) for a multi-layer
+            perceptron, and (num_samples, channels, num_rows, num_cols) for a
+            convolutional net.
         Y_test: float32 array
-            Ground truth of test data. Has dimension
-            (num_samples, num_classes).
+            Ground truth of test data. Has dimension (num_samples, num_classes)
 
         Returns
         -------

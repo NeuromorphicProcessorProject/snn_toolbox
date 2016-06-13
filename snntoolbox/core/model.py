@@ -13,7 +13,6 @@ from __future__ import division, absolute_import
 from future import standard_library
 
 import os
-
 from snntoolbox.config import settings
 
 standard_library.install_aliases()
@@ -170,6 +169,7 @@ class SNN():
 
         score = self.model_lib.evaluate(self.val_fn, X_test, Y_test)
 
+        print('\n')
         print("Test score: {:.2f}".format(score[0]))
         print("Test accuracy: {:.2%}\n".format(score[1]))
 
@@ -228,11 +228,9 @@ class SNN():
                            'Weights_norm': weights_norm[0].flatten()}
             # Update model with modified weights
             self.set_layer_params(weights_norm, idx-1)
-            # Compile new theano function with modified weights
-            get_activ_norm = self.model_lib.get_activ_fn_for_layer(
-                self.model, self.layer_idx_map[idx])
-            layer.update({'get_activ_norm': get_activ_norm})
-            activations_norm = get_activations_layer(get_activ_norm, X_test)
+            # Compute activations with modified weights
+            activations_norm = get_activations_layer(layer['get_activ'],
+                                                     X_test)
             # For memory reasons, use only a fraction of samples for
             # plotting a histogram of activations.
             frac = 10  # int(len(activations) / 100)

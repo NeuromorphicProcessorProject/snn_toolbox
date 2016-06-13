@@ -37,46 +37,46 @@ class SNN_compiled():
     Parameters
     ----------
 
-        ann: dict
-            Parsed input model; result of applying ``model_lib.extract(in)``
-            to the input model ``in``.
+    ann: dict
+        Parsed input model; result of applying ``model_lib.extract(in)`` to the
+        input model ``in``.
 
     Attributes
     ----------
 
-        ann: dict
-            Parsed input model; result of applying ``model_lib.extract(in)``
-            to the input model ``in``.
+    ann: dict
+        Parsed input model; result of applying ``model_lib.extract(in)`` to the
+        input model ``in``.
 
-        sim: Simulator
-            Module containing utility functions of spiking simulator. Result of
-            calling ``snntoolbox.config.initialize_simulator()``. For instance,
-            if using Brian simulator, this initialization would be equivalent
-            to ``import pyNN.brian as sim``.
+    sim: Simulator
+        Module containing utility functions of spiking simulator. Result of
+        calling ``snntoolbox.config.initialize_simulator()``. For instance, if
+        using Brian simulator, this initialization would be equivalent to
+        ``import pyNN.brian as sim``.
 
-        snn: Spiking Model
-            Keras ``Sequential`` model. This is the output format of the
-            compiled spiking model because INI simulator runs networks of
-            layers that are derived from Keras layer base classes.
+    snn: Spiking Model
+        Keras ``Sequential`` model. This is the output format of the compiled
+        spiking model because INI simulator runs networks of layers that are
+        derived from Keras layer base classes.
 
-        get_output: Theano function
-            Compute output of network by iterating over all layers.
+    get_output: Theano function
+        Compute output of network by iterating over all layers.
 
     Methods
     -------
 
-        build:
-            Convert an ANN to a spiking neural network, using layers derived
-            from Keras base classes.
-        run:
-            Simulate a spiking network.
-        save:
-            Write model architecture and weights to disk.
-        load:
-            Load model architecture and weights from disk.
-        end_sim:
-            Clean up after simulation. Not needed in this simulator, so do a
-            ``pass``.
+    build:
+        Convert an ANN to a spiking neural network, using layers derived from
+        Keras base classes.
+    run:
+        Simulate a spiking network.
+    save:
+        Write model architecture and weights to disk.
+    load:
+        Load model architecture and weights from disk.
+    end_sim:
+        Clean up after simulation. Not needed in this simulator, so do a
+        ``pass``.
 
     """
 
@@ -299,7 +299,6 @@ class SNN_compiled():
         echo("Total output spikes: {}\n".format(np.sum(output)))
         echo("Average output spikes per sample: {:.2f}\n".format(
              np.mean(np.sum(output, axis=1))))
-        echo("Final time: {:.3f}\n".format(ts.max()))
         echo("Total accuracy: {:.2%} on {} test samples.\n\n".format(total_acc,
              output.shape[0]))
 

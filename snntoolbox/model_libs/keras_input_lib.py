@@ -189,13 +189,12 @@ def load_ann(path=None, filename=None):
     Parameters
     ----------
 
-        path: string, optional
-            Path to directory where to load model from. Defaults to
-            ``settings['path']``.
+    path: string, optional
+        Path to directory where to load model from. Defaults to
+        ``settings['path']``.
 
-        filename: string, optional
-            Name of file to load model from. Defaults to
-            ``settings['filename']``.
+    filename: string, optional
+        Name of file to load model from. Defaults to ``settings['filename']``.
 
     Returns
     -------
@@ -206,12 +205,11 @@ def load_ann(path=None, filename=None):
 
         - 'model': Model instance of the network in the respective
           ``model_lib``.
-        - 'val_fn': Theano function that allows evaluating the original
-          model.
+        - 'val_fn': Theano function that allows evaluating the original model.
 
-        For instance, if the input model was written using Keras, the
-        'model'-value would be an instance of ``keras.Model``, and
-        'val_fn' the ``keras.Model.evaluate`` method.
+        For instance, if the input model was written using Keras, the 'model'-
+        value would be an instance of ``keras.Model``, and 'val_fn' the
+        ``keras.Model.evaluate`` method.
 
     """
 

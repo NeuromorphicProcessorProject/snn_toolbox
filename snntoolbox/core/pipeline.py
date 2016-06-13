@@ -70,6 +70,8 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
     # ____________________________ LOAD DATASET _____________________________ #
     (X_train, Y_train, X_test, Y_test) = load_dataset(settings['dataset_path'])
+    X_test[0, 0, 1, :] = 1
+    X_test[0, 0, :, 1] = 1
 
     # _____________________________ LOAD MODEL ______________________________ #
     # Extract architecture and weights from input model.

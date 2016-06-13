@@ -233,7 +233,8 @@ class SpikeConv2DReLU(Convolution2D):
                 border_mode = 'full'
             conv_out = T.nnet.conv2d(inp, self.get_weights()[0],
                                      border_mode=border_mode,
-                                     subsample=self.subsample)
+                                     subsample=self.subsample,
+                                     filter_flip=True)
             if self.border_mode == 'same':
                 shift_x = (self.nb_row - 1) // 2
                 shift_y = (self.nb_col - 1) // 2
