@@ -200,10 +200,12 @@ class SpikeDense(Dense):
 class SpikeConv2DReLU(Convolution2D):
     """ batch_size x input_shape x out_shape """
     def __init__(self, nb_filter, nb_row, nb_col, weights=None,
-                 border_mode='valid', subsample=(1, 1), label=None, **kwargs):
+                 border_mode='valid', subsample=(1, 1), label=None,
+                 filter_flip=True, **kwargs):
         super().__init__(nb_filter, nb_row, nb_col, weights=weights,
                          border_mode=border_mode, subsample=subsample,
                          **kwargs)
+        self.filter_flip = filter_flip
         if label is not None:
             self.label = label
         else:
@@ -216,25 +218,28 @@ class SpikeConv2DReLU(Convolution2D):
         # CALCULATE SYNAPTIC SUMMED INPUT
         border_mode = self.border_mode
         if on_gpu() and dnn.dnn_available():
+            conv_mode = 'conv' if self.filter_flip else 'cross'
             if border_mode == 'same':
                 assert(self.subsample == (1, 1))
                 pad_x = (self.nb_row - self.subsample[0]) // 2
                 pad_y = (self.nb_col - self.subsample[1]) // 2
                 conv_out = dnn.dnn_conv(img=inp,
                                         kerns=self.get_weights()[0],
-                                        border_mode=(pad_x, pad_y))
+                                        border_mode=(pad_x, pad_y),
+                                        conv_mode=conv_mode)
             else:
                 conv_out = dnn.dnn_conv(img=inp,
                                         kerns=self.get_weights()[0],
                                         border_mode=border_mode,
-                                        subsample=self.subsample)
+                                        subsample=self.subsample,
+                                        conv_mode=conv_mode)
         else:
             if border_mode == 'same':
                 border_mode = 'full'
             conv_out = T.nnet.conv2d(inp, self.get_weights()[0],
                                      border_mode=border_mode,
                                      subsample=self.subsample,
-                                     filter_flip=True)
+                                     filter_flip=self.filter_flip)
             if self.border_mode == 'same':
                 shift_x = (self.nb_row - 1) // 2
                 shift_y = (self.nb_col - 1) // 2

@@ -236,9 +236,11 @@ def extract(model):
         else:
             next_layer_output_shape = list(model.blobs[next_layer_key].shape)
         if len(attributes['output_shape']) > len(next_layer_output_shape):
+            flat_output_shape = [layers[-1]['output_shape'][0],
+                                 np.prod(layers[-1]['output_shape'][1:])]
             attributes = {'layer_num': idx,
                           'layer_type': 'Flatten',
-                          'output_shape': next_layer_output_shape}
+                          'output_shape': flat_output_shape}
             # Append layer label
             num_str = str(idx) if idx > 9 else '0' + str(idx)
             shape_string = '_{}'.format(attributes['output_shape'][1])
