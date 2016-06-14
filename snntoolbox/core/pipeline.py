@@ -12,6 +12,7 @@ from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
 from future import standard_library
 
+import numpy as np
 from snntoolbox.io_utils.plotting import plot_param_sweep
 from snntoolbox.io_utils.load import load_dataset
 from snntoolbox.core.model import SNN

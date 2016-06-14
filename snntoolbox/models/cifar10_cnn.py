@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
+
+import numpy as np
 from keras.datasets import cifar10
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
@@ -8,11 +10,8 @@ from keras.layers.convolutional import Convolution2D, AveragePooling2D
 from keras.optimizers import SGD
 from keras.constraints import maxnorm
 from keras.utils import np_utils
-import snntoolbox
-from snntoolbox.io.save import save_model
-from snntoolbox.io.plotting import plot_history
-import numpy as np
-import os
+
+from snntoolbox.io_utils.plotting import plot_history
 
 '''
     Train a (fairly simple) deep CNN on the CIFAR10 small images dataset.
@@ -28,7 +27,7 @@ batch_size = 32
 nb_classes = 10
 nb_epoch = 65
 
-data_augmentation = True
+data_augmentation = False
 
 # input image dimensions
 img_rows, img_cols = 32, 32
@@ -120,5 +119,5 @@ print('Test score:', score[0])
 print('Test accuracy:', score[1])
 
 filename = '{:2.2f}'.format(score[1] * 100)
-path = os.path.join(snntoolbox._dir, 'data', 'cifar10', 'cnn', filename)
-save_model(model, path, 'ann_'+filename)
+open(filename + '.json', 'w').write(model.to_json())
+model.save_weights(filename + '.h5', overwrite=True)
