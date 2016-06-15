@@ -298,6 +298,8 @@ def update_setup(s=None):
     s['filename_snn'] = 'snn_' + s['filename']
     s['filename_snn_exported'] = s['filename_snn'] + '_' + s['simulator']
 
+    s['poisson_input'] = True
+
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)
 

@@ -284,7 +284,7 @@ class SNN():
         if filename is None:
             filename = settings['filename_snn']
 
-        print("Saving model to {}...".format(path))
+        print("Saving parsed model to {}...".format(path))
         # Create directory if not existent yet.
         if not os.path.exists(path):
             os.makedirs(path)
