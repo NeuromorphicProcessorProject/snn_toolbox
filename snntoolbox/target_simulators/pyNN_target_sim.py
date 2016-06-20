@@ -621,7 +621,7 @@ class SNN_compiled():
             filename = settings['filename_snn_exported']
 
         self.layers = self.load_assembly(path, filename)
-        for i in range(len(self.ann['layers'])):
+        for i in range(settings['first_layer_num'], len(self.ann['layers'])):
             if 'get_activ' in self.ann['layers'][i].keys():
                 idx = i if 'Pool' in self.ann['labels'][i] else i-1
                 self.output_shapes.append(
@@ -664,7 +664,6 @@ def collect_plot_results(layers, output_shapes, ann, X_batch, idx=0):
     """
 
     from snntoolbox.io_utils.plotting import output_graphs, plot_potential
-
     # Collect spiketrains of all layers, for the last test sample.
     vmem = []
     showLegend = False
