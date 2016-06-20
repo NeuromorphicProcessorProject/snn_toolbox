@@ -11,12 +11,11 @@ supported by pyNN may require different versions of python, numpy, ...
 Requirements
 ............
 
-* Install `Theano <http://www.deeplearning.net/software/theano/>`_.
-* All other dependencies will be installed automatically.
+* All dependencies will be installed automatically.
 * For testing a converted network, the toolbox includes a ready-to-use spiking
   simulator developed at INI. In addition, you may install a simulator supported
   by `pyNN <http://neuralensemble.org/docs/PyNN/>`_, or bring your own custom
-  simulator that accepts a pyNN model as input.
+  simulator that accepts a pyNN or Keras model as input.
 
 Prebuild version
 ................

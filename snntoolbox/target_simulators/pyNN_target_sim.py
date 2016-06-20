@@ -105,13 +105,21 @@ class SNN_compiled():
     def __init__(self, ann):
         self.ann = ann
         self.sim = initialize_simulator()
-        self.layers = [self.sim.Population(
-            int(np.prod(ann['input_shape'][1:])),
-            self.sim.SpikeSourcePoisson(), label='InputLayer')]
+        self.add_input_layer()
         self.connections = []
         self.labels = []
         self.output_shapes = []
         self.cellparams = {key: settings[key] for key in cellparams_pyNN}
+
+    def add_input_layer(self):
+        if settings['first_layer_num'] == 0:
+            input_shape = list(self.ann['input_shape'])
+        else:
+            i = settings['first_layer_num'] - 1
+            input_shape = list(self.ann['layers'][i]['output_shape'])
+        self.layers = [self.sim.Population(
+            int(np.prod(input_shape[1:])),
+            self.sim.SpikeSourcePoisson(), label='InputLayer')]
 
     def build(self):
         """
@@ -147,9 +155,12 @@ class SNN_compiled():
 
         # Iterate over hidden layers to create spiking neurons and store
         # connections.
-        for layer in self.ann['layers']:
+        for (layer_num, layer) in enumerate(self.ann['layers']):
+            if layer_num < settings['first_layer_num']:
+                continue
             if layer['layer_type'] in {'Dense', 'Convolution2D',
                                        'MaxPooling2D', 'AveragePooling2D'}:
+                echo("Building layer: {}\n".format(layer['label']))
                 self.add_layer(layer)
             else:
                 echo("Skipped layer:  {}\n".format(layer['layer_type']))
@@ -165,7 +176,6 @@ class SNN_compiled():
         echo("Compilation finished.\n\n")
 
     def add_layer(self, layer):
-        echo("Building layer: {}\n".format(layer['label']))
         self.conns = []
         self.labels.append(layer['label'])
         self.layers.append(self.sim.Population(
@@ -351,7 +361,17 @@ class SNN_compiled():
             # Add Poisson input.
             if settings['verbose'] > 1:
                 echo("Creating poisson input...\n")
-            rates = X_test[ind, :].flatten()
+            # If we started conversion of the ANN with the first layer, we use
+            # Poisson spiketrains as inputs to the SNN. Otherwise, take the
+            # original data.
+            if settings['first_layer_num'] == 0:
+                rates = X_test[ind, :].flatten()
+            else:
+                # Instead of poisson spike input, use the unchanged input
+                # samples. (In this case, the first spiking layers have been
+                # replaced by the original analog layers.)
+                rates = (self.ann['layers'][settings['first_layer_num']-1]
+                         ['get_activ'](X_test[ind:ind+1]).flatten())
             for (i, ss) in enumerate(self.layers[0]):
                 ss.rate = rates[i] * settings['input_rate']
 

@@ -110,11 +110,10 @@ class SNNToolboxGUI():
         tk.Button(dataset_frame, text="Load dataset",
                   command=self.set_dataset,
                   font=self.header_font).pack(side='top')
-        check_dataset_command = dataset_frame.register(self.check_dataset)
         self.dataset_entry = tk.Entry(
             dataset_frame, textvariable=self.settings['dataset_path'],
             width=20, validate='focusout', bg='white',
-            validatecommand=(check_dataset_command, '%P'))
+            validatecommand=(dataset_frame.register(self.check_dataset), '%P'))
         self.dataset_entry.pack(fill='both', expand=True, side='left')
         scrollX = tk.Scrollbar(dataset_frame, orient=tk.HORIZONTAL,
                                command=self.__scrollHandler)
@@ -160,6 +159,31 @@ class SNNToolboxGUI():
               Default: '99'.""")
         ToolTip(percentile_frame, text=tip, wraplength=700)
 
+        # First layer to convert
+        first_layer_num_frame = tk.Frame(self.globalparams_frame, bg='white')
+        first_layer_num_frame.pack(**self.kwargs)
+        self.first_layer_num_label = tk.Label(first_layer_num_frame,
+                                              text="First layer num",
+                                              font=self.header_font,
+                                              bg='white')
+        self.first_layer_num_label.pack(fill='both', expand=True)
+        self.first_layer_num_sb = tk.Spinbox(
+            first_layer_num_frame, bg='white', from_=0, to_=1000, increment=1,
+            textvariable=self.settings['first_layer_num'], width=10)
+        self.first_layer_num_sb.pack(fill='y', expand=True, ipady=5)
+        tip = dedent("""\
+              Set the number of the first layer that should be converted to
+              spiking. If 0 (default), the complete network is converted, and
+              the input data is transformed into Poisson spiketrains. If a
+              higher layer is set, the first layers will stay analog, and the
+              input data to the SNN is unchanged. The number given here should
+              not include an input layer (0 represents the first hidden layer).
+              Take activation, dropout and pooling layers into account. For
+              instance, if the network consists of [Input, Conv1, Activation,
+              Pooling, Dropout, Conv2, ...], and you want to start with the
+              second convolution layer, set this value to 4.""")
+        ToolTip(first_layer_num_frame, text=tip, wraplength=700)
+
         # Batch size
         batch_size_frame = tk.Frame(self.globalparams_frame, bg='white')
         batch_size_frame.pack(**self.kwargs)
@@ -176,23 +200,6 @@ class SNNToolboxGUI():
               run using the batch size it has been converted with. To run it
               with a different batch size, convert the ANN from scratch.""")
         ToolTip(batch_size_frame, text=tip, wraplength=700)
-
-        # Test specific samples
-        sample_frame = tk.Frame(self.globalparams_frame, bg='white')
-        sample_frame.pack(**self.kwargs)
-        tk.Label(sample_frame, text="Samples to test:", bg='white',
-                 font=self.header_font).pack(fill='both', expand=True)
-        check_sample_command = sample_frame.register(self.check_sample)
-        self.sample_entry = tk.Entry(
-            sample_frame, bg='white', width=20, validate='key',
-            textvariable=self.settings['samples_to_test'],
-            validatecommand=(check_sample_command, '%P'))
-        self.sample_entry.pack(fill='both', expand=True, side='bottom')
-        tip = dedent("""\
-              List the indices of specific samples you want to test
-              (Don't use brackets or any delimiters other than white spaces).
-              """)
-        ToolTip(sample_frame, text=tip, wraplength=750)
 
         # Verbosity
         verbose_frame = tk.Frame(self.globalparams_frame, bg='white')
@@ -220,11 +227,10 @@ class SNNToolboxGUI():
         path_frame.pack(**self.kwargs)
         tk.Button(path_frame, text="Set working dir",
                   command=self.set_cwd, font=self.header_font).pack(side='top')
-        check_path_command = path_frame.register(self.check_path)
-        self.path_entry = tk.Entry(path_frame,
-                                   textvariable=self.settings['path'],
-                                   width=20, validate='focusout', bg='white',
-                                   validatecommand=(check_path_command, '%P'))
+        self.path_entry = tk.Entry(
+            path_frame, textvariable=self.settings['path'], width=20,
+            validate='focusout', bg='white',
+            validatecommand=(path_frame.register(self.check_path), '%P'))
         self.path_entry.pack(fill='both', expand=True, side='left')
         scrollX = tk.Scrollbar(path_frame, orient=tk.HORIZONTAL,
                                command=self.__scrollHandler)
@@ -241,12 +247,10 @@ class SNNToolboxGUI():
         filename_frame.pack(**self.kwargs)
         tk.Label(filename_frame, text="Filename base:", bg='white',
                  font=self.header_font).pack(fill='both', expand=True)
-        check_file_command = filename_frame.register(self.check_file)
-        self.filename_entry = tk.Entry(filename_frame, bg='white',
-                                       textvariable=self.settings['filename'],
-                                       width=20, validate='focusout',
-                                       validatecommand=(check_file_command,
-                                                        '%P'))
+        self.filename_entry = tk.Entry(
+            filename_frame, bg='white', textvariable=self.settings['filename'],
+            width=20, validate='focusout',
+            validatecommand=(filename_frame.register(self.check_file), '%P'))
         self.filename_entry.pack(fill='both', expand=True, side='bottom')
         tip = dedent("""\
               Base name of all loaded and saved files during this run. The ANN
@@ -543,16 +547,31 @@ class SNNToolboxGUI():
               Only relevant in pyNN-simulators.""")
         ToolTip(num_to_test_frame, text=tip, wraplength=750)
 
+        # Test specific samples
+        sample_frame = tk.Frame(self.simparams_frame, bg='white')
+        sample_frame.pack(**self.kwargs)
+        tk.Label(sample_frame, text="Samples to test:", bg='white').pack(
+            fill='both', expand=True)
+        self.sample_entry = tk.Entry(
+            sample_frame, bg='white', width=20, validate='key',
+            textvariable=self.settings['samples_to_test'],
+            validatecommand=(sample_frame.register(self.check_sample), '%P'))
+        self.sample_entry.pack(fill='both', expand=True, side='bottom')
+        tip = dedent("""\
+              List the indices of specific samples you want to test
+              (Don't use brackets or any delimiters other than white spaces).
+              """)
+        ToolTip(sample_frame, text=tip, wraplength=750)
+
         # Name of directory where to save plots
         runlabel_frame = tk.Frame(self.simparams_frame, bg='white')
         runlabel_frame.pack(**self.kwargs)
         tk.Label(runlabel_frame, text='run label', bg='white').pack(
             fill='both', expand=True)
-        check_runlabel_command = runlabel_frame.register(self.check_runlabel)
         runlabel_entry = tk.Entry(
             runlabel_frame, bg='white', textvariable=self.settings['runlabel'],
-            validate='focusout', validatecommand=(check_runlabel_command,
-                                                  '%P'))
+            validate='focusout', validatecommand=(
+                runlabel_frame.register(self.check_runlabel), '%P'))
         runlabel_entry.pack(fill='both', expand=True, side='bottom')
         tip = dedent("""\
             Give your simulation run a name. If verbosity is high, the
@@ -839,6 +858,7 @@ class SNNToolboxGUI():
                          'evaluateANN': tk.BooleanVar(),
                          'normalize': tk.BooleanVar(),
                          'percentile': tk.IntVar(),
+                         'first_layer_num': tk.IntVar(),
                          'convert': tk.BooleanVar(),
                          'simulate': tk.BooleanVar(),
                          'overwrite': tk.BooleanVar(),

@@ -62,6 +62,16 @@ normalize: boolean, optional
 percentile: int, optional
     Use the activation value in the specified percentile for normalization.
     Set to ``50`` for the median, ``100`` for the max.
+first_layer_num: int, optional
+    Set the number of the first layer that should be converted to spiking. If 0
+    (default), the complete network is converted, and the input data is
+    transformed into Poisson spiketrains. If a higher layer is set, the first
+    layers will stay analog, and the input data to the SNN is unchanged. The
+    number given here should not include an input layer (0 represents the first
+    hidden layer). Take activation, dropout and pooling layers into account.
+    For instance, if the network consists of [Input, Conv1, Activation,
+    Pooling, Dropout, Conv2, ...], and you want to start with the second
+    convolution layer, set this value to 4.
 convert: boolean, optional
     If enabled, load an ANN from ``<path>`` and convert it to spiking.
 simulate: boolean, optional
@@ -142,6 +152,7 @@ Default values
                     'evaluateANN': True,
                     'normalize': True,
                     'percentile': 99,
+                    'first_layer_num': 0,
                     'convert': True,
                     'overwrite': True,
                     'simulate': True,
@@ -204,6 +215,7 @@ settings = {'dataset_path': '',
             'evaluateANN': True,
             'normalize': True,
             'percentile': 99,
+            'first_layer_num': 0,
             'overwrite': True,
             'convert': True,
             'simulate': True,
@@ -297,8 +309,6 @@ def update_setup(s=None):
     # Specify filenames for models at different stages of the conversion.
     s['filename_snn'] = 'snn_' + s['filename']
     s['filename_snn_exported'] = s['filename_snn'] + '_' + s['simulator']
-
-    s['poisson_input'] = True
 
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)

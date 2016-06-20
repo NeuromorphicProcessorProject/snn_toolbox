@@ -89,6 +89,7 @@ setup(
         'numpy',
         'scipy',
         'matplotlib',
+	'Theano',
         'future',
         'neo',
         'lazyarray',

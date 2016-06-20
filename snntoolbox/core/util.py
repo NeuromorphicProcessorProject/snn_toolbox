@@ -252,8 +252,8 @@ def get_activations_batch(ann, X_batch):
     activations_batch = []
     # Loop through all layers, looking for activation layers
     for idx in range(len(ann.layers)):
-        inp_idx = 0 if settings['poisson_input'] else 2
-        if idx < inp_idx or 'get_activ' not in ann.layers[idx].keys():
+        if idx < settings['first_layer_num'] \
+                or 'get_activ' not in ann.layers[idx].keys():
             continue
         i = idx if 'Pooling' in ann.layers[idx]['label'] else idx-1
         activations_batch.append((ann.layers[idx]['get_activ'](X_batch),
