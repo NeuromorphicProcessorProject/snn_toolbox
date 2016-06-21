@@ -384,8 +384,7 @@ def plot_layer_correlation(rates, activations, title, path=None):
     plt.close()
 
 
-def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None,
-              applied_fac=None):
+def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None):
     """
     Plot a histogram over two datasets.
 
@@ -402,11 +401,9 @@ def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None,
             If not ``None``, specifies where to save the resulting image. Else,
             display plots without saving.
         scale_fac: float, optional
-            A number used during normalization. If given, will be insterted
-            into plot title.
-        applied_fac: float, optional
-            A number used during normalization. If given, will be insterted
-            into plot title.
+            The value with which weights are normalized (maximum of activations
+            or weights of a layer). If given, will be insterted into plot
+            title.
 
     """
 
@@ -420,11 +417,7 @@ def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None,
         else:
             filename = layer_label + '_' + title + '_distribution'
             unit = ''
-        if scale_fac and applied_fac:
-            facs = "Max (act, W): {:.2f}; applied divisor: {:.2f}".format(
-                scale_fac, applied_fac)
-        else:
-            facs = ''
+        facs = "Applied divisor: {:.2f}".format(scale_fac) if scale_fac else ''
         plt.title('{} distribution {} \n of layer {} \n {}'.format(
             title, unit, layer_label, facs))
     else:

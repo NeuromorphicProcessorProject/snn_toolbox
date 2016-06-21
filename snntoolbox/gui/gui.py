@@ -150,7 +150,7 @@ class SNNToolboxGUI():
                                          font=self.header_font, bg='white')
         self.percentile_label.pack(fill='both', expand=True)
         self.percentile_sb = tk.Spinbox(
-            percentile_frame, bg='white', from_=0, to_=100, increment=1,
+            percentile_frame, bg='white', from_=0, to_=100, increment=0.001,
             textvariable=self.settings['percentile'], width=10)
         self.percentile_sb.pack(fill='y', expand=True, ipady=5)
         tip = dedent("""\
@@ -857,7 +857,7 @@ class SNNToolboxGUI():
                          'model_lib': tk.StringVar(),
                          'evaluateANN': tk.BooleanVar(),
                          'normalize': tk.BooleanVar(),
-                         'percentile': tk.IntVar(),
+                         'percentile': tk.DoubleVar(),
                          'first_layer_num': tk.IntVar(),
                          'convert': tk.BooleanVar(),
                          'simulate': tk.BooleanVar(),

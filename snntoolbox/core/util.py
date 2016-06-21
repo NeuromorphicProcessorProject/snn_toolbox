@@ -129,12 +129,18 @@ def get_sample_activity_from_batch(activity_batch, i=0):
     return [(layer_act[0][i], layer_act[1]) for layer_act in activity_batch]
 
 
-def norm_weights(weights, activations, previous_fac):
+def norm_weights(weights, activations):
     """
     Normalize weights
 
     Determine the maximum activation or weight of a layer and apply this factor
     to normalize the weights.
+
+    Note that we do not need to take into account the scale factor of the
+    previous layer (i.e. by using a normalization factor ``applied_fac`` which
+    is the ratio of the max values of the previous to this layer), because when
+    calculating ``activations`` of the current layer, the normalized weights
+    are already used in all preceeding layers.
 
     Parameters
     ----------
@@ -144,20 +150,15 @@ def norm_weights(weights, activations, previous_fac):
     activations: array
         The activations of cells in a specific layer. Has the same shape as the
         layer.
-    previous_fac: float
-        Maximum activation or weight of the previous layer. Normalization
-        factor ``applied_fac`` is the ratio of the max values of the previous
-        to this layer.
 
     Returns
     -------
 
     weights_norm: array
-        The parameters of a layer, divided by ``applied_fac``.
+        The parameters of a layer, divided by ``scale_fac``.
     scale_fac: float
-        Maximum activation or weight of this layer.
-    applied_fac: float
-        Divisor with which the weights were normalized.
+        Maximum (or percentile) of activations or weights of this layer.
+        Weights of the respective layer are scaled by this value.
 
     """
 
@@ -170,9 +171,7 @@ def norm_weights(weights, activations, previous_fac):
     print("Maximum value: {:.2f}.".format(scale_fac))
     # Normalization factor is the ratio of the max values of the
     # previous to this layer.
-    applied_fac = scale_fac / previous_fac
-    print("Applied divisor: {:.2f}.".format(applied_fac))
-    return [x / applied_fac for x in weights], scale_fac, applied_fac
+    return [x / scale_fac for x in weights], scale_fac
 
 
 def get_activations_layer(get_activ, X_test):

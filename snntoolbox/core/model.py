@@ -202,7 +202,6 @@ class SNN():
                                'normalization')
         if not os.path.exists(newpath):
             os.makedirs(newpath)
-        previous_fac = 1
         # Loop through all layers, looking for layers with weights
         for idx, layer in enumerate(self.layers):
             # Skip layer if not preceeded by a layer with weights
@@ -222,8 +221,7 @@ class SNN():
                   label, layer['output_shape']))
             weights = self.layers[idx-1]['weights']
             activations = get_activations_layer(layer['get_activ'], X_test)
-            weights_norm, previous_fac, applied_fac = norm_weights(
-                weights, activations, previous_fac)
+            weights_norm, scale_fac = norm_weights(weights, activations)
             weight_dict = {'Weights': weights[0].flatten(),
                            'Weights_norm': weights_norm[0].flatten()}
             # Update model with modified weights
@@ -233,12 +231,11 @@ class SNN():
                                                      X_test)
             # For memory reasons, use only a fraction of samples for
             # plotting a histogram of activations.
-            frac = 10  # int(len(activations) / 100)
+            frac = int(len(activations) / 1)
             activation_dict = {'Activations': activations[:frac].flatten(),
                                'Activations_norm':
                                    activations_norm[:frac].flatten()}
-            plot_hist(activation_dict, 'Activation', label, newpath,
-                      previous_fac, applied_fac)
+            plot_hist(activation_dict, 'Activation', label, newpath, scale_fac)
             plot_hist(weight_dict, 'Weight', label, newpath)
 
     def set_layer_params(self, parameters, i):
