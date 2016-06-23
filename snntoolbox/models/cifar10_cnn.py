@@ -8,7 +8,6 @@ from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Convolution2D, AveragePooling2D
 from keras.optimizers import SGD
-from keras.constraints import maxnorm
 from keras.utils import np_utils
 
 from snntoolbox.io_utils.plotting import plot_history
@@ -25,7 +24,7 @@ from snntoolbox.io_utils.plotting import plot_history
 
 batch_size = 32
 nb_classes = 10
-nb_epoch = 65
+nb_epoch = 80
 
 data_augmentation = False
 
@@ -49,31 +48,29 @@ print(X_test.shape[0], 'test samples')
 model = Sequential()
 
 model.add(Convolution2D(32, 3, 3, border_mode='same',
-                        input_shape=(img_channels, img_rows, img_cols),
-                        b_constraint=maxnorm(0)))
+                        input_shape=(img_channels, img_rows, img_cols)))
 model.add(Activation('relu'))
-model.add(Convolution2D(32, 3, 3, border_mode='same',
-          b_constraint=maxnorm(0)))
+model.add(Convolution2D(32, 3, 3, border_mode='same'))
 model.add(Activation('relu'))
 model.add(AveragePooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.25))
+model.add(Dropout(0.4))
 
-model.add(Convolution2D(64, 3, 3, b_constraint=maxnorm(0)))
+model.add(Convolution2D(64, 3, 3))
 model.add(Activation('relu'))
-model.add(Convolution2D(64, 3, 3, b_constraint=maxnorm(0)))
+model.add(Convolution2D(64, 3, 3))
 model.add(Activation('relu'))
 model.add(AveragePooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.25))
+model.add(Dropout(0.4))
 
 model.add(Flatten())
-model.add(Dense(512, b_constraint=maxnorm(0)))
+model.add(Dense(512))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
-model.add(Dense(nb_classes, b_constraint=maxnorm(0)))
+model.add(Dense(nb_classes))
 model.add(Activation('softmax'))
 
 # let's train the model using SGD + momentum (how original).
-sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+sgd = SGD(lr=0.009, decay=1e-6, momentum=0.9, nesterov=True)
 model.compile(loss='categorical_crossentropy', optimizer=sgd,
               metrics=['accuracy'])
 

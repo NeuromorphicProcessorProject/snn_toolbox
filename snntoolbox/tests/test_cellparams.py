@@ -10,6 +10,7 @@ Created on Wed Mar  9 18:16:00 2016
 
 if __name__ == '__main__':
 
+    import readline  # Bugfix when importing pyNN
     import pyNN.nest as sim
     import matplotlib.pyplot as plt
     import numpy as np
@@ -58,8 +59,8 @@ if __name__ == '__main__':
 
     connection = sim.Projection(inp, outp, connector, synapse)
 
-    par = 'cm'
-    for p in [0.01, 0.1, 1]:
+    par = 'i_offset'
+    for p in [0, 0.1, 1]:
         outp.set(**{par: p})
         cellparams[par] = p
         inp.set(rate=simparams['input_rate'])

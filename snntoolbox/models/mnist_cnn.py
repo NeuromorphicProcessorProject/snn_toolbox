@@ -7,7 +7,6 @@ from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Convolution2D, AveragePooling2D
 from keras.utils import np_utils
 from keras.callbacks import EarlyStopping
-from keras.constraints import maxnorm
 
 from snntoolbox.io_utils.plotting import plot_history
 
@@ -60,20 +59,18 @@ print(X_test.shape[0], 'test samples')
 model = Sequential()
 
 model.add(Convolution2D(nb_filters, nb_conv, nb_conv,
-                        input_shape=(chnls, img_rows, img_cols),
-                        b_constraint=maxnorm(0)))
+                        input_shape=(chnls, img_rows, img_cols)))
 model.add(Activation('relu'))
-model.add(Convolution2D(nb_filters, nb_conv, nb_conv,
-                        b_constraint=maxnorm(0)))
+model.add(Convolution2D(nb_filters, nb_conv, nb_conv))
 model.add(Activation('relu'))
 model.add(AveragePooling2D(pool_size=(nb_pool, nb_pool)))
 model.add(Dropout(0.25))
 
 model.add(Flatten())
-model.add(Dense(128, b_constraint=maxnorm(0)))
+model.add(Dense(128))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
-model.add(Dense(nb_classes, b_constraint=maxnorm(0)))
+model.add(Dense(nb_classes))
 model.add(Activation('softmax'))
 
 model.compile(loss='categorical_crossentropy', optimizer='adadelta',

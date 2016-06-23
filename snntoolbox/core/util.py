@@ -167,11 +167,12 @@ def norm_parameters(parameters, activations):
     # be divided into an integer number of equal-sized batches.
     end = -1 if len(activations[0]) != len(activations[-1]) else None
     activation_max = np.percentile(activations[:end], settings['percentile'])
-    scale_fac = np.max([parameters, activation_max])
+    scale_fac = np.max([np.max(parameters[0]), np.max(parameters[1]),
+                        activation_max])
     print("Maximum value: {:.2f}.".format(scale_fac))
     # Normalization factor is the ratio of the max values of the
     # previous to this layer.
-    return [x / scale_fac for x in parameters], scale_fac
+    return [parameters[0] / scale_fac, 0.1 * parameters[1] / scale_fac], scale_fac
 
 
 def get_activations_layer(get_activ, X_test):
