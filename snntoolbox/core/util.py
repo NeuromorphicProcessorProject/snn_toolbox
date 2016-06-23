@@ -167,11 +167,7 @@ def norm_parameters(parameters, activations):
     # be divided into an integer number of equal-sized batches.
     end = -1 if len(activations[0]) != len(activations[-1]) else None
     activation_max = np.percentile(activations[:end], settings['percentile'])
-    w_max = np.max(parameters[0])  # Debug
-    b_max = np.max(parameters[1])  # Debug
-    print("[DEBUG] Maximum bias: {}".format(b_max))
-    weight_max = np.max([w_max, b_max])  # Later replace by np.max(parameters)
-    scale_fac = np.max([weight_max, activation_max])
+    scale_fac = np.max([parameters, activation_max])
     print("Maximum value: {:.2f}.".format(scale_fac))
     # Normalization factor is the ratio of the max values of the
     # previous to this layer.

@@ -178,22 +178,38 @@ class SNN_compiled():
     def add_layer(self, layer):
         self.conns = []
         self.labels.append(layer['label'])
+
+        i_offset_default = self.cellparams['i_offset']
+        if 'parameters' in layer:
+            if layer['layer_type'] == 'Dense':
+                i_offset = layer['parameters'][1]
+            else:
+                biases = layer['parameters'][1]
+                i_offset = np.empty(np.prod(layer['output_shape'][1:]))
+                n = int(len(i_offset) / len(biases))
+                for i in range(len(biases)):
+                    i_offset[i:(i+1)*n] = biases[i]
+            self.cellparams['i_offset'] = i_offset
+
         self.layers.append(self.sim.Population(
             int(np.prod(layer['output_shape'][1:])), self.sim.IF_cond_exp,
             self.cellparams, label=layer['label']))
+
+        self.cellparams['i_offset'] = i_offset_default
+
         self.output_shapes.append(layer['output_shape'])
         if 'activation' in layer and layer['activation'] == 'softmax':
             echo("WARNING: Activation 'softmax' not implemented. " +
                  "Using 'relu' activation instead.\n")
 
     def build_dense(self, layer):
-        weights = layer['parameters'][0]  # [W, b][0]
+        weights = layer['parameters'][0]
         for i in range(len(weights)):
             for j in range(len(weights[0])):
                 self.conns.append((i, j, weights[i, j], settings['delay']))
 
     def build_convolution(self, layer):
-        weights = layer['parameters'][0]  # [W, b][0]
+        weights = layer['parameters'][0]
         nx = layer['input_shape'][3]  # Width of feature map
         ny = layer['input_shape'][2]  # Hight of feature map
         kx = layer['nb_col']  # Width of kernel
@@ -493,6 +509,8 @@ class SNN_compiled():
             for variable in variables:
                 data[variable] = getattr(population, variable)
             data['celltype'] = population.celltype.describe()
+            if population.label != 'InputLayer':
+                data['i_offset'] = population.get('i_offset')
             s[population.label] = data
         s['labels'] = labels  # List of population labels describing the net.
         s['variables'] = variables  # List of variable names.
@@ -589,6 +607,8 @@ class SNN_compiled():
             for variable in s['variables']:
                 if getattr(population, variable, None) is None:
                     setattr(population, variable, s[label][variable])
+            if label != 'InputLayer':
+                population.set(i_offset=s[label]['i_offset'])
             layers.append(population)
 
         if settings['verbose'] > 1:

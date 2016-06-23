@@ -133,7 +133,7 @@ def extract(model):
 
         if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
             wb = layer.get_weights()
-            wb[1] = np.arange(len(wb[1]))
+            wb[1] = 20 * np.arange(len(wb[1])) / len(wb[1])
             if next_layer_name == 'BatchNormalization':
                 parameters = next_layer.get_weights()
                 # W, b, gamma, beta, mean, std, epsilon
