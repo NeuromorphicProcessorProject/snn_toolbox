@@ -20,9 +20,9 @@ from snntoolbox.config import settings
 standard_library.install_aliases()
 
 
-def load_weights(filepath):
+def load_parameters(filepath):
     """
-    Load all layer weights from a HDF5 file.
+    Load all layer parameters from a HDF5 file.
     """
 
     import h5py

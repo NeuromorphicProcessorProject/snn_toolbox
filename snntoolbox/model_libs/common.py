@@ -25,7 +25,7 @@ def border_mode_string(pad, pool_size):
 
 def absorb_bn(w, b, gamma, beta, mean, std, epsilon):
     """
-    Absorb the weights of a batch-normalization layer into the previous
+    Absorb the parameters of a batch-normalization layer into the previous
     layer.
 
     """

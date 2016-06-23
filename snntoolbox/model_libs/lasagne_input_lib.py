@@ -22,7 +22,7 @@ import os
 import lasagne
 import theano
 from snntoolbox.config import settings, activation_layers, bn_layers
-from snntoolbox.io.load import load_weights
+from snntoolbox.io.load import load_parameters
 from snntoolbox.model_libs.common import absorb_bn, import_script
 from snntoolbox.model_libs.common import border_mode_string
 
@@ -69,8 +69,8 @@ def extract(model):
 
         In addition, `Dense` and `Convolution` layer types contain
 
-        - weights (array): The weight parameters connecting this layer with the
-          previous.
+        - parameters (array): The weights and biases connecting this layer with
+          the previous.
 
         `Convolution` layers contain further
 
@@ -103,13 +103,13 @@ def extract(model):
     model = model['model']
 
     lasagne_layers = lasagne.layers.get_all_layers(model)
-    weights = lasagne.layers.get_all_param_values(model)
+    parameters = lasagne.layers.get_all_param_values(model)
     input_shape = lasagne_layers[0].shape
 
     layers = []
     labels = []
     layer_idx_map = []
-    weights_idx = 0
+    parameters_idx = 0
     idx = 0
     for (layer_num, layer) in enumerate(lasagne_layers):
 
@@ -158,17 +158,17 @@ def extract(model):
                 "{}, not {}.".format(bn_layers, attributes['layer_type']))
 
         if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
-            wb = weights[weights_idx: weights_idx + 2]
-            weights_idx += 2  # For weights and biases
+            wb = parameters[parameters_idx: parameters_idx + 2]
+            parameters_idx += 2  # For weights and biases
             if next_layer_name == 'BatchNormLayer':
                 wb = absorb_bn(wb[0], wb[1],  # W, b
-                               weights[weights_idx + 0],  # gamma
-                               weights[weights_idx + 1],  # beta
-                               weights[weights_idx + 2],  # mean
-                               weights[weights_idx + 3],  # std
+                               parameters[parameters_idx + 0],  # gamma
+                               parameters[parameters_idx + 1],  # beta
+                               parameters[parameters_idx + 2],  # mean
+                               parameters[parameters_idx + 3],  # std
                                next_layer.epsilon)
-                weights_idx += 4
-            attributes.update({'weights': wb})
+                parameters_idx += 4
+            attributes.update({'parameters': wb})
 
         if attributes['layer_type'] == 'Convolution2D':
             border_mode = border_mode_string(layer.pad, layer.filter_size)
@@ -228,7 +228,7 @@ def model_from_py(path=None, filename=None):
 
     mod = import_script(path, filename)
     model, train_fn, val_fn = mod.build_network()
-    params = load_weights(os.path.join(path, filename + '.h5'))
+    params = load_parameters(os.path.join(path, filename + '.h5'))
     lasagne.layers.set_all_param_values(model, params)
 
     return {'model': model, 'val_fn': val_fn}

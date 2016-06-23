@@ -98,9 +98,9 @@ class SNN_compiled():
     run:
         Simulate a spiking network.
     save:
-        Write model architecture and weights to disk.
+        Write model architecture and parameters to disk.
     load:
-        Load model architecture and weights from disk.
+        Load model architecture and parameters from disk.
     end_sim:
         Clean up after simulation.
 
@@ -159,7 +159,7 @@ class SNN_compiled():
         echo("Compilation finished.\n\n")
 
         # Track the output layer spikes. Add monitor here if it was not already
-        # appended above (because globalparams['verbose'] < 1)
+        # appended above (because settings['verbose'] < 1)
         if len(self.spikemonitors) < len(self.layers):
             self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[-1]))
 
@@ -182,12 +182,12 @@ class SNN_compiled():
                                                             'v', record=True))
 
     def build_dense(self, layer):
-        weights = layer['weights'][0]  # [W, b][0]
+        weights = layer['parameters'][0]  # [W, b][0]
         self.connections[-1].connect(True)
         self.connections[-1].w = weights.flatten() * self.sim.volt
 
     def build_convolution(self, layer):
-        weights = layer['weights'][0]  # [W, b][0]
+        weights = layer['parameters'][0]  # [W, b][0]
         nx = layer['input_shape'][3]  # Width of feature map
         ny = layer['input_shape'][2]  # Hight of feature map
         kx = layer['nb_col']  # Width of kernel

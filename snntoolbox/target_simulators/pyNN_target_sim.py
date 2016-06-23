@@ -94,9 +94,9 @@ class SNN_compiled():
         run:
             Simulate a spiking network.
         save:
-            Write model architecture and weights to disk.
+            Write model architecture and parameters to disk.
         load:
-            Load model architecture and weights from disk.
+            Load model architecture and parameters from disk.
         end_sim:
             Clean up after simulation.
 
@@ -187,13 +187,13 @@ class SNN_compiled():
                  "Using 'relu' activation instead.\n")
 
     def build_dense(self, layer):
-        weights = layer['weights'][0]  # [W, b][0]
+        weights = layer['parameters'][0]  # [W, b][0]
         for i in range(len(weights)):
             for j in range(len(weights[0])):
                 self.conns.append((i, j, weights[i, j], settings['delay']))
 
     def build_convolution(self, layer):
-        weights = layer['weights'][0]  # [W, b][0]
+        weights = layer['parameters'][0]  # [W, b][0]
         nx = layer['input_shape'][3]  # Width of feature map
         ny = layer['input_shape'][2]  # Hight of feature map
         kx = layer['nb_col']  # Width of kernel
@@ -425,7 +425,7 @@ class SNN_compiled():
 
     def save(self, path=None, filename=None):
         """
-        Write model architecture and weights to disk.
+        Write model architecture and parameters to disk.
 
         Parameters
         ----------
@@ -502,9 +502,9 @@ class SNN_compiled():
 
     def save_connections(self, path=None):
         """
-        Write weights of a neural network to disk.
+        Write parameters of a neural network to disk.
 
-        The weights between two layers are saved in a text file.
+        The parameters between two layers are saved in a text file.
         They can then be used to connect pyNN populations e.g. with
         ``sim.Projection(layer1, layer2, sim.FromListConnector(filename))``,
         where ``sim`` is a simulator supported by pyNN, e.g. Brian, NEURON, or
@@ -598,7 +598,7 @@ class SNN_compiled():
 
     def load(self, path=None, filename=None):
         """
-        Load model architecture and weights from disk.
+        Load model architecture and parameters from disk.
 
         Sets the ``snn`` and ``get_output`` attributes of this class.
 

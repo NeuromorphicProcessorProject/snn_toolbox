@@ -73,8 +73,8 @@ def extract(model):
 
         In addition, `Dense` and `Convolution` layer types contain
 
-        - weights (array): The weight parameters connecting this layer with the
-          previous.
+        - parameters (array): The weights and biases connecting this layer with
+          the previous.
 
         `Convolution` layers contain further
 
@@ -172,16 +172,18 @@ def extract(model):
             wb = [model.params[layer_key][0].data,
                   model.params[layer_key][1].data]
             if next_layer_type == 'BatchNormalization':
-                weights = [next_layer.blobs[0].data, next_layer.blobs[1].data]
+                parameters = [next_layer.blobs[0].data,
+                              next_layer.blobs[1].data]
                 # W, b, gamma, beta, mean, std, epsilon
-                wb = absorb_bn(wb[0], wb[1], weights[0], weights[1],
-                               weights[2], weights[3], next_layer.epsilon)
+                wb = absorb_bn(wb[0], wb[1], parameters[0], parameters[1],
+                               parameters[2], parameters[3],
+                               next_layer.epsilon)
             if next_layer_type in {'ReLU', 'Softmax'}:
                 a = 'softmax' if next_layer_type == 'Softmax' else 'relu'
                 attributes.update({'activation': a})
             if attributes['layer_type'] == 'Dense':
                 wb[0] = np.transpose(wb[0])
-            attributes.update({'weights': wb})
+            attributes.update({'parameters': wb})
 
         if attributes['layer_type'] == 'Convolution2D':
             p = layer.convolution_param

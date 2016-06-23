@@ -28,7 +28,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
     Complete pipeline of
         1. loading and testing a pretrained ANN,
-        2. normalizing weights
+        2. normalizing parameters
         3. converting it to SNN,
         4. running it on a simulator,
         5. if given a specified hyperparameter range ``params``,
@@ -71,7 +71,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
     (X_train, Y_train, X_test, Y_test) = load_dataset(settings['dataset_path'])
 
     # _____________________________ LOAD MODEL ______________________________ #
-    # Extract architecture and weights from input model.
+    # Extract architecture and parameters from input model.
     snn = SNN(settings['path'], settings['filename'])
 
     if settings['verbose'] > 0:
@@ -85,13 +85,13 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
             # Evaluate ANN before normalization to ensure it doesn't affect
             # accuracy
             if settings['evaluateANN'] and not is_stop(queue):
-                print("Before weight normalization:")
+                print("Before parameter normalization:")
                 snn.evaluate_ann(X_test, Y_test)
 
             # For memory reasons, reduce number of samples to use during
             # normalization.
             frac = 1
-            snn.normalize_weights(X_test[:int(len(X_test)/frac)])
+            snn.normalize_parameters(X_test[:int(len(X_test)/frac)])
 
         # ____________________________ EVALUATE _____________________________ #
         # (Re-) evaluate ANN

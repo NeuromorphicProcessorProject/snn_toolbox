@@ -29,8 +29,8 @@ model_lib: string
 
 path: string, optional
     Working directory. There, the toolbox will look for ANN models to convert
-    or SNN models to test, load the weights it needs and store (normalized)
-    weights.
+    or SNN models to test, load the parameters it needs and store (normalized)
+    parameters.
     If not specified, the toolbox will use as destination for all files it
     needs to load and save:
     ``~/.snntoolbox/data/<filename>/<simulator>/``.
@@ -57,8 +57,8 @@ evaluateANN: boolean, optional
     be evaluated again after normalization.
 normalize: boolean, optional
     Only relevant when converting a network, not during simulation. If enabled,
-    the weights of the spiking network will be normalized by the highest weight
-    or activation.
+    the parameters of the spiking network will be normalized by the highest
+    parameter or activation value.
 percentile: int, optional
     Use the activation value in the specified percentile for normalization.
     Set to ``50`` for the median, ``100`` for the max.
@@ -79,7 +79,7 @@ simulate: boolean, optional
     simulator (see parameter ``simulator``).
 overwrite: boolean, optional
     If disabled, the save methods will ask for permission to overwrite files
-    before writing weights, activations, models etc. to disk.
+    before writing parameters, activations, models etc. to disk.
 batch_size: int, optional
     If the builtin simulator 'INI' is used, the batch size specifies
     the number of test samples that will be simulated in parallel. Important:

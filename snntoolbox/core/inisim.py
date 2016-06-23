@@ -191,7 +191,8 @@ class SpikeDense(Dense):
         # Recurse
         inp, time, updates = get_input(self)
         # Get impulse
-        self.impulse = T.dot(inp, self.get_weights()[0])
+        self.impulse = T.add(T.dot(inp, self.get_weights()[0]),
+                             self.get_weights()[1])
         output_spikes = update_neurons(self, self.impulse, time, updates)
         self.updates = updates
         return T.cast(output_spikes, 'float32')
@@ -246,7 +247,7 @@ class SpikeConv2DReLU(Convolution2D):
                 conv_out = conv_out[:, :, shift_x:inp.shape[2] + shift_x,
                                     shift_y:inp.shape[3] + shift_y]
 
-        self.impulse = conv_out
+        self.impulse = conv_out #T.add(conv_out, self.get_weights()[1])
         output_spikes = update_neurons(self, self.impulse, time, updates)
         self.updates = updates
         return T.cast(output_spikes, 'float32')

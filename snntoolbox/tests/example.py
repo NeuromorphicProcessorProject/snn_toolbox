@@ -18,7 +18,7 @@ Usecase A: Convert only
         - load the dataset,
         - load a pretrained ANN from ``<path>/<filename>``
         - optionally evaluate it (``evaluate = True``),
-        - optionally normalize weights (``normalize = True``),
+        - optionally normalize parameters (``normalize = True``),
         - convert to spiking,
         - save SNN to disk.
 
@@ -66,7 +66,7 @@ def main():
                 'filename': '99.16',
                 'path': 'example/',  # Working directory
                 'evaluateANN': True,  # Test accuracy of input model
-                'normalize': True,  # Normalize weights to get better perf.
+                'normalize': True,  # Normalize parameters to get better perf.
                 'convert': True,  # Convert analog net to spiking
                 'simulate': True,  # Simulate converted net
                 'verbose': 3,  # Show plots and temporary results
@@ -81,7 +81,7 @@ def main():
     from snntoolbox.io_utils.datasets.mnist import get_mnist
     get_mnist('example/dataset/')
 
-    # Run network (including loading the model, weight normalization,
+    # Run network (including loading the model, parameter normalization,
     # conversion and simulation).
 
     # If set True, the converted model is simulated for three different values

@@ -401,9 +401,9 @@ def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None):
             If not ``None``, specifies where to save the resulting image. Else,
             display plots without saving.
         scale_fac: float, optional
-            The value with which weights are normalized (maximum of activations
-            or weights of a layer). If given, will be insterted into plot
-            title.
+            The value with which parameters are normalized (maximum of
+            activations or parameter value of a layer). If given, will be
+            insterted into plot title.
 
     """
 

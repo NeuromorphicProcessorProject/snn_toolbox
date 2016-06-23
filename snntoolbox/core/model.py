@@ -65,8 +65,8 @@ class SNN():
 
         In addition, `Dense` and `Convolution` layer types contain
 
-        - weights (array): The weight parameters connecting this layer with the
-          previous.
+        - parameters (array): The weights and biases connecting this layer with
+          the previous.
 
         `Convolution` layers contain further
 
@@ -109,7 +109,7 @@ class SNN():
         # of the simulator to use ('target_sim')
         self.import_modules()
 
-        # Load input model structure and weights.
+        # Load input model structure and parameters.
         model = self.model_lib.load_ann(path, filename)
         self.model = model['model']
         self.val_fn = model['val_fn']
@@ -175,12 +175,12 @@ class SNN():
 
         return score
 
-    def normalize_weights(self, X_test):
+    def normalize_parameters(self, X_test):
         """
-        Normalize the weights of a network.
+        Normalize the parameters of a network.
 
-        The weights of each layer are normalized with respect to the maximum
-        activation or weight.
+        The parameters of each layer are normalized with respect to the maximum
+        activation or parameter value.
 
         Parameters
         ----------
@@ -195,18 +195,18 @@ class SNN():
         """
 
         from snntoolbox.io_utils.plotting import plot_hist
-        from snntoolbox.core.util import get_activations_layer, norm_weights
+        from snntoolbox.core.util import get_activations_layer, norm_parameters
 
-        print("Normalizing weights:\n")
+        print("Normalizing parameters:\n")
         newpath = os.path.join(settings['log_dir_of_current_run'],
                                'normalization')
         if not os.path.exists(newpath):
             os.makedirs(newpath)
-        # Loop through all layers, looking for layers with weights
+        # Loop through all layers, looking for layers with parameters
         for idx, layer in enumerate(self.layers):
-            # Skip layer if not preceeded by a layer with weights
-            if idx == 0 or 'weights' not in self.layers[idx-1].keys():
-                # A pooling layer has no weights but we can calculate
+            # Skip layer if not preceeded by a layer with parameters
+            if idx == 0 or 'parameters' not in self.layers[idx-1].keys():
+                # A pooling layer has no parameters but we can calculate
                 # activations. Compile function based on normalized lower
                 # layers:
                 if 'get_activ' in layer.keys():
@@ -219,14 +219,15 @@ class SNN():
             print("Calculating output of activation layer {}".format(idx) +
                   " following layer {} with shape {}...".format(
                   label, layer['output_shape']))
-            weights = self.layers[idx-1]['weights']
+            parameters = self.layers[idx-1]['parameters']
             activations = get_activations_layer(layer['get_activ'], X_test)
-            weights_norm, scale_fac = norm_weights(weights, activations)
-            weight_dict = {'Weights': weights[0].flatten(),
-                           'Weights_norm': weights_norm[0].flatten()}
-            # Update model with modified weights
-            self.set_layer_params(weights_norm, idx-1)
-            # Compute activations with modified weights
+            parameters_norm, scale_fac = norm_parameters(parameters,
+                                                         activations)
+            weight_dict = {'weights': parameters[0].flatten(),
+                           'weights_norm': parameters_norm[0].flatten()}
+            # Update model with modified parameters
+            self.set_layer_params(parameters_norm, idx-1)
+            # Compute activations with modified parameters
             activations_norm = get_activations_layer(layer['get_activ'],
                                                      X_test)
             # For memory reasons, use only a fraction of samples for
@@ -244,7 +245,7 @@ class SNN():
 
         """
 
-        self.layers[i]['weights'] = parameters
+        self.layers[i]['parameters'] = parameters
         self.model_lib.set_layer_params(self.model, parameters,
                                         self.layer_idx_map[i])
 
@@ -255,11 +256,12 @@ class SNN():
 
         """
 
-        return [l['weights'] for l in self.layers if 'weights' in l.keys()]
+        return [l['parameters'] for l in self.layers
+                if 'parameters' in l.keys()]
 
     def save(self, path=None, filename=None):
         """
-        Write model architecture and weights to disk.
+        Write model architecture and parameters to disk.
 
         Parameters
         ----------
@@ -288,7 +290,7 @@ class SNN():
 
         filepath = os.path.join(path, filename)
         if confirm_overwrite(filepath + '.h5'):
-            self.save_weights(filepath + '.h5')
+            self.save_parameters(filepath + '.h5')
 
         if confirm_overwrite(filepath + '.json'):
             self.save_config(filepath + '.json')
@@ -303,7 +305,7 @@ class SNN():
 
         # When adding a parser for a new input model format, you may need to
         # supplement the following list by non-JSON-serializable objects.
-        skip_keys = ['weights', 'get_activ', 'get_activ_norm', 'model',
+        skip_keys = ['parameters', 'get_activ', 'get_activ_norm', 'model',
                      'model_protobuf']
         layer_config = []
         for layer in self.layers:
@@ -325,9 +327,9 @@ class SNN():
 
         to_json(self.get_config(), path)
 
-    def save_weights(self, path=None):
+    def save_parameters(self, path=None):
         """
-        Dump all layer weights to a HDF5 file.
+        Dump all layer parameters to a HDF5 file.
 
         """
 
@@ -341,17 +343,17 @@ class SNN():
         f.attrs['layer_names'] = [l.encode('utf8') for l in self.labels]
 
         for layer in self.layers:
-            if 'weights' not in layer.keys():
+            if 'parameters' not in layer.keys():
                 continue
             g = f.create_group(layer['label'])
-            weight_values = layer['weights']
-            weight_names = []
-            for i in range(len(weight_values)):
+            param_values = layer['parameters']
+            param_names = []
+            for i in range(len(param_values)):
                 idx = '0' + str(i) if i < 10 else str(i)
                 name = 'param_' + idx
-                weight_names.append(name.encode('utf8'))
-            g.attrs['weight_names'] = weight_names
-            for name, val in zip(weight_names, weight_values):
+                param_names.append(name.encode('utf8'))
+            g.attrs['param_names'] = param_names
+            for name, val in zip(param_names, param_values):
                 param_dset = g.create_dataset(name, val.shape, dtype=val.dtype)
                 param_dset[:] = val
         f.flush()

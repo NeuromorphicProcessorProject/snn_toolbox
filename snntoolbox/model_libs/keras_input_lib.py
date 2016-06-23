@@ -19,6 +19,7 @@ Created on Thu May 19 08:21:05 2016
 """
 
 import os
+import numpy as np
 import theano
 from keras import backend as K
 from snntoolbox.config import settings, bn_layers
@@ -67,8 +68,8 @@ def extract(model):
 
         In addition, `Dense` and `Convolution` layer types contain
 
-        - weights (array): The weight parameters connecting this layer with the
-          previous.
+        - parameters (array): The weights and biases connecting this layer with
+          the previous.
 
         `Convolution` layers contain further
 
@@ -132,15 +133,17 @@ def extract(model):
 
         if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
             wb = layer.get_weights()
+            wb[1] = np.arange(len(wb[1]))
             if next_layer_name == 'BatchNormalization':
-                weights = next_layer.get_weights()
+                parameters = next_layer.get_weights()
                 # W, b, gamma, beta, mean, std, epsilon
-                wb = absorb_bn(wb[0], wb[1], weights[0], weights[1],
-                               weights[2], weights[3], next_layer.epsilon)
+                wb = absorb_bn(wb[0], wb[1], parameters[0], parameters[1],
+                               parameters[2], parameters[3],
+                               next_layer.epsilon)
             if next_layer_name == 'Activation':
                 attributes.update({'activation':
                                    next_layer.get_config()['activation']})
-            attributes.update({'weights': wb})
+            attributes.update({'parameters': wb})
 
         if attributes['layer_type'] == 'Convolution2D':
             attributes.update({'input_shape': layer.input_shape,

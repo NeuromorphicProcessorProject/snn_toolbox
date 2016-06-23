@@ -238,8 +238,8 @@ class SNNToolboxGUI():
         self.path_entry['xscrollcommand'] = scrollX.set
         tip = dedent("""\
               Specify the working directory. There, the toolbox will look for
-              ANN models to convert or SNN models to test, load the weights it
-              needs and store (normalized) weights.""")
+              ANN models to convert or SNN models to test, load the parameters
+              it needs and store (normalized) parameters.""")
         ToolTip(path_frame, text=tip, wraplength=750)
 
         # Specify filename base
@@ -605,8 +605,8 @@ class SNNToolboxGUI():
         self.normalize_cb.pack(**self.kwargs)
         tip = dedent("""\
               Only relevant when converting a network, not during simulation.
-              If enabled, the weights of the spiking network will be
-              normalized by the highest weight or activation.""")
+              If enabled, the parameters of the spiking network will be
+              normalized by the highest parameter or activation value.""")
         ToolTip(self.normalize_cb, text=tip, wraplength=750)
 
         # Convert ANN
@@ -637,8 +637,8 @@ class SNNToolboxGUI():
         overwrite_cb.pack(**self.kwargs)
         tip = dedent("""\
               If disabled, the save methods will ask for permission to
-              overwrite files before writing weights, activations, models etc.
-              to disk.""")
+              overwrite files before writing parameters, activations, models
+              etc. to disk.""")
         ToolTip(overwrite_cb, text=tip, wraplength=750)
 
         # Start experiment

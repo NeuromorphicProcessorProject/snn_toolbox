@@ -71,9 +71,9 @@ class SNN_compiled():
     run:
         Simulate a spiking network.
     save:
-        Write model architecture and weights to disk.
+        Write model architecture and parameters to disk.
     load:
-        Load model architecture and weights from disk.
+        Load model architecture and parameters from disk.
     end_sim:
         Clean up after simulation. Not needed in this simulator, so do a
         ``pass``.
@@ -124,12 +124,12 @@ class SNN_compiled():
             if layer['layer_type'] == 'Convolution2D':
                 self.snn.add(self.sim.SpikeConv2DReLU(
                     layer['nb_filter'], layer['nb_row'], layer['nb_col'],
-                    self.sim.floatX(layer['weights']),
+                    self.sim.floatX(layer['parameters']),
                     border_mode=layer['border_mode'], **kwargs))
             elif layer['layer_type'] == 'Dense':
                 self.snn.add(self.sim.SpikeDense(
                     layer['output_shape'][1],
-                    self.sim.floatX(layer['weights']), **kwargs))
+                    self.sim.floatX(layer['parameters']), **kwargs))
             elif layer['layer_type'] == 'Flatten':
                 self.snn.add(self.sim.SpikeFlatten(**kwargs))
             elif layer['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
@@ -324,7 +324,7 @@ class SNN_compiled():
 
     def save(self, path=None, filename=None):
         """
-        Write model architecture and weights to disk.
+        Write model architecture and parameters to disk.
 
         Parameters
         ----------
@@ -358,7 +358,7 @@ class SNN_compiled():
 
     def load(self, path=None, filename=None):
         """
-        Load model architecture and weights from disk.
+        Load model architecture and parameters from disk.
 
         Sets the ``snn`` and ``get_output`` attributes of this class.
 

@@ -129,24 +129,25 @@ def get_sample_activity_from_batch(activity_batch, i=0):
     return [(layer_act[0][i], layer_act[1]) for layer_act in activity_batch]
 
 
-def norm_weights(weights, activations):
+def norm_parameters(parameters, activations):
     """
-    Normalize weights
+    Normalize parameters
 
     Determine the maximum activation or weight of a layer and apply this factor
-    to normalize the weights.
+    to normalize the parameters.
 
-    Note that we do not need to take into account the scale factor of the
-    previous layer (i.e. by using a normalization factor ``applied_fac`` which
-    is the ratio of the max values of the previous to this layer), because when
-    calculating ``activations`` of the current layer, the normalized weights
-    are already used in all preceeding layers.
+    Note that for normalizing the parameters we do not need to take into
+    account the scale factor of the previous layer (i.e. by using a
+    normalization factor ``applied_fac`` which is the ratio of the max values
+    of the previous to this layer), because when calculating ``activations`` of
+    the current layer, the normalized parameters are already used in all
+    preceeding layers.
 
     Parameters
     ----------
 
-    weights: array
-        The parameters of a layer.
+    parameters: array
+        The parameters of a layer (both weights and biases).
     activations: array
         The activations of cells in a specific layer. Has the same shape as the
         layer.
@@ -154,11 +155,11 @@ def norm_weights(weights, activations):
     Returns
     -------
 
-    weights_norm: array
+    parameters_norm: array
         The parameters of a layer, divided by ``scale_fac``.
     scale_fac: float
-        Maximum (or percentile) of activations or weights of this layer.
-        Weights of the respective layer are scaled by this value.
+        Maximum (or percentile) of activations or parameters of this layer.
+        Parameters of the respective layer are scaled by this value.
 
     """
 
@@ -166,12 +167,15 @@ def norm_weights(weights, activations):
     # be divided into an integer number of equal-sized batches.
     end = -1 if len(activations[0]) != len(activations[-1]) else None
     activation_max = np.percentile(activations[:end], settings['percentile'])
-    weight_max = np.max(weights[0])  # Disregard biases
+    w_max = np.max(parameters[0])  # Debug
+    b_max = np.max(parameters[1])  # Debug
+    print("[DEBUG] Maximum bias: {}".format(b_max))
+    weight_max = np.max([w_max, b_max])  # Later replace by np.max(parameters)
     scale_fac = np.max([weight_max, activation_max])
     print("Maximum value: {:.2f}.".format(scale_fac))
     # Normalization factor is the ratio of the max values of the
     # previous to this layer.
-    return [x / scale_fac for x in weights], scale_fac
+    return [x / scale_fac for x in parameters], scale_fac
 
 
 def get_activations_layer(get_activ, X_test):
