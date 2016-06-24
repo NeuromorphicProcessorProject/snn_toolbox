@@ -86,7 +86,7 @@ def softmax_activation(self, impulse, time, updates):
     new_mem = self.mem + masked_imp
     # Store spiking
     output_spikes, new_and_reset_mem = theano.ifelse.ifelse(
-        T.le(rng.uniform(), 100 * settings['dt'] / 1000),  # Ext. Poisson clock
+        T.le(rng.uniform(), 300 * settings['dt'] / 1000),  # Ext. Poisson clock
         trigger_spike(new_mem), skip_spike(new_mem))  # Then and else condition
     # Store refractory. In case of a spike we are resetting all neurons, even
     # the ones that didn't spike. However, in the refractory period we only

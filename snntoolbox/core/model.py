@@ -175,7 +175,7 @@ class SNN():
 
         return score
 
-    def normalize_parameters(self, X_test):
+    def normalize_parameters(self, X_train):
         """
         Normalize the parameters of a network.
 
@@ -185,10 +185,10 @@ class SNN():
         Parameters
         ----------
 
-        X_test : float32 array
+        X_train : float32 array
             The input samples to use for determining the layer activations.
             With data of the form (channels, num_rows, num_cols),
-            X_test has dimension (1, channels*num_rows*num_cols) for a
+            X_train has dimension (1, channels*num_rows*num_cols) for a
             multi-layer perceptron, and (1, channels, num_rows, num_cols) for a
             convnet.
 
@@ -220,7 +220,7 @@ class SNN():
                   " following layer {} with shape {}...".format(
                   label, layer['output_shape']))
             parameters = self.layers[idx-1]['parameters']
-            activations = get_activations_layer(layer['get_activ'], X_test)
+            activations = get_activations_layer(layer['get_activ'], X_train)
             parameters_norm, scale_fac = norm_parameters(parameters,
                                                          activations)
             weight_dict = {'weights': parameters[0].flatten(),
@@ -229,7 +229,7 @@ class SNN():
             self.set_layer_params(parameters_norm, idx-1)
             # Compute activations with modified parameters
             activations_norm = get_activations_layer(layer['get_activ'],
-                                                     X_test)
+                                                     X_train)
             # For memory reasons, use only a fraction of samples for
             # plotting a histogram of activations.
             frac = int(len(activations) / 1)

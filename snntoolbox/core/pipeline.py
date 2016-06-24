@@ -90,8 +90,8 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
             # For memory reasons, reduce number of samples to use during
             # normalization.
-            frac = 1
-            snn.normalize_parameters(X_test[:int(len(X_test)/frac)])
+            frac = 5
+            snn.normalize_parameters(X_train[::frac])
 
         # ____________________________ EVALUATE _____________________________ #
         # (Re-) evaluate ANN

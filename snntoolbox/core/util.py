@@ -175,7 +175,7 @@ def norm_parameters(parameters, activations):
     return [parameters[0] / scale_fac, parameters[1] / scale_fac], scale_fac
 
 
-def get_activations_layer(get_activ, X_test):
+def get_activations_layer(get_activ, X_train):
     """
     Get activations of a specific layer.
 
@@ -185,9 +185,9 @@ def get_activations_layer(get_activ, X_test):
     get_activ: Theano function
         A Theano function computing the activations of a layer.
 
-    X_test: float32 array
+    X_train: float32 array
         The samples to compute activations for. With data of the form
-        (channels, num_rows, num_cols), X_test has dimension
+        (channels, num_rows, num_cols), X_train has dimension
         (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
         and (batch_size, channels, num_rows, num_cols) for a convolutional net.
 
@@ -200,18 +200,18 @@ def get_activations_layer(get_activ, X_test):
 
     """
 
-    shape = list(get_activ(X_test[:settings['batch_size']]).shape)
-    shape[0] = X_test.shape[0]
+    shape = list(get_activ(X_train[:settings['batch_size']]).shape)
+    shape[0] = X_train.shape[0]
     activations = np.empty(shape)
-    num_batches = int(np.ceil(X_test.shape[0] / settings['batch_size']))
+    num_batches = int(np.ceil(X_train.shape[0] / settings['batch_size']))
     for batch_idx in range(num_batches):
         # Determine batch indices.
         max_idx = min((batch_idx + 1) * settings['batch_size'],
-                      X_test.shape[0])
+                      X_train.shape[0])
         batch_idxs = range(batch_idx * settings['batch_size'], max_idx)
-        batch = X_test[batch_idxs, :]
+        batch = X_train[batch_idxs, :]
         if len(batch_idxs) < settings['batch_size']:
-            batch.resize(X_test[:settings['batch_size']].shape)
+            batch.resize(X_train[:settings['batch_size']].shape)
             activations[batch_idxs] = get_activ(batch)[:len(batch_idxs)]
         else:
             activations[batch_idxs] = get_activ(batch)
