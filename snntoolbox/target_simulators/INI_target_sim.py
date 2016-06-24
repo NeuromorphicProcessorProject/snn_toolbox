@@ -255,13 +255,18 @@ class SNN_compiled():
                 # This factor determines the probability threshold for cells in
                 # the input layer to fire a spike. Increasing ``input_rate``
                 # increases the firing rate of the input and subsequent layers.
-                rescale_fac = 1000 / (settings['input_rate'] * settings['dt'])
+                if settings['poisson_input']:
+                    rescale_fac = 1000/(settings['input_rate']*settings['dt'])
+                else:
+                    # Simply use the analog values of the original data as
+                    # input.
+                    inp = batch
             else:
                 # Instead of poisson spike input, use the unchanged input
                 # samples. (In this case, the first spiking layers have been
                 # replaced by the original analog layers.)
                 i = settings['first_layer_num'] - 1
-                inp_images = self.ann['layers'][i]['get_activ'](batch)
+                inp = self.ann['layers'][i]['get_activ'](batch)
 
             # Reset network variables.
             self.sim.reset(self.snn.layers[-1])
@@ -269,14 +274,15 @@ class SNN_compiled():
             # Loop through simulation time.
             t_idx = 0
             for t in np.arange(0, settings['duration'], settings['dt']):
-                if settings['first_layer_num'] == 0:
+                if settings['first_layer_num'] == 0 \
+                        and settings['poisson_input']:
                     # Create poisson input.
                     spike_snapshot = np.random.random_sample(batch.shape) * \
                         rescale_fac
-                    inp_images = (spike_snapshot <= batch).astype('float32')
+                    inp = (spike_snapshot <= batch).astype('float32')
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
-                out_spikes, ts = self.get_output(inp_images, float(t))
+                out_spikes, ts = self.get_output(inp, float(t))
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
                 if batch_idx == 0 and settings['verbose'] > 1:
