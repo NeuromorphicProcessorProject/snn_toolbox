@@ -62,8 +62,13 @@ def linear_activation(self, impulse, time, updates):
     new_mem = self.mem + masked_imp
     # Store spiking
     output_spikes = new_mem > self.v_thresh
-    # Reset neuron
-    new_and_reset_mem = T.set_subtensor(new_mem[output_spikes.nonzero()], 0.)
+    # At spike, reduce membrane potential by one instead of resetting to zero,
+    # so that no information stored in membrane potential is lost. This reduces
+    # the variance in the spikerate-activation correlation plot for activations
+    # greater than 0.5.
+    new_and_reset_mem = T.inc_subtensor(new_mem[output_spikes.nonzero()], -1.)
+    # Alternatively, perform standard reset:
+    # new_and_reset_mem = T.set_subtensor(new_mem[output_spikes.nonzero()], 0.)
     # Store refractory
     new_refractory = T.set_subtensor(
         self.refrac_until[output_spikes.nonzero()], time + self.tau_refrac)

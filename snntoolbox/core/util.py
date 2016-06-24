@@ -172,7 +172,7 @@ def norm_parameters(parameters, activations):
     print("Maximum value: {:.2f}.".format(scale_fac))
     # Normalization factor is the ratio of the max values of the
     # previous to this layer.
-    return [parameters[0] / scale_fac, 0.1 * parameters[1] / scale_fac], scale_fac
+    return [parameters[0] / scale_fac, parameters[1] / scale_fac], scale_fac
 
 
 def get_activations_layer(get_activ, X_test):
