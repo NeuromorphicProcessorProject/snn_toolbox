@@ -461,7 +461,7 @@ class SNN_compiled():
 
         The size, structure, labels of all the population of an assembly are
         stored in a dictionary such that one can load them again using the
-        ``snntoolbox.io.load.load_assembly`` function.
+        ``load_assembly`` function.
 
         The term "assembly" refers to pyNN internal nomenclature, where
         ``Assembly`` is a collection of layers (``Populations``), which in turn
@@ -611,8 +611,6 @@ class SNN_compiled():
     def load(self, path=None, filename=None):
         """
         Load model architecture and parameters from disk.
-
-        Sets the ``snn`` and ``get_output`` attributes of this class.
 
         Parameters
         ----------

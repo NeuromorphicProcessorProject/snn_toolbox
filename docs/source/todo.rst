@@ -12,3 +12,15 @@ Possible extensions
 * Implement nonzero biases for pyNN and Brian2 simulators (working for INIsim).
   Currently, biases in our pyNN export are included as offset currents, but
   this does not seem to have any effect.
+
+Known bugs
+----------
+
+* When simulating directly (skipping the normalization and conversion step),
+  spiking layers use the normalized weights loaded from disk, but the
+  activation and correlation plots use the non-normalized weights. This only
+  concerns pyNN simulators, not INIsim or Brian2. One would have to write a
+  function that loads the normalized weights from the parsed model before
+  simulation and writes them to the original network.
+* The ipython console in Spyder needs to be restarted after killing the toolbox
+  GUI. The problem seems to be thread-related.

@@ -203,6 +203,19 @@ class SNN_compiled():
             if settings['verbose'] > 1:
                 echo("Restoring layer connections...\n")
             self.load()
+            # Set parameters of original network to the normalized values so
+            # that the computed activations use the same parameters as the
+            # spiking layers.
+            parameters = [layer.get_weights() for layer in self.snn.layers
+                          if layer.get_weights()]
+            j = 0
+            for idx in range(len(self.ann['layers'])):
+                # Skip layer if not preceeded by a layer with parameters
+                if idx == 0 or 'parameters' not in self.ann['layers'][idx-1]:
+                    continue
+                # Update model with modified parameters
+                snn_precomp.set_layer_params(parameters[j], idx-1)
+                j += 1
 
         si = settings['sample_indices_to_test']
         if not si == []:
@@ -382,13 +395,7 @@ class SNN_compiled():
         """
 
         from keras import models
-        from snntoolbox.core.inisim import SpikeFlatten, SpikeDense
-        from snntoolbox.core.inisim import SpikeConv2DReLU, AvgPool2DReLU
-
-        custom_layers = {'SpikeFlatten': SpikeFlatten,
-                         'SpikeDense': SpikeDense,
-                         'SpikeConv2DReLU': SpikeConv2DReLU,
-                         'AvgPool2DReLU': AvgPool2DReLU}
+        from snntoolbox.core.inisim import custom_layers
 
         if path is None:
             path = settings['path']

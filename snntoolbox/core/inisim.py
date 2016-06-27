@@ -284,3 +284,9 @@ class AvgPool2DReLU(AveragePooling2D):
         output_spikes = update_neurons(self, self.impulse, time, updates)
         self.updates = updates
         return T.cast(output_spikes, 'float32')
+
+
+custom_layers = {'SpikeFlatten': SpikeFlatten,
+                 'SpikeDense': SpikeDense,
+                 'SpikeConv2DReLU': SpikeConv2DReLU,
+                 'AvgPool2DReLU': AvgPool2DReLU}

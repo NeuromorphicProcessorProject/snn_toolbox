@@ -206,14 +206,6 @@ class SNN():
         for idx, layer in enumerate(self.layers):
             # Skip layer if not preceeded by a layer with parameters
             if idx == 0 or 'parameters' not in self.layers[idx-1].keys():
-                # A pooling layer has no parameters but we can calculate
-                # activations. Compile function based on normalized lower
-                # layers:
-                if 'get_activ' in layer.keys():
-                    layer.update(
-                        {'get_activ_norm':
-                         self.model_lib.get_activ_fn_for_layer(
-                             self.model, self.layer_idx_map[idx])})
                 continue
             label = self.labels[idx-1]
             print("Calculating output of activation layer {}".format(idx) +
@@ -305,8 +297,7 @@ class SNN():
 
         # When adding a parser for a new input model format, you may need to
         # supplement the following list by non-JSON-serializable objects.
-        skip_keys = ['parameters', 'get_activ', 'get_activ_norm', 'model',
-                     'model_protobuf']
+        skip_keys = ['parameters', 'get_activ', 'model', 'model_protobuf']
         layer_config = []
         for layer in self.layers:
             layer_config.append([{key: layer[key]} for key in layer.keys()

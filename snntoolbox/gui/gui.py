@@ -1010,31 +1010,37 @@ class SNNToolboxGUI():
 
     def check_path(self, P):
         if not self.initialized:
-            return True
-        # Look for plots in working directory to display
-        self.graph_widgets()
-
-        if not os.path.exists(P):
+            result = True
+        elif not os.path.exists(P):
             msg = "Failed to set working directory:\n" + \
                   "Specified directory does not exist."
             messagebox.showwarning(title="Warning", message=msg)
-            return False
-        if self.settings['model_lib'].get() == 'caffe':
+            result = False
+        elif self.settings['model_lib'].get() == 'caffe':
             if not any(fname.endswith('.caffemodel') for fname in
                        os.listdir(P)):
                 msg = "No '*.caffemodel' file found in \n {}".format(P)
                 messagebox.showwarning(title="Warning", message=msg)
-                return False
+                result = False
             elif not any(fname.endswith('.prototxt') for fname in
                          os.listdir(P)):
                 msg = "No '*.prototxt' file found in \n {}".format(P)
                 messagebox.showwarning(title="Warning", message=msg)
-                return False
+                result = False
         elif not any(fname.endswith('.json') for fname in os.listdir(P)):
             msg = "No model file '*.json' found in \n {}".format(P)
             messagebox.showwarning(title="Warning", message=msg)
-            return False
-        return True
+            result = False
+        else:
+            result = True
+
+        if result:
+            self.settings['path'].set(P)
+            self.gui_log.set(os.path.join(P, 'log', 'gui'))
+            # Look for plots in working directory to display
+            self.graph_widgets()
+
+        return result
 
     def check_runlabel(self, P):
         if self.initialized:
@@ -1046,13 +1052,9 @@ class SNNToolboxGUI():
                 os.makedirs(self.settings['log_dir_of_current_run'].get())
 
     def set_cwd(self):
-        self.settings['path'].set(filedialog.askdirectory(
-            title="Set working directory", initialdir=snntoolbox._dir))
-        self.check_path(self.settings['path'].get())
-        self.gui_log.set(os.path.join(self.settings['path'].get(),
-                                      'log', 'gui'))
-        # Look for plots in working directory to display
-        self.graph_widgets()
+        P = filedialog.askdirectory(title="Set working directory",
+                                    initialdir=snntoolbox._dir)
+        self.check_path(P)
 
     def set_dataset(self):
         self.settings['dataset_path'].set(filedialog.askopenfilename(
