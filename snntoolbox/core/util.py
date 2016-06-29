@@ -105,17 +105,17 @@ def spiketrains_to_rates(spiketrains_batch):
         if len(shape) == 2:
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
-                    spikerates_batch[i][0][ii, jj] = \
-                        (len(np.nonzero(sp[0][ii][jj])[0]) * 1000 /
-                         settings['duration'])
+                    spikerates_batch[i][0][ii, jj] = (
+                        len(np.nonzero(sp[0][ii][jj])[0]) * 1000 /
+                        settings['duration'])
         elif len(shape) == 4:
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
                     for kk in range(len(sp[0][ii, jj])):
                         for ll in range(len(sp[0][ii, jj, kk])):
                             spikerates_batch[i][0][ii, jj, kk, ll] = (
-                                len(np.nonzero(sp[0][ii, jj, kk, ll])[0]) /
-                                settings['duration'] * 1000)
+                                len(np.nonzero(sp[0][ii, jj, kk, ll])[0]) *
+                                1000 / settings['duration'])
 
     return spikerates_batch
 

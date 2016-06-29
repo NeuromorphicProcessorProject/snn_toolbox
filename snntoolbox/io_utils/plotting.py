@@ -269,30 +269,29 @@ def plot_layer_summaries(spiketrains, spikerates, activations, path=None):
     Parameters
     ----------
 
-        spiketrains: list
-            Each entry in ``spiketrains`` contains a tuple
-            ``(spiketimes, label)`` for each layer of the network (for the
-            first batch only, and excluding ``Flatten`` layers).
-            ``spiketimes`` is an array where the last index contains the spike
-            times of the specific neuron, and the first indices run over the
-            number of neurons in the layer: (n_chnls, n_rows, n_cols, duration)
-            ``label`` is a string specifying both the layer type and the index,
-            e.g. ``'03Dense'``.
-        spikerates: list
-            Each entry in ``spikerates`` contains a tuple ``(rates, label)``
-            for each layer of the network (for the first batch only, and
-            excluding ``Flatten`` layers).
-            ``rates`` contains the average firing rates of all neurons in
-            a layer. It has the same shape as the original layer, e.g.
-            (n_features, n_rows, n_cols) for a convolution layer.
-            ``label`` is a string specifying both the layer type and the index,
-            e.g. ``'03Dense'``.
-        activations: list
-            Contains the activations of a net. Same structure as
-            ``spikerates``.
-        path: string, optional
-            If not ``None``, specifies where to save the resulting image. Else,
-            display plots without saving.
+    spiketrains: list
+        Each entry in ``spiketrains`` contains a tuple
+        ``(spiketimes, label)`` for each layer of the network (for the first
+        batch only, and excluding ``Flatten`` layers).
+        ``spiketimes`` is an array where the last index contains the spike
+        times of the specific neuron, and the first indices run over the
+        number of neurons in the layer: (n_chnls, n_rows, n_cols, duration)
+        ``label`` is a string specifying both the layer type and the index,
+        e.g. ``'03Dense'``.
+    spikerates: list
+        Each entry in ``spikerates`` contains a tuple ``(rates, label)`` for
+        each layer of the network (for the first batch only, and excluding
+        ``Flatten`` layers).
+        ``rates`` contains the average firing rates of all neurons in a layer.
+        It has the same shape as the original layer, e.g.
+        (n_features, n_rows, n_cols) for a convolution layer.
+        ``label`` is a string specifying both the layer type and the index,
+        e.g. ``'03Dense'``.
+    activations: list
+        Contains the activations of a net. Same structure as ``spikerates``.
+    path: string, optional
+        If not ``None``, specifies where to save the resulting image. Else,
+        display plots without saving.
 
     """
 
@@ -328,17 +327,17 @@ def plot_rates_minus_activations(rates, activations, label, path=None):
     Parameters
     ----------
 
-        rates: array
-            The spikerates of a layer. The shape is that of the original layer,
-            e.g. (32, 28, 28) for 32 feature maps of size 28x28.
-        activations: array
-            The activations of a layer. The shape is that of the original
-            layer, e.g. (32, 28, 28) for 32 feature maps of size 28x28.
-        label: string
-            Layer label.
-        path: string, optional
-            If not ``None``, specifies where to save the resulting image. Else,
-            display plots without saving.
+    rates: array
+        The spikerates of a layer. The shape is that of the original layer,
+        e.g. (32, 28, 28) for 32 feature maps of size 28x28.
+    activations: array
+        The activations of a layer. The shape is that of the original layer,
+        e.g. (32, 28, 28) for 32 feature maps of size 28x28.
+    label: string
+        Layer label.
+    path: string, optional
+        If not ``None``, specifies where to save the resulting image. Else,
+        display plots without saving.
 
     """
 
@@ -356,15 +355,15 @@ def plot_layer_correlation(rates, activations, title, path=None):
     Parameters
     ----------
 
-        rates: list
-            The spikerates of a layer, flattened to 1D.
-        activations: list
-            The activations of a layer, flattened to 1D.
-        label: string
-            Layer label.
-        path: string, optional
-            If not ``None``, specifies where to save the resulting image. Else,
-            display plots without saving.
+    rates: list
+        The spikerates of a layer, flattened to 1D.
+    activations: list
+        The activations of a layer, flattened to 1D.
+    label: string
+        Layer label.
+    path: string, optional
+        If not ``None``, specifies where to save the resulting image. Else,
+        display plots without saving.
 
     """
 
@@ -391,19 +390,19 @@ def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None):
     Parameters
     ----------
 
-        h: dict
-            Dictionary of datasets to plot in histogram.
-        title: string, optional
-            Title of histogram.
-        layer_label: string, optional
-            Label of layer from which data was taken.
-        path: string, optional
-            If not ``None``, specifies where to save the resulting image. Else,
-            display plots without saving.
-        scale_fac: float, optional
-            The value with which parameters are normalized (maximum of
-            activations or parameter value of a layer). If given, will be
-            insterted into plot title.
+    h: dict
+        Dictionary of datasets to plot in histogram.
+    title: string, optional
+        Title of histogram.
+    layer_label: string, optional
+        Label of layer from which data was taken.
+    path: string, optional
+        If not ``None``, specifies where to save the resulting image. Else,
+        display plots without saving.
+    scale_fac: float, optional
+        The value with which parameters are normalized (maximum of activations
+        or parameter value of a layer). If given, will be insterted into plot
+        title.
 
     """
 
@@ -437,32 +436,31 @@ def output_graphs(spiketrains_batch, ann, X_batch, path=None, i=0):
     Parameters
     ----------
 
-        spiketrains_batch: list
-            Each entry in ``spiketrains_batch`` contains a tuple
-            ``(spiketimes, label)`` for each layer of the network (for the
-            first batch only, and excluding ``Flatten`` layers).
-            ``spiketimes`` is an array where the last index contains the spike
-            times of the specific neuron, and the first indices run over the
-            number of neurons in the layer:
-            (batch_size, n_chnls, n_rows, n_cols, duration)
-            ``label`` is a string specifying both the layer type and the index,
-            e.g. ``'03Dense'``.
-        ann: SNN
-            An instance of the SNN class. Contains the ``get_activ`` Theano
-            functions which allow computation of layer activations of the
-            original input model (hence the name 'ann'). Needed in
-            activation and correlation plots.
-        X_batch: float32 array
-            The input samples to use for determining the layer activations.
-            With data of the form (channels, num_rows, num_cols), X_batch has
-            dimension (batch_size, channels*num_rows*num_cols) for a
-            multi-layer perceptron, and
-            (batch_size, channels, num_rows, num_cols) for a convolutional net.
-        path: string, optional
-            If not ``None``, specifies where to save the resulting image. Else,
-            display plots without saving.
-        i: int, optional
-            Index of sample to plot.
+    spiketrains_batch: list
+        Each entry in ``spiketrains_batch`` contains a tuple
+        ``(spiketimes, label)`` for each layer of the network (for the first
+        batch only, and excluding ``Flatten`` layers).
+        ``spiketimes`` is an array where the last index contains the spike
+        times of the specific neuron, and the first indices run over the
+        number of neurons in the layer:
+        (batch_size, n_chnls, n_rows, n_cols, duration)
+        ``label`` is a string specifying both the layer type and the index,
+        e.g. ``'03Dense'``.
+    ann: SNN
+        An instance of the SNN class. Contains the ``get_activ`` Theano
+        functions which allow computation of layer activations of the original
+        input model (hence the name 'ann'). Needed in activation and
+        correlation plots.
+    X_batch: float32 array
+        The input samples to use for determining the layer activations. With
+        data of the form (channels, num_rows, num_cols), X_batch has dimension
+        (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
+        and (batch_size, channels, num_rows, num_cols) for a convolutional net.
+    path: string, optional
+        If not ``None``, specifies where to save the resulting image. Else,
+        display plots without saving.
+    i: int, optional
+        Index of sample to plot.
 
     """
 
@@ -493,19 +491,19 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
     Parameters
     ----------
 
-        spikerates_batch: list
-            Each entry in ``spikerates_batch`` contains a tuple
-            ``(spikerates, label)`` for each layer of the network (for the
-            first batch only, and excluding ``Flatten`` layers).
-            ``spikerates`` contains the average firing rates of all neurons in
-            a layer. It has the same shape as the original layer, e.g.
-            (batch_size, n_features, n_rows, n_cols) for a convolution layer.
-            ``label`` is a string specifying both the layer type and the index,
-            e.g. ``'03Dense'``.
+    spikerates_batch: list
+        Each entry in ``spikerates_batch`` contains a tuple
+        ``(spikerates, label)`` for each layer of the network (for the first
+        batch only, and excluding ``Flatten`` layers).
+        ``spikerates`` contains the average firing rates of all neurons in a
+        layer. It has the same shape as the original layer, e.g.
+        (batch_size, n_features, n_rows, n_cols) for a convolution layer.
+        ``label`` is a string specifying both the layer type and the index,
+        e.g. ``'03Dense'``.
 
-        activations_batch: list
-            Contains the activations of a net. Same structure as
-            ``spikerates_batch``.
+    activations_batch: list
+        Contains the activations of a net. Same structure as
+        ``spikerates_batch``.
 
     """
 
@@ -557,11 +555,11 @@ def plot_hist_combined(data, path=None):
     Parameters
     ----------
 
-        data: dict
-            Dictionary of datasets to plot in histogram.
-        path: string, optional
-            If not ``None``, specifies where to save the resulting image. Else,
-            display plots without saving.
+    data: dict
+        Dictionary of datasets to plot in histogram.
+    path: string, optional
+        If not ``None``, specifies where to save the resulting image. Else,
+        display plots without saving.
 
     """
 
@@ -609,17 +607,17 @@ def plot_param_sweep(results, n, params, param_name, param_logscale):
     Parameters
     ----------
 
-        results: list
-            The accuracy or loss for a number of experiments, each of which
-            used different parameters.
-        n: int
-            The number of test samples used for each experiment.
-        params: list
-            The parameter values that changed during each experiment.
-        param_name: string
-            The name of the parameter that varied.
-        param_logscale: boolean
-            Whether to plot the parameter axis in log-scale.
+    results: list
+        The accuracy or loss for a number of experiments, each of which used
+        different parameters.
+    n: int
+        The number of test samples used for each experiment.
+    params: list
+        The parameter values that changed during each experiment.
+    param_name: string
+        The name of the parameter that varied.
+    param_logscale: boolean
+        Whether to plot the parameter axis in log-scale.
 
     """
 

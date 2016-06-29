@@ -27,6 +27,7 @@ from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
 
 standard_library.install_aliases()
+lidx = 0
 
 
 class SNN_compiled():
@@ -151,8 +152,13 @@ class SNN_compiled():
         output_spikes = self.snn.layers[-1].get_output()
         output_time = self.sim.get_time(self.snn.layers[-1])
         updates = self.sim.get_updates(self.snn.layers[-1])
+        fac = self.snn.layers[lidx].fac
+        max_spikerate = self.snn.layers[lidx].max_spikerate
+        spikecounts = self.snn.layers[lidx].spikecounts
+        spiketrain = self.snn.layers[lidx].spiketrain
         self.get_output = theano.function([self.snn.input, input_time],
-                                          [output_spikes, output_time],
+                                          [output_spikes, output_time,
+                                           fac, max_spikerate, spikecounts, spiketrain],
                                           updates=updates)
         echo("Compilation finished.\n\n")
 
@@ -206,9 +212,9 @@ class SNN_compiled():
             # Set parameters of original network to the normalized values so
             # that the computed activations use the same parameters as the
             # spiking layers.
+            j = 0
             parameters = [layer.get_weights() for layer in self.snn.layers
                           if layer.get_weights()]
-            j = 0
             for idx in range(len(self.ann['layers'])):
                 # Skip layer if not preceeded by a layer with parameters
                 if idx == 0 or 'parameters' not in self.ann['layers'][idx-1]:
@@ -295,15 +301,16 @@ class SNN_compiled():
                     inp = (spike_snapshot <= batch).astype('float32')
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
-                out_spikes, ts = self.get_output(inp, float(t))
+                out_spikes, ts, fac, max_spikerate, spikecounts, spiketrain = self.get_output(inp, float(t))
+                print('fac: {}, max_spikerate: {}, max_spikecount: {}'.format(fac, max_spikerate, np.max(spikecounts)))
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
                 if batch_idx == 0 and settings['verbose'] > 1:
                     j = 0
-                    for i in range(len(self.snn.layers)):
+                    for i, layer in enumerate(self.snn.layers):
                         if 'Flatten' not in self.snn.layers[i].name:
                             spiketrains_batch[j][0][Ellipsis, t_idx] = \
-                                self.snn.layers[i].spiketrain.get_value()
+                                layer.spiketrain.get_value()
                             j += 1
                 t_idx += 1
                 # Count number of spikes in output layer during whole
