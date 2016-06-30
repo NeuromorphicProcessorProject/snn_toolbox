@@ -67,6 +67,7 @@ class SNNToolboxGUI():
         self.top_level_menu()
         self.toggle_state_pyNN(self.settings['simulator'].get())
         self.toggle_percentile_state()
+        self.toggle_poisson_input_state()
         self.initialized = True
 
     def define_style(self):
@@ -508,7 +509,8 @@ class SNNToolboxGUI():
               limited by the parameter 'input_rate' below. For instance,
               with an 'input_rate' of 700, a fully-on pixel will elicit a
               Poisson spiketrain of 700 Hz. Turn off for a less noisy
-              simulation.""")
+              simulation. Currently, turning off Poisson input is only possible
+              in INI simulator.""")
         ToolTip(poisson_input_cb, text=tip, wraplength=750)
 
         # Maximum input firing rate

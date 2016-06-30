@@ -133,7 +133,8 @@ poisson_input: float, optional
     of the corresponding pixel, and limited by the parameter 'input_rate'
     below. For instance, with an 'input_rate' of 700, a fully-on pixel will
     elicit a Poisson spiketrain of 700 Hz. Turn off for a less noisy
-    simulation.
+    simulation. Currently, turning off Poisson input is only possible in INI
+    simulator.
 input_rate: float, optional
     Poisson spike rate in Hz for a fully-on pixel of the input image. Note that
     the input_rate is limited by the maximum firing rate supported by the
@@ -341,6 +342,11 @@ def update_setup(s=None):
     # Specify filenames for models at different stages of the conversion.
     s['filename_snn'] = 'snn_' + s['filename']
     s['filename_snn_exported'] = s['filename_snn'] + '_' + s['simulator']
+
+    if s['simulator'] != 'INI' and not s['poisson_input']:
+        s['poisson_input'] = True
+        print("""SNN toolbox Warning: Currently, turning off Poisson input is
+            only possible in INI simulator. Falling back on Poisson input.""")
 
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)

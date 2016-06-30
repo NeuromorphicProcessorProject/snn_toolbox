@@ -12,6 +12,10 @@ Possible extensions
 * Implement nonzero biases for pyNN and Brian2 simulators (working for INIsim).
   Currently, biases in our pyNN export are included as offset currents, but
   this does not seem to have any effect.
+* In pyNN and Brian2, implement feedback mechanism to modify weights in runtime
+  (works in INIsim)
+* In pyNN and Brian2, implement analog input instead of Poisson input (works in
+  INIsim)
 
 Known bugs
 ----------

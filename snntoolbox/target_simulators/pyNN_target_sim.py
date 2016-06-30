@@ -363,17 +363,8 @@ class SNN_compiled():
             # Add Poisson input.
             if settings['verbose'] > 1:
                 echo("Creating poisson input...\n")
-            # If we started conversion of the ANN with the first layer, we use
-            # Poisson spiketrains as inputs to the SNN. Otherwise, take the
-            # original data.
-            if settings['first_layer_num'] == 0:
-                rates = X_test[ind, :].flatten()
-            else:
-                # Instead of poisson spike input, use the unchanged input
-                # samples. (In this case, the first spiking layers have been
-                # replaced by the original analog layers.)
-                rates = (self.ann['layers'][settings['first_layer_num']-1]
-                         ['get_activ'](X_test[ind:ind+1]).flatten())
+
+            rates = X_test[ind, :].flatten()
             for (i, ss) in enumerate(self.layers[0]):
                 ss.rate = rates[i] * settings['input_rate']
 
