@@ -423,8 +423,13 @@ class SNN_compiled():
         output_spikes = self.snn.layers[-1].get_output()
         output_time = self.sim.get_time(self.snn.layers[-1])
         updates = self.sim.get_updates(self.snn.layers[-1])
+        fac = self.snn.layers[lidx].fac
+        max_spikerate = self.snn.layers[lidx].max_spikerate
+        spikecounts = self.snn.layers[lidx].spikecounts
+        spiketrain = self.snn.layers[lidx].spiketrain
         self.get_output = theano.function([self.snn.input, input_time],
-                                          [output_spikes, output_time],
+                                          [output_spikes, output_time,
+                                           fac, max_spikerate, spikecounts, spiketrain],
                                           updates=updates)
 
     def assert_batch_size(self, batch_size):

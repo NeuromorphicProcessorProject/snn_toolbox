@@ -176,6 +176,9 @@ def init_layer(self, layer, v_thresh, tau_refrac):
     layer.spikecounts = shared_zeros(self.output_shape)
     layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
     layer.updates = []
+    if len(layer.get_weights()) > 0:
+        layer.W = K.variable(layer.get_weights()[0])
+        layer.b = K.variable(layer.get_weights()[1])
 
 
 class SpikeFlatten(Flatten):
@@ -198,8 +201,6 @@ class SpikeDense(Dense):
     """ batch_size x input_shape x out_shape """
     def __init__(self, output_dim, weights=None, label=None, **kwargs):
         super().__init__(output_dim, weights=weights, **kwargs)
-        self.W = K.variable(weights[0])
-        self.b = K.variable(weights[1])
         if label is not None:
             self.label = label
         else:
@@ -239,8 +240,6 @@ class SpikeConv2DReLU(Convolution2D):
         super().__init__(nb_filter, nb_row, nb_col, weights=weights,
                          border_mode=border_mode, subsample=subsample,
                          **kwargs)
-        self.W = K.variable(weights[0])
-        self.b = K.variable(weights[1])
         self.filter_flip = filter_flip
         if label is not None:
             self.label = label
