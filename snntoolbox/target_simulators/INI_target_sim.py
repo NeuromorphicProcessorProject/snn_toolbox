@@ -103,20 +103,14 @@ class SNN_compiled():
         if settings['verbose'] > 1:
             echo("Iterating over ANN layers to add spiking layers...\n")
         for (layer_num, layer) in enumerate(self.ann['layers']):
-            if layer_num < settings['first_layer_num']:
-                continue
             kwargs = {'name': layer['label'], 'trainable': False}
             kwargs2 = {}
             if 'activation' in layer:
                 kwargs.update({'activation': layer['activation']})
-            if layer_num == settings['first_layer_num']:
+            if layer_num == 0:
                 # For the input layer, pass extra keyword argument
                 # 'batch_input_shape' to layer constructor.
-                if settings['first_layer_num'] == 0:
-                    input_shape = list(self.ann['input_shape'])
-                else:
-                    i = settings['first_layer_num'] - 1
-                    input_shape = list(self.ann['layers'][i]['output_shape'])
+                input_shape = list(self.ann['input_shape'])
                 input_shape[0] = settings['batch_size']
                 input_time = theano.tensor.scalar('time')
                 kwargs.update({'batch_input_shape': input_shape})
@@ -267,25 +261,16 @@ class SNN_compiled():
             batch_idxs = range(batch_idx * settings['batch_size'], max_idx)
             batch = X_test[batch_idxs, :]
 
-            # If we started conversion of the ANN with the first layer, we use
-            # Poisson spiketrains as inputs to the SNN. Otherwise, take the
+            # Either use Poisson spiketrains as inputs to the SNN, or take the
             # original data.
-            if settings['first_layer_num'] == 0:
+            if settings['poisson_input']:
                 # This factor determines the probability threshold for cells in
                 # the input layer to fire a spike. Increasing ``input_rate``
                 # increases the firing rate of the input and subsequent layers.
-                if settings['poisson_input']:
-                    rescale_fac = 1000/(settings['input_rate']*settings['dt'])
-                else:
-                    # Simply use the analog values of the original data as
-                    # input.
-                    inp = batch
+                rescale_fac = 1000 / (settings['input_rate'] * settings['dt'])
             else:
-                # Instead of poisson spike input, use the unchanged input
-                # samples. (In this case, the first spiking layers have been
-                # replaced by the original analog layers.)
-                i = settings['first_layer_num'] - 1
-                inp = self.ann['layers'][i]['get_activ'](batch)
+                # Simply use the analog values of the original data as input.
+                inp = batch
 
             # Reset network variables.
             self.sim.reset(self.snn.layers[-1])
@@ -293,8 +278,7 @@ class SNN_compiled():
             # Loop through simulation time.
             t_idx = 0
             for t in np.arange(0, settings['duration'], settings['dt']):
-                if settings['first_layer_num'] == 0 \
-                        and settings['poisson_input']:
+                if settings['poisson_input']:
                     # Create poisson input.
                     spike_snapshot = np.random.random_sample(batch.shape) * \
                         rescale_fac

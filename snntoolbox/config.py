@@ -62,16 +62,6 @@ normalize: boolean, optional
 percentile: int, optional
     Use the activation value in the specified percentile for normalization.
     Set to ``50`` for the median, ``100`` for the max.
-first_layer_num: int, optional
-    Set the number of the first layer that should be converted to spiking. If 0
-    (default), the complete network is converted, and the input data is
-    transformed into Poisson spiketrains. If a higher layer is set, the first
-    layers will stay analog, and the input data to the SNN is unchanged. The
-    number given here should not include an input layer (0 represents the first
-    hidden layer). Take activation, dropout and pooling layers into account.
-    For instance, if the network consists of [Input, Conv1, Activation,
-    Pooling, Dropout, Conv2, ...], and you want to start with the second
-    convolution layer, set this value to 4.
 convert: boolean, optional
     If enabled, load an ANN from ``<path>`` and convert it to spiking.
 simulate: boolean, optional
@@ -119,6 +109,12 @@ tau_syn_E: float, optional
     Decay time of the excitatory synaptic conductance in milliseconds.
 tau_syn_I: float, optional
     Decay time of the inhibitory synaptic conductance in milliseconds.
+softmax_clockrate: int, optional
+    In our implementation of a spiking softmax activation function we use an
+    external Poisson clock to trigger calculating the softmax of a layer. The
+    'softmax_clockrate' parameter sets the firing rate in Hz of this external
+    clock. Note that this rate is limited by the maximum firing rate supported
+    by the simulator (given by the inverse time resolution 1000 * 1 / dt Hz).
 
 Simulation Parameters
 *********************
@@ -131,8 +127,35 @@ dt: float, optional
     Time resolution of spikes in milliseconds.
 delay: float, optional
     Delay in milliseconds. Must be equal to or greater than the resolution.
+poisson_input: float, optional
+    If enabled, the input samples will be converted to Poisson spiketrains. The
+    probability for a input neuron to fire is proportional to the analog value
+    of the corresponding pixel, and limited by the parameter 'input_rate'
+    below. For instance, with an 'input_rate' of 700, a fully-on pixel will
+    elicit a Poisson spiketrain of 700 Hz. Turn off for a less noisy
+    simulation.
 input_rate: float, optional
-    Poisson spike rate in Hz for a fully-on pixel of the input image.
+    Poisson spike rate in Hz for a fully-on pixel of the input image. Note that
+    the input_rate is limited by the maximum firing rate supported by the
+    simulator (given by the inverse time resolution 1000 * 1 / dt Hz).
+diff_to_max_rate: float, optional
+    The converted spiking network performs best if the average firing rates of
+    each layer are not higher but also not much lower than the maximum rate
+    supported by the simulator (inverse time resolution). Normalization
+    eliminates saturation but introduces undersampling (parameters are
+    normalized with respect to the highest value in a batch). To overcome this,
+    the spikerates of each layer are monitored during simulation. If they drop
+    below the maximum firing rate by more than 'diff to max rate', we divide
+    the parameters of the layer by its highest rate. Set the parameter in Hz.
+timestep_fraction: int, optional
+    If set to 10 (default), the parameter modification mechanism described in
+    'diff_to_max_rate' will be performed at every 10th timestep.
+min_rate: float, optional
+    Minimum spikerate in Hz. When The firing rates of a layer are below this
+    value, the weights will NOT be modified in the feedback mechanism described
+    in 'diff_to_max_rate'. This is useful in the beginning of a simulation,
+    when higher layers need some time to integrate up a sufficiently high
+    membrane potential.
 num_to_test: int, optional
     How many samples to test.
 
@@ -167,13 +190,18 @@ Default values
                   'tau_m': 1000,
                   'tau_refrac': 0,
                   'tau_syn_E': 0.01,
-                  'tau_syn_I': 0.01}
+                  'tau_syn_I': 0.01,
+                  'softmax_clockrate': 300}
     simparams = {'simulator': 'INI',
                  'duration': 200,
                  'dt': 1,
                  'delay': 1,
+                 'poisson_input': False,
                  'input_rate': 1000,
-                 'num_to_test': 10}
+                 'timestep_fraction': 10,
+                 'diff_to_max_rate': 200,
+                 'num_to_test': 10,
+                 'min_rate': 100}
 
 """
 
@@ -215,17 +243,21 @@ settings = {'dataset_path': '',
             'evaluateANN': True,
             'normalize': True,
             'percentile': 99,
-            'first_layer_num': 0,
             'overwrite': True,
             'convert': True,
             'simulate': True,
             'verbose': 3,
             'v_thresh': 1,
             'tau_refrac': 0,
+            'softmax_clockrate': 300,
             'simulator': 'INI',
             'duration': 200,
             'dt': 1,
-            'input_rate': 1000}
+            'poisson_input': False,
+            'input_rate': 1000,
+            'diff_to_max_rate': 200,
+            'timestep_fraction': 10,
+            'min_rate': 100}
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,
@@ -309,8 +341,6 @@ def update_setup(s=None):
     # Specify filenames for models at different stages of the conversion.
     s['filename_snn'] = 'snn_' + s['filename']
     s['filename_snn_exported'] = s['filename_snn'] + '_' + s['simulator']
-
-    s['poisson_input'] = False
 
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)

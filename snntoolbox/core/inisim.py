@@ -26,7 +26,6 @@ from keras import backend as K
 from snntoolbox.config import settings
 
 rng = RandomStreams()
-epsilon = 0.2
 
 
 def floatX(X):
@@ -92,7 +91,8 @@ def softmax_activation(self, impulse, time, updates):
     new_mem = self.mem + masked_imp
     # Store spiking
     output_spikes, new_and_reset_mem = theano.ifelse.ifelse(
-        T.le(rng.uniform(), 300 * settings['dt'] / 1000),  # Ext. Poisson clock
+        T.le(rng.uniform(),
+             settings['softmax_clockrate'] * settings['dt'] / 1000),
         trigger_spike(new_mem), skip_spike(new_mem))  # Then and else condition
     # Store refractory. In case of a spike we are resetting all neurons, even
     # the ones that didn't spike. However, in the refractory period we only
@@ -216,9 +216,10 @@ class SpikeDense(Dense):
         # computed based on the same parameters.
         # Modify parameters if firing rate of layer too low
         self.fac = theano.ifelse.ifelse(
-            T.eq(time / settings['dt'] % 10, 0) *
-            T.gt(self.max_spikerate, 0.1) *
-            T.gt(1 / settings['dt'] - self.max_spikerate, epsilon),
+            T.eq(time / settings['dt'] % settings['timestep_fraction'], 0) *
+            T.gt(self.max_spikerate, settings['min_rate'] / 1000) *
+            T.gt(1 / settings['dt'] - self.max_spikerate,
+                 settings['diff_to_max_rate'] / 1000),
             1 / self.max_spikerate, 1.0)
         updates.append((self.W, self.W * self.fac))
         updates.append((self.b, self.b * self.fac))
@@ -252,9 +253,10 @@ class SpikeConv2DReLU(Convolution2D):
 
         # Modify parameters if firing rate of layer too low
         self.fac = theano.ifelse.ifelse(
-            T.eq(time / settings['dt'] % 10, 0) *
-            T.gt(self.max_spikerate, 0.1) *
-            T.gt(1 / settings['dt'] - self.max_spikerate, epsilon),
+            T.eq(time / settings['dt'] % settings['timestep_fraction'], 0) *
+            T.gt(self.max_spikerate, settings['min_rate'] / 1000) *
+            T.gt(1 / settings['dt'] - self.max_spikerate,
+                 settings['diff_to_max_rate'] / 1000),
             1 / (self.max_spikerate + 0.001), 1.0)
         updates.append((self.W, self.W * self.fac))
         updates.append((self.b, self.b * self.fac))

@@ -136,8 +136,8 @@ class SNNToolboxGUI():
         model_lib_frame.pack(**self.kwargs)
         tip = "The neural network library used to create the input model."
         ToolTip(model_lib_frame, text=tip, wraplength=750)
-        tk.Label(model_lib_frame, text="Model library", bg='white',
-                 font=self.header_font).pack(fill='both', expand=True)
+        tk.Label(model_lib_frame, text="Model library",
+                 bg='white').pack(fill='both', expand=True)
         model_lib_om = tk.OptionMenu(model_lib_frame,
                                      self.settings['model_lib'],
                                      *list(model_libs))
@@ -147,11 +147,12 @@ class SNNToolboxGUI():
         percentile_frame = tk.Frame(self.globalparams_frame, bg='white')
         percentile_frame.pack(**self.kwargs)
         self.percentile_label = tk.Label(percentile_frame, text="Percentile",
-                                         font=self.header_font, bg='white')
+                                         bg='white')
         self.percentile_label.pack(fill='both', expand=True)
         self.percentile_sb = tk.Spinbox(
             percentile_frame, bg='white', from_=0, to_=100, increment=0.001,
-            textvariable=self.settings['percentile'], width=10)
+            textvariable=self.settings['percentile'], width=10,
+            disabledbackground='#eee')
         self.percentile_sb.pack(fill='y', expand=True, ipady=5)
         tip = dedent("""\
               Use the activation value in the specified percentile for
@@ -159,36 +160,11 @@ class SNNToolboxGUI():
               Default: '99'.""")
         ToolTip(percentile_frame, text=tip, wraplength=700)
 
-        # First layer to convert
-        first_layer_num_frame = tk.Frame(self.globalparams_frame, bg='white')
-        first_layer_num_frame.pack(**self.kwargs)
-        self.first_layer_num_label = tk.Label(first_layer_num_frame,
-                                              text="First layer num",
-                                              font=self.header_font,
-                                              bg='white')
-        self.first_layer_num_label.pack(fill='both', expand=True)
-        self.first_layer_num_sb = tk.Spinbox(
-            first_layer_num_frame, bg='white', from_=0, to_=1000, increment=1,
-            textvariable=self.settings['first_layer_num'], width=10)
-        self.first_layer_num_sb.pack(fill='y', expand=True, ipady=5)
-        tip = dedent("""\
-              Set the number of the first layer that should be converted to
-              spiking. If 0 (default), the complete network is converted, and
-              the input data is transformed into Poisson spiketrains. If a
-              higher layer is set, the first layers will stay analog, and the
-              input data to the SNN is unchanged. The number given here should
-              not include an input layer (0 represents the first hidden layer).
-              Take activation, dropout and pooling layers into account. For
-              instance, if the network consists of [Input, Conv1, Activation,
-              Pooling, Dropout, Conv2, ...], and you want to start with the
-              second convolution layer, set this value to 4.""")
-        ToolTip(first_layer_num_frame, text=tip, wraplength=700)
-
         # Batch size
         batch_size_frame = tk.Frame(self.globalparams_frame, bg='white')
         batch_size_frame.pack(**self.kwargs)
-        tk.Label(batch_size_frame, text="Batch size", bg='white',
-                 font=self.header_font).pack(fill='both', expand=True)
+        tk.Label(batch_size_frame, text="Batch size",
+                 bg='white').pack(fill='both', expand=True)
         batch_size_sb = tk.Spinbox(batch_size_frame, bg='white',
                                    textvariable=self.settings['batch_size'],
                                    from_=1, to_=1e9, increment=1, width=10)
@@ -204,8 +180,8 @@ class SNNToolboxGUI():
         # Verbosity
         verbose_frame = tk.Frame(self.globalparams_frame, bg='white')
         verbose_frame.pack(**self.kwargs)
-        tk.Label(verbose_frame, text="Verbosity", bg='white',
-                 font=self.header_font).pack(fill='both', expand=True)
+        tk.Label(verbose_frame, text="Verbosity", bg='white').pack(fill='both',
+                                                                   expand=True)
         [tk.Radiobutton(verbose_frame, variable=self.settings['verbose'],
                         text=str(i), value=i, bg='white').pack(fill='both',
                                                                side='left',
@@ -225,8 +201,8 @@ class SNNToolboxGUI():
         # Set and display working directory
         path_frame = tk.Frame(self.globalparams_frame, bg='white')
         path_frame.pack(**self.kwargs)
-        tk.Button(path_frame, text="Set working dir",
-                  command=self.set_cwd, font=self.header_font).pack(side='top')
+        tk.Button(path_frame, text="Set working dir", font=self.header_font,
+                  command=self.set_cwd).pack(side='top')
         self.path_entry = tk.Entry(
             path_frame, textvariable=self.settings['path'], width=20,
             validate='focusout', bg='white',
@@ -245,8 +221,8 @@ class SNNToolboxGUI():
         # Specify filename base
         filename_frame = tk.Frame(self.globalparams_frame)
         filename_frame.pack(**self.kwargs)
-        tk.Label(filename_frame, text="Filename base:", bg='white',
-                 font=self.header_font).pack(fill='both', expand=True)
+        tk.Label(filename_frame, text="Filename base:", bg='white').pack(
+            fill='both', expand=True)
         self.filename_entry = tk.Entry(
             filename_frame, bg='white', textvariable=self.settings['filename'],
             width=20, validate='focusout',
@@ -451,6 +427,25 @@ class SNNToolboxGUI():
               Only relevant in pyNN-simulators.""")
         ToolTip(tau_syn_I_frame, text=tip, wraplength=750)
 
+        # Softmax clockrate
+        softmax_clockrate_frame = tk.Frame(self.cellparams_frame, bg='white')
+        softmax_clockrate_frame.pack(**self.kwargs)
+        self.softmax_clockrate_label = tk.Label(
+            softmax_clockrate_frame, text="Softmax clockrate", bg='white')
+        self.softmax_clockrate_label.pack(fill='both', expand=True)
+        self.softmax_clockrate_sb = tk.Spinbox(
+            softmax_clockrate_frame, from_=0, to_=10000, increment=1, width=10,
+            textvariable=self.settings['softmax_clockrate'], bg='white')
+        self.softmax_clockrate_sb.pack(fill='y', expand=True, ipady=5)
+        tip = dedent("""\
+              In our implementation of a spiking softmax activation function
+              we use an external Poisson clock to trigger calculating the
+              softmax of a layer. The 'softmax_clockrate' parameter sets the
+              firing rate in Hz of this external clock. Note that this rate is
+              limited by the maximum firing rate supported by the simulator
+              (given by the inverse time resolution 1000 * 1 / dt Hz).""")
+        ToolTip(softmax_clockrate_frame, text=tip, wraplength=700)
+
     def simparams_widgets(self):
         # Create a container for individual parameter widgets
         self.simparams_frame = tk.LabelFrame(self.main_container,
@@ -470,8 +465,8 @@ class SNNToolboxGUI():
         tip = dedent("""\
             Choose a simulator to run the converted spiking network with.""")
         ToolTip(simulator_frame, text=tip, wraplength=750)
-        tk.Label(simulator_frame, text="Simulator", bg='white',
-                 font=self.header_font).pack(fill='both', expand=True)
+        tk.Label(simulator_frame, text="Simulator", bg='white').pack(
+            fill='both', expand=True)
         simulator_om = tk.OptionMenu(simulator_frame,
                                      self.settings['simulator'],
                                      *list(simulators),
@@ -500,17 +495,96 @@ class SNNToolboxGUI():
         tip = "Runtime of simulation of one input in milliseconds."
         ToolTip(duration_frame, text=tip, wraplength=750)
 
-        # Maximum firing rate
+        # Poisson input
+        poisson_input_cb = tk.Checkbutton(
+            self.simparams_frame, text="Poisson input", bg='white',
+            variable=self.settings['poisson_input'], height=2, width=20,
+            command=self.toggle_poisson_input_state)
+        poisson_input_cb.pack(**self.kwargs)
+        tip = dedent("""\
+              If enabled, the input samples will be converted to Poisson
+              spiketrains. The probability for a input neuron to fire is
+              proportional to the analog value of the corresponding pixel, and
+              limited by the parameter 'input_rate' below. For instance,
+              with an 'input_rate' of 700, a fully-on pixel will elicit a
+              Poisson spiketrain of 700 Hz. Turn off for a less noisy
+              simulation.""")
+        ToolTip(poisson_input_cb, text=tip, wraplength=750)
+
+        # Maximum input firing rate
         input_rate_frame = tk.Frame(self.simparams_frame, bg='white')
         input_rate_frame.pack(**self.kwargs)
-        tk.Label(input_rate_frame, text="input_rate", bg='white').pack(
-            fill='both', expand=True)
-        input_rate_sb = tk.Spinbox(input_rate_frame,
-                                   textvariable=self.settings['input_rate'],
-                                   from_=1, to_=10000, increment=1, width=10)
-        input_rate_sb.pack(fill='y', expand=True, ipady=3)
-        tip = "Poisson spike rate in Hz for a fully-on pixel of input image."
+        self.input_rate_label = tk.Label(input_rate_frame, text="input_rate",
+                                         bg='white')
+        self.input_rate_label.pack(fill='both', expand=True)
+        self.input_rate_sb = tk.Spinbox(
+            input_rate_frame, textvariable=self.settings['input_rate'],
+            from_=1, to_=10000, increment=1, width=10,
+            disabledbackground='#eee')
+        self.input_rate_sb.pack(fill='y', expand=True, ipady=3)
+        tip = dedent("""\
+            Poisson spike rate in Hz for a fully-on pixel of input image. Only
+            relevant when 'Poisson input' checkbutton enabled. Note that the
+            input_rate is limited by the maximum firing rate supported by the
+            simulator (given by the inverse time resolution 1000 * 1 / dt Hz).
+            """)
         ToolTip(input_rate_frame, text=tip, wraplength=750)
+
+        # Difference to maximum firing rate
+        diff_to_max_rate_frame = tk.Frame(self.simparams_frame, bg='white')
+        diff_to_max_rate_frame.pack(**self.kwargs)
+        self.diff_to_max_rate_label = tk.Label(
+            diff_to_max_rate_frame, bg='white', text="diff_to_max_rate")
+        self.diff_to_max_rate_label.pack(fill='both', expand=True)
+        self.diff_to_max_rate_sb = tk.Spinbox(
+            diff_to_max_rate_frame, from_=0, to_=10000, increment=1, width=10,
+            textvariable=self.settings['diff_to_max_rate'])
+        self.diff_to_max_rate_sb.pack(fill='y', expand=True, ipady=3)
+        tip = dedent("""\
+            The converted spiking network performs best if the average firing
+            rates of each layer are not higher but also not much lower than the
+            maximum rate supported by the simulator (inverse time resolution).
+            Normalization eliminates saturation but introduces undersampling
+            (parameters are normalized with respect to the highest value in a
+            batch). To overcome this, the spikerates of each layer are
+            monitored during simulation. If they drop below the maximum firing
+            rate by more than 'diff to max rate', we divide the parameters of
+            the layer by its highest rate. Set the parameter in Hz.""")
+        ToolTip(diff_to_max_rate_frame, text=tip, wraplength=750)
+
+        # Timestep fraction
+        timestep_fraction_frame = tk.Frame(self.simparams_frame, bg='white')
+        timestep_fraction_frame.pack(**self.kwargs)
+        self.timestep_fraction_label = tk.Label(
+            timestep_fraction_frame, bg='white', text="timestep_fraction")
+        self.timestep_fraction_label.pack(fill='both', expand=True)
+        self.timestep_fraction_sb = tk.Spinbox(
+            timestep_fraction_frame, from_=0, to_=1000, increment=1, width=10,
+            textvariable=self.settings['timestep_fraction'])
+        self.timestep_fraction_sb.pack(fill='y', expand=True, ipady=3)
+        tip = dedent("""\
+            If set to 10 (default), the parameter modification mechanism
+            described in 'diff_to_max_rate' will be performed at every 10th
+            timestep.""")
+        ToolTip(timestep_fraction_frame, text=tip, wraplength=750)
+
+        # Minimum firing rate
+        min_rate_frame = tk.Frame(self.simparams_frame, bg='white')
+        min_rate_frame.pack(**self.kwargs)
+        self.min_rate_label = tk.Label(
+            min_rate_frame, bg='white', text="min_rate")
+        self.min_rate_label.pack(fill='both', expand=True)
+        self.min_rate_sb = tk.Spinbox(
+            min_rate_frame, from_=0, to_=10000, increment=1, width=10,
+            textvariable=self.settings['min_rate'])
+        self.min_rate_sb.pack(fill='y', expand=True, ipady=3)
+        tip = dedent("""\
+            Minimum spikerate in Hz. When The firing rates of a layer are
+            below this value, the weights will NOT be modified in the feedback
+            mechanism described in 'diff_to_max_rate'. This is useful in the
+            beginning of a simulation, when higher layers need some time to
+            integrate up a sufficiently high membrane potential.""")
+        ToolTip(min_rate_frame, text=tip, wraplength=750)
 
         # Delay
         delay_frame = tk.Frame(self.simparams_frame, bg='white')
@@ -526,8 +600,7 @@ class SNNToolboxGUI():
         self.delay_sb.pack(fill='y', expand=True, ipady=3)
         tip = dedent("""\
               Delay in milliseconds. Must be equal to or greater than the
-              resolution.
-              Only relevant in pyNN-simulators.""")
+              resolution. Only relevant in pyNN-simulators.""")
         ToolTip(delay_frame, text=tip, wraplength=750)
 
         # Number of samples to test
@@ -543,8 +616,7 @@ class SNNToolboxGUI():
             increment=1, width=10, disabledbackground='#eee')
         self.num_to_test_sb.pack(fill='y', expand=True, ipady=3)
         tip = dedent("""\
-              Number of samples to test.
-              Only relevant in pyNN-simulators.""")
+              Number of samples to test. Only relevant in pyNN-simulators.""")
         ToolTip(num_to_test_frame, text=tip, wraplength=750)
 
         # Test specific samples
@@ -858,7 +930,6 @@ class SNNToolboxGUI():
                          'evaluateANN': tk.BooleanVar(),
                          'normalize': tk.BooleanVar(),
                          'percentile': tk.DoubleVar(),
-                         'first_layer_num': tk.IntVar(),
                          'convert': tk.BooleanVar(),
                          'simulate': tk.BooleanVar(),
                          'overwrite': tk.BooleanVar(),
@@ -879,10 +950,15 @@ class SNNToolboxGUI():
                          'tau_m': tk.IntVar(),
                          'tau_syn_E': tk.DoubleVar(),
                          'tau_syn_I': tk.DoubleVar(),
+                         'softmax_clockrate': tk.IntVar(),
                          'dt': tk.DoubleVar(),
                          'simulator': tk.StringVar(),
                          'duration': tk.IntVar(),
+                         'poisson_input': tk.BooleanVar(),
                          'input_rate': tk.IntVar(),
+                         'diff_to_max_rate': tk.IntVar(),
+                         'timestep_fraction': tk.IntVar(),
+                         'min_rate': tk.IntVar(),
                          'delay': tk.IntVar(),
                          'num_to_test': tk.IntVar(),
                          'runlabel': tk.StringVar(),
@@ -901,6 +977,7 @@ class SNNToolboxGUI():
         self.start_state = tk.StringVar(value='normal')
         self.stop_state = tk.StringVar(value='normal')
         self.percentile_state = tk.StringVar()
+        self.poisson_input_state = tk.StringVar()
         self.console_output = tk.StringVar()
         self.gui_log = tk.StringVar()
 
@@ -1120,6 +1197,14 @@ class SNNToolboxGUI():
             self.percentile_state.set('disabled')
         self.percentile_label.configure(state=self.percentile_state.get())
         self.percentile_sb.configure(state=self.percentile_state.get())
+
+    def toggle_poisson_input_state(self):
+        if self.settings['poisson_input'].get():
+            self.poisson_input_state.set('normal')
+        else:
+            self.poisson_input_state.set('disabled')
+        self.input_rate_label.configure(state=self.poisson_input_state.get())
+        self.input_rate_sb.configure(state=self.poisson_input_state.get())
 
 
 def main():

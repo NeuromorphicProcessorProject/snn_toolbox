@@ -119,11 +119,7 @@ class SNN_compiled():
         self.labels = ['InputLayer']
 
     def add_input_layer(self):
-        if settings['first_layer_num'] == 0:
-            input_shape = list(self.ann['input_shape'])
-        else:
-            i = settings['first_layer_num'] - 1
-            input_shape = list(self.ann['layers'][i]['output_shape'])
+        input_shape = list(self.ann['input_shape'])
         self.layers = [self.sim.PoissonGroup(np.prod(input_shape[1:]),
                                              rates=0*self.sim.Hz,
                                              dt=settings['dt']*self.sim.ms)]
@@ -140,8 +136,6 @@ class SNN_compiled():
         # Iterate over hidden layers to create spiking neurons and store
         # connections.
         for (layer_num, layer) in enumerate(self.ann['layers']):
-            if layer_num < settings['first_layer_num']:
-                continue
             if layer['layer_type'] in {'Dense', 'Convolution2D',
                                        'MaxPooling2D', 'AveragePooling2D'}:
                 echo("Building layer: {}\n".format(layer['label']))
