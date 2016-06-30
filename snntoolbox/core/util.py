@@ -60,26 +60,36 @@ def get_range(start=0.0, stop=1.0, num=5, method='linear'):
         return np.random.random_sample(num) * (stop-start) + start
 
 
-def print_description(snn=None):
+def print_description(snn=None, log=True):
     """
-    Print a summary of the test run, parameters, and network.
+    Print a summary of the test run, parameters, and network. If ``log==True``,
+    the output is written as ``settings.txt`` file to the folder given by
+    ``settings['log_dir_of_current_run']``.
 
     """
 
-    print('\n')
-    print("SUMMARY SETUP")
-    print("=============\n")
-    print("PARAMETERS")
-    print("----------\n")
-    print(settings)
-    print('\n')
+    if log:
+        import os
+        f = open(os.path.join(settings['log_dir_of_current_run'],
+                              'settings.txt'), 'w')
+    else:
+        import sys
+        f = sys.stdout
+
+    print('\n', file=f)
+    print("SUMMARY SETUP", file=f)
+    print("=============\n", file=f)
+    print("PARAMETERS", file=f)
+    print("----------\n", file=f)
+    print(settings, file=f)
+    print('\n', file=f)
     if snn is not None:
-        print("NETWORK")
-        print("-------\n")
-        print(snn.get_config())
-        print('\n')
-    print("END OF SUMMARY")
-    print('\n')
+        print("NETWORK", file=f)
+        print("-------\n", file=f)
+        print(snn.get_config(), file=f)
+        print('\n', file=f)
+    print("END OF SUMMARY", file=f)
+    print('\n', file=f)
 
 
 def spiketrains_to_rates(spiketrains_batch):
@@ -252,8 +262,7 @@ def get_activations_batch(ann, X_batch):
     activations_batch = []
     # Loop through all layers, looking for activation layers
     for idx in range(len(ann.layers)):
-        if idx < settings['first_layer_num'] \
-                or 'get_activ' not in ann.layers[idx].keys():
+        if 'get_activ' not in ann.layers[idx].keys():
             continue
         i = idx if 'Pooling' in ann.layers[idx]['label'] else idx-1
         activations_batch.append((ann.layers[idx]['get_activ'](X_batch),

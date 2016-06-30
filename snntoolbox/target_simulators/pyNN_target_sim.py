@@ -616,7 +616,7 @@ class SNN_compiled():
             filename = settings['filename_snn_exported']
 
         self.layers = self.load_assembly(path, filename)
-        for i in range(settings['first_layer_num'], len(self.ann['layers'])):
+        for i in range(len(self.ann['layers'])):
             if 'get_activ' in self.ann['layers'][i].keys():
                 idx = i if 'Pool' in self.ann['labels'][i] else i-1
                 self.output_shapes.append(

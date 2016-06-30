@@ -176,7 +176,6 @@ Default values
                     'evaluateANN': True,
                     'normalize': True,
                     'percentile': 99,
-                    'first_layer_num': 0,
                     'convert': True,
                     'overwrite': True,
                     'simulate': True,

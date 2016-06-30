@@ -310,8 +310,13 @@ class SNN_compiled():
                 echo('\n')
                 echo("Batch {} of {} completed ({:.1%})\n".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
-                echo("Moving average accuracy: {:.2%}.\n".format(
-                      np.sum(guesses[:max_idx] == truth[:max_idx]) / max_idx))
+                avg = np.sum(guesses[:max_idx] == truth[:max_idx]) / max_idx
+                echo("Moving average accuracy: {:.2%}.\n".format(avg))
+                with open(os.path.join(settings['log_dir_of_current_run'],
+                                       'accuracy.txt'), 'w') as f:
+                    f.write("Moving average accuracy after batch " +
+                            "{} of {}: {:.2%}.\n".format(batch_idx + 1,
+                                                         num_batches, avg))
                 if batch_idx == 0 and settings['verbose'] > 2:
                     plot_confusion_matrix(truth[:max_idx], guesses[:max_idx],
                                           settings['log_dir_of_current_run'])
