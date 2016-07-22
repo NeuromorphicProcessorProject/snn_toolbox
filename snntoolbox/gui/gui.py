@@ -76,6 +76,7 @@ class SNNToolboxGUI():
         self.initialized = True
 
     def define_style(self):
+        """Defien apperance style."""
         self.padx = 10
         self.pady = 5
         fontFamily = 'clearlyu devagari'
@@ -88,6 +89,7 @@ class SNNToolboxGUI():
                        'padx': self.padx, 'pady': self.pady}
 
     def initialize_thread(self):
+        """separate thread for conversion process."""
         self.res_queue = Queue()
         # Create thread for performing the conversion in the background.
         # Make it a daemon so it is killed when the main application is closed.
@@ -97,6 +99,7 @@ class SNNToolboxGUI():
                                                daemon=True)
 
     def globalparams_widgets(self):
+        """Global parameters widgets."""
         # Create a container for individual parameter widgets
         self.globalparams_frame = tk.LabelFrame(self.main_container,
                                                 labelanchor='nw',
@@ -244,7 +247,7 @@ class SNNToolboxGUI():
         ToolTip(filename_frame, text=tip, wraplength=750)
 
     def cellparams_widgets(self):
-        # Create a container for individual parameter widgets
+        """Create a container for individual parameter widgets."""
         self.cellparams_frame = tk.LabelFrame(
             self.main_container, labelanchor='nw', text="Cell\n parameters",
             relief='raised', borderwidth='3', bg='white')
@@ -453,7 +456,7 @@ class SNNToolboxGUI():
         ToolTip(softmax_clockrate_frame, text=tip, wraplength=700)
 
     def simparams_widgets(self):
-        # Create a container for individual parameter widgets
+        """Create a container for individual parameter widgets."""
         self.simparams_frame = tk.LabelFrame(self.main_container,
                                              labelanchor='nw',
                                              text="Simulation\n parameters",
@@ -657,6 +660,7 @@ class SNNToolboxGUI():
             resulting plots will be saved in <cwd>/log/gui/<runlabel>.""")
 
     def tools_widgets(self):
+        """create tools widgets."""
         self.tools_frame = tk.LabelFrame(self.main_container, labelanchor='nw',
                                          text='Tools', relief='raised',
                                          borderwidth='3', bg='white')
@@ -743,6 +747,7 @@ class SNNToolboxGUI():
         ToolTip(self.stop_processing_bt, text=tip, wraplength=750)
 
     def graph_widgets(self):
+        """Create graph widgets."""
         # Create a container for buttons that display plots for individual
         # layers.
         if hasattr(self, 'graph_frame'):
@@ -759,6 +764,7 @@ class SNNToolboxGUI():
             self.select_layer_rb()
 
     def select_plots_dir_rb(self):
+        """select plots directory."""
         self.plot_dir_frame = tk.LabelFrame(self.graph_frame, labelanchor='nw',
                                             text="Select dir", relief='raised',
                                             borderwidth='3', bg='white')
@@ -785,6 +791,7 @@ class SNNToolboxGUI():
         ToolTip(open_new_cb, text=tip, wraplength=750)
 
     def select_layer_rb(self):
+        """select layer."""
         if hasattr(self, 'layer_frame'):
             self.layer_frame.pack_forget()
             self.layer_frame.destroy()
@@ -805,6 +812,7 @@ class SNNToolboxGUI():
              for name in layer_dirs]
 
     def draw_canvas(self):
+        """draw canvas figure."""
         # Create figure with subplots, a canvas to hold them, and add
         # matplotlib navigation toolbar.
         if self.layer_to_plot.get() is '':
@@ -836,11 +844,13 @@ class SNNToolboxGUI():
         self.toolbar = NavigationToolbar2TkAgg(self.canvas, graph_widget)
 
     def close_window(self):
+        """close window function."""
         plt.close()
         self.plot_container.destroy()
         self.is_plot_container_destroyed = True
 
     def display_graphs(self):
+        """Display graphs."""
         self.draw_canvas()
         if self.layer_to_plot.get() is '':
             msg = ("Failed to load images. Please select a layer to plot, and "
@@ -891,6 +901,7 @@ class SNNToolboxGUI():
         self.canvas._tkcanvas.pack(side='left', fill='both', expand=True)
 
     def top_level_menu(self):
+        """top level menu settings."""
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
         filemenu = tk.Menu(menubar, tearoff=0)
@@ -910,10 +921,12 @@ class SNNToolboxGUI():
         menubar.add_cascade(label="Help", menu=helpmenu)
 
     def documentation(self):
+        """open documentation."""
         webbrowser.open(os.path.join(sys.exec_prefix, 'docs',
                                      'Documentation.html'))
 
     def about(self):
+        """about message."""
         msg = ("This is a collection of tools to convert analog neural "
                "networks to fast and high-performing spiking nets.\n\n"
                "Developed at the Institute of Neuroinformatics, \n"
@@ -925,12 +938,14 @@ class SNNToolboxGUI():
         messagebox.showinfo(title="About SNN Toolbox", message=msg)
 
     def quit_toolbox(self):
+        """quit toolbox function."""
         self.store_last_settings = True
         self.save_settings()
         self.root.destroy()
         self.root.quit()
 
     def declare_parameter_vars(self):
+        """preferenece collection."""
         # These will be written to disk as preferences.
         self.settings = {'dataset_path': tk.StringVar(),
                          'model_lib': tk.StringVar(),
@@ -989,17 +1004,20 @@ class SNNToolboxGUI():
         self.gui_log = tk.StringVar()
 
     def restore_default_params(self):
+        """Restor default parameters."""
         defaults = settings
         defaults.update(pyNN_settings)
         self.set_preferences(defaults)
         self.toggle_state_pyNN(self.settings['simulator'].get())
 
     def set_preferences(self, p):
+        """set perferences."""
         [self.settings[key].set(p[key]) for key in p]
         if self.settings['path'] == '':
             self.settings['path'] = os.getcwd()
 
     def save_settings(self):
+        """save current settings."""
         s = {key: self.settings[key].get() for key in self.settings}
 
         if self.store_last_settings:
@@ -1018,6 +1036,7 @@ class SNNToolboxGUI():
                 f.write(json.dumps(s))
 
     def load_settings(self):
+        """Load a perferences settings."""
         if self.restore_last_pref:
             self.restore_last_pref = False
             if not os.path.isdir(self.default_path_to_pref):
@@ -1035,6 +1054,7 @@ class SNNToolboxGUI():
         self.set_preferences(s)
 
     def start_processing(self):
+        """start processing."""
         if self.settings['filename'].get() == '':
             messagebox.showwarning(title="Warning",
                                    message="Please specify a filename base.")
@@ -1051,6 +1071,7 @@ class SNNToolboxGUI():
         self.update()
 
     def stop_processing(self):
+        """stop processing."""
         if self.process_thread.is_alive():
             self.res_queue.put('stop')
         self.toggle_stop_state(True)
@@ -1066,6 +1087,7 @@ class SNNToolboxGUI():
             self.toggle_stop_state(False)
 
     def check_sample(self, P):
+        """Check samples."""
         if not self.initialized:
             return True
         elif P == '':
@@ -1081,6 +1103,7 @@ class SNNToolboxGUI():
             return True
 
     def check_file(self, P):
+        """Check files."""
         if not os.path.exists(self.settings['path'].get()) or \
                 not any(P in fname for fname in
                         os.listdir(self.settings['path'].get())):
@@ -1093,6 +1116,7 @@ class SNNToolboxGUI():
             return True
 
     def check_path(self, P):
+        """check path."""
         if not self.initialized:
             result = True
         elif not os.path.exists(P):
@@ -1127,6 +1151,7 @@ class SNNToolboxGUI():
         return result
 
     def check_runlabel(self, P):
+        """check runlabel."""
         if self.initialized:
             # Set path to plots for the current simulation run
             self.settings['log_dir_of_current_run'].set(
@@ -1136,17 +1161,20 @@ class SNNToolboxGUI():
                 os.makedirs(self.settings['log_dir_of_current_run'].get())
 
     def set_cwd(self):
+        """set working directory."""
         P = filedialog.askdirectory(title="Set working directory",
                                     initialdir=snntoolbox._dir)
         self.check_path(P)
 
     def set_dataset(self):
+        """set dataset to load."""
         self.settings['dataset_path'].set(filedialog.askopenfilename(
             title="Choose dataset to load", initialdir=snntoolbox._dir,
             defaultextension='npy', multiple=False,
             filetypes=[('all files', '.*'), ('numpy', '.npy')]))
 
     def check_dataset(self, P):
+        """Check datset."""
         if os.path.isfile(P):
             return True
         else:
@@ -1163,6 +1191,7 @@ class SNNToolboxGUI():
             self.path_entry.xview_moveto(howMany)
 
     def toggle_state_pyNN(self, val):
+        """toogle state for pyNN."""
         if val not in simulators_pyNN:
             self.settings['state_pyNN'].set('disabled')
         else:
@@ -1174,6 +1203,7 @@ class SNNToolboxGUI():
                 state=self.settings['state_pyNN'].get())
 
     def toggle_start_state(self, val):
+        """toggle start state."""
         if val:
             self.start_state.set('disabled')
         else:
@@ -1181,6 +1211,7 @@ class SNNToolboxGUI():
         self.start_processing_bt.configure(state=self.start_state.get())
 
     def toggle_stop_state(self, val):
+        """toggle stop state."""
         if val:
             self.stop_state.set('disabled')
         else:
@@ -1188,6 +1219,7 @@ class SNNToolboxGUI():
         self.stop_processing_bt.configure(state=self.stop_state.get())
 
     def toggle_num_to_test_state(self, val):
+        """toggle number to test state."""
         if val and not self.settings['state_pyNN'].get() == 'disabled':
             self.settings['state_num_to_test'].set('normal')
         else:
@@ -1198,6 +1230,7 @@ class SNNToolboxGUI():
             state=self.settings['state_num_to_test'].get())
 
     def toggle_percentile_state(self):
+        """toogle percentile state."""
         if self.settings['normalize'].get():
             self.percentile_state.set('normal')
         else:
@@ -1206,6 +1239,7 @@ class SNNToolboxGUI():
         self.percentile_sb.configure(state=self.percentile_state.get())
 
     def toggle_poisson_input_state(self):
+        """Toggle poisson input."""
         if self.settings['poisson_input'].get():
             self.poisson_input_state.set('normal')
         else:
@@ -1215,6 +1249,7 @@ class SNNToolboxGUI():
 
 
 def main():
+    """Main function of the GUI."""
     root = tk.Tk()
     root.title("SNN Toolbox")
     app = SNNToolboxGUI(root)
