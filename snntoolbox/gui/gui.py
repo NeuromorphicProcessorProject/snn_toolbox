@@ -40,7 +40,9 @@ from snntoolbox.core.pipeline import test_full
 
 if sys.version_info[0] < 3:
     import Tkinter as tk
-    from Tkinter import filedialog, messagebox, font
+    import tkFileDialog as filedialog
+    import tkMessageBox as messagebox
+    import tkFont as font
     from Queue import Queue
 else:
     import tkinter as tk
@@ -49,7 +51,10 @@ else:
 
 
 class SNNToolboxGUI():
+    """Main Class of SNN Toolbox."""
+
     def __init__(self, root):
+        """init method of SNNToolboxGUI."""
         self.initialized = False
         self.root = root
         self.default_path_to_pref = os.path.join(snntoolbox._dir,
