@@ -1012,9 +1012,7 @@ class SNNToolboxGUI():
 
     def set_preferences(self, p):
         """set perferences."""
-        # [self.settings[key].set(p[key]) for key in p]
-        for key in p:
-            self.settings[key] = p[key]
+        [self.settings[key].set(p[key]) for key in p]
 
         if self.settings['path'] == '':
             self.settings['path'] = os.getcwd()
