@@ -1012,7 +1012,10 @@ class SNNToolboxGUI():
 
     def set_preferences(self, p):
         """set perferences."""
-        [self.settings[key].set(p[key]) for key in p]
+        # [self.settings[key].set(p[key]) for key in p]
+        for key in p:
+            self.settings[key] = p[key]
+
         if self.settings['path'] == '':
             self.settings['path'] = os.getcwd()
 
@@ -1028,7 +1031,7 @@ class SNNToolboxGUI():
                 f.write(json.dumps(s))
             self.store_last_settings = False
         else:
-            path_to_pref = tk.filedialog.asksaveasfilename(
+            path_to_pref = filedialog.asksaveasfilename(
                 defaultextension='.json', filetypes=[("json files", '*.json')],
                 initialdir=self.default_path_to_pref,
                 title="Choose filename")
