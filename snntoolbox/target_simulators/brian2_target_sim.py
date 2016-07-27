@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+"""Building SNNs using Brian2.
 
 The modules in ``target_simulators`` package allow building a spiking network
 and exporting it for use in a spiking simulator.
@@ -30,8 +30,9 @@ standard_library.install_aliases()
 
 class SNN_compiled():
     """
-    Class to hold the compiled spiking neural network, ready for testing in a
-    spiking simulator.
+    Class to hold the compiled spiking neural network.
+
+    ready for testing in a spiking simulator.
 
     Parameters
     ----------
@@ -107,6 +108,7 @@ class SNN_compiled():
     """
 
     def __init__(self, ann):
+        """Init function."""
         self.ann = ann
         self.sim = initialize_simulator()
         self.add_input_layer()
@@ -119,17 +121,14 @@ class SNN_compiled():
         self.labels = ['InputLayer']
 
     def add_input_layer(self):
+        """Configure a input layer."""
         input_shape = list(self.ann['input_shape'])
         self.layers = [self.sim.PoissonGroup(np.prod(input_shape[1:]),
                                              rates=0*self.sim.Hz,
                                              dt=settings['dt']*self.sim.ms)]
 
     def build(self):
-        """
-        Compile a spiking neural network to prepare for simulation with Brian2.
-
-        """
-
+        """Compile a SNN to prepare for simulation with Brian2."""
         echo('\n')
         echo("Compiling spiking network...\n")
 
@@ -161,6 +160,7 @@ class SNN_compiled():
         self.store()
 
     def add_layer(self, layer):
+        """Configure intermediate layer."""
         self.labels.append(layer['label'])
         self.layers.append(self.sim.NeuronGroup(
             np.prod(layer['output_shape'][1:]), model=self.eqs,
@@ -176,11 +176,13 @@ class SNN_compiled():
                                                             'v', record=True))
 
     def build_dense(self, layer):
+        """Build dense layer."""
         weights = layer['parameters'][0]  # [W, b][0]
         self.connections[-1].connect(True)
         self.connections[-1].w = weights.flatten() * self.sim.volt
 
     def build_convolution(self, layer):
+        """Build convolution layer."""
         weights = layer['parameters'][0]  # [W, b][0]
         nx = layer['input_shape'][3]  # Width of feature map
         ny = layer['input_shape'][2]  # Hight of feature map
@@ -227,6 +229,7 @@ class SNN_compiled():
                  (weights.shape[0] * weights.shape[1])))
 
     def build_pooling(self, layer):
+        """Build for pooling method."""
         if layer['layer_type'] == 'MaxPooling2D':
             echo("WARNING: Layer type 'MaxPooling' not supported yet. " +
                  "Falling back on 'AveragePooling'.\n")
@@ -250,11 +253,13 @@ class SNN_compiled():
         self.connections[-1].w = self.sim.volt / (dx * dy)
 
     def store(self):
+        """Store network by creating Network object."""
         self.snn = self.sim.Network(self.layers, self.connections,
                                     self.spikemonitors, self.statemonitors)
 
     def run(self, snn_precomp, X_test, Y_test):
-        """
+        """Simulate a spiking network with IF units and Poisson input in pyNN.
+
         Simulate a spiking network with IF units and Poisson input in pyNN,
         using a simulator like Brian, NEST, NEURON, etc.
 
@@ -292,9 +297,7 @@ class SNN_compiled():
         total_acc : float
             Number of correctly classified samples divided by total number of
             test samples.
-
         """
-
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
 
         # Load input layer
@@ -374,11 +377,12 @@ class SNN_compiled():
         return total_acc
 
     def end_sim(self):
-        """ Clean up after simulation. """
+        """Clean up after simulation."""
         pass
 
     def collect_plot_results(self, layers, output_shapes, ann, X_batch, idx=0):
-        """
+        """Collect spiketrains of all ``layers`` of a net.
+
         Collect spiketrains of all ``layers`` of a net from one simulation run,
         and plot results.
 
@@ -400,7 +404,6 @@ class SNN_compiled():
         all layers are flattened).
 
         """
-
         from snntoolbox.io_utils.plotting import output_graphs, plot_potential
 
         # Collect spiketrains of all layers, for the last test sample.
