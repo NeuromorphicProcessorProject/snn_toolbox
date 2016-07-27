@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-INI spiking neuron simulator
+"""INI spiking neuron simulator.
 
 A collection of helper functions, including spiking layer classes derived from
 Keras layers, which were used to implement our own IF spiking simulator.
@@ -21,7 +20,8 @@ import theano.tensor as T
 from theano.tensor.signal import pool
 from theano.tensor.shared_randomstreams import RandomStreams
 from keras.layers.core import Dense, Flatten
-from keras.layers.convolutional import AveragePooling2D, Convolution2D
+from keras.layers.convolutional import AveragePooling2D, MaxPooling2D
+from keras.layers.convolutional import Convolution2D
 from keras import backend as K
 from snntoolbox.config import settings
 
@@ -29,18 +29,22 @@ rng = RandomStreams()
 
 
 def floatX(X):
+    """Return array in floatX settings of Theano."""
     return [np.asarray(x, dtype=theano.config.floatX) for x in X]
 
 
 def sharedX(X, dtype=theano.config.floatX, name=None):
+    """Make array as shared array."""
     return theano.shared(np.asarray(X, dtype=dtype), name=name)
 
 
 def shared_zeros(shape, dtype=theano.config.floatX, name=None):
+    """Make shared 0s array."""
     return sharedX(np.zeros(shape), dtype=dtype, name=name)
 
 
 def on_gpu():
+    """Check if running on GPU board."""
     return theano.config.device[:3] == 'gpu'
 
 if on_gpu():
@@ -48,6 +52,7 @@ if on_gpu():
 
 
 def update_neurons(self, impulse, time, updates):
+    """update neurons according to activation function."""
     if 'activation' in self.get_config() and \
             self.get_config()['activation'] == 'softmax':
         output_spikes = softmax_activation(self, impulse, time, updates)
@@ -61,6 +66,7 @@ def update_neurons(self, impulse, time, updates):
 
 
 def linear_activation(self, impulse, time, updates):
+    """Linear activation."""
     # Destroy impulse if in refractory period
     masked_imp = T.set_subtensor(
         impulse[(self.refrac_until > time).nonzero()], 0.)
@@ -84,6 +90,7 @@ def linear_activation(self, impulse, time, updates):
 
 
 def softmax_activation(self, impulse, time, updates):
+    """Softmax activation."""
     # Destroy impulse if in refractory period
     masked_imp = T.set_subtensor(
         impulse[(self.refrac_until > time).nonzero()], 0.)
@@ -105,6 +112,7 @@ def softmax_activation(self, impulse, time, updates):
 
 
 def trigger_spike(new_mem):
+    """Trigger spike."""
     activ = T.nnet.softmax(new_mem)
     max_activ = T.max(activ, axis=1, keepdims=True)
     output_spikes = T.eq(activ, max_activ).astype('float32')
@@ -112,10 +120,12 @@ def trigger_spike(new_mem):
 
 
 def skip_spike(new_mem):
+    """Skip spike."""
     return T.zeros_like(new_mem), new_mem
 
 
 def reset(self):
+    """Reset."""
     if self.inbound_nodes[0].inbound_layers:
         reset(self.inbound_nodes[0].inbound_layers[0])
     self.mem.set_value(floatX(np.zeros(self.output_shape)))
@@ -126,6 +136,7 @@ def reset(self):
 
 
 def get_input(self):
+    """Get input."""
     if self.inbound_nodes[0].inbound_layers:
         if 'input' in self.inbound_nodes[0].inbound_layers[0].name:
             previous_output = self.input
@@ -138,6 +149,7 @@ def get_input(self):
 
 
 def get_time(self):
+    """Get time."""
     if hasattr(self, 'time_var'):
         return self.time_var
     elif self.inbound_nodes[0].inbound_layers:
@@ -147,6 +159,7 @@ def get_time(self):
 
 
 def get_updates(self):
+    """Get updates."""
     if self.inbound_nodes[0].inbound_layers:
         return self.inbound_nodes[0].inbound_layers[0].updates
     else:
@@ -154,6 +167,7 @@ def get_updates(self):
 
 
 def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
+    """Init neurons."""
     # The neurons in the spiking layer cannot be initialized until the layer
     # has been initialized and connected to the network. Otherwise
     # 'output_shape' is not known (obtained from previous layer), and
@@ -166,6 +180,7 @@ def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
 
 
 def init_layer(self, layer, v_thresh, tau_refrac):
+    """init layer."""
     layer.v_thresh = v_thresh
     layer.tau_refrac = tau_refrac
     layer.refrac_until = shared_zeros(self.output_shape)
@@ -182,7 +197,10 @@ def init_layer(self, layer, v_thresh, tau_refrac):
 
 
 class SpikeFlatten(Flatten):
+    """Spike flatten layer."""
+
     def __init__(self, label=None, **kwargs):
+        """Init function."""
         super().__init__(**kwargs)
         if label is not None:
             self.label = label
@@ -190,6 +208,7 @@ class SpikeFlatten(Flatten):
             self.label = self.name
 
     def get_output(self, train=False):
+        """Get output."""
         # Recurse
         inp, time, updates = get_input(self)
         self.updates = updates
@@ -198,8 +217,13 @@ class SpikeFlatten(Flatten):
 
 
 class SpikeDense(Dense):
-    """ batch_size x input_shape x out_shape """
+    """Spike Dense layer.
+
+    batch_size x input_shape x out_shape
+    """
+
     def __init__(self, output_dim, weights=None, label=None, **kwargs):
+        """Init function."""
         super().__init__(output_dim, weights=weights, **kwargs)
         if label is not None:
             self.label = label
@@ -207,6 +231,7 @@ class SpikeDense(Dense):
             self.label = self.name
 
     def get_output(self, train=False):
+        """Get output."""
         # Recurse
         inp, time, updates = get_input(self)
 
@@ -233,10 +258,15 @@ class SpikeDense(Dense):
 
 
 class SpikeConv2DReLU(Convolution2D):
-    """ batch_size x input_shape x out_shape """
+    """Spike 2D Convolution relu.
+
+    batch_size x input_shape x out_shape
+    """
+
     def __init__(self, nb_filter, nb_row, nb_col, weights=None,
                  border_mode='valid', subsample=(1, 1), label=None,
                  filter_flip=True, **kwargs):
+        """Init function."""
         super().__init__(nb_filter, nb_row, nb_col, weights=weights,
                          border_mode=border_mode, subsample=subsample,
                          **kwargs)
@@ -247,6 +277,7 @@ class SpikeConv2DReLU(Convolution2D):
             self.label = self.name
 
     def get_output(self, train=False):
+        """Get output."""
         # Recurse
         inp, time, updates = get_input(self)
 
@@ -296,9 +327,14 @@ class SpikeConv2DReLU(Convolution2D):
 
 
 class AvgPool2DReLU(AveragePooling2D):
-    """ batch_size x input_shape x out_shape """
+    """Average Pooling ReLU.
+
+    batch_size x input_shape x out_shape.
+    """
+
     def __init__(self, pool_size=(2, 2), strides=None, ignore_border=True,
                  label=None, **kwargs):
+        """Init function."""
         self.ignore_border = ignore_border
         super().__init__(pool_size=pool_size, strides=strides)
         if label is not None:
@@ -308,7 +344,7 @@ class AvgPool2DReLU(AveragePooling2D):
             self.label = self.name
 
     def get_output(self, train=False):
-
+        """Get Output."""
         # Recurse
         inp, time, updates = get_input(self)
 
@@ -322,7 +358,40 @@ class AvgPool2DReLU(AveragePooling2D):
         return T.cast(output_spikes, 'float32')
 
 
+class MaxPool2DReLU(MaxPooling2D):
+    """Max Pooling ReLU.
+
+    batch_size x input_shape x out_shape.
+    """
+
+    def __init__(self, pool_size=(2, 2), strides=None, ignore_border=True,
+                 label=None, **kwargs):
+        """Init function."""
+        self.ignore_border = ignore_border
+        super().__init__(pool_size=pool_size, strides=strides)
+        if label is not None:
+            self.label = label
+            self.name = label
+        else:
+            self.label = self.name
+
+    def get_output(self, train=False):
+        """Get Output."""
+        # Recurse
+        inp, time, updates = get_input(self)
+
+        # CALCULATE SYNAPTIC SUMMED INPUT
+        self.impulse = pool.pool_2d(inp, ds=self.pool_size, st=self.strides,
+                                    ignore_border=self.ignore_border,
+                                    mode='max')
+
+        output_spikes = update_neurons(self, self.impulse, time, updates)
+        self.updates = updates
+        return T.cast(output_spikes, 'float32')
+
+
 custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeDense': SpikeDense,
                  'SpikeConv2DReLU': SpikeConv2DReLU,
-                 'AvgPool2DReLU': AvgPool2DReLU}
+                 'AvgPool2DReLU': AvgPool2DReLU,
+                 'MaxPool2DReLU': MaxPool2DReLU}

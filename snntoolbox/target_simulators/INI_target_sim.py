@@ -130,7 +130,11 @@ class SNN_compiled():
                     self.sim.floatX(layer['parameters']), **kwargs))
             elif layer['layer_type'] == 'Flatten':
                 self.snn.add(self.sim.SpikeFlatten(**kwargs))
-            elif layer['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
+            elif layer['layer_type'] == 'MaxPooling2D':
+                self.snn.add(self.sim.MaxPool2DReLU(
+                    pool_size=layer['pool_size'], strides=layer['strides'],
+                    border_mode=layer['border_mode'], label=layer['label']))
+            elif layer['layer_type'] == 'AveragePooling2D':
                 self.snn.add(self.sim.AvgPool2DReLU(
                     pool_size=layer['pool_size'], strides=layer['strides'],
                     border_mode=layer['border_mode'], label=layer['label']))
