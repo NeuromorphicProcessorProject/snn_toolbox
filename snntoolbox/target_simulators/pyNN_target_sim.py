@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+"""Building SNNs using pyNN simulator.
 
 The modules in ``target_simulators`` package allow building a spiking network
 and exporting it for use in a spiking simulator.
@@ -41,7 +41,8 @@ cellparams_pyNN = {'v_thresh', 'v_reset', 'v_rest', 'e_rev_E', 'e_rev_I', 'cm',
 
 
 class SNN_compiled():
-    """
+    """Class to hold the compiled spiking neural network.
+
     Class to hold the compiled spiking neural network, ready for testing in a
     spiking simulator.
 
@@ -103,6 +104,7 @@ class SNN_compiled():
     """
 
     def __init__(self, ann):
+        """Init function."""
         self.ann = ann
         self.sim = initialize_simulator()
         self.add_input_layer()
@@ -112,6 +114,7 @@ class SNN_compiled():
         self.cellparams = {key: settings[key] for key in cellparams_pyNN}
 
     def add_input_layer(self):
+        """Configure a input layer."""
         input_shape = list(self.ann['input_shape'])
         self.layers = [self.sim.Population(
             int(np.prod(input_shape[1:])),
@@ -145,7 +148,6 @@ class SNN_compiled():
         converting.
 
         """
-
         echo('\n')
         echo("Compiling spiking network...\n")
 
@@ -170,6 +172,7 @@ class SNN_compiled():
         echo("Compilation finished.\n\n")
 
     def add_layer(self, layer):
+        """Configure intermediate layer."""
         self.conns = []
         self.labels.append(layer['label'])
         self.layers.append(self.sim.Population(
@@ -181,6 +184,7 @@ class SNN_compiled():
                  "Using 'relu' activation instead.\n")
 
     def build_dense(self, layer):
+        """Build dense layer."""
         weights = layer['parameters'][0]
         self.layers[-1].set(i_offset=layer['parameters'][1])  # Bias
         for i in range(len(weights)):
@@ -188,6 +192,7 @@ class SNN_compiled():
                 self.conns.append((i, j, weights[i, j], settings['delay']))
 
     def build_convolution(self, layer):
+        """Build convolution layer."""
         weights = layer['parameters'][0]
         biases = layer['parameters'][1]
         i_offset = np.empty(np.prod(layer['output_shape'][1:]))
@@ -240,6 +245,7 @@ class SNN_compiled():
                  (weights.shape[0] * weights.shape[1])))
 
     def build_pooling(self, layer):
+        """Build for pooling method."""
         if layer['layer_type'] == 'MaxPooling2D':
             echo("WARNING: Layer type 'MaxPooling' not supported yet. " +
                  "Falling back on 'AveragePooling'.\n")
@@ -264,6 +270,7 @@ class SNN_compiled():
             echo(' {:.1%}\n'.format((1 + fout) / layer['input_shape'][1]))
 
     def connect_layer(self):
+        """Connect layers."""
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             warnings.warn('deprecated', UserWarning)
@@ -273,7 +280,8 @@ class SNN_compiled():
                 self.sim.FromListConnector(self.conns, ['weight', 'delay'])))
 
     def run(self, snn_precomp, X_test, Y_test):
-        """
+        """Simulate a spiking network with IF units and Poisson input in pyNN.
+
         Simulate a spiking network with IF units and Poisson input in pyNN,
         using a simulator like Brian, NEST, NEURON, etc.
 
@@ -313,7 +321,6 @@ class SNN_compiled():
             test samples.
 
         """
-
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
 
         # Setup pyNN simulator if it was not passed on from a previous session.
@@ -413,12 +420,11 @@ class SNN_compiled():
         return total_acc
 
     def end_sim(self):
-        """ Clean up after simulation. """
+        """Clean up after simulation."""
         self.sim.end()
 
     def save(self, path=None, filename=None):
-        """
-        Write model architecture and parameters to disk.
+        """Write model architecture and parameters to disk.
 
         Parameters
         ----------
@@ -431,7 +437,6 @@ class SNN_compiled():
             Name of file to write model to. Defaults to
             ``settings['filename_snn_exported']``.
         """
-
         if path is None:
             path = settings['path']
         if filename is None:
@@ -441,8 +446,7 @@ class SNN_compiled():
         self.save_connections(path)
 
     def save_assembly(self, path=None, filename=None):
-        """
-        Write layers of neural network to disk.
+        """Write layers of neural network to disk.
 
         The size, structure, labels of all the population of an assembly are
         stored in a dictionary such that one can load them again using the
@@ -464,7 +468,6 @@ class SNN_compiled():
             ``settings['filename_snn_exported']``.
 
         """
-
         if path is None:
             path = settings['path']
         if filename is None:
@@ -496,8 +499,7 @@ class SNN_compiled():
         print("Done.\n")
 
     def save_connections(self, path=None):
-        """
-        Write parameters of a neural network to disk.
+        """Write parameters of a neural network to disk.
 
         The parameters between two layers are saved in a text file.
         They can then be used to connect pyNN populations e.g. with
@@ -519,7 +521,6 @@ class SNN_compiled():
             layer1 to layer2.
 
         """
-
         if path is None:
             path = settings['path']
 
@@ -533,7 +534,8 @@ class SNN_compiled():
         echo("Done.\n")
 
     def load_assembly(self, path=None, filename=None):
-        """
+        """Load the populations in an assembly.
+
         Loads the populations in an assembly that was saved with the
         ``save_assembly`` function.
 
@@ -558,7 +560,6 @@ class SNN_compiled():
         layers: list
             List of pyNN ``Population`` objects.
         """
-
         if path is None:
             path = settings['path']
         if filename is None:
@@ -594,8 +595,7 @@ class SNN_compiled():
         return layers
 
     def load(self, path=None, filename=None):
-        """
-        Load model architecture and parameters from disk.
+        """Load model architecture and parameters from disk.
 
         Parameters
         ----------
@@ -609,7 +609,6 @@ class SNN_compiled():
             ``settings['filename_snn_exported']``.
 
         """
-
         if path is None:
             path = settings['path']
         if filename is None:
@@ -635,7 +634,8 @@ class SNN_compiled():
 
 
 def collect_plot_results(layers, output_shapes, ann, X_batch, idx=0):
-    """
+    """Collect spiketrains of all ``layers`` of a net from one simulation run.
+
     Collect spiketrains of all ``layers`` of a net from one simulation run, and
     plot results.
 
@@ -657,7 +657,6 @@ def collect_plot_results(layers, output_shapes, ann, X_batch, idx=0):
     layers are flattened).
 
     """
-
     from snntoolbox.io_utils.plotting import output_graphs, plot_potential
     # Collect spiketrains of all layers, for the last test sample.
     vmem = []
