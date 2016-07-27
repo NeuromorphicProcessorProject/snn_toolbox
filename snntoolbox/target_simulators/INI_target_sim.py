@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+"""Building SNNs using INI simulator.
 
 The modules in ``target_simulators`` package allow building a spiking network
 and exporting it for use in a spiking simulator.
@@ -32,6 +32,8 @@ lidx = 0
 
 class SNN_compiled():
     """
+    Class to hold the compiled spiking neural network.
+
     Class to hold the compiled spiking neural network, ready for testing in a
     spiking simulator.
 
@@ -82,13 +84,15 @@ class SNN_compiled():
     """
 
     def __init__(self, ann):
+        """Init function."""
         self.ann = ann
         self.sim = initialize_simulator()
         self.snn = Sequential()
         self.get_output = None
 
     def build(self):
-        """
+        """Compile a SNN to prepare for simulation with INI simulator.
+
         Convert an ANN to a spiking neural network, using layers derived from
         Keras base classes.
 
@@ -98,7 +102,6 @@ class SNN_compiled():
         Sets the ``snn`` and ``get_output`` attributes of this class.
 
         """
-
         # Iterate over layers to create spiking neurons and connections.
         if settings['verbose'] > 1:
             echo("Iterating over ANN layers to add spiking layers...\n")
@@ -152,12 +155,14 @@ class SNN_compiled():
         spiketrain = self.snn.layers[lidx].spiketrain
         self.get_output = theano.function([self.snn.input, input_time],
                                           [output_spikes, output_time,
-                                           fac, max_spikerate, spikecounts, spiketrain],
+                                           fac, max_spikerate, spikecounts,
+                                           spiketrain],
                                           updates=updates)
         echo("Compilation finished.\n\n")
 
     def run(self, snn_precomp, X_test, Y_test):
-        """
+        """Simulate a SNN with LIF and Poisson input.
+
         Simulate a spiking network with leaky integrate-and-fire units and
         Poisson input, using mean pooling and a timestepped approach.
 
@@ -192,7 +197,6 @@ class SNN_compiled():
             test samples.
 
         """
-
         import numpy as np
         from snntoolbox.io_utils.plotting import output_graphs
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
@@ -285,8 +289,11 @@ class SNN_compiled():
                     inp = (spike_snapshot <= batch).astype('float32')
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
-                out_spikes, ts, fac, max_spikerate, spikecounts, spiketrain = self.get_output(inp, float(t))
-                print('fac: {}, max_spikerate: {}, max_spikecount: {}'.format(fac, max_spikerate, np.max(spikecounts)))
+                (out_spikes, ts, fac, max_spikerate, spikecounts,
+                 spiketrain) = self.get_output(inp, float(t))
+                print('fac: {}, max_spikerate: {},'
+                      ' max_spikecount: {}'.format(fac, max_spikerate,
+                                                   np.max(spikecounts)))
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
                 if batch_idx == 0 and settings['verbose'] > 1:
@@ -338,8 +345,7 @@ class SNN_compiled():
         return total_acc
 
     def save(self, path=None, filename=None):
-        """
-        Write model architecture and parameters to disk.
+        """Write model architecture and parameters to disk.
 
         Parameters
         ----------
@@ -353,7 +359,6 @@ class SNN_compiled():
             ``settings['filename_snn_exported']``.
 
         """
-
         from snntoolbox.io_utils.save import confirm_overwrite
 
         if path is None:
@@ -372,8 +377,7 @@ class SNN_compiled():
         echo("Done.\n")
 
     def load(self, path=None, filename=None):
-        """
-        Load model architecture and parameters from disk.
+        """Load model architecture and parameters from disk.
 
         Sets the ``snn`` and ``get_output`` attributes of this class.
 
@@ -389,7 +393,6 @@ class SNN_compiled():
             ``settings['filename_snn_exported']``.
 
         """
-
         from keras import models
         from snntoolbox.core.inisim import custom_layers
 
@@ -429,10 +432,12 @@ class SNN_compiled():
         spiketrain = self.snn.layers[lidx].spiketrain
         self.get_output = theano.function([self.snn.input, input_time],
                                           [output_spikes, output_time,
-                                           fac, max_spikerate, spikecounts, spiketrain],
+                                           fac, max_spikerate, spikecounts,
+                                           spiketrain],
                                           updates=updates)
 
     def assert_batch_size(self, batch_size):
+        """Check if batchsize is matched with configuration."""
         if batch_size != settings['batch_size']:
             msg = dedent("""\
                 You attempted to use the SNN with a batch_size different than
@@ -446,10 +451,10 @@ class SNN_compiled():
             settings['batch_size'] = batch_size
 
     def end_sim(self):
-        """
+        """Clean up after simulation.
+
         Clean up after simulation. Not needed in this simulator, so do a
         ``pass``.
 
         """
-
         pass
