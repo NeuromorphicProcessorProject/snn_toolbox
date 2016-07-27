@@ -93,10 +93,15 @@ class SNNToolboxGUI():
         self.res_queue = Queue()
         # Create thread for performing the conversion in the background.
         # Make it a daemon so it is killed when the main application is closed.
-        self.process_thread = threading.Thread(target=test_full,
-                                               args=(self.res_queue,),
-                                               name='conversion process',
-                                               daemon=True)
+        if sys.version_info[0] < 3:
+            self.process_thread = threading.Thread(target=test_full,
+                                                   args=(self.res_queue,),
+                                                   name='conversion process')
+        else:
+            self.process_thread = threading.Thread(target=test_full,
+                                                   args=(self.res_queue,),
+                                                   name='conversion process',
+                                                   daemon=True)
 
     def globalparams_widgets(self):
         """Global parameters widgets."""
