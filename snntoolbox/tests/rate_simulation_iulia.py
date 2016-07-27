@@ -30,26 +30,49 @@ class Layer():
         self.spiketrain = np.zeros((self.output_shape, len(times)))
         self.rates = np.zeros((self.output_shape, len(times)))
         self.pred_rates = np.zeros((self.output_shape, len(times)))
+        self.rate_rep = np.zeros((self.output_shape, len(times)))
+        self.error = np.zeros((self.output_shape, len(times)))
 
     def weighted_sum(self, x):
         return np.dot(self.W, x) + self.b
 
-    def update_neurons(self, x, t, t_ind):
+#    def f_rate_error(self, previous_err, t):
+#        return np.dot(self.W, previous_err) + \
+#            (self.V - self.V0) / (self.thr * t)
+
+    def v_error(self, previous_err, t, t_ind):
+        return np.dot(self.W, previous_err) + (self.V - self.V_array[:, t_ind])
+
+#    def v_error(self, previous_error, t, t_ind):
+#        return ((self.V_array[:, t_ind] - self.V0)/self.thr*t -
+#                 (self.V - self.V0)/self.thr*(t+1)
+
+    def update_neurons(self, x, previous_error, t, t_ind):
         z = self.thr * self.weighted_sum(x)  # Input to layer
         self.V += z  # Integrate in membrane potential
+        # Compute the rates predicted by theory
+        self.pred_rates[:, t_ind] = self.get_pred_rates(x, t, t_ind)
+        v_error = self.v_error(previous_error, t, t_ind)
+        self.V += v_error
         spikes = self.V >= self.thr  # Trigger spikes
         self.spiketrain[:, t_ind] = spikes * t  # Write out spike times
+        self.V_array[:, t_ind] = self.V  # Write out V for plotting
+        print(self.V)
         # Compute rates
         self.rates[:, t_ind] = [len(s.nonzero()[0])/t for s in self.spiketrain]
-        self.V_array[:, t_ind] = self.V  # Write out V for plotting
+        self.rate_rep = self.pred_rates - self.rates
         # Reset neurons
         if self.reset == 'zero':
             self.V[spikes] = 0  # Reset to zero after spike
         elif self.reset == 'subtract':
             self.V[spikes] -= self.thr  # Subtract threshold after spike
-        # Compute the rates predicted by theory
-        self.pred_rates[:, t_ind] = self.get_pred_rates(x, t, t_ind)
-        return spikes
+#        f_error = self.f_rate_error(previous_error, t)
+        #self.V[spikes] += v_error[spikes]
+        print(self.V)
+        self.error[:, t_ind] = v_error
+#        self.rates[:, t_ind] = [len(s.nonzero()[0])/t + error[ind] for ind, s
+#                                in enumerate(self.spiketrain)]
+        return spikes, v_error
 
     def set_activations(self, x):
         """Compute the activations of the corresponding ANN layer."""
@@ -136,6 +159,20 @@ class Layer():
         plt.ylim(ymin=-0.1, ymax=max([np.max(self.rates+self.pred_rates),
                                       max(self.a), 1/dt])+0.1)
 
+    def plot_rate_report(self):
+        """
+        Plot the report between the predicted and the calculated firing rates
+        """
+        plt.figure()
+        for i in range(self.output_shape):
+            plt.plot([t+i/10 for t in times], self.rate_rep[i], '-',
+                     label='r'+str(i), color=colors[i])
+        plt.title('Predicted rates/actual rates in Layer {}'.format(self.name))
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.xlim(xmin=0)
+        plt.xlabel('time')
+        plt.show()
+
     def print_config(self):
         """Print layer parameters."""
         print("Configuration of layer {}:".format(self.name))
@@ -151,6 +188,8 @@ def init_params(in_size, out_size, low_lim, high_lim):
 
 
 if __name__ == "__main__":
+    # import pdb
+    # pdb.set_trace()
     in_size1 = 2  # Size of the input to the network
     out_size1 = 2  # Size of the first layer ("Input")
     in_size2 = out_size1
@@ -160,7 +199,7 @@ if __name__ == "__main__":
     T = 50  # Duration of simulation
     dt = 1  # Time resolution
     thr = 1  # Spike threshold
-    times = range(dt, T, dt)  # List of time steps
+    times = np.arange(dt, T, dt)  # List of time steps
     x = np.random.random_sample(in_size1)  # Input sample
 #    x = [0.60937405, 0.18707114]
 #    x = [0, 0]
@@ -173,18 +212,12 @@ if __name__ == "__main__":
     W2, b2 = init_params(in_size2, out_size2, low_lim, high_lim)
 
     # Or set fix
-#    W1 = [[1.66878322, 1.29022261], [-1.18895428, 0.85312339]]
-#    b1 = [1.12679297, -0.03022793]
-#    W2 = [[0.45963593, 0.16917084], [1.33712331, -0.07807339],
-#          [-0.97600214, -0.94265142]]
-#    b2 = [-1.98658604, 1.85651182, -1.04564916]
-
-#    W1 = np.array([[0.24170794, -0.0652145], [-0.97776548, 0.54888627]])
-#    b1 = np.array([0.95766501, 0.57092524])
-#    W2 = np.array([[-0.16856922, -0.61520209], [-0.39539257, 0.10240398],
-#                   [0.53739178, 0.2480412]])
-#    b2 = np.array([-0.00333677, 0.58515104, 0.30454001])
-#    x = np.array([0.88234524, 0.18775578])
+    W1 = np.array([[0.24170794, -0.0652145], [-0.97776548, 0.54888627]])
+    b1 = np.array([0.95766501, 0.57092524])
+    W2 = np.array([[-0.16856922, -0.61520209], [-0.39539257, 0.10240398],
+                   [0.53739178, 0.2480412]])
+    b2 = np.array([-0.00333677, 0.58515104, 0.30454001])
+    x = np.array([0.88234524, 0.18775578])
 
     # Create two layers
     layers = [Layer(in_size1, out_size1, 'Input', thr, W1, b1, reset),
@@ -197,16 +230,29 @@ if __name__ == "__main__":
     # Compute the ANN activations
     layers[0].set_activations(x)
     layers[1].set_activations(layers[0].a)
-    print(layers[0].a)
-    print(layers[1].a)
+
     # Start simulation
     t_ind = 0
+    sp1 = 0
+    sp2 = 0
     for t in times:
-        spikes = layers[0].update_neurons(x, t, t_ind)
-        out_spikes = layers[1].update_neurons(spikes, t, t_ind)
+        spikes, error = layers[0].update_neurons(x, np.zeros(out_size1), t,
+                                                 t_ind)
+        sp1 += len(spikes.nonzero()[0])
+#        print(spikes)
+#        print(error1)
+        out_spikes, out_error = layers[1].update_neurons(spikes, error, t,
+                                                         t_ind)
+        sp2 += len(out_spikes.nonzero()[0])
+
+#        print(out_spikes)
+#        print(error2)
         t_ind += 1
+#    print(sp1)
+#    print(sp2)
 
     # Display results
     for l in layers:
         l.plot_V()
         l.plot_r()
+        l.plot_rate_report()
