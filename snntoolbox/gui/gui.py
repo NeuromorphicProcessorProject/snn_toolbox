@@ -97,6 +97,7 @@ class SNNToolboxGUI():
             self.process_thread = threading.Thread(target=test_full,
                                                    args=(self.res_queue,),
                                                    name='conversion process')
+            self.process_thread.daemon = True
         else:
             self.process_thread = threading.Thread(target=test_full,
                                                    args=(self.res_queue,),
