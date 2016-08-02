@@ -44,10 +44,10 @@ class Layer():
     def update_neurons(self, in_spikes, prev_layer_payload, t, t_ind):
         z = self.thr * self.weighted_sum(in_spikes)  # Input to layer
         self.V += z  # Integrate in membrane potential
-#        if self.name != 'Input':
-#            error = np.zeros_like(prev_layer_payload)
-#            error[in_spikes] = prev_layer_payload[in_spikes]
-#            print(error)
+        if self.name != 'Input':
+            error = np.zeros_like(prev_layer_payload)
+            error[in_spikes] = prev_layer_payload[in_spikes]
+#            print(np.dot(self.W, error))
 #            self.V += np.dot(self.W, error)
         spikes = self.V >= self.thr  # Trigger spikes
         self.spiketrain[:, t_ind] = spikes * t  # Write out spike times
@@ -196,36 +196,16 @@ if __name__ == "__main__":
     dt = 1  # Time resolution
     thr = 1  # Spike threshold
     times = np.arange(dt, T, dt)  # List of time steps
-    x = np.random.random_sample(in_size1)  # Input sample
-#    x = [0.60937405, 0.18707114]
-#    x = [0, 0]
+
 #    colors = [plt.cm.spectral(i*100) for i in range(out_size2)]
     colors = ['r', 'g', 'b', 'y']  # For plotting
     reset = 'subtract'  # reset mechanism 'zero' or 'subtract'
 
-    # Randomly initialize parameters
+    # Randomly initialize parameters and set input
+    np.random.seed(3)
+    x = np.random.random_sample(in_size1)  # Input sample
     W1, b1 = init_params(in_size1, out_size1, low_lim, high_lim)
     W2, b2 = init_params(in_size2, out_size2, low_lim, high_lim)
-
-    # Or set fix
-#    W1 = np.array([[ 0.24170794, -0.0652145 ],
-#       [-0.97776548,  0.54888627]])
-#    b1 = np.array([ 0.95766501,  0.57092524])
-#    W2 = np.array([[-0.16856922, -0.61520209],
-#       [-0.39539257,  0.10240398],
-#       [ 0.53739178,  0.2480412 ]])
-#    b2 = np.array([-0.00333677,  0.58515104,  0.30454001])
-#    x = np.array([ 0.88234524,  0.18775578])
-#
-#    W1 = np.array([[-0.03770499, -0.07533942, -0.94770993,  0.0577166 ],
-#       [-0.83157498,  0.61861368, -0.90726727,  0.40905918],
-#       [ 0.44336234,  0.56007118, -0.16361023,  0.66724983],
-#       [-0.69758505,  0.57943419,  0.23731877,  0.43358306]])
-#    b1 = np.array([-0.92218687,  0.96370931, -0.1912306 , -0.54107763])
-#    W2 = np.array([[ 0.9754876 ,  0.97417765,  0.72500096, -0.93070897],
-#       [-0.75982569,  0.87747896,  0.17876913, -0.27407019],
-#       [-0.43983244, -0.10830902, -0.12652581, -0.29547607]])
-#    b2 = np.array([ 0.13223618, -0.7850779 ,  0.69488664])
 
     # Create two layers
     layers = [Layer(in_size1, out_size1, 'Input', thr, W1, b1, reset),
@@ -235,8 +215,17 @@ if __name__ == "__main__":
     [l.print_config() for l in layers]
     print("Input: {}".format(x))
 
-    # Compute the ANN activations
+    def normalize_parameters(layer, x):
+        layer.set_activations(x)
+        max_activ = max(layer.a)
+        layer.W /= max_activ
+        layer.b /= max_activ
+        print("Normalized layer {} with max activation {}.".format(layer.name,
+                                                                   max_activ))
+    # Normalize parameters and compute the new ANN activations.
+#    normalize_parameters(layers[0], x)
     layers[0].set_activations(x)
+#    normalize_parameters(layers[1], layers[0].a)
     layers[1].set_activations(layers[0].a)
 
     # Start simulation
