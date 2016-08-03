@@ -222,8 +222,8 @@ class SpikeDense(Dense):
             T.gt(1 / settings['dt'] - self.max_spikerate,
                  settings['diff_to_max_rate'] / 1000),
             1 / self.max_spikerate, 1.0)
-        updates.append((self.W, self.W * self.fac))
-        updates.append((self.b, self.b * self.fac))
+#        updates.append((self.W, self.W * self.fac))
+#        updates.append((self.b, self.b * self.fac))
 
         # Get impulse
         self.impulse = T.add(T.dot(inp, self.W), self.b)
@@ -257,8 +257,8 @@ class SpikeConv2DReLU(Convolution2D):
             T.gt(1 / settings['dt'] - self.max_spikerate,
                  settings['diff_to_max_rate'] / 1000),
             1 / (self.max_spikerate + 0.001), 1.0)
-        updates.append((self.W, self.W * self.fac))
-        updates.append((self.b, self.b * self.fac))
+#        updates.append((self.W, self.W * self.fac))
+#        updates.append((self.b, self.b * self.fac))
 
         # CALCULATE SYNAPTIC SUMMED INPUT
         border_mode = self.border_mode
