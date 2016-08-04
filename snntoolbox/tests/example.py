@@ -72,6 +72,7 @@ def main():
                 'verbose': 3,  # Show plots and temporary results
                 'v_thresh': 1,  # Threshold potential
                 'simulator': 'INI',  # Use built-in simulator
+                'percentile': 100,
                 'duration': 100.0}  # Simulation time
 
     # Update defaults with parameters specified above:

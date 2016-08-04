@@ -139,19 +139,12 @@ def get_sample_activity_from_batch(activity_batch, i=0):
     return [(layer_act[0][i], layer_act[1]) for layer_act in activity_batch]
 
 
-def norm_parameters(parameters, activations):
+def norm_parameters(parameters, activations, prev_scale_fac):
     """
     Normalize parameters
 
-    Determine the maximum activation or weight of a layer and apply this factor
-    to normalize the parameters.
-
-    Note that for normalizing the parameters we do not need to take into
-    account the scale factor of the previous layer (i.e. by using a
-    normalization factor ``applied_fac`` which is the ratio of the max values
-    of the previous to this layer), because when calculating ``activations`` of
-    the current layer, the normalized parameters are already used in all
-    preceeding layers.
+    Determine the maximum activation of a layer and apply this factor to
+    normalize the parameters.
 
     Parameters
     ----------
@@ -176,13 +169,10 @@ def norm_parameters(parameters, activations):
     # Skip last batch if batch_size was chosen such that the dataset could not
     # be divided into an integer number of equal-sized batches.
     end = -1 if len(activations[0]) != len(activations[-1]) else None
-    activation_max = np.percentile(activations[:end], settings['percentile'])
-    scale_fac = np.max([np.max(parameters[0]), np.max(parameters[1]),
-                        activation_max])
+    scale_fac = np.percentile(activations[:end], settings['percentile'])
     print("Maximum value: {:.2f}.".format(scale_fac))
-    # Normalization factor is the ratio of the max values of the
-    # previous to this layer.
-    return [parameters[0] / scale_fac, parameters[1] / scale_fac], scale_fac
+    return [parameters[0] * prev_scale_fac / scale_fac,
+            parameters[1] / scale_fac], scale_fac
 
 
 def get_activations_layer(get_activ, X_train):
