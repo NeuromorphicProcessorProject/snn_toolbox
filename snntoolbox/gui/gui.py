@@ -527,6 +527,27 @@ class SNNToolboxGUI():
               in INI simulator.""")
         ToolTip(poisson_input_cb, text=tip, wraplength=750)
 
+        # Reset mechanism
+        reset_frame = tk.Frame(self.simparams_frame, bg='white')
+        reset_frame.pack(**self.kwargs)
+        tk.Label(reset_frame, text="Reset mechanism", bg='white').pack(
+            fill='both', expand=True)
+        tk.Radiobutton(reset_frame, variable=self.settings['reset'],
+                       text='Reset to zero', value='Reset to zero',
+                       bg='white').pack(fill='both', side='top', expand=True)
+        tk.Radiobutton(reset_frame, variable=self.settings['reset'],
+                       text='Reset by subtraction',
+                       value='Reset by subtraction', bg='white').pack(
+                       fill='both', side='bottom', expand=True)
+        tip = dedent("""\
+              Reset to zero:
+                  After spike, the membrane potential is set to the resting
+                  potential.
+              Reset by subtraction:
+                  After spike, the membrane potential is reduced by a value
+                  equal to the threshold.""")
+        ToolTip(reset_frame, text=tip, wraplength=750)
+
         # Maximum input firing rate
         input_rate_frame = tk.Frame(self.simparams_frame, bg='white')
         input_rate_frame.pack(**self.kwargs)
@@ -983,6 +1004,7 @@ class SNNToolboxGUI():
                          'simulator': tk.StringVar(),
                          'duration': tk.IntVar(),
                          'poisson_input': tk.BooleanVar(),
+                         'reset': tk.StringVar(),
                          'input_rate': tk.IntVar(),
                          'diff_to_max_rate': tk.IntVar(),
                          'timestep_fraction': tk.IntVar(),

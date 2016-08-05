@@ -310,7 +310,7 @@ class SNN_compiled():
                 output[batch_idxs, :] += out_spikes.astype('int32')
                 if settings['verbose'] > 1:
                     echo('.')
-            if settings['verbose'] > 1:
+            if settings['verbose'] > 0:
                 # Get result by comparing the guessed class (i.e. the index of
                 # the neuron in the last layer which spiked most) to the ground
                 # truth.

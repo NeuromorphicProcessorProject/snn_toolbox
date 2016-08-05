@@ -78,7 +78,12 @@ def linear_activation(self, impulse, time, updates):
     # so that no information stored in membrane potential is lost. This reduces
     # the variance in the spikerate-activation correlation plot for activations
     # greater than 0.5.
-    new_and_reset_mem = T.inc_subtensor(new_mem[output_spikes.nonzero()], -1.)
+    if settings['reset'] == 'Reset to zero':
+        new_and_reset_mem = T.set_subtensor(
+            new_mem[output_spikes.nonzero()], 0)
+    elif settings['reset'] == 'Reset by subtraction':
+        new_and_reset_mem = T.inc_subtensor(
+            new_mem[output_spikes.nonzero()], -1.)
     # Alternatively, perform standard reset:
     # new_and_reset_mem = T.set_subtensor(new_mem[output_spikes.nonzero()], 0.)
     # Store refractory
