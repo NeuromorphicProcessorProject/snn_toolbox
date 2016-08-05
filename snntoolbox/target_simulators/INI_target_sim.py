@@ -286,7 +286,7 @@ class SNN_compiled():
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
                 out_spikes, ts, fac, max_spikerate, spikecounts, spiketrain = self.get_output(inp, float(t))
-                print('fac: {}, max_spikerate: {}, max_spikecount: {}'.format(fac, max_spikerate, np.max(spikecounts)))
+#                print('fac: {}, max_spikerate: {}, max_spikecount: {}'.format(fac, max_spikerate, np.max(spikecounts)))
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
                 if batch_idx == 0 and settings['verbose'] > 1:
@@ -302,7 +302,7 @@ class SNN_compiled():
                 output[batch_idxs, :] += out_spikes.astype('int32')
                 if settings['verbose'] > 1:
                     echo('.')
-            if settings['verbose'] > 1:
+            if settings['verbose'] > 0:
                 # Get result by comparing the guessed class (i.e. the index of
                 # the neuron in the last layer which spiked most) to the ground
                 # truth.

@@ -208,19 +208,16 @@ class SNN():
             # Skip layer if not preceeded by a layer with parameters
             if idx == 0 or 'parameters' not in self.layers[idx-1].keys():
                 continue
-            label = self.labels[idx-1]
             print("Calculating output of activation layer {}".format(idx) +
                   " following layer {} with shape {}...".format(
-                  label, layer['output_shape']))
+                  self.labels[idx-1], layer['output_shape']))
             parameters = self.layers[idx-1]['parameters']
             # Undo previous scaling before calculating activations:
             self.set_layer_params([parameters[0] * scale_fac, parameters[1]],
                                   idx-1)
             activations = get_activations_layer(layer['get_activ'], X_train)
-            parameters_norm, scale_fac = norm_parameters(parameters,
-                                                         activations)
-            weight_dict = {'weights': parameters[0].flatten(),
-                           'weights_norm': parameters_norm[0].flatten()}
+            parameters_norm, scale_fac = norm_parameters(
+                parameters, activations, scale_fac)
             # Update model with modified parameters
             self.set_layer_params(parameters_norm, idx-1)
             # Compute activations with modified parameters
@@ -232,8 +229,12 @@ class SNN():
             activation_dict = {
                 'Activations': activations[:frac].flatten(),
                 'Activations_norm': activations_norm[:frac].flatten()}
-            plot_hist(activation_dict, 'Activation', label, newpath, scale_fac)
-            plot_hist(weight_dict, 'Weight', label, newpath)
+            weight_dict = {
+                'weights': parameters[0].flatten(),
+                'weights_norm': self.layers[idx-1]['parameters'][0].flatten()}
+            plot_hist(activation_dict, 'Activation', self.labels[idx-1],
+                      newpath, scale_fac)
+            plot_hist(weight_dict, 'Weight', self.labels[idx-1], newpath)
 
     def set_layer_params(self, parameters, i):
         """
