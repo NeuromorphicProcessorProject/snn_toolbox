@@ -135,6 +135,12 @@ poisson_input: float, optional
     elicit a Poisson spiketrain of 700 Hz. Turn off for a less noisy
     simulation. Currently, turning off Poisson input is only possible in INI
     simulator.
+reset: string, optional
+    Choose the reset mechanism to apply after spike.
+    Reset to zero: After spike, the membrane potential is set to the resting
+                   potential.
+    Reset by subtraction: After spike, the membrane potential is reduced by a
+                          value equal to the threshold.
 input_rate: float, optional
     Poisson spike rate in Hz for a fully-on pixel of the input image. Note that
     the input_rate is limited by the maximum firing rate supported by the
@@ -197,6 +203,7 @@ Default values
                  'dt': 1,
                  'delay': 1,
                  'poisson_input': False,
+                 'reset': 'Reset by subtraction',
                  'input_rate': 1000,
                  'timestep_fraction': 10,
                  'diff_to_max_rate': 200,
@@ -254,6 +261,7 @@ settings = {'dataset_path': '',
             'duration': 200,
             'dt': 1,
             'poisson_input': False,
+            'reset': 'Reset by subtraction',
             'input_rate': 1000,
             'diff_to_max_rate': 200,
             'timestep_fraction': 10,
