@@ -32,6 +32,7 @@ class Layer():
         self.pred_rates = np.zeros((self.output_shape, len(times)))
         self.rate_rep = np.zeros((self.output_shape, len(times)))
         self.payload = np.zeros(self.output_shape)
+        self.payload_sum = np.zeros(self.output_shape)
         self.apply_payload = apply_payload
         self.in_layer = in_layer  # Previous layer
 
@@ -42,13 +43,14 @@ class Layer():
         last_payloads = self.payload
         self.payload[spikes] = self.Vt[spikes, t_ind] - self.V0 - \
             last_payloads[spikes]
+        self.payload_sum[spikes]+=self.payload[spikes]
 
-    def update_neurons(self, in_spikes, prev_layer_payload, t, t_ind):
+    def update_neurons(self, in_spikes, prev_layer_payload_sum, t, t_ind):
         z = self.thr * self.weighted_sum(in_spikes)  # Input to layer
         self.V += z  # Integrate in membrane potential
         if self.name != 'L1' and self.apply_payload:
-            error = np.zeros_like(prev_layer_payload)
-            error[in_spikes] = prev_layer_payload[in_spikes]
+            error = np.zeros_like(prev_layer_payload_sum)
+            error[in_spikes] = prev_layer_payload_sum[in_spikes]
             # print(np.dot(self.W, error))
             print(error)
             self.V += np.dot(self.W, error)
@@ -71,7 +73,7 @@ class Layer():
         # print(self.V)
         self.update_payload(spikes, t, t_ind)
 
-        return spikes, self.payload
+        return spikes, self.payload_sum
 
     def set_activations(self, x):
         """Compute the activations of the corresponding ANN layer."""
@@ -193,7 +195,7 @@ if __name__ == "__main__":
     L1_insize = 2  # Size of the input to the network
     L1_outsize = 2  # Size of the first layer
     L2_insize = L1_outsize
-    L2_outsize = 3
+    L2_outsize = 4
     L3_insize = L2_outsize
     L3_outsize = 2
     low_lim = -1  # Interval for parameter initialization
@@ -203,13 +205,14 @@ if __name__ == "__main__":
     thr = 1  # Spike threshold
     times = np.arange(dt, T, dt)  # List of time steps
     apply_payload = True
+    normalize = True
 
 #    colors = [plt.cm.spectral(i*100) for i in range(out_size2)]
     colors = ['r', 'g', 'b', 'y']  # For plotting
     reset = 'subtract'  # reset mechanism 'zero' or 'subtract'
 
     # Randomly initialize parameters and set input
-    np.random.seed(10)
+    #np.random.seed(134)
     x = np.random.random_sample(L1_insize)  # Input sample
     W1, b1 = init_params(L1_insize, L1_outsize, low_lim, high_lim)
     W2, b2 = init_params(L2_insize, L2_outsize, low_lim, high_lim)
@@ -238,10 +241,12 @@ if __name__ == "__main__":
         return max_activ
 
     # Normalize parameters and compute the new ANN activations.
-    prev_fac = normalize_parameters(layers[0], x, 1)
+    if normalize:    
+        prev_fac = normalize_parameters(layers[0], x, 1)
     layers[0].set_activations(x)
     for i, layer in enumerate(layers[1:]):
-        prev_fac = normalize_parameters(layer, layers[i].a, prev_fac)
+        if normalize:
+            prev_fac = normalize_parameters(layer, layers[i].a, prev_fac)
         layer.set_activations(layers[i].a)
 
     # Start simulation
