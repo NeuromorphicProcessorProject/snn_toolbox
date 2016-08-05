@@ -40,9 +40,8 @@ class Layer():
         return np.dot(self.W, x) + self.b
 
     def update_payload(self, spikes, t, t_ind):
-        last_payloads = self.payload
         self.payload[spikes] = self.Vt[spikes, t_ind] - self.V0 - \
-            last_payloads[spikes]
+            self.payload_sum[spikes]
         self.payload_sum[spikes]+=self.payload[spikes]
 
     def update_neurons(self, in_spikes, prev_layer_payload_sum, t, t_ind):
@@ -68,7 +67,8 @@ class Layer():
             self.V[spikes] -= self.thr  # Subtract threshold after spike
         self.Vt[:, t_ind] = self.V  # Write out V for plotting
         # Compute the rates predicted by theory
-        self.pred_rates[:, t_ind] = self.get_pred_rates(in_spikes, t, t_ind)
+        self.pred_rates[:, t_ind] = self.get_pred_rates(in_spikes,
+                                  prev_layer_payload_sum, t, t_ind)
         self.rate_rep = self.pred_rates / (self.rates + 1e-6)
         # print(self.V)
         self.update_payload(spikes, t, t_ind)
@@ -79,7 +79,7 @@ class Layer():
         """Compute the activations of the corresponding ANN layer."""
         self.a = [max([0, z]) for z in self.weighted_sum(x)]
 
-    def get_pred_rates(self, x, t, t_ind):
+    def get_pred_rates(self, x, prev_layer_payload_sum, t, t_ind):
         """Compute the rates predicted by theory."""
         z = self.thr * self.weighted_sum(x)  # Input to first layer
         pred_rates = []
@@ -101,8 +101,11 @@ class Layer():
                     # sum of the previous layer's firing rates:
                     q = np.dot(self.W, self.in_layer.pred_rates[:, t_ind]) + \
                         self.b / dt
-                    pred_rates.append(q[i] - (self.V[i] - self.V0) / (t *
-                                      self.thr))
+                    error = np.zeros_like(prev_layer_payload_sum)
+                    error[x] = prev_layer_payload_sum[x]
+                    err = np.dot(self.W, error)                       
+                    pred_rates.append(q[i] - (self.V[i] - self.V0 + 
+                                      err[i]) / (t * self.thr))
         return pred_rates
 
     def get_n(self, z):
@@ -190,8 +193,8 @@ def init_params(in_size, out_size, low_lim, high_lim):
 
 
 if __name__ == "__main__":
-    # import pdb
-    # pdb.set_trace()
+    import pdb
+    #pdb.set_trace()
     L1_insize = 2  # Size of the input to the network
     L1_outsize = 2  # Size of the first layer
     L2_insize = L1_outsize
