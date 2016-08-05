@@ -367,8 +367,12 @@ def plot_layer_correlation(rates, activations, title, path=None):
 
     """
 
+    # Determine percentage of saturated neurons. Need to subtract one time step
+    p = np.mean(rates >= 1000 / settings['dt'] - 1000 / settings['duration'])
+
     plt.figure()
     plt.plot(activations, rates, '.')
+    plt.text(1, 1, "{:.2%} units saturated.".format(p))
     plt.title(title, fontsize=20)
     plt.locator_params(nbins=4)
     plt.xlim([None, max(activations) * 1.1])

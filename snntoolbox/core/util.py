@@ -166,10 +166,7 @@ def norm_parameters(parameters, activations, prev_scale_fac):
 
     """
 
-    # Skip last batch if batch_size was chosen such that the dataset could not
-    # be divided into an integer number of equal-sized batches.
-    end = -1 if len(activations[0]) != len(activations[-1]) else None
-    scale_fac = np.percentile(activations[:end], settings['percentile'])
+    scale_fac = np.percentile(activations, settings['percentile'])
     print("Maximum value: {:.2f}.".format(scale_fac))
     return [parameters[0] * prev_scale_fac / scale_fac,
             parameters[1] / scale_fac], scale_fac
