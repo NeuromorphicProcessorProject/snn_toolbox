@@ -114,6 +114,7 @@ class SNN_compiled():
         self.threshold = 'v > v_thresh'
         self.reset = 'v = v_reset'
         self.eqs = 'dv/dt = -v/tau_m : volt'
+        self.output_shapes = []
         self.spikemonitors = [self.sim.SpikeMonitor(self.layers[0])]
         self.statemonitors = []
         self.labels = ['InputLayer']
@@ -169,6 +170,7 @@ class SNN_compiled():
         self.connections.append(self.sim.Synapses(
             self.layers[-2], self.layers[-1], model='w:volt', on_pre='v+=w',
             dt=settings['dt']*self.sim.ms))
+        self.output_shapes.append(layer['output_shape'])
         if settings['verbose'] > 1:
             self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[-1]))
         if settings['verbose'] == 3:
@@ -347,7 +349,8 @@ class SNN_compiled():
                     test_num == settings['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
                 self.collect_plot_results(
-                    snn_precomp, X_test[ind:ind+settings['batch_size']])
+                    self.layers, self.output_shapes, snn_precomp,
+                    X_test[ind:ind+settings['batch_size']])
 
             # Reset simulation time and recorded network variables for next
             # run.

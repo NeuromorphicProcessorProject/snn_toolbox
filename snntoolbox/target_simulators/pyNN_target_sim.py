@@ -394,9 +394,9 @@ class SNN_compiled():
             if settings['verbose'] > 1 and \
                     test_num == settings['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
-                collect_plot_results(self.layers, self.output_shapes,
-                                     snn_precomp,
-                                     X_test[ind:ind+settings['batch_size']])
+                collect_plot_results(
+                    self.layers, self.output_shapes, snn_precomp,
+                    X_test[ind:ind+settings['batch_size']])
 
             # Reset simulation time and recorded network variables for next run
             if settings['verbose'] > 1:
