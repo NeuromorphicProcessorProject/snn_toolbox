@@ -1,0 +1,301 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Tests &mdash; SNN toolbox 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="SNN toolbox 0.1 documentation" href="index.html"/>
+        <link rel="prev" title="saving" href="snntoolbox.io_utils.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> SNN toolbox
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure_toolbox.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Tools</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tests</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-tests.example">example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-tests.test_cellparams">test_cellparams</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">SNN toolbox</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Tests</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/tests.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="tests">
+<h1>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-tests.example">
+<span id="example"></span><h2>example<a class="headerlink" href="#module-tests.example" title="Permalink to this headline">¶</a></h2>
+<p>A wrapper script to use all aspects of the toolbox, e.g. converting or
+simulating only, or performing a random or grid search to determine the optimal
+hyperparameters.</p>
+<p>This example uses MNIST dataset and a convolutional network.</p>
+<p>The performance of the original ANN lies at 99.16%. The converted network
+should be around 98.97% accuracy using built-in INI simulator.</p>
+<dl class="docutils">
+<dt>Usecase A: Convert only</dt>
+<dd><ol class="first last arabic">
+<li><p class="first">Set <code class="docutils literal"><span class="pre">convert</span> <span class="pre">=</span> <span class="pre">True</span></code> and <code class="docutils literal"><span class="pre">simulate</span> <span class="pre">=</span> <span class="pre">False</span></code></p>
+</li>
+<li><p class="first">Specify other parameters (working directory, filename, ...)</p>
+</li>
+<li><p class="first">Update settings: <code class="docutils literal"><span class="pre">update_setup(settings)</span></code></p>
+</li>
+<li><p class="first">Call <code class="docutils literal"><span class="pre">test_full()</span></code>. This will</p>
+<blockquote>
+<div><ul class="simple">
+<li>load the dataset,</li>
+<li>load a pretrained ANN from <code class="docutils literal"><span class="pre">&lt;path&gt;/&lt;filename&gt;</span></code></li>
+<li>optionally evaluate it (<code class="docutils literal"><span class="pre">evaluate</span> <span class="pre">=</span> <span class="pre">True</span></code>),</li>
+<li>optionally normalize parameters (<code class="docutils literal"><span class="pre">normalize</span> <span class="pre">=</span> <span class="pre">True</span></code>),</li>
+<li>convert to spiking,</li>
+<li>save SNN to disk.</li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+</dd>
+<dt>Usecase B: Simulate only</dt>
+<dd><ol class="first arabic">
+<li><p class="first">Set <code class="docutils literal"><span class="pre">convert</span> <span class="pre">=</span> <span class="pre">False</span></code> and <code class="docutils literal"><span class="pre">simulate</span> <span class="pre">=</span> <span class="pre">True</span></code></p>
+</li>
+<li><p class="first">Specify other parameters (working directory, simulator to use, ...)</p>
+</li>
+<li><p class="first">Update settings: <code class="docutils literal"><span class="pre">update_setup(settings)</span></code></p>
+</li>
+<li><p class="first">Call <code class="docutils literal"><span class="pre">test_full()</span></code>. This will</p>
+<blockquote>
+<div><ul class="simple">
+<li>load the dataset,</li>
+<li>load your already converted SNN,</li>
+<li>run the net on a spiking simulator,</li>
+<li>plot spikerates, spiketrains, activations, correlations, etc.</li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+<p class="last">Note: It is assumed that a network has already been converted (e.g. with
+Usecase A). I.e. there should be a folder in <code class="docutils literal"><span class="pre">&lt;path&gt;</span></code> containing the
+converted network, named <code class="docutils literal"><span class="pre">snn_&lt;filename&gt;_&lt;simulator&gt;</span></code>.</p>
+</dd>
+<dt>Usecase C: Parameter sweep</dt>
+<dd><ol class="first last arabic">
+<li><p class="first">Specify parameters and update settings with <code class="docutils literal"><span class="pre">update_setup(settings)</span></code></p>
+</li>
+<li><p class="first">Define a parameter range to sweep, e.g. for <cite>v_thresh</cite>, using for
+instance the helper function <code class="docutils literal"><span class="pre">get_range()</span></code></p>
+</li>
+<li><p class="first">Call <code class="docutils literal"><span class="pre">test_full</span></code>. This will</p>
+<blockquote>
+<div><ul class="simple">
+<li>load an already converted SNN or perform a conversion as specified in
+settings.</li>
+<li>run the SNN repeatedly on a spiking simulator while varying the
+hyperparameter</li>
+<li>plot accuracy vs. hyperparameter</li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+</dd>
+</dl>
+<p>Usecase C is shown in full in the example below.</p>
+<p>Created on Mon Mar  7 15:30:28 2016</p>
+<p>&#64;author: rbodo</p>
+<dl class="function">
+<dt id="tests.example.main">
+<code class="descclassname">tests.example.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/tests/example.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tests.example.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p><a class="reference download internal" href="_downloads/example.py" download=""><code class="xref download docutils literal"><span class="pre">source</span></code></a></p>
+</div>
+<div class="section" id="module-tests.test_cellparams">
+<span id="test-cellparams"></span><h2>test_cellparams<a class="headerlink" href="#module-tests.test_cellparams" title="Permalink to this headline">¶</a></h2>
+<p>Simple visualization of how the membrane potential of one IF neuron varies with
+different cell parameters.</p>
+<p>Created on Wed Mar  9 18:16:00 2016</p>
+<p>&#64;author: rbodo</p>
+<p><a class="reference download internal" href="_downloads/test_cellparams.py" download=""><code class="xref download docutils literal"><span class="pre">source</span></code></a></p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="snntoolbox.io_utils.html" class="btn btn-neutral" title="saving" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Bodo Rueckauer.
+      Last updated on Aug 08, 2016.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,848 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>SNN class &mdash; SNN toolbox 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="SNN toolbox 0.1 documentation" href="index.html"/>
+        <link rel="up" title="Tools" href="modules.html"/>
+        <link rel="next" title="saving" href="snntoolbox.io_utils.html"/>
+        <link rel="prev" title="Tools" href="modules.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> SNN toolbox
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure_toolbox.html">Configuration</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Tools</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">SNN class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-core.pipeline">pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-core.inisim">inisim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-core.util">util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html">saving</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.load">loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.plotting">plotting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">SNN toolbox</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">Tools</a> &raquo;</li>
+      
+    <li>SNN class</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/core.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-core.model">
+<span id="snn-class"></span><h1>SNN class<a class="headerlink" href="#module-core.model" title="Permalink to this headline">¶</a></h1>
+<p>Created on Thu May 19 16:03:06 2016</p>
+<p>Class for neural networks that have been converted from analog to spiking.</p>
+<p>&#64;author: rbodo</p>
+<dl class="class">
+<dt id="core.model.SNN">
+<em class="property">class </em><code class="descclassname">core.model.</code><code class="descname">SNN</code><span class="sig-paren">(</span><em>path=None</em>, <em>filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<p>Represent a neural network.</p>
+<p>Instances of this class contains all essential information about a network,
+independently of the model library in which the original network was built
+(e.g. Keras). This makes the SNN toolbox stable against changes in input
+formats. Another advantage is extensibility: In order to add a new input
+language to the toolbox (e.g. Caffe), a developer only needs to add a
+single module to <code class="docutils literal"><span class="pre">model_libs</span></code> package, implementing a number of methods
+(see the respective functions in &#8216;keras_input_lib.py&#8217; for more details.)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; Path to directory where to load model from. Defaults to
+<code class="docutils literal"><span class="pre">settings['path']</span></code>.</li>
+<li><strong>filename</strong> (<em>string, optional</em>) &#8211; Name of file to load model from. Defaults to <code class="docutils literal"><span class="pre">settings['filename']</span></code>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="core.model.SNN.model">
+<code class="descname">model</code><a class="headerlink" href="#core.model.SNN.model" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Model</em> &#8211; A model instance of the network in the respective <code class="docutils literal"><span class="pre">model_lib</span></code>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="core.model.SNN.val_fn">
+<code class="descname">val_fn</code><a class="headerlink" href="#core.model.SNN.val_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Theano function</em> &#8211; A Theano function that allows evaluating the original model.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="core.model.SNN.input_shape">
+<code class="descname">input_shape</code><a class="headerlink" href="#core.model.SNN.input_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>list</em> &#8211; The dimensions of the input sample:
+[batch_size, n_chnls, n_rows, n_cols]. For instance, mnist would have
+input shape [Null, 1, 28, 28].</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="core.model.SNN.layers">
+<code class="descname">layers</code><a class="headerlink" href="#core.model.SNN.layers" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>list</em> &#8211; List of all the layers of the network, where each layer contains a
+dictionary with keys</p>
+<ul class="simple">
+<li>layer_num (int): Index of layer.</li>
+<li>layer_type (string): Describing the type, e.g. <cite>Dense</cite>,
+<cite>Convolution</cite>, <cite>Pool</cite>.</li>
+<li>output_shape (list): The output dimensions of the layer.</li>
+</ul>
+<p>In addition, <cite>Dense</cite> and <cite>Convolution</cite> layer types contain</p>
+<ul class="simple">
+<li>parameters (array): The weights and biases connecting this layer with
+the previous.</li>
+</ul>
+<p><cite>Convolution</cite> layers contain further</p>
+<ul class="simple">
+<li>nb_col (int): The x-dimension of filters.</li>
+<li>nb_row (int): The y-dimension of filters.</li>
+<li>border_mode (string): How to handle borders during convolution, e.g.
+<cite>full</cite>, <cite>valid</cite>, <cite>same</cite>.</li>
+</ul>
+<p><cite>Pooling</cite> layers contain</p>
+<ul class="simple">
+<li>pool_size (list): Specifies the subsampling factor in each dimension.</li>
+<li>strides (list): The stepsize in each dimension during pooling.</li>
+</ul>
+<p><cite>Activation</cite> layers (including Pooling) contain</p>
+<ul class="simple">
+<li>get_activ: A Theano function computing the activations of a layer.</li>
+</ul>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="core.model.SNN.labels">
+<code class="descname">labels</code><a class="headerlink" href="#core.model.SNN.labels" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>list</em> &#8211; The layer labels.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="core.model.SNN.layer_idx_map">
+<code class="descname">layer_idx_map</code><a class="headerlink" href="#core.model.SNN.layer_idx_map" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>list</em> &#8211; A list mapping the layer indices of the original network to the parsed
+network. (Not all layers of the original model are needed in the parsed
+model.) For instance: To get the layer index i of the original input
+<code class="docutils literal"><span class="pre">model</span></code> that corresponds to layer j of the parsed network <code class="docutils literal"><span class="pre">layers</span></code>,
+one would use <code class="docutils literal"><span class="pre">i</span> <span class="pre">=</span> <span class="pre">layer_idx_map[j]</span></code>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="core.model.SNN.compiled_snn">
+<code class="descname">compiled_snn</code><a class="headerlink" href="#core.model.SNN.compiled_snn" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>SNN_compiled</em> &#8211; Object containing the compiled spiking network (ready for simulation).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.build">
+<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.build" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.end_sim">
+<code class="descname">end_sim</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.end_sim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.end_sim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.evaluate_ann">
+<code class="descname">evaluate_ann</code><span class="sig-paren">(</span><em>X_test</em>, <em>Y_test</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.evaluate_ann"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.evaluate_ann" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate the performance of a network.</p>
+<p>Wrapper for the evaluation functions of specific input neural network
+libraries <code class="docutils literal"><span class="pre">settings['model_lib']</span></code> like keras, caffe, torch, etc.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X_test</strong> (<em>float32 array</em>) &#8211; The input samples to test.
+With data of the form (channels, num_rows, num_cols),
+X_test has dimension (num_samples, channels*num_rows*num_cols)
+for a multi-layer perceptron, and
+(num_samples, channels, num_rows, num_cols) for a convolutional
+net.</li>
+<li><strong>Y_test</strong> (<em>float32 array</em>) &#8211; Ground truth of test data. Has dimesion (num_samples, num_classes).</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>The output of the <code class="docutils literal"><span class="pre">model_lib</span></code> specific evaluation function, e.g. the</li>
+<li><em>score of a Keras model.</em></li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.export_to_sim">
+<code class="descname">export_to_sim</code><span class="sig-paren">(</span><em>path=None</em>, <em>filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.export_to_sim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.export_to_sim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.get_config">
+<code class="descname">get_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.get_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.get_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dictionary describing the model.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.get_params">
+<code class="descname">get_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.get_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.get_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return list where each entry contains the parameters of a layer of the
+model.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.import_modules">
+<code class="descname">import_modules</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.import_modules"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.import_modules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import utility functions of input model library (&#8216;model_lib&#8217;) and of
+the simulator to use (&#8216;target_sim&#8217;)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.normalize_parameters">
+<code class="descname">normalize_parameters</code><span class="sig-paren">(</span><em>X_train</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.normalize_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.normalize_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize the parameters of a network.</p>
+<p>The parameters of each layer are normalized with respect to the maximum
+activation or parameter value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>X_train</strong> (<em>float32 array</em>) &#8211; The input samples to use for determining the layer activations.
+With data of the form (channels, num_rows, num_cols),
+X_train has dimension (1, channels*num_rows*num_cols) for a
+multi-layer perceptron, and (1, channels, num_rows, num_cols) for a
+convnet.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>X_test</em>, <em>Y_test</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>path=None</em>, <em>filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write model architecture and parameters to disk.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; Path to directory where to save model. Defaults to
+<code class="docutils literal"><span class="pre">settings['path']</span></code>.</li>
+<li><strong>filename</strong> (<em>string, optional</em>) &#8211; Name of file to write model to. Defaults to
+<code class="docutils literal"><span class="pre">settings['filename_snn']</span></code>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.save_config">
+<code class="descname">save_config</code><span class="sig-paren">(</span><em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.save_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.save_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save model configuration to disk.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.save_parameters">
+<code class="descname">save_parameters</code><span class="sig-paren">(</span><em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.save_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.save_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump all layer parameters to a HDF5 file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="core.model.SNN.set_layer_params">
+<code class="descname">set_layer_params</code><span class="sig-paren">(</span><em>parameters</em>, <em>i</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/model.html#SNN.set_layer_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.model.SNN.set_layer_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set <code class="docutils literal"><span class="pre">parameters</span></code> of layer <code class="docutils literal"><span class="pre">i</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-core.pipeline">
+<span id="pipeline"></span><h1>pipeline<a class="headerlink" href="#module-core.pipeline" title="Permalink to this headline">¶</a></h1>
+<p>Wrapper script that combines all tools of SNN Toolbox.</p>
+<p>Created on Thu May 19 16:37:29 2016</p>
+<p>&#64;author: rbodo</p>
+<dl class="function">
+<dt id="core.pipeline.is_stop">
+<code class="descclassname">core.pipeline.</code><code class="descname">is_stop</code><span class="sig-paren">(</span><em>queue</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/pipeline.html#is_stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.pipeline.is_stop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.pipeline.test_full">
+<code class="descclassname">core.pipeline.</code><code class="descname">test_full</code><span class="sig-paren">(</span><em>queue=None, params=[1], param_name='v_thresh', param_logscale=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/pipeline.html#test_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.pipeline.test_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert an snn to a spiking neural network and simulate it.</p>
+<dl class="docutils">
+<dt>Complete pipeline of</dt>
+<dd><ol class="first last arabic simple">
+<li>loading and testing a pretrained ANN,</li>
+<li>normalizing parameters</li>
+<li>converting it to SNN,</li>
+<li>running it on a simulator,</li>
+<li>if given a specified hyperparameter range <code class="docutils literal"><span class="pre">params</span></code>,
+repeat simulations with modified parameters.</li>
+</ol>
+</dd>
+<dt>The testsuit allows specification of</dt>
+<dd><ul class="first last simple">
+<li>the dataset (e.g. MNIST or CIFAR10)</li>
+<li>the spiking simulator to use (currently Brian, Brian2, Nest, Neuron,
+or INI&#8217;s simulator.)</li>
+</ul>
+</dd>
+</dl>
+<p>Perform simulations of a spiking network, while optionally sweeping over a
+specified hyper-parameter range. If the keyword arguments are not given,
+the method performs a single run over the specified number of test samples,
+using the updated default parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>queue</strong> (<em>Queue, optional</em>) &#8211; Results are added to the queue to be displayed in the GUI.</li>
+<li><strong>params</strong> (<em>ndarray, optional</em>) &#8211; Contains the parameter values for which the simulation will be
+repeated.</li>
+<li><strong>param_name</strong> (<em>string, optional</em>) &#8211; Label indicating the parameter to sweep, e.g. <code class="docutils literal"><span class="pre">'v_thresh'</span></code>.
+Must be identical to the parameter&#8217;s label in <code class="docutils literal"><span class="pre">globalparams</span></code>.</li>
+<li><strong>param_logscale</strong> (<em>boolean, optional</em>) &#8211; If <code class="docutils literal"><span class="pre">True</span></code>, plot test accuracy vs <code class="docutils literal"><span class="pre">params</span></code> in log scale.
+Defaults to <code class="docutils literal"><span class="pre">False</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>results</strong> &#8211; List of the accuracies obtained after simulating with each parameter
+value in param_range.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)">list</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-core.inisim">
+<span id="inisim"></span><h1>inisim<a class="headerlink" href="#module-core.inisim" title="Permalink to this headline">¶</a></h1>
+<p>INI spiking neuron simulator</p>
+<p>A collection of helper functions, including spiking layer classes derived from
+Keras layers, which were used to implement our own IF spiking simulator.</p>
+<p>Not needed when converting and running the SNN in pyNN.</p>
+<p>Created on Tue Dec  8 10:41:10 2015</p>
+<p>&#64;author: rbodo</p>
+<dl class="class">
+<dt id="core.inisim.AvgPool2DReLU">
+<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">AvgPool2DReLU</code><span class="sig-paren">(</span><em>pool_size=(2</em>, <em>2)</em>, <em>strides=None</em>, <em>ignore_border=True</em>, <em>label=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#AvgPool2DReLU"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.AvgPool2DReLU" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">keras.layers.convolutional.AveragePooling2D</span></code></p>
+<p>batch_size x input_shape x out_shape</p>
+<dl class="method">
+<dt id="core.inisim.AvgPool2DReLU.get_output">
+<code class="descname">get_output</code><span class="sig-paren">(</span><em>train=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#AvgPool2DReLU.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.AvgPool2DReLU.get_output" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="core.inisim.SpikeConv2DReLU">
+<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeConv2DReLU</code><span class="sig-paren">(</span><em>nb_filter</em>, <em>nb_row</em>, <em>nb_col</em>, <em>weights=None</em>, <em>border_mode='valid'</em>, <em>subsample=(1</em>, <em>1)</em>, <em>label=None</em>, <em>filter_flip=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeConv2DReLU"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeConv2DReLU" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">keras.layers.convolutional.Convolution2D</span></code></p>
+<p>batch_size x input_shape x out_shape</p>
+<dl class="method">
+<dt id="core.inisim.SpikeConv2DReLU.get_output">
+<code class="descname">get_output</code><span class="sig-paren">(</span><em>train=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeConv2DReLU.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeConv2DReLU.get_output" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="core.inisim.SpikeDense">
+<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeDense</code><span class="sig-paren">(</span><em>output_dim</em>, <em>weights=None</em>, <em>label=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeDense"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeDense" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">keras.layers.core.Dense</span></code></p>
+<p>batch_size x input_shape x out_shape</p>
+<dl class="method">
+<dt id="core.inisim.SpikeDense.get_output">
+<code class="descname">get_output</code><span class="sig-paren">(</span><em>train=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeDense.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeDense.get_output" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="core.inisim.SpikeFlatten">
+<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeFlatten</code><span class="sig-paren">(</span><em>label=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeFlatten"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeFlatten" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">keras.layers.core.Flatten</span></code></p>
+<dl class="method">
+<dt id="core.inisim.SpikeFlatten.get_output">
+<code class="descname">get_output</code><span class="sig-paren">(</span><em>train=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeFlatten.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeFlatten.get_output" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.floatX">
+<code class="descclassname">core.inisim.</code><code class="descname">floatX</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#floatX"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.floatX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.get_input">
+<code class="descclassname">core.inisim.</code><code class="descname">get_input</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#get_input"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.get_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.get_time">
+<code class="descclassname">core.inisim.</code><code class="descname">get_time</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#get_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.get_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.get_updates">
+<code class="descclassname">core.inisim.</code><code class="descname">get_updates</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#get_updates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.get_updates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.init_layer">
+<code class="descclassname">core.inisim.</code><code class="descname">init_layer</code><span class="sig-paren">(</span><em>self</em>, <em>layer</em>, <em>v_thresh</em>, <em>tau_refrac</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#init_layer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.init_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.init_neurons">
+<code class="descclassname">core.inisim.</code><code class="descname">init_neurons</code><span class="sig-paren">(</span><em>self</em>, <em>v_thresh=1.0</em>, <em>tau_refrac=0.0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#init_neurons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.init_neurons" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.linear_activation">
+<code class="descclassname">core.inisim.</code><code class="descname">linear_activation</code><span class="sig-paren">(</span><em>self</em>, <em>impulse</em>, <em>time</em>, <em>updates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#linear_activation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.linear_activation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.on_gpu">
+<code class="descclassname">core.inisim.</code><code class="descname">on_gpu</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#on_gpu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.on_gpu" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.reset">
+<code class="descclassname">core.inisim.</code><code class="descname">reset</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.reset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.sharedX">
+<code class="descclassname">core.inisim.</code><code class="descname">sharedX</code><span class="sig-paren">(</span><em>X</em>, <em>dtype='float32'</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#sharedX"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.sharedX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.shared_zeros">
+<code class="descclassname">core.inisim.</code><code class="descname">shared_zeros</code><span class="sig-paren">(</span><em>shape</em>, <em>dtype='float32'</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#shared_zeros"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.shared_zeros" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.skip_spike">
+<code class="descclassname">core.inisim.</code><code class="descname">skip_spike</code><span class="sig-paren">(</span><em>new_mem</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#skip_spike"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.skip_spike" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.softmax_activation">
+<code class="descclassname">core.inisim.</code><code class="descname">softmax_activation</code><span class="sig-paren">(</span><em>self</em>, <em>impulse</em>, <em>time</em>, <em>updates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#softmax_activation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.softmax_activation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.trigger_spike">
+<code class="descclassname">core.inisim.</code><code class="descname">trigger_spike</code><span class="sig-paren">(</span><em>new_mem</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#trigger_spike"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.trigger_spike" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.update_neurons">
+<code class="descclassname">core.inisim.</code><code class="descname">update_neurons</code><span class="sig-paren">(</span><em>self</em>, <em>impulse</em>, <em>time</em>, <em>updates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#update_neurons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.update_neurons" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-core.util">
+<span id="util"></span><h1>util<a class="headerlink" href="#module-core.util" title="Permalink to this headline">¶</a></h1>
+<p>Helper functions to handle parameters and variables of interest during
+conversion and simulation of an SNN.</p>
+<p>Created on Wed Mar  9 16:18:33 2016</p>
+<p>&#64;author: rbodo</p>
+<dl class="function">
+<dt id="core.util.extract_label">
+<code class="descclassname">core.util.</code><code class="descname">extract_label</code><span class="sig-paren">(</span><em>label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#extract_label"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.extract_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the layer number, name and shape from a string.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>label</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Specifies both the layer type, index and shape, e.g.
+<code class="docutils literal"><span class="pre">'03Convolution2D_3x32x32'</span></code>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
+<li><strong>layer_num</strong> (<em>int</em>) &#8211; The index of the layer in the network.</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; The type of the layer.</li>
+<li><strong>shape</strong> (<em>tuple</em>) &#8211; The shape of the layer</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.util.get_activations_batch">
+<code class="descclassname">core.util.</code><code class="descname">get_activations_batch</code><span class="sig-paren">(</span><em>ann</em>, <em>X_batch</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#get_activations_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.get_activations_batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute layer activations of an ANN.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ann</strong> (<a class="reference internal" href="#core.model.SNN" title="core.model.SNN"><em>SNN</em></a>) &#8211; An instance of the SNN class. Contains the <code class="docutils literal"><span class="pre">get_activ</span></code> function that
+allow computation of layer activations of the original input model
+(hence the name &#8216;ann&#8217;). Needed in activation and correlation plots.</li>
+<li><strong>X_batch</strong> (<em>float32 array</em>) &#8211; The input samples to use for determining the layer activations. With
+data of the form (channels, num_rows, num_cols), X has dimension
+(batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
+and (batch_size, channels, num_rows, num_cols) for a convolutional net.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>activations_batch</strong> &#8211; Each entry represents a layer in the ANN for which an activation can be
+calculated (e.g. <code class="docutils literal"><span class="pre">Dense</span></code>, <code class="docutils literal"><span class="pre">Convolution2D</span></code>).
+<code class="docutils literal"><span class="pre">activations</span></code> containing the activations of a layer. It has the same
+shape as the original layer, e.g.
+(batch_size, n_features, n_rows, n_cols) for a convolution layer.
+<code class="docutils literal"><span class="pre">label</span></code> is a string specifying the layer type, e.g. <code class="docutils literal"><span class="pre">'Dense'</span></code>.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of tuples <code class="docutils literal"><span class="pre">(activations,</span> <span class="pre">label)</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.util.get_activations_layer">
+<code class="descclassname">core.util.</code><code class="descname">get_activations_layer</code><span class="sig-paren">(</span><em>get_activ</em>, <em>X_train</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#get_activations_layer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.get_activations_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get activations of a specific layer.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>get_activ</strong> (<em>Theano function</em>) &#8211; A Theano function computing the activations of a layer.</li>
+<li><strong>X_train</strong> (<em>float32 array</em>) &#8211; The samples to compute activations for. With data of the form
+(channels, num_rows, num_cols), X_train has dimension
+(batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
+and (batch_size, channels, num_rows, num_cols) for a convolutional net.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>activations</strong> &#8211; The activations of cells in a specific layer. Has the same shape as the
+layer.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/library/array.html#module-array" title="(in Python v2.7)">array</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.util.get_range">
+<code class="descclassname">core.util.</code><code class="descname">get_range</code><span class="sig-paren">(</span><em>start=0.0</em>, <em>stop=1.0</em>, <em>num=5</em>, <em>method='linear'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#get_range"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.get_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a range of parameter values.</p>
+<p>Convenience function. For more flexibility, use <code class="docutils literal"><span class="pre">numpy.linspace</span></code>,
+<code class="docutils literal"><span class="pre">numpy.logspace</span></code>, <code class="docutils literal"><span class="pre">numpy.random.random_sample</span></code> directly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>start</strong> (<em>scalar, optional</em>) &#8211; The starting value of the sequence</li>
+<li><strong>stop</strong> (<em>scalar, optional</em>) &#8211; End value of the sequence.</li>
+<li><strong>num</strong> (<em>int, optional</em>) &#8211; Number of samples to generate. Must be non-negative.</li>
+<li><strong>method</strong> (<em>string, optional</em>) &#8211; The sequence will be computed on either a linear, logarithmic or random
+grid.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>samples</strong> &#8211; There are <code class="docutils literal"><span class="pre">num</span></code> samples in the closed interval [start, stop].</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.util.get_sample_activity_from_batch">
+<code class="descclassname">core.util.</code><code class="descname">get_sample_activity_from_batch</code><span class="sig-paren">(</span><em>activity_batch</em>, <em>i=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#get_sample_activity_from_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.get_sample_activity_from_batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns layer activity for sample <code class="docutils literal"><span class="pre">i</span></code> of an <code class="docutils literal"><span class="pre">activity_batch</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.util.norm_parameters">
+<code class="descclassname">core.util.</code><code class="descname">norm_parameters</code><span class="sig-paren">(</span><em>parameters</em>, <em>activations</em>, <em>prev_scale_fac</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#norm_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.norm_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize parameters</p>
+<p>Determine the maximum activation of a layer and apply this factor to
+normalize the parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) &#8211; The parameters of a layer (both weights and biases).</li>
+<li><strong>activations</strong> (<a class="reference external" href="https://docs.python.org/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) &#8211; The activations of cells in a specific layer. Has the same shape as the
+layer.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>parameters_norm</strong> (<em>array</em>) &#8211; The parameters of a layer, divided by <code class="docutils literal"><span class="pre">scale_fac</span></code>.</li>
+<li><strong>scale_fac</strong> (<em>float</em>) &#8211; Maximum (or percentile) of activations or parameters of this layer.
+Parameters of the respective layer are scaled by this value.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.util.print_description">
+<code class="descclassname">core.util.</code><code class="descname">print_description</code><span class="sig-paren">(</span><em>snn=None</em>, <em>log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#print_description"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.print_description" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print a summary of the test run, parameters, and network. If <code class="docutils literal"><span class="pre">log==True</span></code>,
+the output is written as <code class="docutils literal"><span class="pre">settings.txt</span></code> file to the folder given by
+<code class="docutils literal"><span class="pre">settings['log_dir_of_current_run']</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.util.spiketrains_to_rates">
+<code class="descclassname">core.util.</code><code class="descname">spiketrains_to_rates</code><span class="sig-paren">(</span><em>spiketrains_batch</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#spiketrains_to_rates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.spiketrains_to_rates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert spiketrains to spikerates.</p>
+<p>The output will have the same shape as the input except for the last
+dimension, which is removed by replacing a sequence of spiketimes by a
+single rate value.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.util.wilson_score">
+<code class="descclassname">core.util.</code><code class="descname">wilson_score</code><span class="sig-paren">(</span><em>p</em>, <em>n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#wilson_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.wilson_score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Confidence interval of a binomial distribution.</p>
+<p>See <a class="reference external" href="https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval">https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval</a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>p</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The proportion of successes in <code class="docutils literal"><span class="pre">n</span></code> experiments.</li>
+<li><strong>n</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The number of Bernoulli-trials (sample size).</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">The confidence interval.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p><a class="reference download internal" href="_downloads/util.py" download=""><code class="xref download docutils literal"><span class="pre">source</span></code></a></p>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="snntoolbox.io_utils.html" class="btn btn-neutral float-right" title="saving" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="modules.html" class="btn btn-neutral" title="Tools" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Bodo Rueckauer.
+      Last updated on Aug 08, 2016.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,520 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>core.util &mdash; SNN toolbox 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="SNN toolbox 0.1 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> SNN toolbox
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configure_toolbox.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">SNN toolbox</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      
+    <li>core.util</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for core.util</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Helper functions to handle parameters and variables of interest during</span>
+<span class="sd">conversion and simulation of an SNN.</span>
+
+<span class="sd">Created on Wed Mar  9 16:18:33 2016</span>
+
+<span class="sd">@author: rbodo</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># For compatibility with python2</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">future</span> <span class="kn">import</span> <span class="n">standard_library</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">snntoolbox.config</span> <span class="kn">import</span> <span class="n">settings</span>
+
+<span class="n">standard_library</span><span class="o">.</span><span class="n">install_aliases</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="get_range"><a class="viewcode-back" href="../../core.html#core.util.get_range">[docs]</a><span class="k">def</span> <span class="nf">get_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a range of parameter values.</span>
+
+<span class="sd">    Convenience function. For more flexibility, use ``numpy.linspace``,</span>
+<span class="sd">    ``numpy.logspace``, ``numpy.random.random_sample`` directly.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    start: scalar, optional</span>
+<span class="sd">        The starting value of the sequence</span>
+<span class="sd">    stop: scalar, optional</span>
+<span class="sd">        End value of the sequence.</span>
+<span class="sd">    num: int, optional</span>
+<span class="sd">        Number of samples to generate. Must be non-negative.</span>
+<span class="sd">    method: string, optional</span>
+<span class="sd">        The sequence will be computed on either a linear, logarithmic or random</span>
+<span class="sd">        grid.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    samples: ndarray</span>
+<span class="sd">        There are ``num`` samples in the closed interval [start, stop].</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">methods</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="s1">&#39;random&#39;</span><span class="p">}</span>
+    <span class="k">assert</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">methods</span><span class="p">,</span> <span class="s2">&quot;Specified grid-search method {} not supported.</span><span class="se">\</span>
+<span class="s2">        Choose among {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">methods</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="n">stop</span><span class="p">,</span> <span class="s2">&quot;Start must be smaller than stop.&quot;</span>
+    <span class="k">assert</span> <span class="n">num</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> \
+        <span class="s2">&quot;Number of samples must be unsigned int.&quot;</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;linear&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;random&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random_sample</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">stop</span><span class="o">-</span><span class="n">start</span><span class="p">)</span> <span class="o">+</span> <span class="n">start</span></div>
+
+
+<div class="viewcode-block" id="print_description"><a class="viewcode-back" href="../../core.html#core.util.print_description">[docs]</a><span class="k">def</span> <span class="nf">print_description</span><span class="p">(</span><span class="n">snn</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Print a summary of the test run, parameters, and network. If ``log==True``,</span>
+<span class="sd">    the output is written as ``settings.txt`` file to the folder given by</span>
+<span class="sd">    ``settings[&#39;log_dir_of_current_run&#39;]``.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">log</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">os</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">],</span>
+                              <span class="s1">&#39;settings.txt&#39;</span><span class="p">),</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">sys</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;SUMMARY SETUP&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;=============</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;PARAMETERS&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;----------</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">snn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;NETWORK&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;-------</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">snn</span><span class="o">.</span><span class="n">get_config</span><span class="p">(),</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;END OF SUMMARY&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="spiketrains_to_rates"><a class="viewcode-back" href="../../core.html#core.util.spiketrains_to_rates">[docs]</a><span class="k">def</span> <span class="nf">spiketrains_to_rates</span><span class="p">(</span><span class="n">spiketrains_batch</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert spiketrains to spikerates.</span>
+
+<span class="sd">    The output will have the same shape as the input except for the last</span>
+<span class="sd">    dimension, which is removed by replacing a sequence of spiketimes by a</span>
+<span class="sd">    single rate value.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">spikerates_batch</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">sp</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">spiketrains_batch</span><span class="p">):</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># output_shape of layer</span>
+        <span class="c1"># Allocate list containing an empty array of shape</span>
+        <span class="c1"># &#39;output_shape&#39; for each layer of the network, which will</span>
+        <span class="c1"># hold the spikerates of a mini-batch.</span>
+        <span class="n">spikerates_batch</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">shape</span><span class="p">),</span> <span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="c1"># Count number of spikes fired in the layer and divide by the</span>
+        <span class="c1"># simulation time in seconds to get the mean firing rate of each</span>
+        <span class="c1"># neuron in Hertz.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+                <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">])):</span>
+                    <span class="n">spikerates_batch</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">][</span><span class="n">jj</span><span class="p">])[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">/</span>
+                        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+                <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">])):</span>
+                    <span class="k">for</span> <span class="n">kk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">])):</span>
+                        <span class="k">for</span> <span class="n">ll</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">])):</span>
+                            <span class="n">spikerates_batch</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">ll</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                                <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">ll</span><span class="p">])[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span>
+                                <span class="mi">1000</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">spikerates_batch</span></div>
+
+
+<div class="viewcode-block" id="get_sample_activity_from_batch"><a class="viewcode-back" href="../../core.html#core.util.get_sample_activity_from_batch">[docs]</a><span class="k">def</span> <span class="nf">get_sample_activity_from_batch</span><span class="p">(</span><span class="n">activity_batch</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns layer activity for sample ``i`` of an ``activity_batch``.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="p">[(</span><span class="n">layer_act</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">layer_act</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">layer_act</span> <span class="ow">in</span> <span class="n">activity_batch</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="norm_parameters"><a class="viewcode-back" href="../../core.html#core.util.norm_parameters">[docs]</a><span class="k">def</span> <span class="nf">norm_parameters</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">activations</span><span class="p">,</span> <span class="n">prev_scale_fac</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Normalize parameters</span>
+
+<span class="sd">    Determine the maximum activation of a layer and apply this factor to</span>
+<span class="sd">    normalize the parameters.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    parameters: array</span>
+<span class="sd">        The parameters of a layer (both weights and biases).</span>
+<span class="sd">    activations: array</span>
+<span class="sd">        The activations of cells in a specific layer. Has the same shape as the</span>
+<span class="sd">        layer.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    parameters_norm: array</span>
+<span class="sd">        The parameters of a layer, divided by ``scale_fac``.</span>
+<span class="sd">    scale_fac: float</span>
+<span class="sd">        Maximum (or percentile) of activations or parameters of this layer.</span>
+<span class="sd">        Parameters of the respective layer are scaled by this value.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">scale_fac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">activations</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">])</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Maximum value: {:.2f}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scale_fac</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">prev_scale_fac</span> <span class="o">/</span> <span class="n">scale_fac</span><span class="p">,</span>
+            <span class="n">parameters</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">scale_fac</span><span class="p">],</span> <span class="n">scale_fac</span></div>
+
+
+<div class="viewcode-block" id="get_activations_layer"><a class="viewcode-back" href="../../core.html#core.util.get_activations_layer">[docs]</a><span class="k">def</span> <span class="nf">get_activations_layer</span><span class="p">(</span><span class="n">get_activ</span><span class="p">,</span> <span class="n">X_train</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get activations of a specific layer.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    get_activ: Theano function</span>
+<span class="sd">        A Theano function computing the activations of a layer.</span>
+
+<span class="sd">    X_train: float32 array</span>
+<span class="sd">        The samples to compute activations for. With data of the form</span>
+<span class="sd">        (channels, num_rows, num_cols), X_train has dimension</span>
+<span class="sd">        (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,</span>
+<span class="sd">        and (batch_size, channels, num_rows, num_cols) for a convolutional net.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    activations: array</span>
+<span class="sd">        The activations of cells in a specific layer. Has the same shape as the</span>
+<span class="sd">        layer.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">get_activ</span><span class="p">(</span><span class="n">X_train</span><span class="p">[:</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]])</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">activations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">num_batches</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">X_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]))</span>
+    <span class="k">for</span> <span class="n">batch_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_batches</span><span class="p">):</span>
+        <span class="c1"># Determine batch indices.</span>
+        <span class="n">max_idx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">((</span><span class="n">batch_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">],</span>
+                      <span class="n">X_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">batch_idxs</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_idx</span> <span class="o">*</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">],</span> <span class="n">max_idx</span><span class="p">)</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[</span><span class="n">batch_idxs</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch_idxs</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]:</span>
+            <span class="n">batch</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">X_train</span><span class="p">[:</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">activations</span><span class="p">[</span><span class="n">batch_idxs</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_activ</span><span class="p">(</span><span class="n">batch</span><span class="p">)[:</span><span class="nb">len</span><span class="p">(</span><span class="n">batch_idxs</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">activations</span><span class="p">[</span><span class="n">batch_idxs</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_activ</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">activations</span></div>
+
+
+<div class="viewcode-block" id="get_activations_batch"><a class="viewcode-back" href="../../core.html#core.util.get_activations_batch">[docs]</a><span class="k">def</span> <span class="nf">get_activations_batch</span><span class="p">(</span><span class="n">ann</span><span class="p">,</span> <span class="n">X_batch</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute layer activations of an ANN.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    ann: SNN</span>
+<span class="sd">        An instance of the SNN class. Contains the ``get_activ`` function that</span>
+<span class="sd">        allow computation of layer activations of the original input model</span>
+<span class="sd">        (hence the name &#39;ann&#39;). Needed in activation and correlation plots.</span>
+
+<span class="sd">    X_batch: float32 array</span>
+<span class="sd">        The input samples to use for determining the layer activations. With</span>
+<span class="sd">        data of the form (channels, num_rows, num_cols), X has dimension</span>
+<span class="sd">        (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,</span>
+<span class="sd">        and (batch_size, channels, num_rows, num_cols) for a convolutional net.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    activations_batch: list of tuples ``(activations, label)``</span>
+<span class="sd">        Each entry represents a layer in the ANN for which an activation can be</span>
+<span class="sd">        calculated (e.g. ``Dense``, ``Convolution2D``).</span>
+<span class="sd">        ``activations`` containing the activations of a layer. It has the same</span>
+<span class="sd">        shape as the original layer, e.g.</span>
+<span class="sd">        (batch_size, n_features, n_rows, n_cols) for a convolution layer.</span>
+<span class="sd">        ``label`` is a string specifying the layer type, e.g. ``&#39;Dense&#39;``.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">activations_batch</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Loop through all layers, looking for activation layers</span>
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ann</span><span class="o">.</span><span class="n">layers</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="s1">&#39;get_activ&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ann</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">continue</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">idx</span> <span class="k">if</span> <span class="s1">&#39;Pooling&#39;</span> <span class="ow">in</span> <span class="n">ann</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">idx</span><span class="o">-</span><span class="mi">1</span>
+        <span class="n">activations_batch</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ann</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s1">&#39;get_activ&#39;</span><span class="p">](</span><span class="n">X_batch</span><span class="p">),</span>
+                                  <span class="n">ann</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;label&#39;</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">activations_batch</span></div>
+
+
+<div class="viewcode-block" id="wilson_score"><a class="viewcode-back" href="../../core.html#core.util.wilson_score">[docs]</a><span class="k">def</span> <span class="nf">wilson_score</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Confidence interval of a binomial distribution.</span>
+
+<span class="sd">    See https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    p: float</span>
+<span class="sd">        The proportion of successes in ``n`` experiments.</span>
+<span class="sd">    n: int</span>
+<span class="sd">        The number of Bernoulli-trials (sample size).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    The confidence interval.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="c1"># Quantile z of a standard normal distribution, for the error quantile a:</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="mf">1.96</span>  <span class="c1"># 1.44 for a == 85%, 1.96 for a == 95%</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">z</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">)</span> <span class="o">+</span> <span class="n">z</span><span class="o">*</span><span class="n">z</span><span class="o">/</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="n">n</span><span class="p">))</span><span class="o">/</span><span class="n">n</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">z</span><span class="o">*</span><span class="n">z</span><span class="o">/</span><span class="n">n</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="extract_label"><a class="viewcode-back" href="../../core.html#core.util.extract_label">[docs]</a><span class="k">def</span> <span class="nf">extract_label</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the layer number, name and shape from a string.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    label: string</span>
+<span class="sd">        Specifies both the layer type, index and shape, e.g.</span>
+<span class="sd">        ``&#39;03Convolution2D_3x32x32&#39;``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    layer_num: int</span>
+<span class="sd">        The index of the layer in the network.</span>
+
+<span class="sd">    name: string</span>
+<span class="sd">        The type of the layer.</span>
+
+<span class="sd">    shape: tuple</span>
+<span class="sd">        The shape of the layer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">l</span> <span class="o">=</span> <span class="n">label</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span>
+    <span class="n">layer_num</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">][:</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">():</span>
+            <span class="n">layer_num</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">][:</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="o">.</span><span class="n">isdigit</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;D&#39;</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">l</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">)])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">layer_num</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Bodo Rueckauer.
+      Last updated on Aug 08, 2016.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

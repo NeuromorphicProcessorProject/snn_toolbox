@@ -1,0 +1,458 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Getting Started &mdash; SNN toolbox 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="SNN toolbox 0.1 documentation" href="index.html"/>
+        <link rel="next" title="Configuration" href="configure_toolbox.html"/>
+        <link rel="prev" title="Welcome to the SNN toolbox documentation!" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> SNN toolbox
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#prebuild-version">Prebuild version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#development-version">Development version</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-toolbox">Running the toolbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#extending-the-toolbox">Extending the toolbox</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#input-side-adding-a-new-model-library">Input side: Adding a new model library</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#output-side-adding-a-custom-simulator">Output side: Adding a custom simulator</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#examples-fully-connected-network-on-mnist">Examples - Fully Connected Network on MNIST</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#usecase-a-conversion-only">Usecase A - Conversion only</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#usecase-b-simulation-only">Usecase B - Simulation only</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#usecase-c-parameter-sweep">Usecase C - Parameter sweep</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#contact">Contact</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configure_toolbox.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">SNN toolbox</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Getting Started</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/getting_started.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>We recommend using virtual environments for different simulators, since the simulators
+supported by pyNN may require different versions of python, numpy, ...
+(Brian for instance only works with python-2).</p>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>All dependencies will be installed automatically.</li>
+<li>For testing a converted network, the toolbox includes a ready-to-use spiking
+simulator developed at INI. In addition, you may install a simulator supported
+by <a class="reference external" href="http://neuralensemble.org/docs/PyNN/">pyNN</a>, or bring your own custom
+simulator that accepts a pyNN or Keras model as input.</li>
+</ul>
+</div>
+<div class="section" id="prebuild-version">
+<h3>Prebuild version<a class="headerlink" href="#prebuild-version" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Download the archive <code class="docutils literal"><span class="pre">dist/snntoolbox-&lt;version&gt;-py2.py3-none-any.whl</span></code></li>
+<li>Run <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">snntoolbox-&lt;version&gt;-py2.py3-none-any.whl</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="development-version">
+<h3>Development version<a class="headerlink" href="#development-version" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>To get the latest version, checkout the <a class="reference external" href="git&#64;github.com:dannyneil/chimera_sim.git">repository</a></li>
+<li>In the toolbox root directory <code class="docutils literal"><span class="pre">SNN_toolbox/</span></code>, run <code class="docutils literal"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">develop</span></code>.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="running-the-toolbox">
+<h2>Running the toolbox<a class="headerlink" href="#running-the-toolbox" title="Permalink to this headline">¶</a></h2>
+<p>In a terminal window, type <code class="docutils literal"><span class="pre">snntoolbox</span></code> to start the main GUI containing all tools.</p>
+<p>Alternitively, read and run example.py in snntoolbox/tests/, which contains a number of typical usecases.</p>
+</div>
+<div class="section" id="extending-the-toolbox">
+<h2>Extending the toolbox<a class="headerlink" href="#extending-the-toolbox" title="Permalink to this headline">¶</a></h2>
+<p>Have a look at the <span class="xref doc">pipeline</span> module to examine the complete pipeline of</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>loading and testing a pretrained ANN,</li>
+<li>normalizing weights</li>
+<li>converting it to SNN,</li>
+<li>running it on a simulator,</li>
+<li>if given a specified hyperparameter range <code class="docutils literal"><span class="pre">params</span></code>,
+repeat simulations with modified parameters.</li>
+</ol>
+</div></blockquote>
+<div class="section" id="input-side-adding-a-new-model-library">
+<h3>Input side: Adding a new model library<a class="headerlink" href="#input-side-adding-a-new-model-library" title="Permalink to this headline">¶</a></h3>
+<p>So far, the toolbox supports input models written in Keras and Lasagne.</p>
+<p>The philosophy behind the architecture is to make all steps in the conversion/simulation
+pipeline independent of the original model format. Therefore, in order to add a
+new input model library (e.g. Caffe) to the toolbox, put a module named <code class="docutils literal"><span class="pre">caffe_input_lib</span></code>
+into the <code class="docutils literal"><span class="pre">model_libs</span></code> package. Have a look at one of the existing files there to get an idea
+what functions have to be implemented. The return requirements are specified in their
+respective docstrings. Basically, all it needs is a function to parse the essential
+information about layers into a common format used by the toolbox further down the line.</p>
+</div>
+<div class="section" id="output-side-adding-a-custom-simulator">
+<h3>Output side: Adding a custom simulator<a class="headerlink" href="#output-side-adding-a-custom-simulator" title="Permalink to this headline">¶</a></h3>
+<p>Similarly, adding another simulator to run converted networks implies adding a file to the
+<code class="docutils literal"><span class="pre">target_simulators</span></code> package. Each file in there allow building a spiking network
+and exporting it for use in a specific spiking simulator.</p>
+<p>To add a simulator called &#8216;custom&#8217;, put a file named <code class="docutils literal"><span class="pre">custom_target_sim.py</span></code> into <code class="docutils literal"><span class="pre">target_simulators</span></code>. Then implement the class <code class="docutils literal"><span class="pre">SNN_compiled</span></code> with its
+methods (<code class="docutils literal"><span class="pre">load</span></code>, <code class="docutils literal"><span class="pre">save</span></code>, <code class="docutils literal"><span class="pre">build</span></code>, <code class="docutils literal"><span class="pre">run</span></code>) tailored to &#8216;custom&#8217; simulator.</p>
+</div>
+</div>
+<div class="section" id="examples-fully-connected-network-on-mnist">
+<h2>Examples - Fully Connected Network on MNIST<a class="headerlink" href="#examples-fully-connected-network-on-mnist" title="Permalink to this headline">¶</a></h2>
+<p>Normally, we would run the toolbox simply by typing <code class="docutils literal"><span class="pre">snntoolbox</span></code> in the terminal
+and using the GUI.</p>
+<p>If working with a python interpreter, one would specify a set of parameters and
+then call <code class="xref py py-func docutils literal"><span class="pre">tests.util.test_full()</span></code>, like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">snntoolbox</span>
+
+<span class="c1"># Define parameters</span>
+<span class="n">settings</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dataset&#39;</span><span class="p">:</span> <span class="s1">&#39;mnist&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;architecture&#39;</span><span class="p">:</span> <span class="s1">&#39;cnn&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;filename&#39;</span><span class="p">:</span> <span class="s1">&#39;99.16&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="s1">&#39;example/mnist/cnn/99.16/INI/&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;evaluateANN&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>  <span class="c1"># Test accuracy of input model</span>
+            <span class="s1">&#39;normalize&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>  <span class="c1"># Normalize weights to get better perf.</span>
+            <span class="s1">&#39;convert&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>  <span class="c1"># Convert analog net to spiking</span>
+            <span class="s1">&#39;simulate&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>  <span class="c1"># Simulate converted net</span>
+            <span class="s1">&#39;verbose&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>  <span class="c1"># Show plots and temporary results</span>
+            <span class="s1">&#39;v_thresh&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># Threshold potential</span>
+            <span class="s1">&#39;simulator&#39;</span><span class="p">:</span> <span class="s1">&#39;INI&#39;</span><span class="p">,</span>  <span class="c1"># Reset potential</span>
+            <span class="s1">&#39;duration&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">}</span>  <span class="c1"># Simulation time</span>
+
+<span class="c1"># Run network (including loading the model, weight normalization, conversion</span>
+<span class="c1"># and simulation)</span>
+<span class="n">snntoolbox</span><span class="o">.</span><span class="n">update_setup</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+<span class="n">snntoolbox</span><span class="o">.</span><span class="n">test_full</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>However, here are three usecases that allow some more insight into the application of this toolbox:</p>
+<blockquote>
+<div><ol class="upperalpha simple">
+<li><a class="reference internal" href="#conversion-only">Conversion only</a></li>
+<li><a class="reference internal" href="#simulation-only">Simulation only</a></li>
+<li><a class="reference internal" href="#parameter-sweep">Parameter sweep</a></li>
+</ol>
+</div></blockquote>
+<p>For a description of the possible values for the parameters in <code class="docutils literal"><span class="pre">settings</span></code>,
+see <a class="reference internal" href="configure_toolbox.html"><span class="doc">Configuration</span></a>.</p>
+<div class="section" id="usecase-a-conversion-only">
+<span id="spiking-network"></span><span id="conversion-only"></span><h3>Usecase A - Conversion only<a class="headerlink" href="#usecase-a-conversion-only" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>Steps:</dt>
+<dd><ol class="first last arabic">
+<li><p class="first">Set <code class="docutils literal"><span class="pre">convert</span> <span class="pre">=</span> <span class="pre">True</span></code> and <code class="docutils literal"><span class="pre">simulate</span> <span class="pre">=</span> <span class="pre">False</span></code></p>
+</li>
+<li><p class="first">Specify other parameters (working directory, filename, ...)</p>
+</li>
+<li><p class="first">Update settings: <code class="docutils literal"><span class="pre">update_setup(settings)</span></code></p>
+</li>
+<li><p class="first">Call <code class="docutils literal"><span class="pre">test_full()</span></code>. This will</p>
+<blockquote>
+<div><ul class="simple">
+<li>load the dataset,</li>
+<li>load a pretrained ANN from <code class="docutils literal"><span class="pre">&lt;path&gt;/&lt;filename&gt;</span></code></li>
+<li>optionally evaluate it (<code class="docutils literal"><span class="pre">evaluate</span> <span class="pre">=</span> <span class="pre">True</span></code>),</li>
+<li>optionally normalize weights (<code class="docutils literal"><span class="pre">normalize</span> <span class="pre">=</span> <span class="pre">True</span></code>),</li>
+<li>convert to spiking,</li>
+<li>save SNN to disk.</li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+</dd>
+</dl>
+</div>
+<div class="section" id="usecase-b-simulation-only">
+<span id="evaluated"></span><span id="simulation-only"></span><h3>Usecase B - Simulation only<a class="headerlink" href="#usecase-b-simulation-only" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>Steps:</dt>
+<dd><ol class="first arabic">
+<li><p class="first">Set <code class="docutils literal"><span class="pre">convert</span> <span class="pre">=</span> <span class="pre">False</span></code> and <code class="docutils literal"><span class="pre">simulate</span> <span class="pre">=</span> <span class="pre">True</span></code></p>
+</li>
+<li><p class="first">Specify other parameters (working directory, simulator to use, ...)</p>
+</li>
+<li><p class="first">Update settings: <code class="docutils literal"><span class="pre">update_setup(settings)</span></code></p>
+</li>
+<li><p class="first">Call <code class="docutils literal"><span class="pre">test_full()</span></code>. This will</p>
+<blockquote>
+<div><ul class="simple">
+<li>load the dataset,</li>
+<li>load your already converted SNN,</li>
+<li>run the net on a spiking simulator,</li>
+<li>plot spikerates, spiketrains, activations, correlations, etc.</li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+<p class="last">Note: It is assumed that a network has already been converted (e.g. with
+Usecase A). I.e. there should be a folder in <code class="docutils literal"><span class="pre">&lt;path&gt;</span></code> containing the
+converted network, named <code class="docutils literal"><span class="pre">snn_&lt;filename&gt;_&lt;simulator&gt;</span></code>.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="usecase-c-parameter-sweep">
+<span id="parameter-sweep"></span><h3>Usecase C - Parameter sweep<a class="headerlink" href="#usecase-c-parameter-sweep" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>Steps:</dt>
+<dd><ol class="first last arabic">
+<li><p class="first">Specify parameters and update settings with <code class="docutils literal"><span class="pre">update_setup(settings)</span></code></p>
+</li>
+<li><p class="first">Define a parameter range to sweep, e.g. for <cite>v_thresh</cite>, using for
+instance the helper function <code class="docutils literal"><span class="pre">get_range()</span></code></p>
+</li>
+<li><p class="first">Call <code class="docutils literal"><span class="pre">test_full</span></code>. This will</p>
+<blockquote>
+<div><ul class="simple">
+<li>load an already converted SNN or perform a conversion as specified in
+settings.</li>
+<li>run the SNN repeatedly on a spiking simulator while varying the
+hyperparameter</li>
+<li>plot accuracy vs. hyperparameter</li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+</dd>
+</dl>
+<p>Usecase C is shown in full in the example below.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">snntoolbox</span>
+
+<span class="c1"># Parameters</span>
+<span class="n">settings</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dataset&#39;</span><span class="p">:</span> <span class="s1">&#39;mnist&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;architecture&#39;</span><span class="p">:</span> <span class="s1">&#39;cnn&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;filename&#39;</span><span class="p">:</span> <span class="s1">&#39;99.16&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="s1">&#39;example/mnist/cnn/99.16/INI/&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;evaluateANN&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>  <span class="c1"># Test accuracy of input model</span>
+            <span class="s1">&#39;normalize&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>  <span class="c1"># Normalize weights to get better perf.</span>
+            <span class="s1">&#39;convert&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>  <span class="c1"># Convert analog net to spiking</span>
+            <span class="s1">&#39;simulate&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>  <span class="c1"># Simulate converted net</span>
+            <span class="s1">&#39;verbose&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>  <span class="c1"># Show plots and temporary results</span>
+            <span class="s1">&#39;v_thresh&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># Threshold potential</span>
+            <span class="s1">&#39;simulator&#39;</span><span class="p">:</span> <span class="s1">&#39;INI&#39;</span><span class="p">,</span>  <span class="c1"># Reset potential</span>
+            <span class="s1">&#39;duration&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">}</span>  <span class="c1"># Simulation time</span>
+
+<span class="c1"># Update defaults with parameters specified above:</span>
+<span class="n">snntoolbox</span><span class="o">.</span><span class="n">update_setup</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+
+<span class="c1"># Run network (including loading the model, weight normalization,</span>
+<span class="c1"># conversion and simulation).</span>
+
+<span class="c1"># If set True, the converted model is simulated for three different values</span>
+<span class="c1"># of v_thresh. Otherwise use parameters as specified above,</span>
+<span class="c1"># for a single run.</span>
+<span class="n">do_param_sweep</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">if</span> <span class="n">do_param_sweep</span><span class="p">:</span>
+    <span class="n">param_name</span> <span class="o">=</span> <span class="s1">&#39;v_thresh&#39;</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">snntoolbox</span><span class="o">.</span><span class="n">get_range</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">)</span>
+    <span class="n">snntoolbox</span><span class="o">.</span><span class="n">test_full</span><span class="p">(</span><span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+                         <span class="n">param_name</span><span class="o">=</span><span class="n">param_name</span><span class="p">,</span>
+                         <span class="n">param_logscale</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">snntoolbox</span><span class="o">.</span><span class="n">test_full</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="contact">
+<h2>Contact<a class="headerlink" href="#contact" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Bodo Rueckauer</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="configure_toolbox.html" class="btn btn-neutral float-right" title="Configuration" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Welcome to the SNN toolbox documentation!" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Bodo Rueckauer.
+      Last updated on Aug 08, 2016.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
