@@ -1180,7 +1180,7 @@ class SNNToolboxGUI():
             self.path_entry.xview_moveto(howMany)
 
     def toggle_state_pyNN(self, val):
-        if val not in simulators_pyNN:
+        if val not in list(simulators_pyNN) + ['brian2']:
             self.settings['state_pyNN'].set('disabled')
         else:
             self.settings['state_pyNN'].set('normal')

@@ -282,6 +282,9 @@ pyNN_settings = {'v_reset': 0,
                  'delay': 1,  # Constraint: delay >= dt
                  'num_to_test': 10}
 
+# Merge all settings
+settings.update(pyNN_settings)
+
 # Layers followed by an Activation layer
 activation_layers = {'Dense', 'Convolution2D'}
 
@@ -351,6 +354,9 @@ def update_setup(s=None):
     # Specify filenames for models at different stages of the conversion.
     s['filename_snn'] = 'snn_' + s['filename']
     s['filename_snn_exported'] = s['filename_snn'] + '_' + s['simulator']
+
+    if 'poisson_input' not in s:
+        s.update({'poisson_input': True})
 
     if s['simulator'] != 'INI' and not s['poisson_input']:
         s['poisson_input'] = True

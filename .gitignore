@@ -52,6 +52,8 @@ Thumbs.db
 ##########
 #dist/*
 #build/*
+.eggs/
+snntoolbox.egg-info/
 
 # Datasets #
 ############
