@@ -236,27 +236,42 @@ class SNN_compiled():
 
     def build_pooling(self, layer):
         """Build for pooling method."""
-        if layer['layer_type'] == 'MaxPooling2D':
-            echo("WARNING: Layer type 'MaxPooling' not supported yet. " +
-                 "Falling back on 'AveragePooling'.\n")
         nx = layer['input_shape'][3]  # Width of feature map
         ny = layer['input_shape'][2]  # Hight of feature map
         dx = layer['pool_size'][1]  # Width of pool
         dy = layer['pool_size'][0]  # Hight of pool
         sx = layer['strides'][1]
         sy = layer['strides'][0]
-        for fout in range(layer['input_shape'][1]):  # Feature maps
-            for y in range(0, ny - dy + 1, sy):
-                for x in range(0, nx - dx + 1, sx):
-                    target = int(x / sx + y / sy * ((nx - dx) / sx + 1) +
-                                 fout * nx * ny / (dx * dy))
-                    for k in range(dy):
-                        source = x + (y + k) * nx + fout * nx * ny
-                        for l in range(dx):
-                            self.connections[-1].connect(i=source+l, j=target)
-                echo('.')
-            echo(' {:.1%}\n'.format((1 + fout) / layer['input_shape'][1]))
-        self.connections[-1].w = self.sim.volt / (dx * dy)
+        if layer['layer_type'] == 'MaxPooling2D':
+            echo("WARNING: Layer type 'MaxPooling' not supported yet. " +
+                 "Falling back on 'AveragePooling'.\n")
+            for fout in range(layer['input_shape'][1]):  # Feature maps
+                for y in range(0, ny-dy+1, sy):
+                    for x in range(0, nx-dx+1, sx):
+                        target = int(x/sx+y/sy*((nx-dx)/sx+1) +
+                                     fout*nx*ny/(dx * dy))
+                        for k in range(dy):
+                            source = x+(y+k)*nx+fout*nx * ny
+                            for l in range(dx):
+                                self.connections[-1].connect(i=source+l,
+                                                             j=target)
+                    echo('.')
+                echo(' {:.1%}\n'.format((1 + fout) / layer['input_shape'][1]))
+            self.connections[-1].w = self.sim.volt / (dx * dy)
+        elif layer['layer_type'] == 'AveragePooling2D':
+            for fout in range(layer['input_shape'][1]):  # Feature maps
+                for y in range(0, ny-dy+1, sy):
+                    for x in range(0, nx-dx+1, sx):
+                        target = int(x/sx+y/sy*((nx-dx)/sx+1) +
+                                     fout*nx*ny/(dx*dy))
+                        for k in range(dy):
+                            source = x+(y+k)*nx+fout*nx*ny
+                            for l in range(dx):
+                                self.connections[-1].connect(i=source+l,
+                                                             j=target)
+                    echo('.')
+                echo(' {:.1%}\n'.format((1 + fout) / layer['input_shape'][1]))
+            self.connections[-1].w = self.sim.volt / (dx * dy)
 
     def store(self):
         """Store network by creating Network object."""
@@ -388,7 +403,7 @@ class SNN_compiled():
         pass
 
     def save(self, path=None, filename=None):
-        """ Write model architecture and parameters to disk. """
+        """Write model architecture and parameters to disk."""
         pass
 
     def collect_plot_results(self, layers, output_shapes, ann, X_batch, idx=0):
