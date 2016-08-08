@@ -40,18 +40,16 @@ class Layer():
         return np.dot(self.W, x) + self.b
 
     def update_payload(self, spikes, t, t_ind):
-        self.payload[spikes] = self.Vt[spikes, t_ind] - self.V0 - \
-            self.payload_sum[spikes]
+        v_error = self.V[spikes] - self.V0 
+        self.payload[spikes] = v_error - self.payload_sum[spikes]
         self.payload_sum[spikes]+=self.payload[spikes]
 
-    def update_neurons(self, in_spikes, prev_layer_payload_sum, t, t_ind):
-        z = self.thr * self.weighted_sum(in_spikes)  # Input to layer
-        self.V += z  # Integrate in membrane potential
+    def update_neurons(self, in_spikes, prev_layer_payload, t, t_ind):
+        z = self.thr * self.weighted_sum(in_spikes) # Input to layer
+        self.V += z # Integrate in membrane potential
         if self.name != 'L1' and self.apply_payload:
-            error = np.zeros_like(prev_layer_payload_sum)
-            error[in_spikes] = prev_layer_payload_sum[in_spikes]
-            # print(np.dot(self.W, error))
-            print(error)
+            error = np.zeros_like(prev_layer_payload)
+            error[in_spikes] = prev_layer_payload[in_spikes]
             self.V += np.dot(self.W, error)
         spikes = self.V > self.thr  # Trigger spikes
         self.spiketrain[:, t_ind] = spikes * t  # Write out spike times
@@ -65,21 +63,23 @@ class Layer():
             self.V[spikes] = 0  # Reset to zero after spike
         elif self.reset == 'subtract':
             self.V[spikes] -= self.thr  # Subtract threshold after spike
+            self.update_payload(spikes, t, t_ind)
+            
         self.Vt[:, t_ind] = self.V  # Write out V for plotting
         # Compute the rates predicted by theory
         self.pred_rates[:, t_ind] = self.get_pred_rates(in_spikes,
-                                  prev_layer_payload_sum, t, t_ind)
+                                  prev_layer_payload, t, t_ind)
         self.rate_rep = self.pred_rates / (self.rates + 1e-6)
         # print(self.V)
-        self.update_payload(spikes, t, t_ind)
-
-        return spikes, self.payload_sum
+        print (self.name)
+        print (self.rates)
+        return spikes, self.payload
 
     def set_activations(self, x):
         """Compute the activations of the corresponding ANN layer."""
         self.a = [max([0, z]) for z in self.weighted_sum(x)]
 
-    def get_pred_rates(self, x, prev_layer_payload_sum, t, t_ind):
+    def get_pred_rates(self, x, prev_layer_payload, t, t_ind):
         """Compute the rates predicted by theory."""
         z = self.thr * self.weighted_sum(x)  # Input to first layer
         pred_rates = []
@@ -101,11 +101,10 @@ class Layer():
                     # sum of the previous layer's firing rates:
                     q = np.dot(self.W, self.in_layer.pred_rates[:, t_ind]) + \
                         self.b / dt
-                    error = np.zeros_like(prev_layer_payload_sum)
-                    error[x] = prev_layer_payload_sum[x]
+                    error = np.zeros_like(prev_layer_payload)
+                    error[x] = prev_layer_payload[x]
                     err = np.dot(self.W, error)                       
-                    pred_rates.append(q[i] - (self.V[i] - self.V0 + 
-                                      err[i]) / (t * self.thr))
+                    pred_rates.append(q[i] - (self.V[i] - self.V0 - err[i]) / (t * self.thr))
         return pred_rates
 
     def get_n(self, z):
@@ -215,7 +214,7 @@ if __name__ == "__main__":
     reset = 'subtract'  # reset mechanism 'zero' or 'subtract'
 
     # Randomly initialize parameters and set input
-    #np.random.seed(134)
+    np.random.seed(121111)
     x = np.random.random_sample(L1_insize)  # Input sample
     W1, b1 = init_params(L1_insize, L1_outsize, low_lim, high_lim)
     W2, b2 = init_params(L2_insize, L2_outsize, low_lim, high_lim)
@@ -254,15 +253,26 @@ if __name__ == "__main__":
 
     # Start simulation
     t_ind = 0
+    sp1 = 0
+    sp2 = 0
+    sp3 = 0    
     for t in times:
         L1_spikes, L1_error = layers[0].update_neurons(x, np.zeros(L1_outsize),
                                                        t, t_ind)
+        sp1+=len(L1_spikes.nonzero()[0])
+                                                       
         L2_spikes, L2_error = layers[1].update_neurons(L1_spikes, L1_error, t,
                                                        t_ind)
+        sp2+=len(L2_spikes.nonzero()[0])
+                                                       
         L3_spikes, L3_error = layers[2].update_neurons(L2_spikes, L2_error, t,
                                                        t_ind)
+        sp3+=len(L3_spikes.nonzero()[0])
+   
         t_ind += 1
-
+    print (sp1)
+    print (sp2)
+    print (sp3)
     # Display results
     for l in layers:
         l.plot_V()
