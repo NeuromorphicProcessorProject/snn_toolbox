@@ -62,8 +62,8 @@ import snntoolbox
 def main():
 
     # Parameters
-    settings = {'dataset_path': '/home/rbodo/.snntoolbox/datasets/mnist/mnist_flat.npy', #'example/dataset/mnist.npy',  # Dataset file
-                'filename': '98.15', #'99.16',
+    settings = {'dataset_path': 'example/dataset/mnist.npy',  # Dataset file
+                'filename': '99.16',
                 'path': 'example/',  # Working directory
                 'evaluateANN': True,  # Test accuracy of input model
                 'normalize': True,  # Normalize parameters to get better perf.
@@ -79,8 +79,8 @@ def main():
     snntoolbox.update_setup(settings)
 
     # Download and save dataset in npy format which the toolbox can load later.
-#    from snntoolbox.io_utils.datasets.mnist import get_mnist
-#    get_mnist('example/dataset/')
+    from snntoolbox.io_utils.datasets.mnist import get_mnist
+    get_mnist('example/dataset/')
 
     # Run network (including loading the model, parameter normalization,
     # conversion and simulation).
