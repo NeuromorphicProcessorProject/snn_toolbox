@@ -373,11 +373,11 @@ class SNN_compiled():
 
         return total_acc
 
-    def end_sim(self, path=None, filename=None):
+    def end_sim(self):
         """ Clean up after simulation. """
         pass
 
-    def save(self):
+    def save(self, path=None, filename=None):
         """ Write model architecture and parameters to disk. """
         pass
 
