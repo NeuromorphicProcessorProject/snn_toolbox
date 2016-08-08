@@ -205,6 +205,7 @@ def init_layer(self, layer, v_thresh, tau_refrac):
 
 
 def get_new_thresh(self, time):
+    """Get new threshhold."""
     return theano.ifelse.ifelse(
         T.eq(time / settings['dt'] % settings['timestep_fraction'], 0) *
         T.gt(self.max_spikerate, settings['min_rate'] / 1000) *
