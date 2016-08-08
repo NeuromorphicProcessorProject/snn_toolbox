@@ -186,7 +186,11 @@ class SNN_compiled():
     def build_dense(self, layer):
         """Build dense layer."""
         weights = layer['parameters'][0]
-        self.layers[-1].set(i_offset=layer['parameters'][1])  # Bias
+        biases = layer['parameters'][1]
+        i_offset = np.empty(len(biases))
+        for i in range(len(biases)):
+            i_offset[i] = biases[i]
+        self.layers[-1].set(i_offset=i_offset)  # Bias
         for i in range(len(weights)):
             for j in range(len(weights[0])):
                 self.conns.append((i, j, weights[i, j], settings['delay']))
@@ -397,9 +401,9 @@ class SNN_compiled():
             if settings['verbose'] > 1 and \
                     test_num == settings['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
-                collect_plot_results(self.layers, self.output_shapes,
-                                     snn_precomp,
-                                     X_test[ind:ind+settings['batch_size']])
+                collect_plot_results(
+                    self.layers, self.output_shapes, snn_precomp,
+                    X_test[ind:ind+settings['batch_size']])
 
             # Reset simulation time and recorded network variables for next run
             if settings['verbose'] > 1:

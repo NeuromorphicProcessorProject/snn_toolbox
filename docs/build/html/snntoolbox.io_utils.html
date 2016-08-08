@@ -1,0 +1,669 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>saving &mdash; SNN toolbox 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="SNN toolbox 0.1 documentation" href="index.html"/>
+        <link rel="up" title="Tools" href="modules.html"/>
+        <link rel="next" title="Tests" href="tests.html"/>
+        <link rel="prev" title="SNN class" href="core.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> SNN toolbox
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure_toolbox.html">Configuration</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Tools</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core.html">SNN class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-core.pipeline">pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-core.inisim">inisim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-core.util">util</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">saving</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-snntoolbox.io_utils.load">loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-snntoolbox.io_utils.plotting">plotting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">SNN toolbox</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">Tools</a> &raquo;</li>
+      
+    <li>saving</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/snntoolbox.io_utils.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-snntoolbox.io_utils.save">
+<span id="saving"></span><h1>saving<a class="headerlink" href="#module-snntoolbox.io_utils.save" title="Permalink to this headline">¶</a></h1>
+<p>Functions to save various properties of interest in analog and spiking neural
+networks to disk.</p>
+<p>Created on Wed Nov 18 11:57:29 2015</p>
+<p>&#64;author: rbodo</p>
+<dl class="function">
+<dt id="snntoolbox.io_utils.save.confirm_overwrite">
+<code class="descclassname">snntoolbox.io_utils.save.</code><code class="descname">confirm_overwrite</code><span class="sig-paren">(</span><em>filepath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/save.html#confirm_overwrite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.save.confirm_overwrite" title="Permalink to this definition">¶</a></dt>
+<dd><p>If settings[&#8216;overwrite&#8217;]==False and the file exists, ask user if it should
+be overwritten.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.save.to_json">
+<code class="descclassname">snntoolbox.io_utils.save.</code><code class="descname">to_json</code><span class="sig-paren">(</span><em>data</em>, <em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/save.html#to_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.save.to_json" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write <code class="docutils literal"><span class="pre">data</span></code> dictionary to <code class="docutils literal"><span class="pre">path</span></code>.</p>
+<p>A <code class="docutils literal"><span class="pre">TypeError</span></code> is raised if objects in <code class="docutils literal"><span class="pre">data</span></code> are not JSON serializable.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snntoolbox.io_utils.load">
+<span id="loading"></span><h1>loading<a class="headerlink" href="#module-snntoolbox.io_utils.load" title="Permalink to this headline">¶</a></h1>
+<p>Functions to load various properties of interest in analog and spiking neural
+networks from disk.</p>
+<p>Created on Wed Nov 18 13:38:46 2015</p>
+<p>&#64;author: rbodo</p>
+<dl class="function">
+<dt id="snntoolbox.io_utils.load.download_dataset">
+<code class="descclassname">snntoolbox.io_utils.load.</code><code class="descname">download_dataset</code><span class="sig-paren">(</span><em>fname</em>, <em>origin</em>, <em>untar=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/load.html#download_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.load.download_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download a dataset, if not already there.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Full filename of dataset, e.g. <code class="docutils literal"><span class="pre">mnist.pkl.gz</span></code>.</li>
+<li><strong>origin</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Location of dataset, e.g. url
+<a class="reference external" href="https://s3.amazonaws.com/img-datasets/mnist.pkl.gz">https://s3.amazonaws.com/img-datasets/mnist.pkl.gz</a></li>
+<li><strong>untar</strong> (<em>boolean, optional</em>) &#8211; If <code class="docutils literal"><span class="pre">True</span></code>, untar file.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>fpath</strong> &#8211; The path to the downloaded dataset. If the user has write access to
+<code class="docutils literal"><span class="pre">home</span></code>, the dataset will be stored in <code class="docutils literal"><span class="pre">~/.snntoolbox/datasets/</span></code>,
+otherwise in <code class="docutils literal"><span class="pre">/tmp/.snntoolbox/datasets/</span></code>.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)">string</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Test under python2.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.load.load_dataset">
+<code class="descclassname">snntoolbox.io_utils.load.</code><code class="descname">load_dataset</code><span class="sig-paren">(</span><em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/load.html#load_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.load.load_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load dataset from an <code class="docutils literal"><span class="pre">.npy</span></code> file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>string, optional</em>) &#8211; Location of dataset to load.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
+<li><em>The dataset as a tuple containing the training and test sample arrays</em></li>
+<li><em>(X_train, Y_train, X_test, Y_test).</em></li>
+<li>With original data of the form (channels, num_rows, num_cols), <code class="docutils literal"><span class="pre">X_train</span></code></li>
+<li>and <code class="docutils literal"><span class="pre">X_test</span></code> have dimension (num_samples, channels*num_rows*num_cols) for</li>
+<li><em>a fully-connected network, and (num_samples, channels, num_rows, num_cols)</em></li>
+<li><em>otherwise.</em></li>
+<li><code class="docutils literal"><span class="pre">Y_train</span></code> and <code class="docutils literal"><span class="pre">Y_test</span></code> have dimension (num_samples, num_classes).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.load.load_parameters">
+<code class="descclassname">snntoolbox.io_utils.load.</code><code class="descname">load_parameters</code><span class="sig-paren">(</span><em>filepath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/load.html#load_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.load.load_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load all layer parameters from a HDF5 file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.load.to_categorical">
+<code class="descclassname">snntoolbox.io_utils.load.</code><code class="descname">to_categorical</code><span class="sig-paren">(</span><em>y</em>, <em>nb_classes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/load.html#to_categorical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.load.to_categorical" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert class vector to binary class matrix.</p>
+<p>If the input <code class="docutils literal"><span class="pre">y</span></code> has shape (<code class="docutils literal"><span class="pre">nb_samples</span></code>,) and contains integers from 0
+to <code class="docutils literal"><span class="pre">nb_classes</span></code>, the output array will be of dimension
+(<code class="docutils literal"><span class="pre">nb_samples</span></code>, <code class="docutils literal"><span class="pre">nb_classes</span></code>).</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snntoolbox.io_utils.plotting">
+<span id="plotting"></span><h1>plotting<a class="headerlink" href="#module-snntoolbox.io_utils.plotting" title="Permalink to this headline">¶</a></h1>
+<p>Various functions to visualize connectivity, activity and accuracy of the
+network.</p>
+<p>Created on Wed Nov 18 13:57:37 2015</p>
+<p>&#64;author: rbodo</p>
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.output_graphs">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">output_graphs</code><span class="sig-paren">(</span><em>spiketrains_batch</em>, <em>ann</em>, <em>X_batch</em>, <em>path=None</em>, <em>i=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#output_graphs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.output_graphs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper function to display / save a number of plots.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>spiketrains_batch</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; Each entry in <code class="docutils literal"><span class="pre">spiketrains_batch</span></code> contains a tuple
+<code class="docutils literal"><span class="pre">(spiketimes,</span> <span class="pre">label)</span></code> for each layer of the network (for the first
+batch only, and excluding <code class="docutils literal"><span class="pre">Flatten</span></code> layers).
+<code class="docutils literal"><span class="pre">spiketimes</span></code> is an array where the last index contains the spike
+times of the specific neuron, and the first indices run over the
+number of neurons in the layer:
+(batch_size, n_chnls, n_rows, n_cols, duration)
+<code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
+e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</li>
+<li><strong>ann</strong> (<a class="reference internal" href="core.html#core.model.SNN" title="core.model.SNN"><em>SNN</em></a>) &#8211; An instance of the SNN class. Contains the <code class="docutils literal"><span class="pre">get_activ</span></code> Theano
+functions which allow computation of layer activations of the original
+input model (hence the name &#8216;ann&#8217;). Needed in activation and
+correlation plots.</li>
+<li><strong>X_batch</strong> (<em>float32 array</em>) &#8211; The input samples to use for determining the layer activations. With
+data of the form (channels, num_rows, num_cols), X_batch has dimension
+(batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
+and (batch_size, channels, num_rows, num_cols) for a convolutional net.</li>
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+display plots without saving.</li>
+<li><strong>i</strong> (<em>int, optional</em>) &#8211; Index of sample to plot.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_confusion_matrix">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_confusion_matrix</code><span class="sig-paren">(</span><em>Y_test</em>, <em>Y_pred</em>, <em>path=None</em>, <em>class_labels=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_confusion_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_confusion_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_correlations">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_correlations</code><span class="sig-paren">(</span><em>spikerates</em>, <em>layer_activations</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_correlations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_correlations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the correlation between SNN spiketrains and ANN activations.</p>
+<p>For each layer, the method draws a scatter plot, showing the correlation
+between the average firing rate of neurons in the SNN layer and the
+activation of the corresponding neurons in the ANN layer.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>spikerates</strong> (list of tuples <code class="docutils literal"><span class="pre">(spikerate,</span> <span class="pre">label)</span></code>.) &#8211; <p><code class="docutils literal"><span class="pre">spikerate</span></code> is a 1D array containing the mean firing rates of the
+neurons in a specific layer.</p>
+<p><code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
+e.g. <code class="docutils literal"><span class="pre">'3Dense'</span></code>.</p>
+</li>
+<li><strong>layer_activations</strong> (list of tuples <code class="docutils literal"><span class="pre">(activations,</span> <span class="pre">label)</span></code>) &#8211; <p>Each entry represents a layer in the ANN for which an activation can be
+calculated (e.g. <code class="docutils literal"><span class="pre">Dense</span></code>, <code class="docutils literal"><span class="pre">Convolution2D</span></code>).</p>
+<p><code class="docutils literal"><span class="pre">activations</span></code> is an array of the same dimension as the corresponding
+layer, containing the activations of Dense or Convolution layers.</p>
+<p><code class="docutils literal"><span class="pre">label</span></code> is a string specifying the layer type, e.g. <code class="docutils literal"><span class="pre">'Dense'</span></code>.</p>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_hist">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_hist</code><span class="sig-paren">(</span><em>h</em>, <em>title=None</em>, <em>layer_label=None</em>, <em>path=None</em>, <em>scale_fac=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_hist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_hist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a histogram over two datasets.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>h</strong> (<a class="reference external" href="https://docs.python.org/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) &#8211; Dictionary of datasets to plot in histogram.</li>
+<li><strong>title</strong> (<em>string, optional</em>) &#8211; Title of histogram.</li>
+<li><strong>layer_label</strong> (<em>string, optional</em>) &#8211; Label of layer from which data was taken.</li>
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+display plots without saving.</li>
+<li><strong>scale_fac</strong> (<em>float, optional</em>) &#8211; The value with which parameters are normalized (maximum of activations
+or parameter value of a layer). If given, will be insterted into plot
+title.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_hist_combined">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_hist_combined</code><span class="sig-paren">(</span><em>data</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_hist_combined"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_hist_combined" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a histogram over several datasets.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>data</strong> (<a class="reference external" href="https://docs.python.org/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) &#8211; Dictionary of datasets to plot in histogram.</li>
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+display plots without saving.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_history">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_history</code><span class="sig-paren">(</span><em>h</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_history"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the training and validation loss and accuracy at each epoch.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>h</strong> (<em>Keras history object</em>) &#8211; Contains the training and validation loss and accuracy at each epoch
+during training.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_layer_activity">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_layer_activity</code><span class="sig-paren">(</span><em>layer</em>, <em>title</em>, <em>path=None</em>, <em>limits=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_layer_activity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_layer_activity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Visualize a layer by arranging the neurons in a line or on a 2D grid.</p>
+<p>Can be used to show average firing rates of individual neurons in an SNN,
+or the activation function per layer in an ANN.
+The activity is encoded by color.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>layer</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; <p><code class="docutils literal"><span class="pre">(activity,</span> <span class="pre">label)</span></code>.</p>
+<p><code class="docutils literal"><span class="pre">activity</span></code> is an array of the same shape as the original layer,
+containing e.g. the spikerates or activations of neurons in a layer.</p>
+<p><code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
+e.g. <code class="docutils literal"><span class="pre">'3Dense'</span></code>.</p>
+</li>
+<li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Figure title.</li>
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+display plots without saving.</li>
+<li><strong>limits</strong> (<em>tuple, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, the colormap of the resulting image is limited by this
+tuple.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_layer_correlation">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_layer_correlation</code><span class="sig-paren">(</span><em>rates</em>, <em>activations</em>, <em>title</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_layer_correlation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_layer_correlation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot correlation between spikerates and activations of a specific layer,
+as 2D-dot-plot.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rates</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; The spikerates of a layer, flattened to 1D.</li>
+<li><strong>activations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; The activations of a layer, flattened to 1D.</li>
+<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Layer label.</li>
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+display plots without saving.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_layer_summaries">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_layer_summaries</code><span class="sig-paren">(</span><em>spiketrains</em>, <em>spikerates</em>, <em>activations</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_layer_summaries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_layer_summaries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display or save a number of plots for a specific layer.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>spiketrains</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; Each entry in <code class="docutils literal"><span class="pre">spiketrains</span></code> contains a tuple
+<code class="docutils literal"><span class="pre">(spiketimes,</span> <span class="pre">label)</span></code> for each layer of the network (for the first
+batch only, and excluding <code class="docutils literal"><span class="pre">Flatten</span></code> layers).
+<code class="docutils literal"><span class="pre">spiketimes</span></code> is an array where the last index contains the spike
+times of the specific neuron, and the first indices run over the
+number of neurons in the layer: (n_chnls, n_rows, n_cols, duration)
+<code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
+e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</li>
+<li><strong>spikerates</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; Each entry in <code class="docutils literal"><span class="pre">spikerates</span></code> contains a tuple <code class="docutils literal"><span class="pre">(rates,</span> <span class="pre">label)</span></code> for
+each layer of the network (for the first batch only, and excluding
+<code class="docutils literal"><span class="pre">Flatten</span></code> layers).
+<code class="docutils literal"><span class="pre">rates</span></code> contains the average firing rates of all neurons in a layer.
+It has the same shape as the original layer, e.g.
+(n_features, n_rows, n_cols) for a convolution layer.
+<code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
+e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</li>
+<li><strong>activations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; Contains the activations of a net. Same structure as <code class="docutils literal"><span class="pre">spikerates</span></code>.</li>
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+display plots without saving.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_param_sweep">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_param_sweep</code><span class="sig-paren">(</span><em>results</em>, <em>n</em>, <em>params</em>, <em>param_name</em>, <em>param_logscale</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_param_sweep"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_param_sweep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot accuracy versus parameter.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>results</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; The accuracy or loss for a number of experiments, each of which used
+different parameters.</li>
+<li><strong>n</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The number of test samples used for each experiment.</li>
+<li><strong>params</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; The parameter values that changed during each experiment.</li>
+<li><strong>param_name</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; The name of the parameter that varied.</li>
+<li><strong>param_logscale</strong> (<em>boolean</em>) &#8211; Whether to plot the parameter axis in log-scale.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_pearson_coefficients">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_pearson_coefficients</code><span class="sig-paren">(</span><em>spikerates_batch</em>, <em>activations_batch</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_pearson_coefficients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_pearson_coefficients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the Pearson correlation coefficients for each layer, averaged over one
+mini batch.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>spikerates_batch</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; Each entry in <code class="docutils literal"><span class="pre">spikerates_batch</span></code> contains a tuple
+<code class="docutils literal"><span class="pre">(spikerates,</span> <span class="pre">label)</span></code> for each layer of the network (for the first
+batch only, and excluding <code class="docutils literal"><span class="pre">Flatten</span></code> layers).
+<code class="docutils literal"><span class="pre">spikerates</span></code> contains the average firing rates of all neurons in a
+layer. It has the same shape as the original layer, e.g.
+(batch_size, n_features, n_rows, n_cols) for a convolution layer.
+<code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
+e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</li>
+<li><strong>activations_batch</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; Contains the activations of a net. Same structure as
+<code class="docutils literal"><span class="pre">spikerates_batch</span></code>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_potential">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_potential</code><span class="sig-paren">(</span><em>times</em>, <em>layer</em>, <em>showLegend=False</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_potential"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_potential" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the membrane potential of a layer.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>times</strong> (<em>1D array</em>) &#8211; The time values where the potential was sampled.</li>
+<li><strong>layer</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; <p><code class="docutils literal"><span class="pre">(vmem,</span> <span class="pre">label)</span></code>.</p>
+<p><code class="docutils literal"><span class="pre">vmem</span></code> is a 2D array where the first index runs over the number of
+neurons in the layer, and the second index contains the membrane
+potential of the specific neuron.</p>
+<p><code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
+e.g. <code class="docutils literal"><span class="pre">'3Dense'</span></code>.</p>
+</li>
+<li><strong>showLegend</strong> (<em>boolean, optional</em>) &#8211; If <code class="docutils literal"><span class="pre">True</span></code>, shows the legend indicating the neuron indices and lines
+like <code class="docutils literal"><span class="pre">v_thresh</span></code>, <code class="docutils literal"><span class="pre">v_rest</span></code>, <code class="docutils literal"><span class="pre">v_reset</span></code>. Recommended only for layers
+with few neurons.</li>
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+display plots without saving.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_rates_minus_activations">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_rates_minus_activations</code><span class="sig-paren">(</span><em>rates</em>, <em>activations</em>, <em>label</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_rates_minus_activations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_rates_minus_activations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot spikerates minus activations for a specific layer.</p>
+<p>Spikerates and activations are each normalized before subtraction.
+The neurons in the layer are arranged in a line or on a 2D grid, depending
+on layer type.</p>
+<p>Activity is encoded by color.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>rates</strong> (<a class="reference external" href="https://docs.python.org/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) &#8211; The spikerates of a layer. The shape is that of the original layer,
+e.g. (32, 28, 28) for 32 feature maps of size 28x28.</li>
+<li><strong>activations</strong> (<a class="reference external" href="https://docs.python.org/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) &#8211; The activations of a layer. The shape is that of the original layer,
+e.g. (32, 28, 28) for 32 feature maps of size 28x28.</li>
+<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Layer label.</li>
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+display plots without saving.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_spiketrains">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_spiketrains</code><span class="sig-paren">(</span><em>layer</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_spiketrains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_spiketrains" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot which neuron fired at what time during the simulation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>layer</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a>) &#8211; <p><code class="docutils literal"><span class="pre">(spiketimes,</span> <span class="pre">label)</span></code>.</p>
+<p><code class="docutils literal"><span class="pre">spiketimes</span></code> is a 2D array where the first index runs over the number
+of neurons in the layer, and the second index contains the spike times
+of the specific neuron.</p>
+<p><code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
+e.g. <code class="docutils literal"><span class="pre">'3Dense'</span></code>.</p>
+</li>
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+display plots without saving.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="tests.html" class="btn btn-neutral float-right" title="Tests" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="core.html" class="btn btn-neutral" title="SNN class" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Bodo Rueckauer.
+      Last updated on Aug 08, 2016.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

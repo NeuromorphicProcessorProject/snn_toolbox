@@ -1,0 +1,582 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>snntoolbox.config &mdash; SNN toolbox 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="SNN toolbox 0.1 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> SNN toolbox
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configure_toolbox.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">SNN toolbox</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      
+    <li>snntoolbox.config</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for snntoolbox.config</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">In the GUI, the toolbox settings are grouped in three categories:</span>
+<span class="sd">    1. Global parameters ``globalparams``, specifying global settings for</span>
+<span class="sd">       loading / saving, and what steps of the workflow to include (evaluation,</span>
+<span class="sd">       normalization, conversion, simulation, ...)</span>
+<span class="sd">    2. Neuron cell parameters ``cellparams``, determining properties of the</span>
+<span class="sd">       spiking neurons (e.g. threshold, refractory period, ...). Not all of</span>
+<span class="sd">       them are used in all simulators. For instance, our own simulator</span>
+<span class="sd">       ``&#39;INI&#39;`` only uses a threshold, reset and membrane time constant.</span>
+<span class="sd">    3. Simulation parameters ``simparams``, specifying for instance length and</span>
+<span class="sd">       time resolution of the simulation run.</span>
+
+<span class="sd">Parameters</span>
+<span class="sd">..........</span>
+
+<span class="sd">Global Parameters</span>
+<span class="sd">*****************</span>
+
+<span class="sd">dataset_path: string</span>
+<span class="sd">    Where to load the dataset from. Used for testing the network. Dataset needs</span>
+<span class="sd">    to be in npy format.</span>
+
+<span class="sd">model_lib: string</span>
+<span class="sd">    The neural network library used to build the ANN, e.g.</span>
+
+<span class="sd">    - &#39;keras&#39;</span>
+<span class="sd">    - &#39;lasagne&#39;</span>
+<span class="sd">    - &#39;caffe&#39;</span>
+
+<span class="sd">path: string, optional</span>
+<span class="sd">    Working directory. There, the toolbox will look for ANN models to convert</span>
+<span class="sd">    or SNN models to test, load the parameters it needs and store (normalized)</span>
+<span class="sd">    parameters.</span>
+<span class="sd">    If not specified, the toolbox will use as destination for all files it</span>
+<span class="sd">    needs to load and save:</span>
+<span class="sd">    ``~/.snntoolbox/data/&lt;filename&gt;/&lt;simulator&gt;/``.</span>
+<span class="sd">    For instance, if we give ``&#39;98.29&#39;`` as filename of the ANN model to load,</span>
+<span class="sd">    and use default parameters otherwise, the toolbox will perform all</span>
+<span class="sd">    io-operations in ``~/.snntoolbox/data/mnist/mlp/98.29/INI/``.</span>
+<span class="sd">log_dir_of_current_run: string, optional</span>
+<span class="sd">    Path to directory where the output plots are stored. If not specified, will</span>
+<span class="sd">    be ``&lt;path&gt;/log/gui/&lt;runlabel&gt;``. ``&lt;runlabel&gt;`` can be specified in the</span>
+<span class="sd">    GUI. Will be set to &#39;test&#39; if None.</span>
+<span class="sd">filename: string</span>
+<span class="sd">    Base name of all loaded and saved files during this run. The ANN model to</span>
+<span class="sd">    be converted is expected to be named &#39;&lt;basename&gt;&#39;.</span>
+<span class="sd">filename_snn: string, optional</span>
+<span class="sd">    Name given to converted SNN models. If not specified by the user, the</span>
+<span class="sd">    toolbox sets it to &#39;snn_&lt;basename&gt;&#39;.</span>
+<span class="sd">filename_snn_exported: string, optional</span>
+<span class="sd">    Name given to converted spiking nets when exported to test it in a specific</span>
+<span class="sd">    simulator. If not specified by the user, the toolbox set it to</span>
+<span class="sd">    ``snn_&lt;basename&gt;_&lt;simulator&gt;``.</span>
+<span class="sd">evaluateANN: boolean, optional</span>
+<span class="sd">    If enabled, test the ANN before conversion. If you also enabled</span>
+<span class="sd">    &#39;normalization&#39; (see parameter ``normalize`` below), then the network will</span>
+<span class="sd">    be evaluated again after normalization.</span>
+<span class="sd">normalize: boolean, optional</span>
+<span class="sd">    Only relevant when converting a network, not during simulation. If enabled,</span>
+<span class="sd">    the parameters of the spiking network will be normalized by the highest</span>
+<span class="sd">    parameter or activation value.</span>
+<span class="sd">percentile: int, optional</span>
+<span class="sd">    Use the activation value in the specified percentile for normalization.</span>
+<span class="sd">    Set to ``50`` for the median, ``100`` for the max.</span>
+<span class="sd">convert: boolean, optional</span>
+<span class="sd">    If enabled, load an ANN from ``&lt;path&gt;`` and convert it to spiking.</span>
+<span class="sd">simulate: boolean, optional</span>
+<span class="sd">    If enabled, try to load SNN from ``&lt;path&gt;`` and test it on the specified</span>
+<span class="sd">    simulator (see parameter ``simulator``).</span>
+<span class="sd">overwrite: boolean, optional</span>
+<span class="sd">    If disabled, the save methods will ask for permission to overwrite files</span>
+<span class="sd">    before writing parameters, activations, models etc. to disk.</span>
+<span class="sd">batch_size: int, optional</span>
+<span class="sd">    If the builtin simulator &#39;INI&#39; is used, the batch size specifies</span>
+<span class="sd">    the number of test samples that will be simulated in parallel. Important:</span>
+<span class="sd">    When using &#39;INI&#39; simulator, the batch size can only be run usingthe batch</span>
+<span class="sd">    size it has been converted with. To run it with a different batch size,</span>
+<span class="sd">    convert the ANN from scratch.</span>
+<span class="sd">verbose: int, optional</span>
+<span class="sd">    0: No intermediate results or status reports.</span>
+<span class="sd">    1: Print progress of simulation and intermediate results.</span>
+<span class="sd">    2: Record spiketrains of all layers for one sample, and save various plots</span>
+<span class="sd">       (spiketrains, spikerates, activations, correlations, ...)</span>
+<span class="sd">    3: Record, plot and return the membrane potential of all layers for the</span>
+<span class="sd">       last test sample. Very time consuming. Works only with pyNN simulators.</span>
+
+<span class="sd">Cell Parameters</span>
+<span class="sd">***************</span>
+
+<span class="sd">v_thresh: float, optional</span>
+<span class="sd">    Threshold in mV defining the voltage at which a spike is fired.</span>
+<span class="sd">v_reset: float, optional</span>
+<span class="sd">    Reset potential in mV of the neurons after spiking.</span>
+<span class="sd">v_rest: float, optional</span>
+<span class="sd">    Resting membrane potential in mV.</span>
+<span class="sd">e_rev_E: float, optional</span>
+<span class="sd">    Reversal potential for excitatory input in mV.</span>
+<span class="sd">e_rev_I: float, optional</span>
+<span class="sd">    Reversal potential for inhibitory input in mV.</span>
+<span class="sd">i_offset: float, optional</span>
+<span class="sd">    Offset current in nA.</span>
+<span class="sd">cm: float, optional</span>
+<span class="sd">    Membrane capacitance in nF.</span>
+<span class="sd">tau_m: float, optional</span>
+<span class="sd">    Membrane time constant in milliseconds.</span>
+<span class="sd">tau_refrac: float, optional</span>
+<span class="sd">    Duration of refractory period in milliseconds of the neurons after spiking.</span>
+<span class="sd">tau_syn_E: float, optional</span>
+<span class="sd">    Decay time of the excitatory synaptic conductance in milliseconds.</span>
+<span class="sd">tau_syn_I: float, optional</span>
+<span class="sd">    Decay time of the inhibitory synaptic conductance in milliseconds.</span>
+<span class="sd">softmax_clockrate: int, optional</span>
+<span class="sd">    In our implementation of a spiking softmax activation function we use an</span>
+<span class="sd">    external Poisson clock to trigger calculating the softmax of a layer. The</span>
+<span class="sd">    &#39;softmax_clockrate&#39; parameter sets the firing rate in Hz of this external</span>
+<span class="sd">    clock. Note that this rate is limited by the maximum firing rate supported</span>
+<span class="sd">    by the simulator (given by the inverse time resolution 1000 * 1 / dt Hz).</span>
+
+<span class="sd">Simulation Parameters</span>
+<span class="sd">*********************</span>
+
+<span class="sd">simulator: string, optional</span>
+<span class="sd">    Simulator with which to run the converted spiking network.</span>
+<span class="sd">duration: float, optional</span>
+<span class="sd">    Runtime of simulation of one input in milliseconds.</span>
+<span class="sd">dt: float, optional</span>
+<span class="sd">    Time resolution of spikes in milliseconds.</span>
+<span class="sd">delay: float, optional</span>
+<span class="sd">    Delay in milliseconds. Must be equal to or greater than the resolution.</span>
+<span class="sd">poisson_input: float, optional</span>
+<span class="sd">    If enabled, the input samples will be converted to Poisson spiketrains. The</span>
+<span class="sd">    probability for a input neuron to fire is proportional to the analog value</span>
+<span class="sd">    of the corresponding pixel, and limited by the parameter &#39;input_rate&#39;</span>
+<span class="sd">    below. For instance, with an &#39;input_rate&#39; of 700, a fully-on pixel will</span>
+<span class="sd">    elicit a Poisson spiketrain of 700 Hz. Turn off for a less noisy</span>
+<span class="sd">    simulation. Currently, turning off Poisson input is only possible in INI</span>
+<span class="sd">    simulator.</span>
+<span class="sd">reset: string, optional</span>
+<span class="sd">    Choose the reset mechanism to apply after spike.</span>
+<span class="sd">    Reset to zero: After spike, the membrane potential is set to the resting</span>
+<span class="sd">                   potential.</span>
+<span class="sd">    Reset by subtraction: After spike, the membrane potential is reduced by a</span>
+<span class="sd">                          value equal to the threshold.</span>
+<span class="sd">input_rate: float, optional</span>
+<span class="sd">    Poisson spike rate in Hz for a fully-on pixel of the input image. Note that</span>
+<span class="sd">    the input_rate is limited by the maximum firing rate supported by the</span>
+<span class="sd">    simulator (given by the inverse time resolution 1000 * 1 / dt Hz).</span>
+<span class="sd">diff_to_max_rate: float, optional</span>
+<span class="sd">    The converted spiking network performs best if the average firing rates of</span>
+<span class="sd">    each layer are not higher but also not much lower than the maximum rate</span>
+<span class="sd">    supported by the simulator (inverse time resolution). Normalization</span>
+<span class="sd">    eliminates saturation but introduces undersampling (parameters are</span>
+<span class="sd">    normalized with respect to the highest value in a batch). To overcome this,</span>
+<span class="sd">    the spikerates of each layer are monitored during simulation. If they drop</span>
+<span class="sd">    below the maximum firing rate by more than &#39;diff to max rate&#39;, we divide</span>
+<span class="sd">    the parameters of the layer by its highest rate. Set the parameter in Hz.</span>
+<span class="sd">timestep_fraction: int, optional</span>
+<span class="sd">    If set to 10 (default), the parameter modification mechanism described in</span>
+<span class="sd">    &#39;diff_to_max_rate&#39; will be performed at every 10th timestep.</span>
+<span class="sd">min_rate: float, optional</span>
+<span class="sd">    Minimum spikerate in Hz. When The firing rates of a layer are below this</span>
+<span class="sd">    value, the weights will NOT be modified in the feedback mechanism described</span>
+<span class="sd">    in &#39;diff_to_max_rate&#39;. This is useful in the beginning of a simulation,</span>
+<span class="sd">    when higher layers need some time to integrate up a sufficiently high</span>
+<span class="sd">    membrane potential.</span>
+<span class="sd">num_to_test: int, optional</span>
+<span class="sd">    How many samples to test.</span>
+
+<span class="sd">Default values</span>
+<span class="sd">..............</span>
+
+<span class="sd">::</span>
+
+<span class="sd">    globalparams = {&#39;dataset_path&#39;: &#39;&#39;,</span>
+<span class="sd">                    &#39;model_lib&#39;: &#39;keras&#39;,</span>
+<span class="sd">                    &#39;path&#39;: &#39;&#39;,</span>
+<span class="sd">                    &#39;log_dir_of_current_run&#39;: &#39;&#39;,</span>
+<span class="sd">                    &#39;filename&#39;: &#39;&#39;,</span>
+<span class="sd">                    &#39;filename_snn&#39;: &#39;snn_&#39;,</span>
+<span class="sd">                    &#39;filename_snn_exported&#39;: &#39;snn_exported_&#39;,</span>
+<span class="sd">                    &#39;batch_size&#39;: 100,</span>
+<span class="sd">                    &#39;evaluateANN&#39;: True,</span>
+<span class="sd">                    &#39;normalize&#39;: True,</span>
+<span class="sd">                    &#39;percentile&#39;: 99,</span>
+<span class="sd">                    &#39;convert&#39;: True,</span>
+<span class="sd">                    &#39;overwrite&#39;: True,</span>
+<span class="sd">                    &#39;simulate&#39;: True,</span>
+<span class="sd">                    &#39;verbose&#39;: 3}</span>
+<span class="sd">    cellparams = {&#39;v_thresh&#39;: 1,</span>
+<span class="sd">                  &#39;v_reset&#39;: 0,</span>
+<span class="sd">                  &#39;v_rest&#39;: 0,</span>
+<span class="sd">                  &#39;e_rev_E&#39;: 10,</span>
+<span class="sd">                  &#39;e_rev_I&#39;: -10,</span>
+<span class="sd">                  &#39;i_offset&#39;: 0,</span>
+<span class="sd">                  &#39;cm&#39;: 0.09,</span>
+<span class="sd">                  &#39;tau_m&#39;: 1000,</span>
+<span class="sd">                  &#39;tau_refrac&#39;: 0,</span>
+<span class="sd">                  &#39;tau_syn_E&#39;: 0.01,</span>
+<span class="sd">                  &#39;tau_syn_I&#39;: 0.01,</span>
+<span class="sd">                  &#39;softmax_clockrate&#39;: 300}</span>
+<span class="sd">    simparams = {&#39;simulator&#39;: &#39;INI&#39;,</span>
+<span class="sd">                 &#39;duration&#39;: 200,</span>
+<span class="sd">                 &#39;dt&#39;: 1,</span>
+<span class="sd">                 &#39;delay&#39;: 1,</span>
+<span class="sd">                 &#39;poisson_input&#39;: False,</span>
+<span class="sd">                 &#39;reset&#39;: &#39;Reset by subtraction&#39;,</span>
+<span class="sd">                 &#39;input_rate&#39;: 1000,</span>
+<span class="sd">                 &#39;timestep_fraction&#39;: 10,</span>
+<span class="sd">                 &#39;diff_to_max_rate&#39;: 200,</span>
+<span class="sd">                 &#39;num_to_test&#39;: 10,</span>
+<span class="sd">                 &#39;min_rate&#39;: 100}</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="kn">as</span> <span class="nn">mpl</span>
+
+<span class="c1"># Define text sizes of various plot properties relative to font.size, using the</span>
+<span class="c1"># following values: xx-small, x-small, small, medium, large, x-large, xx-large,</span>
+<span class="c1"># larger, or smaller.</span>
+<span class="n">plotproperties</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;font.size&#39;</span><span class="p">:</span> <span class="mi">13</span><span class="p">,</span>
+                  <span class="s1">&#39;axes.titlesize&#39;</span><span class="p">:</span> <span class="s1">&#39;xx-large&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;axes.labelsize&#39;</span><span class="p">:</span> <span class="s1">&#39;x-large&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;xtick.labelsize&#39;</span><span class="p">:</span> <span class="s1">&#39;x-large&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;xtick.major.size&#39;</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
+                  <span class="s1">&#39;xtick.minor.size&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+                  <span class="s1">&#39;ytick.labelsize&#39;</span><span class="p">:</span> <span class="s1">&#39;x-large&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;ytick.major.size&#39;</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
+                  <span class="s1">&#39;ytick.minor.size&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+                  <span class="s1">&#39;legend.fontsize&#39;</span><span class="p">:</span> <span class="s1">&#39;x-large&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;figure.figsize&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">6</span><span class="p">)}</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">plotproperties</span><span class="p">)</span>
+
+<span class="c1"># List supported model libraries, simulators, etc.</span>
+<span class="n">model_libs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;keras&#39;</span><span class="p">,</span> <span class="s1">&#39;lasagne&#39;</span><span class="p">,</span> <span class="s1">&#39;caffe&#39;</span><span class="p">}</span>
+<span class="n">simulators_pyNN</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;nest&#39;</span><span class="p">,</span> <span class="s1">&#39;brian&#39;</span><span class="p">,</span> <span class="s1">&#39;Neuron&#39;</span><span class="p">}</span>
+<span class="n">simulators_other</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;INI&#39;</span><span class="p">,</span> <span class="s1">&#39;brian2&#39;</span><span class="p">}</span>
+<span class="n">simulators</span> <span class="o">=</span> <span class="n">simulators_pyNN</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">simulators</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">simulators_other</span><span class="p">)</span>
+
+<span class="c1"># Default parameters:</span>
+<span class="n">settings</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;model_lib&#39;</span><span class="p">:</span> <span class="s1">&#39;keras&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;filename&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;filename_snn&#39;</span><span class="p">:</span> <span class="s1">&#39;snn_&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;filename_snn_exported&#39;</span><span class="p">:</span> <span class="s1">&#39;snn_exported_&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;batch_size&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s1">&#39;samples_to_test&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;evaluateANN&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+            <span class="s1">&#39;normalize&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+            <span class="s1">&#39;percentile&#39;</span><span class="p">:</span> <span class="mi">99</span><span class="p">,</span>
+            <span class="s1">&#39;overwrite&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+            <span class="s1">&#39;convert&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+            <span class="s1">&#39;simulate&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+            <span class="s1">&#39;verbose&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+            <span class="s1">&#39;v_thresh&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;tau_refrac&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s1">&#39;softmax_clockrate&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="s1">&#39;simulator&#39;</span><span class="p">:</span> <span class="s1">&#39;INI&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;duration&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
+            <span class="s1">&#39;dt&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;poisson_input&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
+            <span class="s1">&#39;reset&#39;</span><span class="p">:</span> <span class="s1">&#39;Reset by subtraction&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;input_rate&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+            <span class="s1">&#39;diff_to_max_rate&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
+            <span class="s1">&#39;timestep_fraction&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s1">&#39;min_rate&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">}</span>
+
+<span class="c1"># pyNN specific parameters.</span>
+<span class="n">pyNN_settings</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;v_reset&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="s1">&#39;v_rest&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>  <span class="c1"># Initial neuron potential</span>
+                 <span class="s1">&#39;e_rev_E&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>  <span class="c1"># Pull v towards +10 mV during spike</span>
+                 <span class="s1">&#39;e_rev_I&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># Pull v towards -10 mV during spike</span>
+                 <span class="s1">&#39;i_offset&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>  <span class="c1"># No offset current</span>
+                 <span class="s1">&#39;cm&#39;</span><span class="p">:</span> <span class="mf">0.09</span><span class="p">,</span>  <span class="c1"># Fast integration. Small cm slows down sim.</span>
+                 <span class="s1">&#39;tau_m&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>  <span class="c1"># No leakage</span>
+                 <span class="s1">&#39;tau_syn_E&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>  <span class="c1"># Excitatory synaptic cond decays fast</span>
+                 <span class="s1">&#39;tau_syn_I&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>  <span class="c1"># Inhibitory synaptic cond decays fast</span>
+                 <span class="s1">&#39;delay&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># Constraint: delay &gt;= dt</span>
+                 <span class="s1">&#39;num_to_test&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">}</span>
+
+<span class="c1"># Layers followed by an Activation layer</span>
+<span class="n">activation_layers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Dense&#39;</span><span class="p">,</span> <span class="s1">&#39;Convolution2D&#39;</span><span class="p">}</span>
+
+<span class="n">bn_layers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Dense&#39;</span><span class="p">,</span> <span class="s1">&#39;Convolution2D&#39;</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="update_setup"><a class="viewcode-back" href="../../configure_toolbox.html#snntoolbox.config.update_setup">[docs]</a><span class="k">def</span> <span class="nf">update_setup</span><span class="p">(</span><span class="n">s</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Update parameters</span>
+
+<span class="sd">    Check that parameter choices ``s`` are valid and update the global</span>
+<span class="sd">    parameter settings ``snntoolbox.config.settings`` with the user-specified</span>
+<span class="sd">    values. Default values are filled in where user did not give any.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="kn">import</span> <span class="nn">snntoolbox</span>
+
+    <span class="k">if</span> <span class="n">s</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Check that choice of input model library is valid (not really needed when</span>
+    <span class="c1"># using GUI because options are hardwired in dropdown list).</span>
+    <span class="k">if</span> <span class="s1">&#39;model_lib&#39;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;model_lib&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">model_libs</span><span class="p">,</span> \
+            <span class="s2">&quot;Input model library &#39;{}&#39; &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;model_lib&#39;</span><span class="p">])</span> <span class="o">+</span> \
+            <span class="s2">&quot;not supported yet. Possible values: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model_libs</span><span class="p">)</span>
+    <span class="c1"># Name of input file must be given.</span>
+    <span class="k">assert</span> <span class="s1">&#39;filename&#39;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">,</span> <span class="s2">&quot;Filename of stored model not specified.&quot;</span>
+    <span class="c1"># Check that simulator choice is valid (not really needed when using GUI</span>
+    <span class="c1"># because options are hardwired in dropdown list).</span>
+    <span class="k">if</span> <span class="s1">&#39;simulator&#39;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">simulators</span><span class="p">,</span> \
+            <span class="s2">&quot;Simulator &#39;{}&#39; not supported.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">])</span> <span class="o">+</span> \
+            <span class="s2">&quot; Choose from {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">simulators</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Fall back on default if none specified.</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;simulator&#39;</span><span class="p">:</span> <span class="s1">&#39;INI&#39;</span><span class="p">})</span>
+    <span class="c1"># Warn user that it is not possible to use Brian2 simulator by loading a</span>
+    <span class="c1"># pre-converted network from disk.</span>
+    <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;brian2&#39;</span> <span class="ow">and</span> <span class="s1">&#39;convert&#39;</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;convert&#39;</span><span class="p">]</span> \
+            <span class="ow">or</span> <span class="s1">&#39;convert&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;convert&#39;</span><span class="p">]:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SNN toolbox Warning: When using Brian 2 simulator, you need to</span>
+<span class="s2">              convert the network each time you start a new session. (No</span>
+<span class="s2">              saving/reloading methods implemented.)</span>
+<span class="s2">              Setting convert = True.</span><span class="se">\n</span><span class="s2">&quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;convert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c1"># Set default path if user did not specify one.</span>
+    <span class="k">if</span> <span class="s1">&#39;path&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">or</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">snntoolbox</span><span class="o">.</span><span class="n">_dir</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">],</span>
+                                 <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">])</span>
+    <span class="c1"># Create directory if not there yet.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">])</span>
+
+    <span class="c1"># Convert string containing sample indices to list of indices.</span>
+    <span class="k">if</span> <span class="s1">&#39;samples_to_test&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;samples_to_test&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">s</span><span class="p">[</span><span class="s1">&#39;sample_indices_to_test&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;samples_to_test&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">()]</span>
+
+    <span class="k">if</span> <span class="s1">&#39;log_dir_of_current_run&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">],</span> <span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="s1">&#39;gui&#39;</span><span class="p">,</span>
+                                                   <span class="s1">&#39;test&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Specify filenames for models at different stages of the conversion.</span>
+    <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_snn&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;snn_&#39;</span> <span class="o">+</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span>
+    <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_snn_exported&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_snn&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;INI&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;poisson_input&#39;</span><span class="p">]:</span>
+        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;poisson_input&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SNN toolbox Warning: Currently, turning off Poisson input is</span>
+<span class="s2">            only possible in INI simulator. Falling back on Poisson input.&quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="c1"># If there are any parameters specified, merge with default parameters.</span>
+    <span class="n">settings</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">s</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="initialize_simulator"><a class="viewcode-back" href="../../configure_toolbox.html#snntoolbox.config.initialize_simulator">[docs]</a><span class="k">def</span> <span class="nf">initialize_simulator</span><span class="p">(</span><span class="n">simulator</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Import module containing utility functions of spiking simulator&quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">importlib</span> <span class="kn">import</span> <span class="n">import_module</span>
+
+    <span class="k">if</span> <span class="n">simulator</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">simulator</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">simulator</span> <span class="ow">in</span> <span class="n">simulators_pyNN</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">simulator</span> <span class="o">==</span> <span class="s1">&#39;nest&#39;</span><span class="p">:</span>
+            <span class="c1"># Workaround for missing link bug, see</span>
+            <span class="c1"># https://github.com/ContinuumIO/anaconda-issues/issues/152</span>
+            <span class="kn">import</span> <span class="nn">readline</span>
+        <span class="n">sim</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;pyNN.&#39;</span> <span class="o">+</span> <span class="n">simulator</span><span class="p">)</span>
+        <span class="c1"># From the pyNN documentation:</span>
+        <span class="c1"># &quot;Before using any other functions or classes from PyNN, the user</span>
+        <span class="c1"># must call the setup() function. Calling setup() a second time</span>
+        <span class="c1"># resets the simulator entirely, destroying any network that may</span>
+        <span class="c1"># have been created in the meantime.&quot;</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">timestep</span><span class="o">=</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">simulator</span> <span class="o">==</span> <span class="s1">&#39;brian2&#39;</span><span class="p">:</span>
+        <span class="n">sim</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;brian2&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">simulator</span> <span class="o">==</span> <span class="s1">&#39;INI&#39;</span><span class="p">:</span>
+        <span class="n">sim</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;snntoolbox.core.inisim&#39;</span><span class="p">)</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Initialized {} simulator.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">simulator</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">sim</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Bodo Rueckauer.
+      Last updated on Aug 08, 2016.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

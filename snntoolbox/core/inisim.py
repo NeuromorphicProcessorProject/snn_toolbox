@@ -12,6 +12,9 @@ Created on Tue Dec  8 10:41:10 2015
 """
 
 # For compatibility with python2
+from __future__ import print_function, unicode_literals
+from __future__ import division, absolute_import
+from future import standard_library
 from builtins import super
 
 import numpy as np
@@ -24,6 +27,8 @@ from keras.layers.convolutional import AveragePooling2D, MaxPooling2D
 from keras.layers.convolutional import Convolution2D
 from keras import backend as K
 from snntoolbox.config import settings
+
+standard_library.install_aliases()
 
 rng = RandomStreams()
 

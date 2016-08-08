@@ -13,6 +13,7 @@ sympy
 sphinx
 pyNN
 keras
+h5py
 
 # You may need to install 'freetype' (including 'libpng') on system-level
 # to be able to install matplotlib:
