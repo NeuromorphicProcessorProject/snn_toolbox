@@ -372,7 +372,7 @@ def plot_layer_correlation(rates, activations, title, path=None):
 
     plt.figure()
     plt.plot(activations, rates, '.')
-    plt.text(1, 1, "{:.2%} units saturated.".format(p))
+    plt.text(1, 0.5, "{:.2%} units saturated.".format(p))
     plt.title(title, fontsize=20)
     plt.locator_params(nbins=4)
     plt.xlim([None, max(activations) * 1.1])

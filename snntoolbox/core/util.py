@@ -139,7 +139,7 @@ def get_sample_activity_from_batch(activity_batch, i=0):
     return [(layer_act[0][i], layer_act[1]) for layer_act in activity_batch]
 
 
-def norm_parameters(parameters, activations, prev_scale_fac):
+def norm_parameters(parameters, activations, prev_scale_fac, idx):
     """
     Normalize parameters
 
@@ -166,7 +166,7 @@ def norm_parameters(parameters, activations, prev_scale_fac):
 
     """
 
-    scale_fac = np.percentile(activations, settings['percentile'])
+    scale_fac = np.percentile(activations, settings['percentile']) #-idx/10)
     print("Maximum value: {:.2f}.".format(scale_fac))
     return [parameters[0] * prev_scale_fac / scale_fac,
             parameters[1] / scale_fac], scale_fac

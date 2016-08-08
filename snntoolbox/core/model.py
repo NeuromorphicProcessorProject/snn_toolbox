@@ -241,7 +241,7 @@ class SNN():
 #                plt.show()
 
             parameters_norm, scale_fac = norm_parameters(
-                parameters, activations, scale_fac)
+                parameters, activations, scale_fac, idx)
             # Update model with modified parameters
             self.set_layer_params(parameters_norm, idx-1)
             # Compute activations with modified parameters
