@@ -235,7 +235,7 @@ mpl.rcParams.update(plotproperties)
 # List supported model libraries, simulators, etc.
 model_libs = {'keras', 'lasagne', 'caffe'}
 simulators_pyNN = {'nest', 'brian', 'Neuron'}
-simulators_other = {'INI', 'brian2'}
+simulators_other = {'INI', 'brian2', 'MegaSim'}
 simulators = simulators_pyNN.copy()
 simulators.update(simulators_other)
 
@@ -391,6 +391,8 @@ def initialize_simulator(simulator=None):
         sim = import_module('brian2')
     elif simulator == 'INI':
         sim = import_module('snntoolbox.core.inisim')
+    elif simulator == 'MegaSim':
+        sim = None # evan - can add a module with helper functions
 
     print("Initialized {} simulator.\n".format(simulator))
     return sim

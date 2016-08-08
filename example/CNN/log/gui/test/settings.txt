@@ -1,0 +1,20 @@
+
+
+SUMMARY SETUP
+=============
+
+PARAMETERS
+----------
+
+{'convert': True, 'tau_refrac': 0, 'dt': 1, 'duration': 100.0, 'model_lib': 'keras', 'softmax_clockrate': 300, 'simulate': True, 'evaluateANN': True, 'diff_to_max_rate': 200, 'min_rate': 100, 'filename_snn_exported': 'snn_99.16_INI', 'filename_snn': 'snn_99.16', 'samples_to_test': '', 'input_rate': 1000, 'reset': 'Reset by subtraction', 'poisson_input': False, 'sample_indices_to_test': [], 'overwrite': True, 'simulator': 'INI', 'normalize': False, 'dataset_path': '/Users/Evangelos/.snntoolbox/datasets/mnist.npy', 'percentile': 100, 'filename': '99.16', 'verbose': 3, 'path': 'example/CNN/', 'batch_size': 100, 'log_dir_of_current_run': 'example/CNN/log/gui/test', 'v_thresh': 1, 'timestep_fraction': 10}
+
+
+NETWORK
+-------
+
+{'layers': [[{'nb_row': 3}, {'input_shape': (None, 1, 28, 28)}, {'nb_filter': 32}, {'label': '00Convolution2D_32x26x26'}, {'layer_num': 0}, {'border_mode': 'valid'}, {'layer_type': 'Convolution2D'}, {'output_shape': (None, 32, 26, 26)}, {'activation': 'relu'}, {'nb_col': 3}], [{'layer_num': 1}, {'layer_type': 'Activation'}, {'output_shape': (None, 32, 26, 26)}, {'label': '01Activation_32x26x26'}], [{'nb_row': 3}, {'input_shape': (None, 32, 26, 26)}, {'nb_filter': 32}, {'label': '02Convolution2D_32x24x24'}, {'layer_num': 2}, {'border_mode': 'valid'}, {'layer_type': 'Convolution2D'}, {'output_shape': (None, 32, 24, 24)}, {'activation': 'relu'}, {'nb_col': 3}], [{'layer_num': 3}, {'layer_type': 'Activation'}, {'output_shape': (None, 32, 24, 24)}, {'label': '03Activation_32x24x24'}], [{'input_shape': (None, 32, 24, 24)}, {'layer_num': 4}, {'border_mode': 'valid'}, {'output_shape': (None, 32, 12, 12)}, {'pool_size': (2, 2)}, {'strides': (2, 2)}, {'label': '04MaxPooling2D_32x12x12'}, {'layer_type': 'MaxPooling2D'}], [{'layer_num': 5}, {'layer_type': 'Dropout'}, {'output_shape': (None, 32, 12, 12)}, {'label': '05Dropout_32x12x12'}], [{'layer_num': 6}, {'layer_type': 'Flatten'}, {'output_shape': (None, 4608)}, {'label': '06Flatten_4608'}], [{'label': '07Dense_128'}, {'layer_num': 7}, {'layer_type': 'Dense'}, {'output_shape': (None, 128)}, {'activation': 'relu'}], [{'layer_num': 8}, {'layer_type': 'Activation'}, {'output_shape': (None, 128)}, {'label': '08Activation_128'}], [{'layer_num': 9}, {'layer_type': 'Dropout'}, {'output_shape': (None, 128)}, {'label': '09Dropout_128'}], [{'label': '10Dense_10'}, {'layer_num': 10}, {'layer_type': 'Dense'}, {'output_shape': (None, 10)}, {'activation': 'softmax'}], [{'layer_num': 11}, {'layer_type': 'Activation'}, {'output_shape': (None, 10)}, {'label': '11Activation_10'}]], 'name': 'SNN', 'input_shape': (None, 1, 28, 28)}
+
+
+END OF SUMMARY
+
+

@@ -78,7 +78,7 @@ def linear_activation(self, impulse, time, updates):
     # Add impulse
     new_mem = self.mem + masked_imp
     # Store spiking
-    output_spikes = new_mem >= self.v_thresh
+    output_spikes = T.ge(new_mem, self.v_thresh)
     # At spike, reduce membrane potential by one instead of resetting to zero,
     # so that no information stored in membrane potential is lost. This reduces
     # the variance in the spikerate-activation correlation plot for activations
@@ -89,8 +89,6 @@ def linear_activation(self, impulse, time, updates):
     elif settings['reset'] == 'Reset by subtraction':
         new_and_reset_mem = T.inc_subtensor(
             new_mem[output_spikes.nonzero()], -1.)
-    # Alternatively, perform standard reset:
-    # new_and_reset_mem = T.set_subtensor(new_mem[output_spikes.nonzero()], 0.)
     # Store refractory
     new_refractory = T.set_subtensor(
         self.refrac_until[output_spikes.nonzero()], time + self.tau_refrac)
@@ -143,6 +141,7 @@ def reset(self):
     self.spiketrain.set_value(floatX(np.zeros(self.output_shape)))
     self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
     self.max_spikerate.set_value(0.0)
+    self.v_thresh.set_value(settings['v_thresh'])
 
 
 def get_input(self):
@@ -191,12 +190,11 @@ def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
 
 def init_layer(self, layer, v_thresh, tau_refrac):
     """init layer."""
-    layer.v_thresh = v_thresh
+    layer.v_thresh = theano.shared(
+        np.asarray(v_thresh, dtype=theano.config.floatX), 'v_thresh')
     layer.tau_refrac = tau_refrac
     layer.refrac_until = shared_zeros(self.output_shape)
     layer.mem = shared_zeros(self.output_shape)
-    # Todo: Allocate these variables only for layers that need them (e.g. have
-    # parameters)
     layer.spiketrain = shared_zeros(self.output_shape)
     layer.spikecounts = shared_zeros(self.output_shape)
     layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
@@ -204,6 +202,15 @@ def init_layer(self, layer, v_thresh, tau_refrac):
     if len(layer.get_weights()) > 0:
         layer.W = K.variable(layer.get_weights()[0])
         layer.b = K.variable(layer.get_weights()[1])
+
+
+def get_new_thresh(self, time):
+    return theano.ifelse.ifelse(
+        T.eq(time / settings['dt'] % settings['timestep_fraction'], 0) *
+        T.gt(self.max_spikerate, settings['min_rate'] / 1000) *
+        T.gt(1 / settings['dt'] - self.max_spikerate,
+             settings['diff_to_max_rate'] / 1000),
+        self.max_spikerate, self.v_thresh)
 
 
 class SpikeFlatten(Flatten):
@@ -245,20 +252,8 @@ class SpikeDense(Dense):
         # Recurse
         inp, time, updates = get_input(self)
 
-        # Todo: Try to reduce computations here and in calculating the average
-        # firing rates. Maybe do this only for one batch instead of the whole
-        # dataset.
-        # Also, write the weights to ANN so the activations are
-        # computed based on the same parameters.
         # Modify parameters if firing rate of layer too low
-        self.fac = theano.ifelse.ifelse(
-            T.eq(time / settings['dt'] % settings['timestep_fraction'], 0) *
-            T.gt(self.max_spikerate, settings['min_rate'] / 1000) *
-            T.gt(1 / settings['dt'] - self.max_spikerate,
-                 settings['diff_to_max_rate'] / 1000),
-            1 / self.max_spikerate, 1.0)
-#        updates.append((self.W, self.W * self.fac))
-#        updates.append((self.b, self.b * self.fac))
+#        updates.append((self.v_thresh, get_new_thresh(self, time)))
 
         # Get impulse
         self.impulse = T.add(T.dot(inp, self.W), self.b)
@@ -292,14 +287,7 @@ class SpikeConv2DReLU(Convolution2D):
         inp, time, updates = get_input(self)
 
         # Modify parameters if firing rate of layer too low
-        self.fac = theano.ifelse.ifelse(
-            T.eq(time / settings['dt'] % settings['timestep_fraction'], 0) *
-            T.gt(self.max_spikerate, settings['min_rate'] / 1000) *
-            T.gt(1 / settings['dt'] - self.max_spikerate,
-                 settings['diff_to_max_rate'] / 1000),
-            1 / (self.max_spikerate + 0.001), 1.0)
-#        updates.append((self.W, self.W * self.fac))
-#        updates.append((self.b, self.b * self.fac))
+#        updates.append((self.v_thresh, get_new_thresh(self, time)))
 
         # CALCULATE SYNAPTIC SUMMED INPUT
         border_mode = self.border_mode
