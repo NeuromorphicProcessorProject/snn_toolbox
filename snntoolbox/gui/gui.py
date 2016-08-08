@@ -1221,7 +1221,7 @@ class SNNToolboxGUI():
 
     def toggle_state_pyNN(self, val):
         """toogle state for pyNN."""
-        if val not in simulators_pyNN:
+        if val not in list(simulators_pyNN) + ['brian2']:
             self.settings['state_pyNN'].set('disabled')
         else:
             self.settings['state_pyNN'].set('normal')

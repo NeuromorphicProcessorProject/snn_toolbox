@@ -124,9 +124,11 @@ class SNN_compiled():
     def add_input_layer(self):
         """Configure a input layer."""
         input_shape = list(self.ann['input_shape'])
-        self.layers = [self.sim.PoissonGroup(np.prod(input_shape[1:]),
-                                             rates=0*self.sim.Hz,
-                                             dt=settings['dt']*self.sim.ms)]
+        self.layers = [self.sim.PoissonGroup(
+            np.prod(input_shape[1:]), rates=0*self.sim.Hz,
+            dt=settings['dt']*self.sim.ms)]
+        self.layers[0].add_attribute('label')
+        self.layers[0].label = 'InputLayer'
 
     def build(self):
         """Compile a SNN to prepare for simulation with Brian2."""
@@ -171,6 +173,8 @@ class SNN_compiled():
             self.layers[-2], self.layers[-1], model='w:volt', on_pre='v+=w',
             dt=settings['dt']*self.sim.ms))
         self.output_shapes.append(layer['output_shape'])
+        self.layers[-1].add_attribute('label')
+        self.layers[-1].label = layer['label']
         if settings['verbose'] > 1:
             self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[-1]))
         if settings['verbose'] == 3:
@@ -436,8 +440,10 @@ class SNN_compiled():
                 [int(settings['duration'] / settings['dt'])]
             shape[0] = 1  # simparams['num_to_test']
             spiketrains_batch.append((np.zeros(shape), layer.label))
+            spiketrain_dict = self.spikemonitors[i].spike_trains()
             spiketrains = np.array(
-                self.spikemonitors[i+1].spike_trains() / self.sim.ms)
+                [spiketrain_dict[key] / self.sim.ms for key in
+                 spiketrain_dict.keys()])
             spiketrains_full = np.empty((np.prod(shape[:-1]), shape[-1]))
             for k in range(len(spiketrains)):
                 spiketrain = np.zeros(shape[-1])
@@ -448,7 +454,7 @@ class SNN_compiled():
             # Maybe repeat for membrane potential, skipping input layer
             if settings['verbose'] == 3 and i > 0:
                 vm = [np.array(v/1e6/self.sim.mV).transpose() for v in
-                      self.statemonitors[i].v]
+                      self.statemonitors[i-1].v]
                 vmem.append((vm, layer.label))
                 times = self.statemonitors[0].t / self.sim.ms
                 if i == len(layers) - 2:
@@ -456,5 +462,5 @@ class SNN_compiled():
                 plot_potential(times, vmem[-1], showLegend=showLegend)
             j += 1
 
-        output_graphs(spiketrains_batch, ann, np.array(X_batch, ndmin=4),
+        output_graphs(spiketrains_batch, ann, X_batch,
                       settings['log_dir_of_current_run'], idx)
