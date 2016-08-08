@@ -213,6 +213,8 @@ Default values
 """
 
 import matplotlib as mpl
+from textwrap import dedent
+
 
 # Define text sizes of various plot properties relative to font.size, using the
 # following values: xx-small, x-small, small, medium, large, x-large, xx-large,
@@ -322,11 +324,11 @@ def update_setup(s=None):
     # pre-converted network from disk.
     if s['simulator'] == 'brian2' and 'convert' in s and not s['convert'] \
             or 'convert' not in s and not settings['convert']:
-        print('\n')
-        print("""SNN toolbox Warning: When using Brian 2 simulator, you need to
-              convert the network each time you start a new session. (No
-              saving/reloading methods implemented.)
-              Setting convert = True.\n""")
+        print(dedent("""\ \n
+            SNN toolbox Warning: When using Brian 2 simulator, you need to
+            convert the network each time you start a new session. (No
+            saving/reloading methods implemented.) Setting convert = True.
+            \n"""))
         s['convert'] = True
     # Set default path if user did not specify one.
     if 'path' not in s or s['path'] == '':
@@ -352,8 +354,9 @@ def update_setup(s=None):
 
     if s['simulator'] != 'INI' and not s['poisson_input']:
         s['poisson_input'] = True
-        print("""SNN toolbox Warning: Currently, turning off Poisson input is
-            only possible in INI simulator. Falling back on Poisson input.""")
+        print(dedent("""\
+            SNN toolbox Warning: Currently, turning off Poisson input is
+            only possible in INI simulator. Falling back on Poisson input."""))
 
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)

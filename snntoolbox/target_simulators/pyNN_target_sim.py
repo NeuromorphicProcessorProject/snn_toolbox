@@ -182,7 +182,11 @@ class SNN_compiled():
 
     def build_dense(self, layer):
         weights = layer['parameters'][0]
-        self.layers[-1].set(i_offset=layer['parameters'][1])  # Bias
+        biases = layer['parameters'][1]
+        i_offset = np.empty(len(biases))
+        for i in range(len(biases)):
+            i_offset[i] = biases[i]
+        self.layers[-1].set(i_offset=i_offset)  # Bias
         for i in range(len(weights)):
             for j in range(len(weights[0])):
                 self.conns.append((i, j, weights[i, j], settings['delay']))
