@@ -31,19 +31,34 @@ from snntoolbox.config import settings, initialize_simulator
 standard_library.install_aliases()
 
 
+#TODO This is ugly, i can use the sim object to store the megasim path
 MEGASIM_PATH = "/Users/Evangelos/Programming/NPP/megasim/megasim/bin/"
 
-class module_fc():
+class module_input_stimulus():
+    '''
+
+    '''
+
+    def __init__(self, label, pop_size):
+        self.label = label
+        self.pop_size = pop_size
+        self.input_stimulus_file = "input_events.stim"
+        self.module_string = "source"
+
+class module_fully_connected():
     '''
     Helper class for the megasim fully connected module
     '''
-    def __init__(self, pop_size, neuron_params, scale_weights_factor = 10000000):
+    def __init__(self, pop_size, neuron_params, scaling_factor = 10000000):
         self.pop_size = pop_size
+        self.ouput_shapes=0
         self.module_string = 'module_fully_connected'
-        self.scale_weights_factor = int(scale_weights_factor)
+        self.scaling_factor = int(scaling_factor)
         self.w = []
         self.neuron_params = None
         self.label= None
+
+
         self.time_busy_initial = 0
 
         self.threshold = neuron_params["v_thresh"]
@@ -64,7 +79,7 @@ class module_fc():
         f.close()
 
     def build_parameter_file(self, dirname):
-        sc = self.scale_weights_factor
+        sc = self.scaling_factor
         #filename= "fc_con.prm"
         #Setting the values of the parameters
         neuroparams={
@@ -243,28 +258,26 @@ class SNN_compiled():
 
     def __init__(self, ann):
         self.ann = ann
-        #self.sim = initialize_simulator()
-        #self.add_input_layer()
+        #self.sim = initialize_simulator() #TODO i can get the megasim path from here!
         self.connections = []
-        self.threshold = 'v > v_thresh'
-        self.reset = 'v = v_reset'
-        self.eqs = 'dv/dt = -v/tau_m : volt'
-        self.output_shapes = []
-        #self.spikemonitors = [self.sim.SpikeMonitor(self.layers[0])]
+        #self.output_shapes = []
         #self.statemonitors = []
         self.megadirname = ''
         self.megaschematic = 'megasim.sch'
         self.input_stimulus_file = "input_events.stim"
-        self.labels = ['InputLayer']
         self.layers = []
+        self.add_input_layer()
 
     def add_input_layer(self):
         input_shape = list(self.ann['input_shape'])
-        self.layers = [self.sim.PoissonGroup(
-            np.prod(input_shape[1:]), rates=0*self.sim.Hz,
-            dt=settings['dt']*self.sim.ms)]
-        self.layers[0].add_attribute('label')
-        self.layers[0].label = 'InputLayer'
+        # self.layers = [self.sim.PoissonGroup(
+        #     np.prod(input_shape[1:]), rates=0*self.sim.Hz,
+        #     dt=settings['dt']*self.sim.ms)]
+        self.layers.append(
+            module_input_stimulus(label='InputLayer', pop_size = input_shape[1:])
+        )
+        # self.layers[0].add_attribute('label')
+        # self.layers[0].label = 'InputLayer'
 
     def build(self):
         """
@@ -307,7 +320,7 @@ class SNN_compiled():
                 #self.build_pooling(layer)
 
         # build parameter files for all modules
-        for mod_n,module in enumerate(self.layers):
+        for mod_n,module in enumerate(self.layers[1:]):
             module.build_parameter_file(dirname=self.megadirname)
             module.build_state_file(dirname= self.megadirname)
 
@@ -365,24 +378,15 @@ class SNN_compiled():
         np.savetxt(self.megadirname+self.input_stimulus_file, megastim, delimiter=" ", fmt=("%d"))
 
     def add_layer(self, layer):
-        self.labels.append(layer['label'])
         self.layers.append(
-            module_fc(pop_size = layer['output_shape'][1:], neuron_params = settings )
+            module_fully_connected(pop_size = layer['output_shape'][1:], neuron_params = settings )
         )
 
         weights = layer['parameters'][0]  # [W, b][0]
         self.layers[-1].w = weights#.flatten()
-        #self.connections.append(self.sim.Synapses(
-        #    self.layers[-2], self.layers[-1], model='w:volt', on_pre='v+=w',
-        #    dt=settings['dt']*self.sim.ms))
-        self.output_shapes.append(layer['output_shape'])
-        #self.layers[-1].add_attribute('label')
+        self.layers[-1].output_shapes = layer['output_shape']
+        #self.output_shapes.append(layer['output_shape'])
         self.layers[-1].label = layer['label']
-        # if settings['verbose'] > 1:
-        #     self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[-1]))
-        # if settings['verbose'] == 3:
-        #     self.statemonitors.append(self.sim.StateMonitor(self.layers[-1],
-        #                                                     'v', record=True))
 
     def build_schematic(self):
         '''
@@ -398,14 +402,12 @@ class SNN_compiled():
 
         fileo.write(".netlist\n")
         # stim file first - node is input_evs
-        fileo.write("source {" + input_stimulus_node + "} " + input_stimulus_file + "\n")
+        fileo.write(self.layers[0].module_string +" {" + self.layers[0].label + "} " + self.input_stimulus_file + "\n")
         fileo.write("\n")
 
-        for n in range(len(self.layers)):
-            if n==0:
-                buildline = self.layers[n].module_string +" {"+ input_stimulus_node+"}"+"{"+self.layers[n].label+"} "+self.layers[n].label+".prm" + " " + self.layers[n].label+".stt"
-            else:
-                buildline = self.layers[n].module_string +" {"+ self.layers[n-1].label+"}"+"{"+ self.layers[n].label+"} "+ self.layers[n].label+".prm" + " " +  self.layers[n].label+".stt"
+        for n in range(1,len(self.layers)):
+            buildline = self.layers[n].module_string + " {" + self.layers[n - 1 ].label + "}" + "{" + self.layers[
+                n].label + "} " + self.layers[n].label + ".prm" + " " + self.layers[n].label + ".stt"
             fileo.write(buildline + "\n")
         fileo.write("\n")
 
@@ -499,15 +501,15 @@ class SNN_compiled():
 
         '''
         events = []
-        for n in range(len(self.layers)):
+        for n in range(0,len(self.layers)):
             events.append(
                 np.genfromtxt(self.megadirname+"node_"+ self.layers[n].label+".evs",delimiter=" ",dtype="int")
             )
         return events
 
     def spike_count(self, events, pop_size=10):
-        pop_spike_hist = np.histogram(events[:, 3], bins=pop_size,)
-        return pop_size
+        pop_spike_hist = np.histogram(events[:, 3], bins=pop_size,)[0]
+        return pop_spike_hist
 
     def run(self, snn_precomp, X_test, Y_test):
         """
@@ -579,6 +581,8 @@ class SNN_compiled():
                 echo("Creating poisson input...\n")
 
             # Generate stimulus file
+            echo("Using the same random seed for debugging\n")
+            np.random.seed(1)
             self.intensity_to_poisson_convertion(X_test[ind, :], dt= settings['dt'],n_spikes= settings['input_rate'],
                                                  t_stop=settings['duration'])
             #input_layer.rates = X_test[ind, :].flatten() * \
@@ -588,7 +592,7 @@ class SNN_compiled():
             if settings['verbose'] > 1:
                 echo("Starting new simulation...\n")
 
-
+            #TODO this is ugly, in python3 i have to change folders to execute megasim
             current_dir = os.getcwd()
             os.chdir(self.megadirname)
             run_megasim = subprocess.check_output([MEGASIM_PATH + "megasim", self.megaschematic])
@@ -597,13 +601,17 @@ class SNN_compiled():
             # Check megasim output for errors
             self.check_megasim_output(run_megasim)
 
+            # use this if you want to access all the generated events
             spike_monitors = self.get_spikes()
+            self.spikemonitors = spike_monitors
+            # use this to access spikes from a particular layer eg output
+            #spike_monitor = self.get_spikes_from_layer(layer)
+
             output_pop_activity = self.spike_count(spike_monitors[-1], self.layers[-1].pop_size[0])
-            print (output_pop_activity, self.layers[-1].pop_size[0])
             # Get result by comparing the guessed class (i.e. the index of the
             # neuron in the last layer which spiked most) to the ground truth.
 
-            guesses.append(np.argmax(self.spikemonitors[-1].count))
+            guesses.append(np.argmax(output_pop_activity))
             truth.append(np.argmax(Y_test[ind, :]))
             results.append(guesses[-1] == truth[-1])
 
@@ -616,8 +624,9 @@ class SNN_compiled():
             if settings['verbose'] > 1 and \
                     test_num == settings['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
+                output_shapes = [x.output_shapes for x in self.layers[1:]]
                 self.collect_plot_results(
-                    self.layers, self.output_shapes, snn_precomp,
+                    self.layers, output_shapes, snn_precomp,
                     X_test[ind:ind+settings['batch_size']])
 
             # Reset simulation time and recorded network variables for next
@@ -626,7 +635,8 @@ class SNN_compiled():
                 echo("Resetting simulator...\n")
             # Skip during last run so the recorded variables are not discarded
             if test_num < settings['num_to_test'] - 1:
-                self.snn.restore()
+                pass
+                #self.snn.restore()
             if settings['verbose'] > 1:
                 echo("Done.\n")
 
@@ -640,7 +650,7 @@ class SNN_compiled():
         echo("Total accuracy: {:.2%} on {} test sample{}.\n\n".format(
              total_acc, settings['num_to_test'], s))
 
-        self.snn.restore()
+        #self.snn.restore()
 
         return total_acc
 
@@ -701,6 +711,7 @@ class SNN_compiled():
                 [int(settings['duration'] / settings['dt'])]
             shape[0] = 1  # simparams['num_to_test']
             spiketrains_batch.append((np.zeros(shape), layer.label))
+            import pdb;pdb.set_trace()
             spiketrain_dict = self.spikemonitors[i].spike_trains()
             spiketrains = np.array(
                 [spiketrain_dict[key] / self.sim.ms for key in
