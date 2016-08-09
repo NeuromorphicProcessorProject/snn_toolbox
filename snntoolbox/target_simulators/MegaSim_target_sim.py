@@ -262,6 +262,7 @@ class SNN_compiled():
         self.connections = []
         #self.output_shapes = []
         #self.statemonitors = []
+        self.spikemonitors = []
         self.megadirname = ''
         self.megaschematic = 'megasim.sch'
         self.input_stimulus_file = "input_events.stim"
@@ -337,7 +338,29 @@ class SNN_compiled():
             print(megalog)
             sys.exit(99)
 
-    def intensity_to_poisson_convertion(self, mnist_digit, shape=(28,28), dt=1, n_spikes=250, t_stop=1):
+    def poisson_spike_generator_megasim_flatten(self, mnist_digit):
+        rescale_fac = 1000/(settings['input_rate'] * settings['dt'])
+        spikes=[]
+        tttt=[]
+        for t in np.arange(0, settings['duration'], settings['dt']):
+            # Create poisson input.
+            spike_snapshot = np.random.random_sample(mnist_digit.shape) * rescale_fac
+            inp = (spike_snapshot <= mnist_digit).astype('float32')
+            neuron_id = np.nonzero(inp)[0]
+            spike_for_t = np.zeros((len(neuron_id),6),dtype="int")
+            spike_for_t[:,0] = t
+            spike_for_t[:,1] = -1
+            spike_for_t[:,2] = -1
+            spike_for_t[:,3] = neuron_id
+            spike_for_t[:,4] = 0
+            spike_for_t[:,5] = 1
+            spikes.append(spike_for_t)
+            tttt.append(inp)
+        import pdb;pdb.set_trace()
+        spikes=np.vstack(spikes)
+        np.savetxt(self.megadirname + self.input_stimulus_file, spikes, delimiter=" ", fmt=("%d"))
+
+    def intensity_to_poisson_convertion_old(self, mnist_digit, shape=(28,28), dt=1, n_spikes=250, t_stop=1):
         '''
         This function receives an MNIST character, 28 x 28 array, as input and
         generates random spikes based on the intensity of the pixels, the number of
@@ -412,9 +435,26 @@ class SNN_compiled():
         fileo.write("\n")
 
         fileo.write(".options" + "\n")
-        fileo.write("Tmax=" + str(int(settings['duration']+1)) + "\n")
+        fileo.write("Tmax=" + str(int(settings['duration'])) + "\n")
         fileo.close()
 
+
+    def clean_megasim_sim_data(self):
+        '''
+
+        Returns
+        -------
+
+        '''
+        files = os.listdir(self.megadirname)
+        evs_data = [x for x in files if x[-3:]=='evs']
+        stim_data = [x for x in files if x[-4:]=='stim']
+
+        for evs in evs_data:
+            os.remove(self.megadirname+evs)
+
+        for stim in stim_data:
+            os.remove(self.megadirname+stim)
 
     def build_convolution(self, layer):
         weights = layer['parameters'][0]  # [W, b][0]
@@ -507,8 +547,8 @@ class SNN_compiled():
             )
         return events
 
-    def spike_count(self, events, pop_size=10):
-        pop_spike_hist = np.histogram(events[:, 3], bins=pop_size,)[0]
+    def spike_count_histogram(self, events, pop_size=10):
+        pop_spike_hist = np.histogram(events[:, 3], bins=pop_size,range=(0,pop_size))[0]
         return pop_spike_hist
 
     def run(self, snn_precomp, X_test, Y_test):
@@ -576,6 +616,9 @@ class SNN_compiled():
             si = settings['sample_indices_to_test']
             ind = randint(0, len(X_test) - 1) if si == [] else si[test_num]
 
+            # Clean any previous data. This is not necessary, only for debugging
+            self.clean_megasim_sim_data()
+
             # Add Poisson input.
             if settings['verbose'] > 1:
                 echo("Creating poisson input...\n")
@@ -583,14 +626,14 @@ class SNN_compiled():
             # Generate stimulus file
             echo("Using the same random seed for debugging\n")
             np.random.seed(1)
-            self.intensity_to_poisson_convertion(X_test[ind, :], dt= settings['dt'],n_spikes= settings['input_rate'],
-                                                 t_stop=settings['duration'])
-            #input_layer.rates = X_test[ind, :].flatten() * \
-            #    settings['input_rate'] * self.sim.Hz
+            self.poisson_spike_generator_megasim_flatten(mnist_digit=X_test[ind, :])
+            # self.intensity_to_poisson_convertion(X_test[ind, :], dt= settings['dt'],n_spikes= settings['input_rate'],
+            #                                      t_stop=settings['duration'])
 
             # Run simulation for 'duration'.
             if settings['verbose'] > 1:
                 echo("Starting new simulation...\n")
+
 
             #TODO this is ugly, in python3 i have to change folders to execute megasim
             current_dir = os.getcwd()
@@ -603,13 +646,17 @@ class SNN_compiled():
 
             # use this if you want to access all the generated events
             spike_monitors = self.get_spikes()
-            self.spikemonitors = spike_monitors
+
+            # list per input digit, a list per layer
+            self.spikemonitors.append(spike_monitors)
+
             # use this to access spikes from a particular layer eg output
             #spike_monitor = self.get_spikes_from_layer(layer)
 
-            output_pop_activity = self.spike_count(spike_monitors[-1], self.layers[-1].pop_size[0])
+            output_pop_activity = self.spike_count_histogram(spike_monitors[-1], self.layers[-1].pop_size[0])
             # Get result by comparing the guessed class (i.e. the index of the
             # neuron in the last layer which spiked most) to the ground truth.
+            import pdb;pdb.set_trace()
 
             guesses.append(np.argmax(output_pop_activity))
             truth.append(np.argmax(Y_test[ind, :]))
@@ -703,36 +750,21 @@ class SNN_compiled():
         # ``label`` is a string specifying both the layer type and the index,
         # e.g. ``'03Dense'``.
         spiketrains_batch = []
-        j = 0
-        for (i, layer) in enumerate(layers):
-            if i == 0 or 'Flatten' in layer.label:
-                continue
-            shape = list(output_shapes[j]) + \
-                [int(settings['duration'] / settings['dt'])]
-            shape[0] = 1  # simparams['num_to_test']
-            spiketrains_batch.append((np.zeros(shape), layer.label))
-            import pdb;pdb.set_trace()
-            spiketrain_dict = self.spikemonitors[i].spike_trains()
-            spiketrains = np.array(
-                [spiketrain_dict[key] / self.sim.ms for key in
-                 spiketrain_dict.keys()])
-            spiketrains_full = np.empty((np.prod(shape[:-1]), shape[-1]))
-            for k in range(len(spiketrains)):
-                spiketrain = np.zeros(shape[-1])
-                spiketrain[:len(spiketrains[k])] = np.array(
-                    spiketrains[k][:shape[-1]])
-                spiketrains_full[k] = spiketrain
-            spiketrains_batch[j][0][:] = np.reshape(spiketrains_full, shape)
-            # Maybe repeat for membrane potential, skipping input layer
-            if settings['verbose'] == 3 and i > 0:
-                vm = [np.array(v/1e6/self.sim.mV).transpose() for v in
-                      self.statemonitors[i-1].v]
-                vmem.append((vm, layer.label))
-                times = self.statemonitors[0].t / self.sim.ms
-                if i == len(layers) - 2:
-                    showLegend = True
-                plot_potential(times, vmem[-1], showLegend=showLegend)
-            j += 1
+
+        num_of_samples = 1 # how many samples?
+        results_from_input_sample = 0 # which digit to pick?
+
+        for l in range(1,len(self.layers)):
+            tmp = [x[l] for x in self.spikemonitors] # this has the response of layer l for all samples
+            lbl = self.layers[l].label
+
+            spiketrain = np.zeros((num_of_samples, self.layers[l].pop_size[0],  int(settings['duration'] / settings['dt'])) )
+            spikes_megasim = tmp[results_from_input_sample]
+
+            # get spike counts per neuron per time-step
+            spiketrain[ 0, spikes_megasim[:,3] , spikes_megasim[:,0]] = spikes_megasim[:,0]
+
+            spiketrains_batch.append([spiketrain,lbl])
 
         output_graphs(spiketrains_batch, ann, X_batch,
                       settings['log_dir_of_current_run'], idx)
