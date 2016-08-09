@@ -51,26 +51,26 @@ class Layer():
             error = np.zeros_like(prev_layer_payload)
             error[in_spikes] = prev_layer_payload[in_spikes]
             self.V += np.dot(self.W, error)
-        spikes = self.V > self.thr  # Trigger spikes
-        self.spiketrain[:, t_ind] = spikes * t  # Write out spike times
-        # print(self.V)
+        nr_spikes = np.array([int(np.floor(v / self.thr)) if 
+                      v >= 0 else 0 for v in self.V])  # Trigger spikes
+        self.spiketrain[:, t_ind] = nr_spikes # Write out spike times
+        spikes_idx = np.where(nr_spikes!=0)
 
         # Compute rates
-        self.rates[:, t_ind] = [len(s.nonzero()[0]) / float(t) for s in
-                                self.spiketrain]
-
+        self.rates[:, t_ind] = [np.sum(s)/t for ind, s in
+                                enumerate(self.spiketrain)]
         if self.reset == 'zero':
-            self.V[spikes] = 0  # Reset to zero after spike
+            self.V[spikes_idx] = 0  # Reset to zero after spike
         elif self.reset == 'subtract':
-            self.V[spikes] -= self.thr  # Subtract threshold after spike
-            self.update_payload(spikes, t, t_ind)
+            self.V[spikes_idx] %= self.thr
+            self.update_payload(spikes_idx, t, t_ind)
             
         self.Vt[:, t_ind] = self.V  # Write out V for plotting
         # Compute the rates predicted by theory
         self.pred_rates[:, t_ind] = self.get_pred_rates(in_spikes,
                                   prev_layer_payload, t, t_ind)
         self.rate_rep = self.pred_rates / (self.rates + 1e-6)
-        return spikes, self.payload
+        return nr_spikes, self.payload
 
     def set_activations(self, x):
         """Compute the activations of the corresponding ANN layer."""
@@ -271,7 +271,7 @@ if __name__ == "__main__":
         print (L3_spikes)
                                                        
         sp3+=len(L3_spikes.nonzero()[0])
-        
+   
         t_ind += 1
     print (sp1)
     print (sp2)

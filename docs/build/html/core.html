@@ -86,7 +86,7 @@
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure_toolbox.html">Configuration</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">Tools</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">SNN class</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">SNN class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-core.pipeline">pipeline</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-core.inisim">inisim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-core.util">util</a></li>
@@ -118,7 +118,7 @@
         <div class="rst-content">
           
 
- 
+
 
 
 
@@ -175,19 +175,22 @@ single module to <code class="docutils literal"><span class="pre">model_libs</sp
 <dl class="attribute">
 <dt id="core.model.SNN.model">
 <code class="descname">model</code><a class="headerlink" href="#core.model.SNN.model" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Model</em> &#8211; A model instance of the network in the respective <code class="docutils literal"><span class="pre">model_lib</span></code>.</p>
+<dd><p><em>Model</em></p>
+<p>A model instance of the network in the respective <code class="docutils literal"><span class="pre">model_lib</span></code>.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="core.model.SNN.val_fn">
 <code class="descname">val_fn</code><a class="headerlink" href="#core.model.SNN.val_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Theano function</em> &#8211; A Theano function that allows evaluating the original model.</p>
+<dd><p><em>Theano function</em></p>
+<p>A Theano function that allows evaluating the original model.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="core.model.SNN.input_shape">
 <code class="descname">input_shape</code><a class="headerlink" href="#core.model.SNN.input_shape" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>list</em> &#8211; The dimensions of the input sample:
+<dd><p><em>list</em></p>
+<p>The dimensions of the input sample:
 [batch_size, n_chnls, n_rows, n_cols]. For instance, mnist would have
 input shape [Null, 1, 28, 28].</p>
 </dd></dl>
@@ -195,7 +198,8 @@ input shape [Null, 1, 28, 28].</p>
 <dl class="attribute">
 <dt id="core.model.SNN.layers">
 <code class="descname">layers</code><a class="headerlink" href="#core.model.SNN.layers" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>list</em> &#8211; List of all the layers of the network, where each layer contains a
+<dd><p><em>list</em></p>
+<p>List of all the layers of the network, where each layer contains a
 dictionary with keys</p>
 <ul class="simple">
 <li>layer_num (int): Index of layer.</li>
@@ -229,13 +233,15 @@ the previous.</li>
 <dl class="attribute">
 <dt id="core.model.SNN.labels">
 <code class="descname">labels</code><a class="headerlink" href="#core.model.SNN.labels" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>list</em> &#8211; The layer labels.</p>
+<dd><p><em>list</em></p>
+<p>The layer labels.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="core.model.SNN.layer_idx_map">
 <code class="descname">layer_idx_map</code><a class="headerlink" href="#core.model.SNN.layer_idx_map" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>list</em> &#8211; A list mapping the layer indices of the original network to the parsed
+<dd><p><em>list</em></p>
+<p>A list mapping the layer indices of the original network to the parsed
 network. (Not all layers of the original model are needed in the parsed
 model.) For instance: To get the layer index i of the original input
 <code class="docutils literal"><span class="pre">model</span></code> that corresponds to layer j of the parsed network <code class="docutils literal"><span class="pre">layers</span></code>,
@@ -245,7 +251,8 @@ one would use <code class="docutils literal"><span class="pre">i</span> <span cl
 <dl class="attribute">
 <dt id="core.model.SNN.compiled_snn">
 <code class="descname">compiled_snn</code><a class="headerlink" href="#core.model.SNN.compiled_snn" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>SNN_compiled</em> &#8211; Object containing the compiled spiking network (ready for simulation).</p>
+<dd><p><em>SNN_compiled</em></p>
+<p>Object containing the compiled spiking network (ready for simulation).</p>
 </dd></dl>
 
 <dl class="method">
@@ -433,7 +440,8 @@ Defaults to <code class="docutils literal"><span class="pre">False</span></code>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>results</strong> &#8211; List of the accuracies obtained after simulating with each parameter
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>results</strong> &#8211;
+List of the accuracies obtained after simulating with each parameter
 value in param_range.</p>
 </td>
 </tr>
@@ -594,9 +602,12 @@ conversion and simulation of an SNN.</p>
 <code class="docutils literal"><span class="pre">'03Convolution2D_3x32x32'</span></code>.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
-<li><strong>layer_num</strong> (<em>int</em>) &#8211; The index of the layer in the network.</li>
-<li><strong>name</strong> (<em>string</em>) &#8211; The type of the layer.</li>
-<li><strong>shape</strong> (<em>tuple</em>) &#8211; The shape of the layer</li>
+<li><strong>layer_num</strong> (<em>int</em>) &#8211;
+The index of the layer in the network.</li>
+<li><strong>name</strong> (<em>string</em>) &#8211;
+The type of the layer.</li>
+<li><strong>shape</strong> (<em>tuple</em>) &#8211;
+The shape of the layer</li>
 </ul>
 </td>
 </tr>
@@ -623,7 +634,8 @@ and (batch_size, channels, num_rows, num_cols) for a convolutional net.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>activations_batch</strong> &#8211; Each entry represents a layer in the ANN for which an activation can be
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>activations_batch</strong> &#8211;
+Each entry represents a layer in the ANN for which an activation can be
 calculated (e.g. <code class="docutils literal"><span class="pre">Dense</span></code>, <code class="docutils literal"><span class="pre">Convolution2D</span></code>).
 <code class="docutils literal"><span class="pre">activations</span></code> containing the activations of a layer. It has the same
 shape as the original layer, e.g.
@@ -655,7 +667,8 @@ and (batch_size, channels, num_rows, num_cols) for a convolutional net.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>activations</strong> &#8211; The activations of cells in a specific layer. Has the same shape as the
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>activations</strong> &#8211;
+The activations of cells in a specific layer. Has the same shape as the
 layer.</p>
 </td>
 </tr>
@@ -685,7 +698,8 @@ grid.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>samples</strong> &#8211; There are <code class="docutils literal"><span class="pre">num</span></code> samples in the closed interval [start, stop].</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>samples</strong> &#8211;
+There are <code class="docutils literal"><span class="pre">num</span></code> samples in the closed interval [start, stop].</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ndarray</p>
@@ -719,8 +733,10 @@ layer.</li>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
-<li><strong>parameters_norm</strong> (<em>array</em>) &#8211; The parameters of a layer, divided by <code class="docutils literal"><span class="pre">scale_fac</span></code>.</li>
-<li><strong>scale_fac</strong> (<em>float</em>) &#8211; Maximum (or percentile) of activations or parameters of this layer.
+<li><strong>parameters_norm</strong> (<em>array</em>) &#8211;
+The parameters of a layer, divided by <code class="docutils literal"><span class="pre">scale_fac</span></code>.</li>
+<li><strong>scale_fac</strong> (<em>float</em>) &#8211;
+Maximum (or percentile) of activations or parameters of this layer.
 Parameters of the respective layer are scaled by this value.</li>
 </ul>
 </p>
@@ -772,7 +788,7 @@ single rate value.</p>
 </table>
 </dd></dl>
 
-<p><a class="reference download internal" href="_downloads/util.py" download=""><code class="xref download docutils literal"><span class="pre">source</span></code></a></p>
+<p><a class="reference download internal" href="_downloads/util.py"><code class="xref download docutils literal"><span class="pre">source</span></code></a></p>
 </div>
 
 
