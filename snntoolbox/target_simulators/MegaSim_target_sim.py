@@ -34,6 +34,8 @@ standard_library.install_aliases()
 #TODO This is ugly, i can use the sim object to store the megasim path
 MEGASIM_PATH = "/Users/Evangelos/Programming/NPP/megasim/megasim/bin/"
 
+
+#TODO there is a lot of duplicate code in these classes, maybe i can create a base class and use inheritance
 class module_input_stimulus():
     '''
 
@@ -45,14 +47,449 @@ class module_input_stimulus():
         self.input_stimulus_file = "input_events.stim"
         self.module_string = "source"
 
+class module_flatten():
+    '''
+
+    '''
+    def __init__(self, input_ports, fm_size,  label="flatten_layer"):
+        self.module_string = "module_flatten"
+
+        self.num_of_FMs = input_ports
+        self.fm_size = fm_size
+        self.label=label
+        self.time_busy_initial = 0
+
+    def build_state_file(self, dirname):
+        f = open(dirname + self.label + ".stt", "w")
+        f.write(".integers\n")
+        f.write("time_busy_initial %d\n" % self.time_busy_initial)
+        f.write(".floats\n")
+        f.close()
+
+    def build_parameter_file(self, dirname):
+        param1=(
+    """.integers
+n_in_ports %d
+n_out_ports %d
+delay_to_process 0
+delay_to_ack 0
+fifo_depth 0
+n_repeat 1
+delay_to_repeat 15
+"""%(self.num_of_FMs, 1))
+
+        param_k = (
+         """Nx_kernel %d
+Ny_kernel %d
+""" % (self.fm_size[0],
+           self.fm_size[1]))
+
+
+        q=open(dirname+self.label+'.prm',"w")
+        q.write(param1)
+
+        for k in range(self.num_of_FMs):
+            q.write(param_k)
+
+        q.write(".floats\n")
+        q.close()
+
+
+class module_average_pooling():
+    '''
+
+    duplicate code with the module_conv class - TODO: merge them
+    layer_params
+    dict_keys(['label', 'layer_num', 'border_mode', 'layer_type', 'strides', 'input_shape', 'output_shape', 'get_activ', 'pool_size'])
+    '''
+
+    def __init__(self, layer_params, neuron_params, scaling_factor=10000000):
+        self.module_string = 'module_conv'
+        self.layer_type = layer_params['layer_type']
+
+        self.in_ports = 1 # one average pooling layer per conv layer
+        self.num_of_FMs = layer_params['input_shape'][1]
+
+        self.fm_size = layer_params['output_shape'][2:]
+        self.kernel_size = layer_params['pool_size']
+
+
+        self.output_shapes = layer_params['output_shape'] #(none, 32, 26, 26) last two
+        self.pre_shapes = layer_params['input_shape'] # (none, 1, 28 28) # last 2
+
+        self.border_mode = layer_params['border_mode']
+        if self.border_mode != 'valid':
+            echo("Not implemented yet!")
+            sys.exit(88)
+
+        self.strides = layer_params["strides"]
+
+        self.num_pre_modules = layer_params['input_shape'][1]
+
+        self.label = layer_params['label']
+
+        self.scaling_factor = int(scaling_factor)
+
+        self.time_busy_initial = 0
+        self.threshold = neuron_params["v_thresh"]
+        self.threshold_negative = -2147483646
+        self.refractory = neuron_params["tau_refrac"]
+        self.vreset = neuron_params["v_reset"]
+        self.leak_pos = 0
+        self.leak_neg = 0
+
+    def build_state_file(self, dirname):
+        f = open(dirname + self.label + ".stt", "w")
+        f.write(".integers\n")
+        f.write("time_busy_initial %d\n" % self.time_busy_initial)
+        f.write(".floats\n")
+        f.close()
+
+    def build_parameter_file(self, dirname):
+        sc = self.scaling_factor
+        fm_size = self.fm_size
+        num_FMs = self.num_pre_modules
+
+        print("building %s with %d FM receiving input from %d pre pops. FM size is %d,%d"%(
+            self.label, self.output_shapes[1],self.pre_shapes[1], self.output_shapes[2],self.output_shapes[3]))
+
+        kernel = np.ones(self.kernel_size, dtype="float") * sc
+        kernel *= (1.0 / np.sum(self.kernel_size))
+        kernel = kernel.astype("int")
+
+        for f in range(num_FMs):
+            fm_filename = self.label+"_"+str(f)
+            #print(fm_filename)
+            #print (kernel)
+
+            self.__build_single_fm(1,1,fm_size,kernel,dirname,fm_filename)
+        pass
+
+    def __build_single_fm(self, num_in_ports, num_out_ports, fm_size, kernel, dirname, fprmname):
+        #import pdb;pdb.set_trace()
+        sc = self.scaling_factor
+        # filename= "fc_con.prm"
+        # Setting the values of the parameters
+        neuron_params = {
+            "THplus": int(self.threshold * sc),
+            "THplusInfo": 1,
+            "THminus": self.threshold_negative,
+            "THminusInfo": 0,
+            "Reset_to_reminder": 0,
+            "MembReset": int(self.vreset),
+            "TLplus": int(self.leak_pos),
+            "TLminus": int(self.leak_neg),
+            "Tmin": 0,
+            "T_Refract": int(self.refractory),
+        }
+
+        # Values of the genereal parameters
+        general_params = {
+            "n_out_ports": num_out_ports,
+            "delay_to_process": 0,
+            "delay_to_ack": 0,
+            "fifo_depth": 1,
+            "n_repeat": 1,
+            "delay_to_repeat": 15,
+        }
+
+        # Values of the fc parameters
+        fm_params = {
+            "Nx_array": self.output_shapes[-2],
+            "Ny_array": self.output_shapes[-2],
+            "Xmin": 0,
+            "Ymin": 0,
+        }
+
+
+
+        if neuron_params["THplus"] > (2 ** 31 - 1):
+            print("Threshold too high")
+            sys.exit()
+
+        param1 = (
+        """.integers
+n_in_ports %d
+n_out_ports %d
+delay_to_process 0
+delay_to_ack 0
+fifo_depth 0
+n_repeat 1
+delay_to_repeat 15
+Nx_array %d
+Ny_array %d
+Xmin 0
+Ymin 0
+THplus %d
+THplusInfo %d
+THminus %d
+THminusInfo %d
+Reset_to_reminder %d
+MembReset %d
+TLplus %d
+TLminus %d
+Tmin %d
+T_Refract %d
+""" %( num_in_ports, num_out_ports, fm_size[0], fm_size[1],
+               neuron_params["THplus"], neuron_params["THplusInfo"], neuron_params["THminus"],
+               neuron_params["THminusInfo"],
+               neuron_params["Reset_to_reminder"], neuron_params["MembReset"], neuron_params["TLplus"],
+               neuron_params["TLminus"],
+               neuron_params["Tmin"], neuron_params["T_Refract"] ))
+
+        param_k= (
+        """Nx_kernel %d
+Ny_kernel %d
+Dx %d
+Dy %d
+""" % (self.kernel_size[0],
+               self.kernel_size[1],
+               0, 0))
+
+        kernels_list =[]
+        for k in range(1):
+            # scale the weights
+            w = kernel
+
+            np.savetxt(dirname + "w.txt", w, delimiter=" ", fmt="%d")
+            q = open(dirname + "w.txt")
+            param2 = q.readlines()
+            q.close()
+            os.remove(dirname + "w.txt")
+            kernels_list.append(param2)
+
+        param5 = (
+            """crop_xmin %d
+crop_xmax %d
+crop_ymin %d
+crop_ymax %d
+xshift_pre %d
+yshift_pre %d
+x_subsmp %d
+y_subsmp %d
+xshift_pos %d
+yshift_pos %d
+rectify %d
+.floats
+""" % (0, fm_size[0],
+       0, fm_size[1],
+       0, 0,
+       1, 1,
+       0, 0,
+       0)
+        )
+
+        q = open(dirname + fprmname + '.prm', "w")
+        q.write(param1)
+        for k in range(len(kernels_list)):
+            q.write(param_k)
+            for i in param2:
+                q.write(i)
+        q.write(param5)
+        q.close()
+
+
+
+
+class module_conv():
+    '''
+    need to store number of feature maps, kernels
+
+    layer_params
+    dict_keys(['nb_col', 'activation', 'layer_type', 'layer_num', 'nb_filter', 'output_shape', 'input_shape', 'nb_row', 'label', 'parameters', 'border_mode'])
+    '''
+
+    def __init__(self, layer_params, neuron_params, scaling_factor=10000000):
+        self.module_string = 'module_conv'
+        self.layer_type = layer_params["layer_type"]
+
+
+        #self.size_of_FM = 0
+        self.num_of_FMs = layer_params['parameters'][0].shape[0]
+        self.kernel_size = layer_params['parameters'][0].shape[2:] #(kx, ky)
+        self.w = layer_params['parameters'][0]
+        self.in_ports = self.w.shape[1]
+        self.output_shapes = layer_params['output_shape'] #(none, 32, 26, 26) last two
+        self.pre_shapes = layer_params['input_shape'] # (none, 1, 28 28) # last 2
+
+        self.border_mode = layer_params["border_mode"] # 'same', 'valid',
+        if self.border_mode != 'valid':
+            echo("Not implemented yet!")
+            sys.exit(88)
+
+        self.scaling_factor = int(scaling_factor)
+        self.label = layer_params['label']
+
+
+
+        self.time_busy_initial = 0
+        self.threshold = neuron_params["v_thresh"]
+        self.threshold_negative = -2147483646
+        self.refractory = neuron_params["tau_refrac"]
+        self.vreset = neuron_params["v_reset"]
+        self.leak_pos = 0
+        self.leak_neg = 0
+
+
+    def build_state_file(self, dirname):
+        f = open(dirname+self.label+".stt", "w")
+        f.write(".integers\n")
+        f.write("time_busy_initial %d\n" % self.time_busy_initial)
+        f.write(".floats\n")
+        f.close()
+
+
+    def build_parameter_file(self, dirname):
+        sc = self.scaling_factor
+        fm_size = self.output_shapes[2:]
+        pre_num_ports = self.pre_shapes[1]
+        num_FMs = self.output_shapes[1]
+        print("building %s with %d FM receiving input from %d pre pops. FM size is %d,%d"%(
+            self.label, self.output_shapes[1],self.pre_shapes[1], self.output_shapes[2],self.output_shapes[3]))
+
+        for f in range(num_FMs):
+            fm_filename = self.label+"_"+str(f)
+            #print(fm_filename)
+            kernel = self.w[f]
+            #print (kernel)
+
+            self.__build_single_fm(pre_num_ports,1,fm_size,kernel,dirname,fm_filename)
+        pass
+
+    def __build_single_fm(self, num_in_ports, num_out_ports, fm_size, kernel, dirname, fprmname):
+        #import pdb;pdb.set_trace()
+        sc = self.scaling_factor
+        # filename= "fc_con.prm"
+        # Setting the values of the parameters
+        neuron_params = {
+            "THplus": int(self.threshold * sc),
+            "THplusInfo": 1,
+            "THminus": self.threshold_negative,
+            "THminusInfo": 0,
+            "Reset_to_reminder": 0,
+            "MembReset": int(self.vreset),
+            "TLplus": int(self.leak_pos),
+            "TLminus": int(self.leak_neg),
+            "Tmin": 0,
+            "T_Refract": int(self.refractory),
+        }
+
+        # Values of the genereal parameters
+        general_params = {
+            "n_out_ports": num_out_ports,
+            "delay_to_process": 0,
+            "delay_to_ack": 0,
+            "fifo_depth": 1,
+            "n_repeat": 1,
+            "delay_to_repeat": 15,
+        }
+
+        # Values of the fc parameters
+        fm_params = {
+            "Nx_array": self.output_shapes[-2],
+            "Ny_array": self.output_shapes[-2],
+            "Xmin": 0,
+            "Ymin": 0,
+        }
+
+
+
+        if neuron_params["THplus"] > (2 ** 31 - 1):
+            print("Threshold too high")
+            sys.exit()
+
+        param1 = (
+        """.integers
+n_in_ports %d
+n_out_ports %d
+delay_to_process 0
+delay_to_ack 0
+fifo_depth 0
+n_repeat 1
+delay_to_repeat 15
+Nx_array %d
+Ny_array %d
+Xmin 0
+Ymin 0
+THplus %d
+THplusInfo %d
+THminus %d
+THminusInfo %d
+Reset_to_reminder %d
+MembReset %d
+TLplus %d
+TLminus %d
+Tmin %d
+T_Refract %d
+""" %( num_in_ports, num_out_ports, fm_size[0], fm_size[1],
+               neuron_params["THplus"], neuron_params["THplusInfo"], neuron_params["THminus"],
+               neuron_params["THminusInfo"],
+               neuron_params["Reset_to_reminder"], neuron_params["MembReset"], neuron_params["TLplus"],
+               neuron_params["TLminus"],
+               neuron_params["Tmin"], neuron_params["T_Refract"] ))
+
+        param_k= (
+        """Nx_kernel %d
+Ny_kernel %d
+Dx %d
+Dy %d
+""" % (self.kernel_size[0],
+               self.kernel_size[1],
+               -int(self.kernel_size[0]/2), -int(self.kernel_size[1]/2)))
+
+        kernels_list =[]
+        for k in range(kernel.shape[0]):
+            # scale the weights
+            w = kernel[k] * sc
+
+            np.savetxt(dirname + "w.txt", w, delimiter=" ", fmt="%d")
+            q = open(dirname + "w.txt")
+            param2 = q.readlines()
+            q.close()
+            os.remove(dirname + "w.txt")
+            kernels_list.append(param2)
+
+        param5 = (
+            """crop_xmin %d
+crop_xmax %d
+crop_ymin %d
+crop_ymax %d
+xshift_pre %d
+yshift_pre %d
+x_subsmp %d
+y_subsmp %d
+xshift_pos %d
+yshift_pos %d
+rectify %d
+.floats
+""" % (0, fm_size[0],
+       0, fm_size[1],
+       0, 0,
+       1, 1,
+       0, 0,
+       0)
+        )
+
+        q = open(dirname + fprmname + '.prm', "w")
+        q.write(param1)
+        for k in range(len(kernels_list)):
+            q.write(param_k)
+            for i in param2:
+                q.write(i)
+        q.write(param5)
+        q.close()
+
+
 class module_fully_connected():
     '''
+    TODO update to match the other ones
     Helper class for the megasim fully connected module
     '''
     def __init__(self, pop_size, neuron_params, scaling_factor = 10000000):
+        self.module_string = 'module_fully_connected'
+        #self.layer_type =
         self.pop_size = pop_size
         self.ouput_shapes=0
-        self.module_string = 'module_fully_connected'
         self.scaling_factor = int(scaling_factor)
         self.w = []
         self.neuron_params = None
@@ -118,7 +555,6 @@ class module_fully_connected():
         if neuroparams["THplus"]>(2**31-1):
             print ("Threshold too high")
             sys.exit()
-        print ("thres is %d"%neuroparams["THplus"])
 
         param1=(
     """.integers
@@ -177,6 +613,10 @@ rectify 0
             q.write(i)
         q.write(param5)
         q.close()
+
+
+#----------------------------------------------------------------------------------------------------------------------#
+
 
 class SNN_compiled():
     """
@@ -260,8 +700,7 @@ class SNN_compiled():
         self.ann = ann
         #self.sim = initialize_simulator() #TODO i can get the megasim path from here!
         self.connections = []
-        #self.output_shapes = []
-        #self.statemonitors = []
+        self.spikemonitors = []
         self.megadirname = ''
         self.megaschematic = 'megasim.sch'
         self.input_stimulus_file = "input_events.stim"
@@ -279,16 +718,78 @@ class SNN_compiled():
         # self.layers[0].add_attribute('label')
         # self.layers[0].label = 'InputLayer'
 
+    def add_layer(self, layer):
+        '''
+        For Dense models
+
+        Parameters
+        ----------
+        layer
+
+        Returns
+        -------
+
+        '''
+        self.layers.append(
+            module_fully_connected(pop_size = layer['output_shape'][1:], neuron_params = settings )
+        )
+
+        weights = layer['parameters'][0]  # [W, b][0]
+        self.layers[-1].w = weights#.flatten()
+        self.layers[-1].output_shapes = layer['output_shape']
+        #self.output_shapes.append(layer['output_shape'])
+        self.layers[-1].label = layer['label']
+
+
+    def add_layer_conv2d(self, layer):
+        '''
+        For 2d convolutional models
+
+        Returns
+        -------
+
+        '''
+
+        self.layers.append(
+            module_conv(layer_params= layer, neuron_params = settings)
+        )
+
+        #self.layers[-1].label = layer['label']
+        #import pdb;
+        #pdb.set_trace()
+
+
+
+
+    def add_layer_avg_pooling(self, layer):
+        '''
+
+        Parameters
+        ----------
+        layer
+
+        Returns
+        -------
+
+        '''
+        self.layers.append(
+            module_average_pooling(layer_params= layer, neuron_params = settings)
+        )
+        #self.layers[-1].label = layer['label']
+        import pdb;
+        pdb.set_trace()
+
+
     def build(self):
         """
-        Compile a spiking neural network to prepare for simulation with Brian2.
+        Compile a spiking neural network to prepare for simulation with MegaSim.
 
         """
 
         echo('\n')
         echo("Compiling spiking network...\n")
 
-        # Create megasim dir
+        # Create megasim dir where it will store the SNN params and schematic
         self.megadirname = settings['path'] + settings['filename'] + '/'
         if not os.path.exists(self.megadirname):
             os.makedirs(self.megadirname)
@@ -299,33 +800,42 @@ class SNN_compiled():
         # Iterate over hidden layers to create spiking neurons and store
         # connections.
         for (layer_num, layer) in enumerate(self.ann['layers']):
-            if layer['layer_type'] in {'Dense', 'Convolution2D',
-                                       'MaxPooling2D', 'AveragePooling2D'}:
+            print (layer["layer_type"])
+            if layer['layer_type'] == 'Dense':
                 echo("Building layer: {}\n".format(layer['label']))
                 self.add_layer(layer)
-            else:
-                echo("Skipped layer:  {}\n".format(layer['layer_type']))
-                continue
-            if layer['layer_type'] == 'Dense':
-                print(layer_num)
-                pass
-                #self.build_dense(layer)
             elif layer['layer_type'] == 'Convolution2D':
-                echo("Not implemented yet!\n")
-                sys.exit(99)
-                #self.build_convolution(layer)
-            elif layer['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
-                echo("Not implemented yet!\n")
-                sys.exit(99)
-                #self.build_pooling(layer)
+                echo("Building layer: {}\n".format(layer['label']))
+                self.add_layer_conv2d(layer)
+            elif layer['layer_type'] == 'MaxPooling2D':
+                echo("Building layer: {}\n".format(layer['label']))
+                echo("Not Implemented!")
+                sys.exit(88)
+            elif layer['layer_type'] == 'AveragePooling2D':
+                echo("Building layer: {}\n".format(layer['label']))
+                self.add_layer_avg_pooling(layer)
+            elif layer['layer_type'] == 'Flatten':
+                echo("Building layer: {}\n".format(layer['label']))
+                c_layer_len = len(self.layers)-1
+
+                self.layers.append(
+                    module_flatten(input_ports=self.layers[c_layer_len].num_of_FMs,
+                                   fm_size=self.layers[c_layer_len].fm_size, label=layer["label"])
+                )
+            else:
+                pass
+
+        import pdb;pdb.set_trace()
 
         # build parameter files for all modules
+        # ignore the input layer
         for mod_n,module in enumerate(self.layers[1:]):
             module.build_parameter_file(dirname=self.megadirname)
             module.build_state_file(dirname= self.megadirname)
 
         # build MegaSim Schematic file
-        self.build_schematic()
+        #self.build_schematic()
+        self.build_schematic_updated()
 
         echo("Compilation finished.\n\n")
 
@@ -337,56 +847,28 @@ class SNN_compiled():
             print(megalog)
             sys.exit(99)
 
-    def intensity_to_poisson_convertion(self, mnist_digit, shape=(28,28), dt=1, n_spikes=250, t_stop=1):
-        '''
-        This function receives an MNIST character, 28 x 28 array, as input and
-        generates random spikes based on the intensity of the pixels, the number of
-        spikes desired (n_spikes) and the duration of the stimulus (t_stop).
+    def poisson_spike_generator_megasim_flatten(self, mnist_digit):
+        rescale_fac = 1000/(settings['input_rate'] * settings['dt'])
+        spikes=[]
+        tttt=[]
+        for t in np.arange(0, settings['duration'], settings['dt']):
+            # Create poisson input.
+            spike_snapshot = np.random.random_sample(mnist_digit.shape) * rescale_fac
+            inp = (spike_snapshot <= mnist_digit).astype('float32')
+            neuron_id = np.nonzero(inp)[0]
+            spike_for_t = np.zeros((len(neuron_id),6),dtype="int")
+            spike_for_t[:,0] = t
+            spike_for_t[:,1] = -1
+            spike_for_t[:,2] = -1
+            spike_for_t[:,3] = neuron_id
+            spike_for_t[:,4] = 0
+            spike_for_t[:,5] = 1
+            spikes.append(spike_for_t)
+            tttt.append(inp)
+        #import pdb;pdb.set_trace()
+        spikes=np.vstack(spikes)
+        np.savetxt(self.megadirname + self.input_stimulus_file, spikes, delimiter=" ", fmt=("%d"))
 
-        Returns a NUMPY 2D array, where the first column holds the neuron IDs (addresses)
-        and second column the spike-times (timestamps).
-
-        Based on Daniel O'Neil's MATLAB scripts
-        '''
-        # y = randsample(n,k,true,w) or y = randsample(population,k,true,w)
-        # returns a weighted sample taken with replacement, using a vector of
-        # positive weights w, whose length is n. The probability that the integer
-        # i is selected for an entry of y is w(i)/sum(w). Usually, w is a vector of
-        # probabilities. randsample does not support weighted sampling without
-        # replacement.
-
-        # Following the Matlab implementation where the characters
-        # are fliped horizontally and rotated by 90 dec counter clockwise
-
-        MNIST = mnist_digit.flatten() * 0.2
-
-        spikesAdr = np.random.choice(len(MNIST), n_spikes, True,
-                                     (MNIST / sum(MNIST)))
-        spikesTs = np.round(np.sort(np.random.random(len(spikesAdr))
-                                    * t_stop) * dt)  # in ms
-        Spikes = np.concatenate((spikesAdr, spikesTs), axis=-1)
-        Spikes = Spikes.reshape((len(spikesAdr), 2), order='F')
-        megastim = np.zeros((len(Spikes), 6), dtype="int")
-        # copy time stamps
-        megastim[:, 0] = Spikes[:, 1]
-        megastim[:, 1] = np.ones((len(Spikes))) * -1
-        megastim[:, 2] = np.ones((len(Spikes))) * -1
-        megastim[:, 3] = Spikes[:, 0]
-        megastim[:, 4] = 0#Spikes[:, 0] // shape[0]  # sensorSize-ys# in megasim Ys are inverted
-        megastim[:, 5] = np.ones((len(Spikes)))
-
-        np.savetxt(self.megadirname+self.input_stimulus_file, megastim, delimiter=" ", fmt=("%d"))
-
-    def add_layer(self, layer):
-        self.layers.append(
-            module_fully_connected(pop_size = layer['output_shape'][1:], neuron_params = settings )
-        )
-
-        weights = layer['parameters'][0]  # [W, b][0]
-        self.layers[-1].w = weights#.flatten()
-        self.layers[-1].output_shapes = layer['output_shape']
-        #self.output_shapes.append(layer['output_shape'])
-        self.layers[-1].label = layer['label']
 
     def build_schematic(self):
         '''
@@ -412,78 +894,95 @@ class SNN_compiled():
         fileo.write("\n")
 
         fileo.write(".options" + "\n")
-        fileo.write("Tmax=" + str(int(settings['duration']+1)) + "\n")
+        fileo.write("Tmax=" + str(int(settings['duration'])) + "\n")
         fileo.close()
 
 
-    def build_convolution(self, layer):
-        weights = layer['parameters'][0]  # [W, b][0]
-        nx = layer['input_shape'][3]  # Width of feature map
-        ny = layer['input_shape'][2]  # Hight of feature map
-        kx = layer['nb_col']  # Width of kernel
-        ky = layer['nb_row']  # Hight of kernel
-        px = int((kx - 1) / 2)  # Zero-padding columns
-        py = int((ky - 1) / 2)  # Zero-padding rows
-        if layer['border_mode'] == 'valid':
-            # In border_mode 'valid', the original sidelength is
-            # reduced by one less than the kernel size.
-            mx = nx - kx + 1  # Number of columns in output filters
-            my = ny - ky + 1  # Number of rows in output filters
-            x0 = px
-            y0 = py
-        elif layer['border_mode'] == 'same':
-            mx = nx
-            my = ny
-            x0 = 0
-            y0 = 0
-        else:
-            raise Exception("Border_mode {} not supported".format(
-                layer['border_mode']))
-        # Loop over output filters 'fout'
-        for fout in range(weights.shape[0]):
-            for y in range(y0, ny - y0):
-                for x in range(x0, nx - x0):
-                    target = x - x0 + (y - y0) * mx + fout * mx * my
-                    # Loop over input filters 'fin'
-                    for fin in range(weights.shape[1]):
-                        for k in range(-py, py + 1):
-                            if not 0 <= y + k < ny:
-                                continue
-                            source = x + (y + k) * nx + fin * nx * ny
-                            for l in range(-px, px + 1):
-                                if not 0 <= x + l < nx:
-                                    continue
-                                self.connections[-1].connect(i=source+l,
-                                                             j=target)
-                                self.connections[-1].w[source + l, target] = (
-                                    weights[fout, fin, py-k, px-l] *
-                                    self.sim.volt)
-                echo('.')
-            echo(' {:.1%}\n'.format(((fout + 1) * weights.shape[1]) /
-                 (weights.shape[0] * weights.shape[1])))
+    def build_schematic_updated(self):
+        '''
 
-    def build_pooling(self, layer):
-        if layer['layer_type'] == 'MaxPooling2D':
-            echo("WARNING: Layer type 'MaxPooling' not supported yet. " +
-                 "Falling back on 'AveragePooling'.\n")
-        nx = layer['input_shape'][3]  # Width of feature map
-        ny = layer['input_shape'][2]  # Hight of feature map
-        dx = layer['pool_size'][1]  # Width of pool
-        dy = layer['pool_size'][0]  # Hight of pool
-        sx = layer['strides'][1]
-        sy = layer['strides'][0]
-        for fout in range(layer['input_shape'][1]):  # Feature maps
-            for y in range(0, ny - dy + 1, sy):
-                for x in range(0, nx - dx + 1, sx):
-                    target = int(x / sx + y / sy * ((nx - dx) / sx + 1) +
-                                 fout * nx * ny / (dx * dy))
-                    for k in range(dy):
-                        source = x + (y + k) * nx + fout * nx * ny
-                        for l in range(dx):
-                            self.connections[-1].connect(i=source+l, j=target)
-                echo('.')
-            echo(' {:.1%}\n'.format((1 + fout) / layer['input_shape'][1]))
-        self.connections[-1].w = self.sim.volt / (dx * dy)
+        This method generates the main MegaSim schematic file to test sample by sample
+        -------
+
+        '''
+        #input_stimulus_file = self.input_stimulus_file
+        #input_stimulus_node = "input_evs"
+
+        fileo = open(self.megadirname+self.megaschematic, "w")
+
+        fileo.write(".netlist\n")
+        # stim file first - node is input_evs
+        fileo.write(self.layers[0].module_string +" {" + self.layers[0].label + "} " + self.input_stimulus_file + "\n")
+        fileo.write("\n")
+
+        for n in range(1,len(self.layers)):
+            # CONVOLUTIONAL AND AVERAGE POOLING MODULES
+            if self.layers[n].module_string == 'module_conv':
+                for f in range(self.layers[n].num_of_FMs):
+                    if self.layers[n].in_ports == 1:
+                        # check if the presynaptic population is the input layer
+                        if n==1:
+                            pre_label_node = self.layers[n - 1].label
+                        else:
+                            pre_label_node = self.layers[n-1].label+"_"+str(f)
+                        buildline = self.layers[n].module_string + " {" + pre_label_node + "}" + "{" + \
+                                    self.layers[n].label+"_"+str(f) + "} " + self.layers[n].label+"_"+str(f) + ".prm" + " " + self.layers[
+                                        n].label + ".stt"
+                    else:
+                        num_pre_nodes_in = self.layers[n].in_ports
+                        pre_label = self.layers[n-1].label
+                        build_in_nodes = ",".join([pre_label+"_"+str(x) for x in range(num_pre_nodes_in)])
+                        buildline = self.layers[n].module_string + " {" + build_in_nodes+ "}" + "{" + \
+                                self.layers[n].label + "_" + str(f) + "} " + self.layers[n].label + "_" + str(
+                        f) + ".prm" + " " + self.layers[
+                                    n].label + ".stt"
+
+                    fileo.write(buildline + "\n")
+                fileo.write("\n")
+
+            # FLATTEN MODULE
+            elif self.layers[n].module_string == 'module_flatten':
+                num_pre_nodes_in = self.layers[n].num_of_FMs
+                pre_label_node = self.layers[n-1].label
+                post_label_node = self.layers[n].label
+                build_in_nodes = ",".join([pre_label_node + "_" + str(x) for x in range(num_pre_nodes_in)])
+                buildline = self.layers[n].module_string + " {" + build_in_nodes + "}" + "{" + \
+                            post_label_node + "} " +post_label_node + ".prm" + " " + post_label_node + ".stt"
+                fileo.write(buildline + "\n")
+                fileo.write("\n")
+            # FULLY CONNECTED MODULES
+            elif self.layers[n].module_string == 'module_fully_connected':
+                #check if previous layer is flatten
+                pre_label_node = self.layers[n-1].label
+                buildline = self.layers[n].module_string + " {" +self.layers[n-1].label + "}" + "{" + \
+                                    self.layers[n].label + "} " + self.layers[n].label + ".prm" + " " + self.layers[
+                                        n].label + ".stt"
+                fileo.write(buildline + "\n")
+                fileo.write("\n")
+
+        fileo.write("\n")
+
+        fileo.write(".options" + "\n")
+        fileo.write("Tmax=" + str(int(settings['duration'])) + "\n")
+        fileo.close()
+
+    def clean_megasim_sim_data(self):
+        '''
+
+        Returns
+        -------
+
+        '''
+        files = os.listdir(self.megadirname)
+        evs_data = [x for x in files if x[-3:]=='evs']
+        stim_data = [x for x in files if x[-4:]=='stim']
+
+        for evs in evs_data:
+            os.remove(self.megadirname+evs)
+
+        for stim in stim_data:
+            os.remove(self.megadirname+stim)
+
 
     def store(self):
         '''
@@ -507,8 +1006,8 @@ class SNN_compiled():
             )
         return events
 
-    def spike_count(self, events, pop_size=10):
-        pop_spike_hist = np.histogram(events[:, 3], bins=pop_size,)[0]
+    def spike_count_histogram(self, events, pop_size=10):
+        pop_spike_hist = np.histogram(events[:, 3], bins=pop_size,range=(0,pop_size))[0]
         return pop_spike_hist
 
     def run(self, snn_precomp, X_test, Y_test):
@@ -576,6 +1075,9 @@ class SNN_compiled():
             si = settings['sample_indices_to_test']
             ind = randint(0, len(X_test) - 1) if si == [] else si[test_num]
 
+            # Clean any previous data. This is not necessary, only for debugging
+            self.clean_megasim_sim_data()
+
             # Add Poisson input.
             if settings['verbose'] > 1:
                 echo("Creating poisson input...\n")
@@ -583,14 +1085,16 @@ class SNN_compiled():
             # Generate stimulus file
             echo("Using the same random seed for debugging\n")
             np.random.seed(1)
-            self.intensity_to_poisson_convertion(X_test[ind, :], dt= settings['dt'],n_spikes= settings['input_rate'],
-                                                 t_stop=settings['duration'])
-            #input_layer.rates = X_test[ind, :].flatten() * \
-            #    settings['input_rate'] * self.sim.Hz
+            if settings['poisson_input']:
+                self.poisson_spike_generator_megasim_flatten(mnist_digit=X_test[ind, :])
+            else:
+                print("Only Poisson input supported")
+                sys.exit(66)
 
             # Run simulation for 'duration'.
             if settings['verbose'] > 1:
                 echo("Starting new simulation...\n")
+
 
             #TODO this is ugly, in python3 i have to change folders to execute megasim
             current_dir = os.getcwd()
@@ -603,13 +1107,17 @@ class SNN_compiled():
 
             # use this if you want to access all the generated events
             spike_monitors = self.get_spikes()
-            self.spikemonitors = spike_monitors
+
+            # list per input digit, a list per layer
+            self.spikemonitors.append(spike_monitors)
+
             # use this to access spikes from a particular layer eg output
             #spike_monitor = self.get_spikes_from_layer(layer)
 
-            output_pop_activity = self.spike_count(spike_monitors[-1], self.layers[-1].pop_size[0])
+            output_pop_activity = self.spike_count_histogram(spike_monitors[-1], self.layers[-1].pop_size[0])
             # Get result by comparing the guessed class (i.e. the index of the
             # neuron in the last layer which spiked most) to the ground truth.
+            #import pdb;pdb.set_trace()
 
             guesses.append(np.argmax(output_pop_activity))
             truth.append(np.argmax(Y_test[ind, :]))
@@ -703,36 +1211,21 @@ class SNN_compiled():
         # ``label`` is a string specifying both the layer type and the index,
         # e.g. ``'03Dense'``.
         spiketrains_batch = []
-        j = 0
-        for (i, layer) in enumerate(layers):
-            if i == 0 or 'Flatten' in layer.label:
-                continue
-            shape = list(output_shapes[j]) + \
-                [int(settings['duration'] / settings['dt'])]
-            shape[0] = 1  # simparams['num_to_test']
-            spiketrains_batch.append((np.zeros(shape), layer.label))
-            import pdb;pdb.set_trace()
-            spiketrain_dict = self.spikemonitors[i].spike_trains()
-            spiketrains = np.array(
-                [spiketrain_dict[key] / self.sim.ms for key in
-                 spiketrain_dict.keys()])
-            spiketrains_full = np.empty((np.prod(shape[:-1]), shape[-1]))
-            for k in range(len(spiketrains)):
-                spiketrain = np.zeros(shape[-1])
-                spiketrain[:len(spiketrains[k])] = np.array(
-                    spiketrains[k][:shape[-1]])
-                spiketrains_full[k] = spiketrain
-            spiketrains_batch[j][0][:] = np.reshape(spiketrains_full, shape)
-            # Maybe repeat for membrane potential, skipping input layer
-            if settings['verbose'] == 3 and i > 0:
-                vm = [np.array(v/1e6/self.sim.mV).transpose() for v in
-                      self.statemonitors[i-1].v]
-                vmem.append((vm, layer.label))
-                times = self.statemonitors[0].t / self.sim.ms
-                if i == len(layers) - 2:
-                    showLegend = True
-                plot_potential(times, vmem[-1], showLegend=showLegend)
-            j += 1
+
+        num_of_samples = 1 # how many samples?
+        results_from_input_sample = 0 # which digit to pick?
+
+        for l in range(1,len(self.layers)):
+            tmp = [x[l] for x in self.spikemonitors] # this has the response of layer l for all samples
+            lbl = self.layers[l].label
+
+            spiketrain = np.zeros((num_of_samples, self.layers[l].pop_size[0],  int(settings['duration'] / settings['dt'])) )
+            spikes_megasim = tmp[results_from_input_sample]
+
+            # get spike counts per neuron per time-step
+            spiketrain[ 0, spikes_megasim[:,3] , spikes_megasim[:,0]] = spikes_megasim[:,0]
+
+            spiketrains_batch.append([spiketrain,lbl])
 
         output_graphs(spiketrains_batch, ann, X_batch,
                       settings['log_dir_of_current_run'], idx)
