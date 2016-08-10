@@ -22,7 +22,7 @@ import os
 import lasagne
 import theano
 from snntoolbox.config import settings, activation_layers, bn_layers
-from snntoolbox.io.load import load_parameters
+from snntoolbox.io_utils.load import load_parameters
 from snntoolbox.model_libs.common import absorb_bn, import_script
 from snntoolbox.model_libs.common import border_mode_string
 
@@ -176,7 +176,8 @@ def extract(model):
                                'nb_filter': layer.num_filters,
                                'nb_col': layer.filter_size[1],
                                'nb_row': layer.filter_size[0],
-                               'border_mode': border_mode})
+                               'border_mode': border_mode,
+                               'filter_flip': layer.flip_filters})
 
         if attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
             border_mode = border_mode_string(layer.pad, layer.pool_size)

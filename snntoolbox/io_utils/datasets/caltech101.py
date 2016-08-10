@@ -66,9 +66,11 @@ def get_caltech101(path=None, filename=None, flat=False):
                                                               'y_test.txt')
     (X_train, y_train), (X_val, y_val) = caltech101_utils.load_cv_split_paths(
                                                                 base_path, 0)
-    print("Warning: Used only 200 samples for X_train.")
-    X_train = caltech101_utils.load_samples(X_train, 200)
-    X_test = caltech101_utils.load_samples(X_test, 200)
+
+    X_train = caltech101_utils.load_samples(X_train, int(len(y_train)/2))
+    X_test = caltech101_utils.load_samples(X_test, len(y_test))
+    y_train = y_train[:len(X_train)]
+    y_test = y_test[:len(X_test)]
 
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
@@ -87,6 +89,9 @@ def get_caltech101(path=None, filename=None, flat=False):
         if filename is None:
             filename = 'caltech101_flat' if flat else 'caltech101'
         filepath = os.path.join(path, filename)
-        np.save(filepath, (X_train, Y_train, X_test, Y_test))
+        np.savez_compressed(filepath+'_X_train', X_train)
+        np.savez_compressed(filepath+'_X_test', X_test)
+        np.savez_compressed(filepath+'_Y_train', Y_train)
+        np.savez_compressed(filepath+'_Y_test', Y_test)
 
     return (X_train, Y_train, X_test, Y_test)

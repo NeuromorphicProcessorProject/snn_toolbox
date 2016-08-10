@@ -106,6 +106,8 @@ def extract(model):
     labels = []
     layer_idx_map = []
     for (layer_num, layer) in enumerate(model.layers):
+        if 'BatchNormalization' in layer.__class__.__name__:
+            continue
         attributes = {'layer_num': layer_num,
                       'layer_type': layer.__class__.__name__,
                       'output_shape': layer.output_shape}
@@ -131,24 +133,36 @@ def extract(model):
                 "{}, not {}.".format(bn_layers, attributes['layer_type']))
 
         if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
-            wb = layer.get_weights()
+            parameters = layer.get_weights()
             if next_layer_name == 'BatchNormalization':
-                parameters = next_layer.get_weights()
-                # W, b, gamma, beta, mean, std, epsilon
-                wb = absorb_bn(wb[0], wb[1], parameters[0], parameters[1],
-                               parameters[2], parameters[3],
-                               next_layer.epsilon)
+                bn_parameters = next_layer.get_weights()
+                # W, b, beta, gamma, mean, std, epsilon
+                parameters_norm = absorb_bn(parameters[0], parameters[1],
+                                            bn_parameters[0], bn_parameters[1],
+                                            bn_parameters[2], bn_parameters[3],
+                                            next_layer.epsilon)
+                if len(parameters[0].shape) == 4:
+                    print("epsilon: {}".format(next_layer.epsilon))
+                    print("w: {}".format(parameters[0][0, 0, 0, 0]))
+                    print("gamma: {}".format(bn_parameters[1][0]))
+                    print("std: {}".format(bn_parameters[3][0]))
+                    print("w_norm: {}".format(parameters_norm[0][0, 0, 0, 0]))
+                    print("w_calc: {}".format(parameters[0][0, 0, 0, 0] * bn_parameters[1][0] / bn_parameters[3][0]))
+                set_layer_params(model, parameters_norm, layer_num)
+                parameters = parameters_norm
             if next_layer_name == 'Activation':
                 attributes.update({'activation':
                                    next_layer.get_config()['activation']})
-            attributes.update({'parameters': wb})
+            attributes.update({'parameters': parameters})
 
         if attributes['layer_type'] == 'Convolution2D':
             attributes.update({'input_shape': layer.input_shape,
                                'nb_filter': layer.nb_filter,
                                'nb_col': layer.nb_col,
                                'nb_row': layer.nb_row,
-                               'border_mode': layer.border_mode})
+                               'border_mode': layer.border_mode,
+                               'subsample': layer.subsample,
+                               'filter_flip': True})
 
         if attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
             attributes.update({'input_shape': layer.input_shape,
