@@ -27,7 +27,7 @@ from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
 
 standard_library.install_aliases()
-lidx = 4
+lidx = 0
 
 
 class SNN_compiled():
@@ -123,7 +123,9 @@ class SNN_compiled():
                 self.snn.add(self.sim.SpikeConv2DReLU(
                     layer['nb_filter'], layer['nb_row'], layer['nb_col'],
                     self.sim.floatX(layer['parameters']),
-                    border_mode=layer['border_mode'], **kwargs))
+                    border_mode=layer['border_mode'],
+                    subsample=layer['subsample'],
+                    filter_flip=layer['filter_flip'], **kwargs))
             elif layer['layer_type'] == 'Dense':
                 self.snn.add(self.sim.SpikeDense(
                     layer['output_shape'][1],

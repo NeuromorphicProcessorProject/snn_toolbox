@@ -249,7 +249,7 @@ class SNN():
                                                      X_train)
             # For memory reasons, use only a fraction of samples for plotting a
             # histogram of activations.
-            frac = int(len(activations) / 1)
+            frac = int(len(activations) / 10)
             activation_dict = {
                 'Activations': activations[:frac].flatten(),
                 'Activations_norm': activations_norm[:frac].flatten()}

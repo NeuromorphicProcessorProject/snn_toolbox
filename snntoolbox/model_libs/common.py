@@ -23,18 +23,26 @@ def border_mode_string(pad, pool_size):
     return border_mode
 
 
-def absorb_bn(w, b, gamma, beta, mean, std, epsilon):
+def absorb_bn(w, b, beta, gamma, mean, std, epsilon):
     """
     Absorb the parameters of a batch-normalization layer into the previous
     layer.
 
     """
-
     import numpy as np
-    ax = 0 if w.ndim < 3 else 1
-    w_normed = w*np.swapaxes(gamma, 0, ax) / (np.swapaxes(std, 0, ax)+epsilon)
-    b_normed = ((b - mean.flatten()) * gamma.flatten() /
-                (std.flatten() + epsilon) + beta.flatten())
+
+    if w.ndim > 2:
+        shape = w.shape
+        reduction_axes = list(range(len(shape)))
+        del reduction_axes[0]
+        broadcast_shape = [1] * len(shape)
+        broadcast_shape[0] = shape[0]
+        broadcast_std = np.reshape(std, broadcast_shape)
+        broadcast_gamma = np.reshape(gamma, broadcast_shape)
+        w_normed = w * broadcast_gamma / (broadcast_std + epsilon)
+    else:
+        w_normed = w * gamma / (std + epsilon)
+    b_normed = (b - mean) * gamma / (std + epsilon) + beta
     return [w_normed, b_normed]
 
 
