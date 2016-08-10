@@ -291,7 +291,8 @@ class SNN_compiled():
                     inp = (spike_snapshot <= batch).astype('float32')
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
-                out_spikes, ts, thresh, max_spikerate, spiketrain = self.get_output(inp, float(t))
+                (out_spikes, ts, thresh,
+                 max_spikerate, spiketrain) = self.get_output(inp, float(t))
 #                print('thresh: {:.2f}, max_spikerate: {:.2f}'.format(
 #                    float(np.array(thresh)), float(np.array(max_spikerate))))
                 # For the first batch only, record the spiketrains of each
@@ -431,12 +432,7 @@ class SNN_compiled():
         spiketrain = self.snn.layers[lidx].spiketrain
         self.get_output = theano.function([self.snn.input, input_time],
                                           [output_spikes, output_time,
-<<<<<<< HEAD
-                                           fac, max_spikerate, spikecounts,
-                                           spiketrain],
-=======
                                            thresh, max_spikerate, spiketrain],
->>>>>>> master
                                           updates=updates)
 
     def assert_batch_size(self, batch_size):
