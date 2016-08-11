@@ -33,7 +33,7 @@ standard_library.install_aliases()
 
 #TODO This is ugly, i can use the sim object to store the megasim path
 MEGASIM_PATH = "/Users/Evangelos/Programming/NPP/megasim/megasim/bin/"
-
+MEGASIM_SCALE_FACTOR = 10000000
 
 #TODO there is a lot of duplicate code in these classes, maybe i can create a base class and use inheritance
 class module_input_stimulus():
@@ -46,18 +46,21 @@ class module_input_stimulus():
         self.pop_size = pop_size
         self.input_stimulus_file = "input_events.stim"
         self.module_string = "source"
+        self.evs_files =[]
 
 class module_flatten():
     '''
 
     '''
-    def __init__(self, input_ports, fm_size,  label="flatten_layer"):
+    def __init__(self, layer_params, input_ports, fm_size):
         self.module_string = "module_flatten"
 
         self.num_of_FMs = input_ports
         self.fm_size = fm_size
-        self.label=label
+        self.label=layer_params["label"]
         self.time_busy_initial = 0
+        self.evs_files = []
+        self.output_shapes = layer_params["output_shape"]
 
     def build_state_file(self, dirname):
         f = open(dirname + self.label + ".stt", "w")
@@ -79,8 +82,8 @@ delay_to_repeat 15
 """%(self.num_of_FMs, 1))
 
         param_k = (
-         """Nx_kernel %d
-Ny_kernel %d
+         """Nx_array %d
+Ny_array %d
 """ % (self.fm_size[0],
            self.fm_size[1]))
 
@@ -106,13 +109,19 @@ class module_average_pooling():
     def __init__(self, layer_params, neuron_params, scaling_factor=10000000):
         self.module_string = 'module_conv'
         self.layer_type = layer_params['layer_type']
+        self.evs_files = []
 
         self.in_ports = 1 # one average pooling layer per conv layer
         self.num_of_FMs = layer_params['input_shape'][1]
 
         self.fm_size = layer_params['output_shape'][2:]
-        self.kernel_size = layer_params['pool_size']
+        self.kernel_size = (1,1)#layer_params['pool_size']
 
+        self.Reset_to_reminder = 0
+        if self.neuron_params["reset"] == 'Reset to zero':
+            self.Reset_to_reminder = 0
+        else:
+            self.Reset_to_reminder = 1
 
         self.output_shapes = layer_params['output_shape'] #(none, 32, 26, 26) last two
         self.pre_shapes = layer_params['input_shape'] # (none, 1, 28 28) # last 2
@@ -121,6 +130,12 @@ class module_average_pooling():
         if self.border_mode != 'valid':
             echo("Not implemented yet!")
             sys.exit(88)
+
+        self.Nx_array, self.Ny_array = self.fm_size[1]*2, self.fm_size[0]*2
+        self.Dx, self.Dy = 0, 0
+        self.crop_xmin, self.crop_xmax = 0, self.fm_size[0]*2-1
+        self.crop_ymin, self.crop_ymax = 0, self.fm_size[1]*2-1
+        self.xshift_pre, self.yshift_pre = 0, 0
 
         self.strides = layer_params["strides"]
 
@@ -154,13 +169,12 @@ class module_average_pooling():
             self.label, self.output_shapes[1],self.pre_shapes[1], self.output_shapes[2],self.output_shapes[3]))
 
         kernel = np.ones(self.kernel_size, dtype="float") * sc
-        kernel *= (1.0 / np.sum(self.kernel_size))
+        kernel *= ((1.0 / np.sum(self.kernel_size))/(np.sum(self.kernel_size)))
         kernel = kernel.astype("int")
 
         for f in range(num_FMs):
             fm_filename = self.label+"_"+str(f)
-            #print(fm_filename)
-            #print (kernel)
+
 
             self.__build_single_fm(1,1,fm_size,kernel,dirname,fm_filename)
         pass
@@ -175,7 +189,7 @@ class module_average_pooling():
             "THplusInfo": 1,
             "THminus": self.threshold_negative,
             "THminusInfo": 0,
-            "Reset_to_reminder": 0,
+            "Reset_to_reminder": self.Reset_to_reminder,
             "MembReset": int(self.vreset),
             "TLplus": int(self.leak_pos),
             "TLminus": int(self.leak_neg),
@@ -193,10 +207,9 @@ class module_average_pooling():
             "delay_to_repeat": 15,
         }
 
-        # Values of the fc parameters
         fm_params = {
-            "Nx_array": self.output_shapes[-2],
-            "Ny_array": self.output_shapes[-2],
+            "Nx_array": self.output_shapes[-2] * self.kernel_size[0],
+            "Ny_array": self.output_shapes[-2] * self.kernel_size[1],
             "Xmin": 0,
             "Ymin": 0,
         }
@@ -230,7 +243,7 @@ TLplus %d
 TLminus %d
 Tmin %d
 T_Refract %d
-""" %( num_in_ports, num_out_ports, fm_size[0], fm_size[1],
+""" %( num_in_ports, num_out_ports, self.Nx_array, self.Ny_array,
                neuron_params["THplus"], neuron_params["THplusInfo"], neuron_params["THminus"],
                neuron_params["THminusInfo"],
                neuron_params["Reset_to_reminder"], neuron_params["MembReset"], neuron_params["TLplus"],
@@ -244,7 +257,7 @@ Dx %d
 Dy %d
 """ % (self.kernel_size[0],
                self.kernel_size[1],
-               0, 0))
+               self.Dx, self.Dy))
 
         kernels_list =[]
         for k in range(1):
@@ -271,14 +284,22 @@ xshift_pos %d
 yshift_pos %d
 rectify %d
 .floats
-""" % (0, fm_size[0],
-       0, fm_size[1],
-       0, 0,
-       1, 1,
+""" % (self.crop_xmin, self.crop_xmax,
+       self.crop_ymin, self.crop_ymax,
+       self.xshift_pre, self.yshift_pre,
+       2,2,#self.kernel_size[0], self.kernel_size[1],
        0, 0,
        0)
         )
-
+        '''
+         % (0, (fm_size[0] *self.kernel_size[0])-1,
+       0, (fm_size[1] *self.kernel_size [1]) -1,
+       0, 0,
+       self.kernel_size[0], self.kernel_size[1],
+       0, 0,
+       0)
+        )
+        '''
         q = open(dirname + fprmname + '.prm', "w")
         q.write(param1)
         for k in range(len(kernels_list)):
@@ -299,10 +320,10 @@ class module_conv():
     dict_keys(['nb_col', 'activation', 'layer_type', 'layer_num', 'nb_filter', 'output_shape', 'input_shape', 'nb_row', 'label', 'parameters', 'border_mode'])
     '''
 
-    def __init__(self, layer_params, neuron_params, scaling_factor=10000000):
+    def __init__(self, layer_params, neuron_params, flip_kernels = True,scaling_factor=10000000):
         self.module_string = 'module_conv'
         self.layer_type = layer_params["layer_type"]
-
+        self.evs_files = []
 
         #self.size_of_FM = 0
         self.num_of_FMs = layer_params['parameters'][0].shape[0]
@@ -311,15 +332,36 @@ class module_conv():
         self.in_ports = self.w.shape[1]
         self.output_shapes = layer_params['output_shape'] #(none, 32, 26, 26) last two
         self.pre_shapes = layer_params['input_shape'] # (none, 1, 28 28) # last 2
+        self.fm_size = self.output_shapes[2:]
 
         self.border_mode = layer_params["border_mode"] # 'same', 'valid',
-        if self.border_mode != 'valid':
+
+        self.Reset_to_reminder = 0
+        if neuron_params["reset"] == 'Reset to zero':
+            self.Reset_to_reminder = 0
+        else:
+            self.Reset_to_reminder = 1
+
+
+        if self.border_mode == 'valid':
+            # if its valid mode
+            self.Nx_array = self.output_shapes[2:][1] + self.kernel_size[1] - 1
+            self.Ny_array = self.output_shapes[2:][0] + self.kernel_size[0] - 1
+            self.xshift_pre, self.yshift_pre = -int(self.kernel_size[1]/2), -int(self.kernel_size[0]/2)
+            self.crop_xmin, self.crop_xmax = int(self.kernel_size[1]/2), (self.Nx_array-self.kernel_size[1]+1)
+            self.crop_ymin, self.crop_ymax = int(self.kernel_size[0]/2), (self.Ny_array-self.kernel_size[0]+1)
+        else:
             echo("Not implemented yet!")
-            sys.exit(88)
+            self.Nx_array = self.output_shapes[2:][1]
+            self.Ny_array = self.output_shapes[2:][0]
+            self.xshift_pre, self.yshift_pre = (0, 0)
+            self.crop_xmin, self.crop_xmax = (0, self.Nx_array)
+            self.crop_ymin, self.crop_ymax = (0, self.Ny_array)
 
         self.scaling_factor = int(scaling_factor)
         self.label = layer_params['label']
 
+        self.flip_kernels = flip_kernels
 
 
         self.time_busy_initial = 0
@@ -329,6 +371,7 @@ class module_conv():
         self.vreset = neuron_params["v_reset"]
         self.leak_pos = 0
         self.leak_neg = 0
+
 
 
     def build_state_file(self, dirname):
@@ -366,7 +409,7 @@ class module_conv():
             "THplusInfo": 1,
             "THminus": self.threshold_negative,
             "THminusInfo": 0,
-            "Reset_to_reminder": 0,
+            "Reset_to_reminder": self.Reset_to_reminder,
             "MembReset": int(self.vreset),
             "TLplus": int(self.leak_pos),
             "TLminus": int(self.leak_neg),
@@ -384,13 +427,13 @@ class module_conv():
             "delay_to_repeat": 15,
         }
 
-        # Values of the fc parameters
-        fm_params = {
-            "Nx_array": self.output_shapes[-2],
-            "Ny_array": self.output_shapes[-2],
-            "Xmin": 0,
-            "Ymin": 0,
-        }
+        # # Values of the fc parameters
+        # fm_params = {
+        #     "Nx_array": self.output_shapes[-2],
+        #     "Ny_array": self.output_shapes[-2],
+        #     "Xmin": 0,
+        #     "Ymin": 0,
+        # }
 
 
 
@@ -421,7 +464,7 @@ TLplus %d
 TLminus %d
 Tmin %d
 T_Refract %d
-""" %( num_in_ports, num_out_ports, fm_size[0], fm_size[1],
+""" %( num_in_ports, num_out_ports, self.Nx_array, self.Ny_array,
                neuron_params["THplus"], neuron_params["THplusInfo"], neuron_params["THminus"],
                neuron_params["THminusInfo"],
                neuron_params["Reset_to_reminder"], neuron_params["MembReset"], neuron_params["TLplus"],
@@ -435,12 +478,20 @@ Dx %d
 Dy %d
 """ % (self.kernel_size[0],
                self.kernel_size[1],
-               -int(self.kernel_size[0]/2), -int(self.kernel_size[1]/2)))
+               -int(self.kernel_size[0]/2), -int(self.kernel_size[1]/2)
+       ))
 
         kernels_list =[]
         for k in range(kernel.shape[0]):
             # scale the weights
             w = kernel[k] * sc
+
+            if self.flip_kernels:
+                '''
+                After tests i did in zurich we only need to flip the kernels upside down
+                '''
+                w = np.flipud(w)
+
 
             np.savetxt(dirname + "w.txt", w, delimiter=" ", fmt="%d")
             q = open(dirname + "w.txt")
@@ -462,9 +513,9 @@ xshift_pos %d
 yshift_pos %d
 rectify %d
 .floats
-""" % (0, fm_size[0],
-       0, fm_size[1],
-       0, 0,
+""" % (self.crop_xmin, self.crop_xmax,#(fm_size[0]-1),
+       self.crop_ymin, self.crop_ymax,#(fm_size[1]-1),
+       self.xshift_pre, self.yshift_pre,
        1, 1,
        0, 0,
        0)
@@ -485,15 +536,17 @@ class module_fully_connected():
     TODO update to match the other ones
     Helper class for the megasim fully connected module
     '''
-    def __init__(self, pop_size, neuron_params, scaling_factor = 10000000):
+    #def __init__(self, pop_size, neuron_params, scaling_factor = 10000000):
+    def __init__(self, layer_params, neuron_params, scaling_factor=10000000):
         self.module_string = 'module_fully_connected'
+        self.evs_files = []
         #self.layer_type =
-        self.pop_size = pop_size
-        self.ouput_shapes=0
+        self.pop_size = layer_params['output_shape'][1:]
+        self.output_shapes= layer_params['output_shape']
         self.scaling_factor = int(scaling_factor)
-        self.w = []
+        self.w = layer_params["parameters"][0]
         self.neuron_params = None
-        self.label= None
+        self.label= layer_params["label"]
 
 
         self.time_busy_initial = 0
@@ -504,6 +557,12 @@ class module_fully_connected():
         self.vreset = neuron_params["v_reset"]
         self.leak_pos = 0
         self.leak_neg = 0
+
+        self.Reset_to_reminder = 0
+        if neuron_params["reset"] == 'Reset to zero':
+            self.Reset_to_reminder = 0
+        else:
+            self.Reset_to_reminder = 1
 
     def update_neuron_params(self):
         pass
@@ -524,7 +583,7 @@ class module_fully_connected():
             "THplusInfo": 1,
             "THminus": self.threshold_negative,
             "THminusInfo": 0,
-            "Reset_to_reminder": 0,
+            "Reset_to_reminder": self.Reset_to_reminder,
             "MembReset": int(self.vreset),
             "TLplus": int(self.leak_pos),
             "TLminus": int(self.leak_neg),
@@ -709,75 +768,68 @@ class SNN_compiled():
 
     def add_input_layer(self):
         input_shape = list(self.ann['input_shape'])
-        # self.layers = [self.sim.PoissonGroup(
-        #     np.prod(input_shape[1:]), rates=0*self.sim.Hz,
-        #     dt=settings['dt']*self.sim.ms)]
         self.layers.append(
             module_input_stimulus(label='InputLayer', pop_size = input_shape[1:])
         )
-        # self.layers[0].add_attribute('label')
-        # self.layers[0].label = 'InputLayer'
-
-    def add_layer(self, layer):
-        '''
-        For Dense models
-
-        Parameters
-        ----------
-        layer
-
-        Returns
-        -------
-
-        '''
-        self.layers.append(
-            module_fully_connected(pop_size = layer['output_shape'][1:], neuron_params = settings )
-        )
-
-        weights = layer['parameters'][0]  # [W, b][0]
-        self.layers[-1].w = weights#.flatten()
-        self.layers[-1].output_shapes = layer['output_shape']
-        #self.output_shapes.append(layer['output_shape'])
-        self.layers[-1].label = layer['label']
 
 
-    def add_layer_conv2d(self, layer):
-        '''
-        For 2d convolutional models
+    # def add_layer(self, layer):
+    #     '''
+    #     For Dense models
+    #
+    #     Parameters
+    #     ----------
+    #     layer
+    #
+    #     Returns
+    #     -------
+    #
+    #     '''
+    #     self.layers.append(
+    #         module_fully_connected(pop_size = layer['output_shape'][1:], neuron_params = settings )
+    #     )
+    #
+    #     weights = layer['parameters'][0]  # [W, b][0]
+    #     self.layers[-1].w = weights#.flatten()
+    #     self.layers[-1].output_shapes = layer['output_shape']
+    #     #self.output_shapes.append(layer['output_shape'])
+    #     self.layers[-1].label = layer['label']
 
-        Returns
-        -------
 
-        '''
+    # def add_layer_conv2d(self, layer):
+    #     '''
+    #     For 2d convolutional models
+    #
+    #     Returns
+    #     -------
+    #
+    #     '''
+    #
+    #     self.layers.append(
+    #         module_conv(layer_params= layer, neuron_params = settings)
+    #     )
+    #
+    #     #self.layers[-1].label = layer['label']
+    #     #import pdb;
+    #     #pdb.set_trace()
+    #
 
-        self.layers.append(
-            module_conv(layer_params= layer, neuron_params = settings)
-        )
-
-        #self.layers[-1].label = layer['label']
-        #import pdb;
-        #pdb.set_trace()
 
 
-
-
-    def add_layer_avg_pooling(self, layer):
-        '''
-
-        Parameters
-        ----------
-        layer
-
-        Returns
-        -------
-
-        '''
-        self.layers.append(
-            module_average_pooling(layer_params= layer, neuron_params = settings)
-        )
-        #self.layers[-1].label = layer['label']
-        import pdb;
-        pdb.set_trace()
+    # def add_layer_avg_pooling(self, layer):
+    #     '''
+    #
+    #     Parameters
+    #     ----------
+    #     layer
+    #
+    #     Returns
+    #     -------
+    #
+    #     '''
+    #     self.layers.append(
+    #         module_average_pooling(layer_params= layer, neuron_params = settings)
+    #     )
 
 
     def build(self):
@@ -803,29 +855,40 @@ class SNN_compiled():
             print (layer["layer_type"])
             if layer['layer_type'] == 'Dense':
                 echo("Building layer: {}\n".format(layer['label']))
-                self.add_layer(layer)
+                self.layers.append(
+                    module_fully_connected(layer_params = layer, neuron_params = settings,
+                                           scaling_factor = MEGASIM_SCALE_FACTOR)
+                )
+
+                #weights = layer['parameters'][0]  # [W, b][0]
+                #self.layers[-1].w = weights  # .flatten()
+                #self.layers[-1].output_shapes = layer['output_shape']
+                #self.layers[-1].label = layer['label']
+
             elif layer['layer_type'] == 'Convolution2D':
                 echo("Building layer: {}\n".format(layer['label']))
-                self.add_layer_conv2d(layer)
+                self.layers.append(
+                    module_conv(layer_params=layer, neuron_params=settings, scaling_factor = MEGASIM_SCALE_FACTOR)
+                )
             elif layer['layer_type'] == 'MaxPooling2D':
                 echo("Building layer: {}\n".format(layer['label']))
                 echo("Not Implemented!")
                 sys.exit(88)
             elif layer['layer_type'] == 'AveragePooling2D':
                 echo("Building layer: {}\n".format(layer['label']))
-                self.add_layer_avg_pooling(layer)
+                self.layers.append(
+                    module_average_pooling(layer_params=layer, neuron_params=settings, scaling_factor = MEGASIM_SCALE_FACTOR)
+                )
             elif layer['layer_type'] == 'Flatten':
                 echo("Building layer: {}\n".format(layer['label']))
                 c_layer_len = len(self.layers)-1
-
                 self.layers.append(
-                    module_flatten(input_ports=self.layers[c_layer_len].num_of_FMs,
-                                   fm_size=self.layers[c_layer_len].fm_size, label=layer["label"])
+                    module_flatten(layer_params=layer, input_ports=self.layers[c_layer_len].num_of_FMs,
+                                   fm_size=self.layers[c_layer_len].fm_size)
                 )
             else:
                 pass
 
-        import pdb;pdb.set_trace()
 
         # build parameter files for all modules
         # ignore the input layer
@@ -842,32 +905,50 @@ class SNN_compiled():
 
     def check_megasim_output(self, megalog):
         megalog = str(megalog)
+        megalog = megalog.lower()
         if megalog.find("error")>0:
             print("MegaSim error: ")
             print(megalog)
             sys.exit(99)
 
     def poisson_spike_generator_megasim_flatten(self, mnist_digit):
-        rescale_fac = 1000/(settings['input_rate'] * settings['dt'])
+        '''
+
+        Parameters
+        ----------
+        mnist_digit
+
+        Returns
+        -------
+
+        '''
         spikes=[]
-        tttt=[]
+        rescale_fac = 1000/(settings['input_rate'] * settings['dt'])
         for t in np.arange(0, settings['duration'], settings['dt']):
             # Create poisson input.
             spike_snapshot = np.random.random_sample(mnist_digit.shape) * rescale_fac
             inp = (spike_snapshot <= mnist_digit).astype('float32')
-            neuron_id = np.nonzero(inp)[0]
-            spike_for_t = np.zeros((len(neuron_id),6),dtype="int")
-            spike_for_t[:,0] = t
-            spike_for_t[:,1] = -1
-            spike_for_t[:,2] = -1
-            spike_for_t[:,3] = neuron_id
-            spike_for_t[:,4] = 0
-            spike_for_t[:,5] = 1
+            # find the indexes of the non-zero
+            neuron_id = np.nonzero(inp)
+            # check if input is flattened or 2d in order to extract the X,Y addresses correctly
+            if len(inp.shape)==1:
+                megasim_x = neuron_id[0]
+                megasim_y = 0
+            else:
+                megasim_x = neuron_id[2]
+                megasim_y = neuron_id[1]
+
+            spike_for_t = np.zeros((len(megasim_x), 6), dtype="int")
+            spike_for_t[:,0] = t            # time-stamps
+            spike_for_t[:,1] = -1           # REQ
+            spike_for_t[:,2] = -1           # ACK
+            spike_for_t[:,3] = megasim_x    # X address
+            spike_for_t[:,4] = megasim_y    # Y address
+            spike_for_t[:,5] = 1            # polarity
             spikes.append(spike_for_t)
-            tttt.append(inp)
         #import pdb;pdb.set_trace()
         spikes=np.vstack(spikes)
-        np.savetxt(self.megadirname + self.input_stimulus_file, spikes, delimiter=" ", fmt=("%d"))
+        np.savetxt(self.megadirname + self.layers[0].label+".stim", spikes, delimiter=" ", fmt=("%d"))
 
 
     def build_schematic(self):
@@ -877,8 +958,8 @@ class SNN_compiled():
         -------
 
         '''
-        input_stimulus_file = self.input_stimulus_file
-        input_stimulus_node = "input_evs"
+        #input_stimulus_file = self.input_stimulus_file
+        #input_stimulus_node = "input_evs"
 
         fileo = open(self.megadirname+self.megaschematic, "w")
 
@@ -912,8 +993,9 @@ class SNN_compiled():
 
         fileo.write(".netlist\n")
         # stim file first - node is input_evs
-        fileo.write(self.layers[0].module_string +" {" + self.layers[0].label + "} " + self.input_stimulus_file + "\n")
+        fileo.write(self.layers[0].module_string +" {" + self.layers[0].label + "} " + self.layers[0].label+".stim" + "\n")
         fileo.write("\n")
+        self.layers[0].evs_files.append("node_"+self.layers[0].label+".evs")
 
         for n in range(1,len(self.layers)):
             # CONVOLUTIONAL AND AVERAGE POOLING MODULES
@@ -925,6 +1007,7 @@ class SNN_compiled():
                             pre_label_node = self.layers[n - 1].label
                         else:
                             pre_label_node = self.layers[n-1].label+"_"+str(f)
+
                         buildline = self.layers[n].module_string + " {" + pre_label_node + "}" + "{" + \
                                     self.layers[n].label+"_"+str(f) + "} " + self.layers[n].label+"_"+str(f) + ".prm" + " " + self.layers[
                                         n].label + ".stt"
@@ -938,6 +1021,9 @@ class SNN_compiled():
                                     n].label + ".stt"
 
                     fileo.write(buildline + "\n")
+                   # list to hold the filename of the events that will be generated
+                    self.layers[n].evs_files.append("node_" + self.layers[n].label +"_"+str(f)+ ".evs")
+
                 fileo.write("\n")
 
             # FLATTEN MODULE
@@ -950,6 +1036,8 @@ class SNN_compiled():
                             post_label_node + "} " +post_label_node + ".prm" + " " + post_label_node + ".stt"
                 fileo.write(buildline + "\n")
                 fileo.write("\n")
+                # list to hold the filename of the events that will be generated
+                self.layers[n].evs_files.append("node_" + post_label_node + ".evs")
             # FULLY CONNECTED MODULES
             elif self.layers[n].module_string == 'module_fully_connected':
                 #check if previous layer is flatten
@@ -959,6 +1047,8 @@ class SNN_compiled():
                                         n].label + ".stt"
                 fileo.write(buildline + "\n")
                 fileo.write("\n")
+                # list to hold the filename of the events that will be generated
+                self.layers[n].evs_files.append("node_" + self.layers[n].label + ".evs")
 
         fileo.write("\n")
 
@@ -999,15 +1089,27 @@ class SNN_compiled():
         -------
 
         '''
+        # TODO convert this to list compre
         events = []
-        for n in range(0,len(self.layers)):
-            events.append(
-                np.genfromtxt(self.megadirname+"node_"+ self.layers[n].label+".evs",delimiter=" ",dtype="int")
-            )
+        for l in self.layers:
+            for fevs in l.evs_files:
+                events.append(
+                    np.genfromtxt(self.megadirname + fevs, delimiter=" ", dtype="int")
+                )
+
+        # for n in range(0,len(self.layers)):
+        #     events.append(
+        #         np.genfromtxt(self.megadirname+"node_"+ self.layers[n].label+".evs",delimiter=" ",dtype="int")
+        #     )
         return events
 
     def spike_count_histogram(self, events, pop_size=10):
-        pop_spike_hist = np.histogram(events[:, 3], bins=pop_size,range=(0,pop_size))[0]
+        try:
+            pop_spike_hist = np.histogram(events[:, 3], bins=pop_size,range=(0,pop_size))[0]
+            pop_spike_hist = np.argmax(pop_spike_hist)
+        except(IndexError):
+            pop_spike_hist = -1# np.zeros((1,pop_size))
+            import pdb;pdb.set_trace()
         return pop_spike_hist
 
     def run(self, snn_precomp, X_test, Y_test):
@@ -1073,7 +1175,9 @@ class SNN_compiled():
             # and otherwise pick a random test sample from among all possible
             # input samples in X_test.
             si = settings['sample_indices_to_test']
-            ind = randint(0, len(X_test) - 1) if si == [] else si[test_num]
+            #ind = randint(0, len(X_test) - 1) if si == [] else si[test_num]
+
+            ind = test_num#range(settings['num_to_test'])
 
             # Clean any previous data. This is not necessary, only for debugging
             self.clean_megasim_sim_data()
@@ -1119,9 +1223,11 @@ class SNN_compiled():
             # neuron in the last layer which spiked most) to the ground truth.
             #import pdb;pdb.set_trace()
 
-            guesses.append(np.argmax(output_pop_activity))
+            guesses.append(output_pop_activity)
             truth.append(np.argmax(Y_test[ind, :]))
             results.append(guesses[-1] == truth[-1])
+
+            print("truth = %d guess = %d"%(np.argmax(Y_test[ind, :]),output_pop_activity ))
 
             if settings['verbose'] > 0:
                 echo("Sample {} of {} completed.\n".format(test_num + 1,
@@ -1214,18 +1320,56 @@ class SNN_compiled():
 
         num_of_samples = 1 # how many samples?
         results_from_input_sample = 0 # which digit to pick?
+        plot_c = 1 # counter is needed because in megasim we can have multiple conv modules for one layer
 
         for l in range(1,len(self.layers)):
-            tmp = [x[l] for x in self.spikemonitors] # this has the response of layer l for all samples
             lbl = self.layers[l].label
 
-            spiketrain = np.zeros((num_of_samples, self.layers[l].pop_size[0],  int(settings['duration'] / settings['dt'])) )
-            spikes_megasim = tmp[results_from_input_sample]
 
-            # get spike counts per neuron per time-step
-            spiketrain[ 0, spikes_megasim[:,3] , spikes_megasim[:,0]] = spikes_megasim[:,0]
+            if self.layers[l].module_string == 'module_fully_connected':
 
-            spiketrains_batch.append([spiketrain,lbl])
+                tmp = self.spikemonitors[results_from_input_sample][plot_c]
+                spiketrain = np.zeros((num_of_samples, self.layers[l].pop_size[0],  int(settings['duration'] / settings['dt'])) )
 
-        output_graphs(spiketrains_batch, ann, X_batch,
-                      settings['log_dir_of_current_run'], idx)
+                spikes_megasim = tmp#[results_from_input_sample]
+
+                # get spike counts per neuron per time-step
+                spiketrain[ 0, spikes_megasim[:,3] , spikes_megasim[:,0]] = spikes_megasim[:,0]
+
+                spiketrains_batch.append([spiketrain,lbl])
+                plot_c += 1
+
+            elif self.layers[l].module_string == 'module_conv':
+                removeme = []
+
+                spiketrain = np.zeros((num_of_samples, self.layers[l].num_of_FMs, self.layers[l].fm_size[0],
+                                       self.layers[l].fm_size[1], int(settings['duration'] / settings['dt'])))
+
+                num_fm = self.layers[l].num_of_FMs
+
+                for fm in range(num_fm):
+                    tmp = self.spikemonitors[results_from_input_sample][plot_c]
+                    spikes_megasim = tmp
+
+
+                    neuron_x_addr = np.copy(spikes_megasim[:, 3])
+                    neuron_y_addr = np.copy(spikes_megasim[:, 4])
+                    neuron_ts = np.copy(spikes_megasim[:, 0])
+                    test = np.zeros((self.layers[l].fm_size[0],self.layers[l].fm_size[1],int(settings['duration'] / settings['dt'])))
+                    test[neuron_y_addr,neuron_x_addr,neuron_ts] =neuron_ts
+                    removeme.append(test)
+
+                    plot_c+=1
+
+
+                for f in range(len(removeme)):
+                    spiketrain[0, f, :] = removeme[f]
+                spiketrains_batch.append([spiketrain, lbl])
+
+            elif self.layers[l].module_string == 'module_flatten':
+                # ignore the spikes from the flatten layer
+                plot_c += 1
+
+        for ll in range(len(spiketrains_batch)):
+            output_graphs(spiketrains_batch, ann, X_batch,
+                      settings['log_dir_of_current_run'], ll)
