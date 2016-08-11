@@ -175,29 +175,23 @@ class SNN():
 
         return score
 
-    def normalize_parameters(self, X_train):
+    def normalize_parameters(self):
         """
         Normalize the parameters of a network.
 
         The parameters of each layer are normalized with respect to the maximum
         activation or parameter value.
 
-        Parameters
-        ----------
-
-        X_train : float32 array
-            The input samples to use for determining the layer activations.
-            With data of the form (channels, num_rows, num_cols),
-            X_train has dimension (1, channels*num_rows*num_cols) for a
-            multi-layer perceptron, and (1, channels, num_rows, num_cols) for a
-            convnet.
-
         """
 
         from snntoolbox.io_utils.plotting import plot_hist
-        from snntoolbox.core.util import get_activations_layer, get_scale_fac
+        from snntoolbox.core.util import get_scale_fac
+        from snntoolbox.io_utils.load import load_dataset
 #        import matplotlib.pyplot as plt
 #        import numpy as np
+
+        print("Loading normalization data set")
+        X_norm = load_dataset(settings['dataset_path'], 'X_norm.npz')
 
         print("Normalizing parameters:\n")
         newpath = os.path.join(settings['log_dir_of_current_run'],
@@ -217,7 +211,7 @@ class SNN():
             # Undo previous scaling before calculating activations:
             self.set_layer_params([parameters[0] * scale_fac_prev_layer,
                                    parameters[1]], idx-1)
-            activations = get_activations_layer(layer['get_activ'], X_train)
+            activations = layer['get_activ'](X_norm)
 #            plt.figure()
 #            plt.hist(np.max(
 #                activations, axis=tuple(range(1, activations.ndim))),
@@ -251,14 +245,9 @@ class SNN():
             # Update model with modified parameters
             self.set_layer_params(parameters_norm, idx-1)
             # Compute activations with modified parameters
-            activations_norm = get_activations_layer(layer['get_activ'],
-                                                     X_train)
-            # For memory reasons, use only a fraction of samples for plotting a
-            # histogram of activations.
-            frac = int(len(activations) / 10)
-            activation_dict = {
-                'Activations': activations[:frac].flatten(),
-                'Activations_norm': activations_norm[:frac].flatten()}
+            activations_norm = layer['get_activ'](X_norm)
+            activation_dict = {'Activations': activations.flatten(),
+                               'Activations_norm': activations_norm.flatten()}
             weight_dict = {
                 'weights': parameters[0].flatten(),
                 'weights_norm': self.layers[idx-1]['parameters'][0].flatten()}

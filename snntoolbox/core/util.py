@@ -147,8 +147,7 @@ def get_scale_fac(activations, idx=0):
     ----------
 
     activations: array
-        The activations of cells in a specific layer. Has the same shape as the
-        layer.
+        The activations of cells in a specific layer, flattened to 1-d.
 
     idx: int, optional
         The index of the layer. May be used to decrease the scale factor in
@@ -171,7 +170,8 @@ def get_scale_fac(activations, idx=0):
 
 def get_activations_layer(get_activ, X_train):
     """
-    Get activations of a specific layer.
+    Get activations of a specific layer, iterating batch-wise over the complete
+    data set.
 
     Parameters
     ----------

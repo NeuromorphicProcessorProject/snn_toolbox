@@ -41,13 +41,12 @@ def get_cifar10(path=None, filename=None, flat=False):
     Returns
     -------
 
-    The dataset as a tuple containing the training and test sample arrays
-    (X_train, Y_train, X_test, Y_test).
-    With data of the form (channels, num_rows, num_cols), ``X_train`` and
+    Three compressed files ``path/filename_X_norm.npz``,
+    ``path/filename_X_test.npz``, and ``path/filename_Y_test.npz``.
+    With data of the form (channels, num_rows, num_cols), ``X_norm`` and
     ``X_test`` have dimension (num_samples, channels*num_rows*num_cols)
-    in case ``flat==True``, and
-    (num_samples, channels, num_rows, num_cols) otherwise.
-    ``Y_train`` and ``Y_test`` have dimension (num_samples, num_classes).
+    in case ``flat==True``, and (num_samples, channels, num_rows, num_cols)
+    otherwise. ``Y_test`` has dimension (num_samples, num_classes).
 
     """
 
@@ -70,8 +69,11 @@ def get_cifar10(path=None, filename=None, flat=False):
 
     if path is not None:
         if filename is None:
-            filename = 'cifar10_flat' if flat else 'cifar10'
+            filename = 'cifar10_flat_' if flat else ''
         filepath = os.path.join(path, filename)
-        np.save(filepath, (X_train, Y_train, X_test, Y_test))
+        np.savez_compressed(filepath+'X_norm', X_train)
+        np.savez_compressed(filepath+'X_test', X_test)
+#       np.savez_compressed(filepath+'Y_train', Y_train)
+        np.savez_compressed(filepath+'Y_test', Y_test)
 
     return (X_train, Y_train, X_test, Y_test)

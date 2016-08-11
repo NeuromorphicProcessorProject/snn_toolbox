@@ -14,7 +14,6 @@ from future import standard_library
 
 from snntoolbox.io_utils.plotting import plot_param_sweep
 from snntoolbox.io_utils.load import load_dataset
-import numpy as np
 from snntoolbox.core.model import SNN
 from snntoolbox.core.util import print_description
 from snntoolbox.config import settings
@@ -69,10 +68,8 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
     """
     # ____________________________ LOAD DATASET _____________________________ #
-    (X_train, Y_train, X_test, Y_test) = load_dataset(settings['dataset_path'])
-#    X_train = np.load(settings['dataset_path']+'_X_train.npz')['arr_0']
-#    X_test = np.load(settings['dataset_path']+'_X_test.npz')['arr_0']
-#    Y_test = np.load(settings['dataset_path']+'_Y_test.npz')['arr_0']
+    X_test = load_dataset(settings['dataset_path'], 'X_test.npz')
+    Y_test = load_dataset(settings['dataset_path'], 'Y_test.npz')
 
     # _____________________________ LOAD MODEL ______________________________ #
     # Extract architecture and parameters from input model.
@@ -91,11 +88,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
             if settings['evaluateANN'] and not is_stop(queue):
                 print("Before parameter normalization:")
                 snn.evaluate_ann(X_test, Y_test)
-
-            # For memory reasons, reduce number of samples to use during
-            # normalization.
-            frac = 50
-            snn.normalize_parameters(X_train[::frac])
+            snn.normalize_parameters()
 
         # ____________________________ EVALUATE _____________________________ #
         # (Re-) evaluate ANN
@@ -110,7 +103,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
         if not is_stop(queue):
             snn.build()
 
-        # Export network in a format specific to the simulator with wich it
+        # Export network in a format specific to the simulator with which it
         # will be tested later.
         if not is_stop(queue):
             snn.export_to_sim()

@@ -71,7 +71,6 @@ class SNNToolboxGUI():
         self.graph_widgets()
         self.top_level_menu()
         self.toggle_state_pyNN(self.settings['simulator'].get())
-        self.toggle_percentile_state()
         self.toggle_poisson_input_state()
         self.initialized = True
 
@@ -119,26 +118,31 @@ class SNNToolboxGUI():
               include in your experiment.""")
         ToolTip(self.globalparams_frame, text=tip, wraplength=750, delay=1499)
 
-        # Dataset
+        # Dataset path
         dataset_frame = tk.Frame(self.globalparams_frame, bg='white')
         dataset_frame.pack(**self.kwargs)
-        tk.Button(dataset_frame, text="Load dataset",
-                  command=self.set_dataset,
+        tk.Button(dataset_frame, text="Dataset path",
+                  command=self.set_dataset_path,
                   font=self.header_font).pack(side='top')
         self.dataset_entry = tk.Entry(
             dataset_frame, textvariable=self.settings['dataset_path'],
             width=20, validate='focusout', bg='white',
-            validatecommand=(dataset_frame.register(self.check_dataset), '%P'))
+            validatecommand=(dataset_frame.register(self.check_dataset_path),
+                             '%P'))
         self.dataset_entry.pack(fill='both', expand=True, side='left')
         scrollX = tk.Scrollbar(dataset_frame, orient=tk.HORIZONTAL,
                                command=self.__scrollHandler)
         scrollX.pack(fill='x', expand=True, side='bottom')
         self.dataset_entry['xscrollcommand'] = scrollX.set
         tip = dedent("""\
-            Select a .npy file containing the dataset in form of a tuple
-            (X_train, Y_train, X_test, Y_test) of training and test sample
-            arrays. With original data of the form
-            (channels, num_rows, num_cols), X_train and X_test have dimension
+            Select a directory where the toolbox will find the samples to test.
+            Needs to contain at least two compressed numpy files called
+            'X_test.npz' and 'Y_test.npz' containing the testset and
+            groundtruth. In addition, if the network should be normalized, put
+            a file 'X_norm.npz' in the folder. This can be a the training set
+            X_train, or a subset of it (Take care of memory limitations:
+            compression factor approx. 5). With original data of the form
+            (channels, num_rows, num_cols), X_norm and X_test have dimension
             (num_samples, channels*num_rows*num_cols) for a fully-connected
             network, and (num_samples, channels, num_rows, num_cols) otherwise.
             Y_train and Y_test have dimension (num_samples, num_classes).
@@ -157,23 +161,6 @@ class SNNToolboxGUI():
                                      self.settings['model_lib'],
                                      *list(model_libs))
         model_lib_om.pack(fill='both', expand=True)
-
-        # Percentile
-        percentile_frame = tk.Frame(self.globalparams_frame, bg='white')
-        percentile_frame.pack(**self.kwargs)
-        self.percentile_label = tk.Label(percentile_frame, text="Percentile",
-                                         bg='white')
-        self.percentile_label.pack(fill='both', expand=True)
-        self.percentile_sb = tk.Spinbox(
-            percentile_frame, bg='white', from_=0, to_=100, increment=0.001,
-            textvariable=self.settings['percentile'], width=10,
-            disabledbackground='#eee')
-        self.percentile_sb.pack(fill='y', expand=True, ipady=5)
-        tip = dedent("""\
-              Use the activation value in the specified percentile for
-              normalization. Set to '50' for the median, '100' for the max.
-              Default: '99'.""")
-        ToolTip(percentile_frame, text=tip, wraplength=700)
 
         # Batch size
         batch_size_frame = tk.Frame(self.globalparams_frame, bg='white')
@@ -654,8 +641,7 @@ class SNNToolboxGUI():
         # Normalize
         self.normalize_cb = tk.Checkbutton(
             self.tools_frame, text="Normalize", height=2, width=20,
-            bg='white', variable=self.settings['normalize'],
-            command=self.toggle_percentile_state)
+            bg='white', variable=self.settings['normalize'])
         self.normalize_cb.pack(**self.kwargs)
         tip = dedent("""\
               Only relevant when converting a network, not during simulation.
@@ -717,7 +703,119 @@ class SNNToolboxGUI():
               simulation.""")
         ToolTip(self.stop_processing_bt, text=tip, wraplength=750)
 
-    def display_experimental_settings(self):
+    def edit_normalization_settings(self):
+        self.normalization_settings_container = tk.Toplevel(bg='white')
+        self.normalization_settings_container.geometry('300x400')
+        self.normalization_settings_container.wm_title(
+            'Normalization settings')
+        self.normalization_settings_container.protocol(
+            'WM_DELETE_WINDOW', self.normalization_settings_container.destroy)
+
+        tk.Button(self.normalization_settings_container, text='Save and close',
+                  command=self.normalization_settings_container.destroy).pack()
+
+        # Percentile
+        percentile_frame = tk.Frame(self.normalization_settings_container,
+                                    bg='white')
+        percentile_frame.pack(**self.kwargs)
+        self.percentile_label = tk.Label(percentile_frame, text="Percentile",
+                                         bg='white')
+        self.percentile_label.pack(fill='both', expand=True)
+        self.percentile_sb = tk.Spinbox(
+            percentile_frame, bg='white', from_=0, to_=100, increment=0.001,
+            textvariable=self.settings['percentile'], width=10,
+            disabledbackground='#eee')
+        self.percentile_sb.pack(fill='y', expand=True, ipady=5)
+        tip = dedent("""\
+              Use the activation value in the specified percentile for
+              normalization. Set to '50' for the median, '100' for the max.
+              Default: '99'.""")
+        ToolTip(percentile_frame, text=tip, wraplength=700)
+
+        # Normalization schedule
+        normalization_schedule_cb = tk.Checkbutton(
+            self.normalization_settings_container,
+            text="Normalization schedule",
+            variable=self.settings['normalization_schedule'],
+            height=2, width=20, bg='white')
+        normalization_schedule_cb.pack(**self.kwargs)
+        tip = dedent("""\
+            Reduce the normalization factor each layer.""")
+        ToolTip(normalization_schedule_cb, text=tip, wraplength=750)
+
+        # Online normalization
+        online_normalization_cb = tk.Checkbutton(
+            self.normalization_settings_container, text="Online normalization",
+            variable=self.settings['online_normalization'],
+            height=2, width=20, bg='white')
+        online_normalization_cb.pack(**self.kwargs)
+        tip = dedent("""\
+            The converted spiking network performs best if the average firing
+            rates of each layer are not higher but also not much lower than the
+            maximum rate supported by the simulator (inverse time resolution).
+            Normalization eliminates saturation but introduces undersampling
+            (parameters are normalized with respect to the highest value in a
+            batch). To overcome this, the spikerates of each layer are
+            monitored during simulation. If they drop below the maximum firing
+            rate by more than 'diff to max rate', we set the threshold of
+            the layer to its highest rate.""")
+        ToolTip(online_normalization_cb, text=tip, wraplength=750)
+
+        # Difference to maximum firing rate
+        diff_to_max_rate_frame = tk.Frame(
+            self.normalization_settings_container, bg='white')
+        diff_to_max_rate_frame.pack(**self.kwargs)
+        self.diff_to_max_rate_label = tk.Label(
+            diff_to_max_rate_frame, bg='white', text="diff_to_max_rate")
+        self.diff_to_max_rate_label.pack(fill='both', expand=True)
+        self.diff_to_max_rate_sb = tk.Spinbox(
+            diff_to_max_rate_frame, from_=0, to_=10000, increment=1, width=10,
+            textvariable=self.settings['diff_to_max_rate'])
+        self.diff_to_max_rate_sb.pack(fill='y', expand=True, ipady=3)
+        tip = dedent("""\
+            If the highest firing rate of neurons in a layer drops below the
+            maximum firing rate by more than 'diff to max rate', we set the
+            threshold of the layer to its highest rate.
+            Set the parameter in Hz.""")
+        ToolTip(diff_to_max_rate_frame, text=tip, wraplength=750)
+
+        # Minimum firing rate
+        diff_to_min_rate_frame = tk.Frame(
+            self.normalization_settings_container, bg='white')
+        diff_to_min_rate_frame.pack(**self.kwargs)
+        self.diff_to_min_rate_label = tk.Label(
+            diff_to_min_rate_frame, bg='white', text="diff_to_min_rate")
+        self.diff_to_min_rate_label.pack(fill='both', expand=True)
+        self.diff_to_min_rate_sb = tk.Spinbox(
+            diff_to_min_rate_frame, from_=0, to_=10000, increment=1, width=10,
+            textvariable=self.settings['diff_to_min_rate'])
+        self.diff_to_min_rate_sb.pack(fill='y', expand=True, ipady=3)
+        tip = dedent("""\
+            When The firing rates of a layer are below this value, the weights
+            will NOT be modified in the feedback mechanism described in
+            'online_normalization'. This is useful in the beginning of a
+            simulation, when higher layers need some time to integrate up a
+            sufficiently high membrane potential.""")
+        ToolTip(diff_to_min_rate_frame, text=tip, wraplength=750)
+
+        # Timestep fraction
+        timestep_fraction_frame = tk.Frame(
+            self.normalization_settings_container, bg='white')
+        timestep_fraction_frame.pack(**self.kwargs)
+        self.timestep_fraction_label = tk.Label(
+            timestep_fraction_frame, bg='white', text="timestep_fraction")
+        self.timestep_fraction_label.pack(fill='both', expand=True)
+        self.timestep_fraction_sb = tk.Spinbox(
+            timestep_fraction_frame, from_=0, to_=1000, increment=1, width=10,
+            textvariable=self.settings['timestep_fraction'])
+        self.timestep_fraction_sb.pack(fill='y', expand=True, ipady=3)
+        tip = dedent("""\
+            If set to 10 (default), the parameter modification mechanism
+            described in 'online_normalization' will be performed at every 10th
+            timestep.""")
+        ToolTip(timestep_fraction_frame, text=tip, wraplength=750)
+
+    def edit_experimental_settings(self):
         self.experimental_settings_container = tk.Toplevel(bg='white')
         self.experimental_settings_container.geometry('300x400')
         self.experimental_settings_container.wm_title('Experimental settings')
@@ -732,90 +830,9 @@ class SNNToolboxGUI():
             text="Enable experimental settings",
             variable=self.settings['experimental_settings'],
             height=2, width=20, bg='white')
-        experimental_settings_cb.pack(**self.kwargs)
-        tip = dedent("""Enable experimental settings""")
+        experimental_settings_cb.pack(expand=True)
+        tip = dedent("""Enable experimental settings.""")
         ToolTip(experimental_settings_cb, text=tip, wraplength=750)
-
-        # Difference to maximum firing rate
-        diff_to_max_rate_frame = tk.Frame(self.experimental_settings_container,
-                                          bg='white')
-        diff_to_max_rate_frame.pack(**self.kwargs)
-        self.diff_to_max_rate_label = tk.Label(
-            diff_to_max_rate_frame, bg='white', text="diff_to_max_rate")
-        self.diff_to_max_rate_label.pack(fill='both', expand=True)
-        self.diff_to_max_rate_sb = tk.Spinbox(
-            diff_to_max_rate_frame, from_=0, to_=10000, increment=1, width=10,
-            textvariable=self.settings['diff_to_max_rate'])
-        self.diff_to_max_rate_sb.pack(fill='y', expand=True, ipady=3)
-        tip = dedent("""\
-            The converted spiking network performs best if the average firing
-            rates of each layer are not higher but also not much lower than the
-            maximum rate supported by the simulator (inverse time resolution).
-            Normalization eliminates saturation but introduces undersampling
-            (parameters are normalized with respect to the highest value in a
-            batch). To overcome this, the spikerates of each layer are
-            monitored during simulation. If they drop below the maximum firing
-            rate by more than 'diff to max rate', we divide the parameters of
-            the layer by its highest rate. Set the parameter in Hz.""")
-        ToolTip(diff_to_max_rate_frame, text=tip, wraplength=750)
-
-        # Timestep fraction
-        timestep_fraction_frame = tk.Frame(
-            self.experimental_settings_container, bg='white')
-        timestep_fraction_frame.pack(**self.kwargs)
-        self.timestep_fraction_label = tk.Label(
-            timestep_fraction_frame, bg='white', text="timestep_fraction")
-        self.timestep_fraction_label.pack(fill='both', expand=True)
-        self.timestep_fraction_sb = tk.Spinbox(
-            timestep_fraction_frame, from_=0, to_=1000, increment=1, width=10,
-            textvariable=self.settings['timestep_fraction'])
-        self.timestep_fraction_sb.pack(fill='y', expand=True, ipady=3)
-        tip = dedent("""\
-            If set to 10 (default), the parameter modification mechanism
-            described in 'diff_to_max_rate' will be performed at every 10th
-            timestep.""")
-        ToolTip(timestep_fraction_frame, text=tip, wraplength=750)
-
-        # Minimum firing rate
-        diff_to_min_rate_frame = tk.Frame(self.experimental_settings_container,
-                                          bg='white')
-        diff_to_min_rate_frame.pack(**self.kwargs)
-        self.diff_to_min_rate_label = tk.Label(
-            diff_to_min_rate_frame, bg='white', text="diff_to_min_rate")
-        self.diff_to_min_rate_label.pack(fill='both', expand=True)
-        self.diff_to_min_rate_sb = tk.Spinbox(
-            diff_to_min_rate_frame, from_=0, to_=10000, increment=1, width=10,
-            textvariable=self.settings['diff_to_min_rate'])
-        self.diff_to_min_rate_sb.pack(fill='y', expand=True, ipady=3)
-        tip = dedent("""\
-            When The firing rates of a layer are below this value, the weights
-            will NOT be modified in the feedback mechanism described in
-            'diff_to_max_rate'. This is useful in the beginning of a
-            simulation, when higher layers need some time to integrate up a
-            sufficiently high membrane potential.""")
-        ToolTip(diff_to_min_rate_frame, text=tip, wraplength=750)
-
-        # Normalization schedule
-        normalization_schedule_cb = tk.Checkbutton(
-            self.experimental_settings_container,
-            text="Normalization schedule",
-            variable=self.settings['normalization_schedule'],
-            height=2, width=20, bg='white')
-        normalization_schedule_cb.pack(**self.kwargs)
-        tip = dedent("""\
-            Reduce the normalization factor each layer.""")
-        ToolTip(normalization_schedule_cb, text=tip, wraplength=750)
-
-        # Online normalization
-        online_normalization_cb = tk.Checkbutton(
-            self.experimental_settings_container, text="Online normalization",
-            variable=self.settings['online_normalization'],
-            height=2, width=20, bg='white')
-        online_normalization_cb.pack(**self.kwargs)
-        tip = dedent("""\
-              Monitor the maximum firing rate in each layer. If too low,
-              reduce threshold.""")
-        ToolTip(online_normalization_cb, text=tip, wraplength=750)
 
     def graph_widgets(self):
         """Create graph widgets."""
@@ -988,7 +1005,9 @@ class SNNToolboxGUI():
 
         editmenu = tk.Menu(menubar, tearoff=0)
         editmenu.add_command(label='Experimental settings',
-                             command=self.display_experimental_settings)
+                             command=self.edit_experimental_settings)
+        editmenu.add_command(label='Normalization settings',
+                             command=self.edit_normalization_settings)
         menubar.add_cascade(label='Edit', menu=editmenu)
 
         helpmenu = tk.Menu(menubar, tearoff=0)
@@ -1142,6 +1161,11 @@ class SNNToolboxGUI():
                                    message="Please specify a filename base.")
             return
 
+        if self.settings['dataset_path'].get() == '':
+            messagebox.showwarning(title="Warning",
+                                   message="Please set the dataset path.")
+            return
+
         self.store_last_settings = True
         self.save_settings()
         self.check_runlabel(self.settings['runlabel'].get())
@@ -1232,6 +1256,33 @@ class SNNToolboxGUI():
 
         return result
 
+    def check_dataset_path(self, P):
+        if not self.initialized:
+            result = True
+        elif not os.path.exists(P):
+            msg = "Failed to set dataset directory:\n" + \
+                  "Specified directory does not exist."
+            messagebox.showwarning(title="Warning", message=msg)
+            result = False
+        elif self.settings['normalize'] and not \
+                os.path.exists(os.path.join(P, 'X_norm.npz')):
+            msg = "No data set file 'X_norm.npz' found.\n" + \
+                  "Add it, or disable normalization."
+            messagebox.showerror(title="Error", message=msg)
+            result = False
+        elif not (os.path.exists(os.path.join(P, 'X_test.npz')) and
+                  os.path.exists(os.path.join(P, 'Y_test.npz'))):
+            msg = "Data set file 'X_test.npz' or 'Y_test.npz' was not found."
+            messagebox.showerror(title="Error", message=msg)
+            result = False
+        else:
+            result = True
+
+        if result:
+            self.settings['dataset_path'].set(P)
+
+        return result
+
     def check_runlabel(self, P):
         """check runlabel."""
         if self.initialized:
@@ -1243,26 +1294,14 @@ class SNNToolboxGUI():
                 os.makedirs(self.settings['log_dir_of_current_run'].get())
 
     def set_cwd(self):
-        """set working directory."""
-        P = filedialog.askdirectory(title="Set working directory",
+        P = filedialog.askdirectory(title="Set directory",
                                     initialdir=snntoolbox._dir)
         self.check_path(P)
 
-    def set_dataset(self):
-        """set dataset to load."""
-        self.settings['dataset_path'].set(filedialog.askopenfilename(
-            title="Choose dataset to load", initialdir=snntoolbox._dir,
-            defaultextension='npy', multiple=False,
-            filetypes=[('all files', '.*'), ('numpy', '.npy')]))
-
-    def check_dataset(self, P):
-        """Check datset."""
-        if os.path.isfile(P):
-            return True
-        else:
-            messagebox.showerror(title="Error loading dataset",
-                                 message="Not a file")
-            return False
+    def set_dataset_path(self):
+        P = filedialog.askdirectory(title="Set directory",
+                                    initialdir=snntoolbox._dir)
+        self.check_dataset_path(P)
 
     def __scrollHandler(self, *L):
         op, howMany = L[0], L[1]
@@ -1310,15 +1349,6 @@ class SNNToolboxGUI():
             state=self.settings['state_num_to_test'].get())
         self.num_to_test_sb.configure(
             state=self.settings['state_num_to_test'].get())
-
-    def toggle_percentile_state(self):
-        """toogle percentile state."""
-        if self.settings['normalize'].get():
-            self.percentile_state.set('normal')
-        else:
-            self.percentile_state.set('disabled')
-        self.percentile_label.configure(state=self.percentile_state.get())
-        self.percentile_sb.configure(state=self.percentile_state.get())
 
     def toggle_poisson_input_state(self):
         """Toggle poisson input."""

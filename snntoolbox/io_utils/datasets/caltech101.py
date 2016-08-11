@@ -18,7 +18,7 @@ from snntoolbox.io_utils.load import to_categorical
 standard_library.install_aliases()
 
 
-def get_caltech101(path=None, filename=None, flat=False):
+def get_caltech101(path=None, filename=None):
     """
     Load caltech101 classification dataset.
 
@@ -33,22 +33,17 @@ def get_caltech101(path=None, filename=None, flat=False):
         If a ``path`` is given, the loaded and modified dataset is saved to
         ``path`` directory.
     filename: string, optional
-        If a ``path`` is given, the dataset will be written to ``filename``.
-        If ``filename`` is not specified, use ``caltech101`` or
-        ``caltech101_flat``.
-    flat: Boolean, optional
-        If ``True``, the output is flattened. Defaults to ``False``.
+        Basename of file to create. Individual files will be appended
+        ``_X_norm``, ``_X_test``, etc.
 
     Returns
     -------
 
-    The dataset as a tuple containing the training and test sample arrays
-    (X_train, Y_train, X_test, Y_test).
-    With data of the form (channels, num_rows, num_cols), ``X_train`` and
-    ``X_test`` have dimension (num_samples, channels*num_rows*num_cols)
-    in case ``flat==True``, and
-    (num_samples, channels, num_rows, num_cols) otherwise.
-    ``Y_train`` and ``Y_test`` have dimension (num_samples, num_classes).
+    Three compressed files ``path/filename_X_norm.npz``,
+    ``path/filename_X_test.npz``, and ``path/filename_Y_test.npz``.
+    With data of the form (channels, num_rows, num_cols), ``X_norm`` and
+    ``X_test`` have dimension (num_samples, channels, num_rows, num_cols).
+    ``Y_test`` has dimension (num_samples, num_classes).
 
     """
 
@@ -81,17 +76,13 @@ def get_caltech101(path=None, filename=None, flat=False):
     Y_train = to_categorical(y_train, nb_classes)
     Y_test = to_categorical(y_test, nb_classes)
 
-    if flat:
-        X_train = X_train.reshape(X_train.shape[0], np.prod(X_train.shape[1:]))
-        X_test = X_test.reshape(X_test.shape[0], np.prod(X_test.shape[1:]))
-
     if path is not None:
         if filename is None:
-            filename = 'caltech101_flat' if flat else 'caltech101'
+            filename = ''
         filepath = os.path.join(path, filename)
-        np.savez_compressed(filepath+'_X_train', X_train)
-        np.savez_compressed(filepath+'_X_test', X_test)
-        np.savez_compressed(filepath+'_Y_train', Y_train)
-        np.savez_compressed(filepath+'_Y_test', Y_test)
+        np.savez_compressed(filepath+'X_norm', X_train)
+        np.savez_compressed(filepath+'X_test', X_test)
+#       np.savez_compressed(filepath+'Y_train', Y_train)
+        np.savez_compressed(filepath+'Y_test', Y_test)
 
     return (X_train, Y_train, X_test, Y_test)
