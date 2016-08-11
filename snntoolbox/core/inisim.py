@@ -413,12 +413,10 @@ class MaxPool2DReLU(MaxPooling2D):
                 print("Online Normalization is not enabled, "
                       "choose First Max automatically")
         if not settings['online_normalization'] or option == "fir_max":
-            pass
-
-        # CALCULATE SYNAPTIC SUMMED INPUT
-        # self.impulse = pool.pool_2d(inp, ds=self.pool_size, st=self.strides,
-        #                             ignore_border=self.ignore_border,
-        #                             mode='average_inc_pad')
+            self.impulse = pool.pool_2d(inp, ds=self.pool_size,
+                                        st=self.strides,
+                                        ignore_border=self.ignore_border,
+                                        mode='average_inc_pad')
 
         output_spikes = update_neurons(self, self.impulse, time, updates)
         self.updates = updates
