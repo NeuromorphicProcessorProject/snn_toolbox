@@ -166,7 +166,10 @@ def norm_parameters(parameters, activations, prev_scale_fac, idx):
 
     """
 
-    scale_fac = np.percentile(activations, settings['percentile']) #-idx/10)
+    if settings['normalization_schedule']:
+        scale_fac = np.percentile(activations, settings['percentile']-idx/10)
+    else:
+        scale_fac = np.percentile(activations, settings['percentile'])
     print("Maximum value: {:.2f}.".format(scale_fac))
     return [parameters[0] * prev_scale_fac / scale_fac,
             parameters[1] / scale_fac], scale_fac

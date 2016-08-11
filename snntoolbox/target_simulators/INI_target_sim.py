@@ -27,7 +27,9 @@ from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
 
 standard_library.install_aliases()
-lidx = 0
+
+if settings['online_normalization']:
+    lidx = 0
 
 
 class SNN_compiled():
@@ -141,21 +143,38 @@ class SNN_compiled():
                                       **kwargs2)
 
         # Compile
-        echo('\n')
-        echo("Compiling spiking network...\n")
+        self.compile_snn(input_time)
+
+    def compile_snn(self, input_time):
+        """
+        Sets the ``snn`` and ``get_output`` attributes of this class.
+
+        Todo: Allow user to specify loss function here (optimizer is not
+        relevant as we do not train any more). Unfortunately, Keras does not
+        save these parameters. They can be obtained from the compiled model
+        by calling 'model.loss' and 'model.optimizer'.
+
+        """
+
+        print("Compiling spiking network...\n")
         self.snn.compile(loss='categorical_crossentropy', optimizer='sgd',
                          metrics=['accuracy'])
         output_spikes = self.snn.layers[-1].get_output()
         output_time = self.sim.get_time(self.snn.layers[-1])
         updates = self.sim.get_updates(self.snn.layers[-1])
-        thresh = self.snn.layers[lidx].v_thresh
-        max_spikerate = self.snn.layers[lidx].max_spikerate
-        spiketrain = self.snn.layers[lidx].spiketrain
-        self.get_output = theano.function([self.snn.input, input_time],
-                                          [output_spikes, output_time,
-                                           thresh, max_spikerate, spiketrain],
-                                          updates=updates)
-        echo("Compilation finished.\n\n")
+        if settings['online_normalization']:
+            thresh = self.snn.layers[lidx].v_thresh
+            max_spikerate = self.snn.layers[lidx].max_spikerate
+            spiketrain = self.snn.layers[lidx].spiketrain
+            self.get_output = theano.function([self.snn.input, input_time],
+                                              [output_spikes, output_time,
+                                               thresh, max_spikerate,
+                                               spiketrain], updates=updates)
+        else:
+            self.get_output = theano.function([self.snn.input, input_time],
+                                              [output_spikes, output_time],
+                                              updates=updates)
+        print("Compilation finished.\n")
 
     def run(self, snn_precomp, X_test, Y_test):
         """
@@ -286,9 +305,14 @@ class SNN_compiled():
                     inp = (spike_snapshot <= batch).astype('float32')
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
-                out_spikes, ts, thresh, max_spikerate, spiketrain = self.get_output(inp, float(t))
-#                print('thresh: {:.2f}, max_spikerate: {:.2f}'.format(
-#                    float(np.array(thresh)), float(np.array(max_spikerate))))
+                if settings['online_normalization']:
+                    out_spikes, ts, thresh, max_spikerate, spiketrain = \
+                        self.get_output(inp, float(t))
+                    print('thresh: {:.2f}, max_spikerate: {:.2f}'.format(
+                        float(np.array(thresh)),
+                        float(np.array(max_spikerate))))
+                else:
+                    out_spikes, ts = self.get_output(inp, float(t))
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
                 if batch_idx == 0 and settings['verbose'] > 1:
@@ -416,22 +440,7 @@ class SNN_compiled():
             kwargs = {}
 
         # Compile model
-        # Todo: Allow user to specify loss function here (optimizer is not
-        # relevant as we do not train any more). Unfortunately, Keras does not
-        # save these parameters. They can be obtained from the compiled model
-        # by calling 'model.loss' and 'model.optimizer'.
-        self.snn.compile(loss='categorical_crossentropy', optimizer='sgd',
-                         metrics=['accuracy'])
-        output_spikes = self.snn.layers[-1].get_output()
-        output_time = self.sim.get_time(self.snn.layers[-1])
-        updates = self.sim.get_updates(self.snn.layers[-1])
-        thresh = self.snn.layers[lidx].v_thresh
-        max_spikerate = self.snn.layers[lidx].max_spikerate
-        spiketrain = self.snn.layers[lidx].spiketrain
-        self.get_output = theano.function([self.snn.input, input_time],
-                                          [output_spikes, output_time,
-                                           thresh, max_spikerate, spiketrain],
-                                          updates=updates)
+        self.compile_snn(input_time)
 
     def assert_batch_size(self, batch_size):
         if batch_size != settings['batch_size']:

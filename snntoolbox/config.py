@@ -157,12 +157,11 @@ diff_to_max_rate: float, optional
 timestep_fraction: int, optional
     If set to 10 (default), the parameter modification mechanism described in
     'diff_to_max_rate' will be performed at every 10th timestep.
-min_rate: float, optional
-    Minimum spikerate in Hz. When The firing rates of a layer are below this
-    value, the weights will NOT be modified in the feedback mechanism described
-    in 'diff_to_max_rate'. This is useful in the beginning of a simulation,
-    when higher layers need some time to integrate up a sufficiently high
-    membrane potential.
+diff_to_min_rate: float, optional
+    When The firing rates of a layer are below this value, the weights will NOT
+    be modified in the feedback mechanism described in 'diff_to_max_rate'. This
+    is useful in the beginning of a simulation, when higher layers need some
+    time to integrate up a sufficiently high membrane potential.
 num_to_test: int, optional
     How many samples to test.
 
@@ -208,7 +207,7 @@ Default values
                  'timestep_fraction': 10,
                  'diff_to_max_rate': 200,
                  'num_to_test': 10,
-                 'min_rate': 100}
+                 'diff_to_min_rate': 100}
 
 """
 
@@ -265,9 +264,11 @@ settings = {'dataset_path': '',
             'poisson_input': False,
             'reset': 'Reset by subtraction',
             'input_rate': 1000,
+            'normalization_schedule': True,
+            'online_normalization': True,
             'diff_to_max_rate': 200,
             'timestep_fraction': 10,
-            'min_rate': 100}
+            'diff_to_min_rate': 100}
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,
@@ -282,7 +283,7 @@ pyNN_settings = {'v_reset': 0,
                  'delay': 1,  # Constraint: delay >= dt
                  'num_to_test': 10}
 
-# Merge all settings
+# Merge settings
 settings.update(pyNN_settings)
 
 # Layers followed by an Activation layer
@@ -392,7 +393,7 @@ def initialize_simulator(simulator=None):
     elif simulator == 'INI':
         sim = import_module('snntoolbox.core.inisim')
     elif simulator == 'MegaSim':
-        sim = None # evan - can add a module with helper functions
+        sim = None  # evan - can add a module with helper functions
 
     print("Initialized {} simulator.\n".format(simulator))
     return sim
