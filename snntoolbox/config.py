@@ -145,23 +145,29 @@ input_rate: float, optional
     Poisson spike rate in Hz for a fully-on pixel of the input image. Note that
     the input_rate is limited by the maximum firing rate supported by the
     simulator (given by the inverse time resolution 1000 * 1 / dt Hz).
-diff_to_max_rate: float, optional
+normalization_schedule: boolean, optional
+    Reduce the normalization factor each layer.
+online_normalization: boolean, optional
     The converted spiking network performs best if the average firing rates of
     each layer are not higher but also not much lower than the maximum rate
     supported by the simulator (inverse time resolution). Normalization
     eliminates saturation but introduces undersampling (parameters are
     normalized with respect to the highest value in a batch). To overcome this,
     the spikerates of each layer are monitored during simulation. If they drop
-    below the maximum firing rate by more than 'diff to max rate', we divide
-    the parameters of the layer by its highest rate. Set the parameter in Hz.
-timestep_fraction: int, optional
-    If set to 10 (default), the parameter modification mechanism described in
-    'diff_to_max_rate' will be performed at every 10th timestep.
+    below the maximum firing rate by more than 'diff to max rate', we set the
+    threshold of the layer to its highest rate.
+diff_to_max_rate: float, optional
+    If the highest firing rate of neurons in a layer drops below the maximum
+    firing rate by more than 'diff to max rate', we set the threshold of the
+    layer to its highest rate. Set the parameter in Hz.
 diff_to_min_rate: float, optional
     When The firing rates of a layer are below this value, the weights will NOT
-    be modified in the feedback mechanism described in 'diff_to_max_rate'. This
-    is useful in the beginning of a simulation, when higher layers need some
-    time to integrate up a sufficiently high membrane potential.
+    be modified in the feedback mechanism described in 'online_normalization'.
+    This is useful in the beginning of a simulation, when higher layers need
+    some time to integrate up a sufficiently high membrane potential.
+timestep_fraction: int, optional
+    If set to 10 (default), the parameter modification mechanism described in
+    'online_normalization' will be performed at every 10th timestep.
 num_to_test: int, optional
     How many samples to test.
 

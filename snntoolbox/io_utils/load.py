@@ -54,9 +54,9 @@ def to_categorical(y, nb_classes):
     return Y
 
 
-def load_dataset(path=None):
+def load_dataset(path, filename):
     """
-    Load dataset from an ``.npy`` file.
+    Load dataset from an ``.npy`` or ``.npz`` file.
 
     Parameters
     ----------
@@ -67,8 +67,7 @@ def load_dataset(path=None):
     Returns
     -------
 
-    The dataset as a tuple containing the training and test sample arrays
-    (X_train, Y_train, X_test, Y_test).
+    The dataset as a numpy array containing samples. Example:
     With original data of the form (channels, num_rows, num_cols), ``X_train``
     and ``X_test`` have dimension (num_samples, channels*num_rows*num_cols) for
     a fully-connected network, and (num_samples, channels, num_rows, num_cols)
@@ -77,10 +76,7 @@ def load_dataset(path=None):
 
     """
 
-    if path is None:
-        path = settings['dataset_path']
-
-    return np.load(path)
+    return np.load(os.path.join(path, filename))['arr_0']
 
 
 def download_dataset(fname, origin, untar=False):
