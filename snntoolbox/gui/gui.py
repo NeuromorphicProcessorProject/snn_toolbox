@@ -567,62 +567,6 @@ class SNNToolboxGUI():
             """)
         ToolTip(input_rate_frame, text=tip, wraplength=750)
 
-        # Difference to maximum firing rate
-        diff_to_max_rate_frame = tk.Frame(self.simparams_frame, bg='white')
-        diff_to_max_rate_frame.pack(**self.kwargs)
-        self.diff_to_max_rate_label = tk.Label(
-            diff_to_max_rate_frame, bg='white', text="diff_to_max_rate")
-        self.diff_to_max_rate_label.pack(fill='both', expand=True)
-        self.diff_to_max_rate_sb = tk.Spinbox(
-            diff_to_max_rate_frame, from_=0, to_=10000, increment=1, width=10,
-            textvariable=self.settings['diff_to_max_rate'])
-        self.diff_to_max_rate_sb.pack(fill='y', expand=True, ipady=3)
-        tip = dedent("""\
-            The converted spiking network performs best if the average firing
-            rates of each layer are not higher but also not much lower than the
-            maximum rate supported by the simulator (inverse time resolution).
-            Normalization eliminates saturation but introduces undersampling
-            (parameters are normalized with respect to the highest value in a
-            batch). To overcome this, the spikerates of each layer are
-            monitored during simulation. If they drop below the maximum firing
-            rate by more than 'diff to max rate', we divide the parameters of
-            the layer by its highest rate. Set the parameter in Hz.""")
-        ToolTip(diff_to_max_rate_frame, text=tip, wraplength=750)
-
-        # Timestep fraction
-        timestep_fraction_frame = tk.Frame(self.simparams_frame, bg='white')
-        timestep_fraction_frame.pack(**self.kwargs)
-        self.timestep_fraction_label = tk.Label(
-            timestep_fraction_frame, bg='white', text="timestep_fraction")
-        self.timestep_fraction_label.pack(fill='both', expand=True)
-        self.timestep_fraction_sb = tk.Spinbox(
-            timestep_fraction_frame, from_=0, to_=1000, increment=1, width=10,
-            textvariable=self.settings['timestep_fraction'])
-        self.timestep_fraction_sb.pack(fill='y', expand=True, ipady=3)
-        tip = dedent("""\
-            If set to 10 (default), the parameter modification mechanism
-            described in 'diff_to_max_rate' will be performed at every 10th
-            timestep.""")
-        ToolTip(timestep_fraction_frame, text=tip, wraplength=750)
-
-        # Minimum firing rate
-        min_rate_frame = tk.Frame(self.simparams_frame, bg='white')
-        min_rate_frame.pack(**self.kwargs)
-        self.min_rate_label = tk.Label(
-            min_rate_frame, bg='white', text="min_rate")
-        self.min_rate_label.pack(fill='both', expand=True)
-        self.min_rate_sb = tk.Spinbox(
-            min_rate_frame, from_=0, to_=10000, increment=1, width=10,
-            textvariable=self.settings['min_rate'])
-        self.min_rate_sb.pack(fill='y', expand=True, ipady=3)
-        tip = dedent("""\
-            Minimum spikerate in Hz. When The firing rates of a layer are
-            below this value, the weights will NOT be modified in the feedback
-            mechanism described in 'diff_to_max_rate'. This is useful in the
-            beginning of a simulation, when higher layers need some time to
-            integrate up a sufficiently high membrane potential.""")
-        ToolTip(min_rate_frame, text=tip, wraplength=750)
-
         # Delay
         delay_frame = tk.Frame(self.simparams_frame, bg='white')
         delay_frame.pack(**self.kwargs)
@@ -773,6 +717,106 @@ class SNNToolboxGUI():
               simulation.""")
         ToolTip(self.stop_processing_bt, text=tip, wraplength=750)
 
+    def display_experimental_settings(self):
+        self.experimental_settings_container = tk.Toplevel(bg='white')
+        self.experimental_settings_container.geometry('300x400')
+        self.experimental_settings_container.wm_title('Experimental settings')
+        self.experimental_settings_container.protocol(
+            'WM_DELETE_WINDOW', self.experimental_settings_container.destroy)
+
+        tk.Button(self.experimental_settings_container, text='Save and close',
+                  command=self.experimental_settings_container.destroy).pack()
+
+        experimental_settings_cb = tk.Checkbutton(
+            self.experimental_settings_container,
+            text="Enable experimental settings",
+            variable=self.settings['experimental_settings'],
+            height=2, width=20, bg='white')
+        experimental_settings_cb.pack(**self.kwargs)
+        tip = dedent("""Enable experimental settings""")
+        ToolTip(experimental_settings_cb, text=tip, wraplength=750)
+
+        # Difference to maximum firing rate
+        diff_to_max_rate_frame = tk.Frame(self.experimental_settings_container,
+                                          bg='white')
+        diff_to_max_rate_frame.pack(**self.kwargs)
+        self.diff_to_max_rate_label = tk.Label(
+            diff_to_max_rate_frame, bg='white', text="diff_to_max_rate")
+        self.diff_to_max_rate_label.pack(fill='both', expand=True)
+        self.diff_to_max_rate_sb = tk.Spinbox(
+            diff_to_max_rate_frame, from_=0, to_=10000, increment=1, width=10,
+            textvariable=self.settings['diff_to_max_rate'])
+        self.diff_to_max_rate_sb.pack(fill='y', expand=True, ipady=3)
+        tip = dedent("""\
+            The converted spiking network performs best if the average firing
+            rates of each layer are not higher but also not much lower than the
+            maximum rate supported by the simulator (inverse time resolution).
+            Normalization eliminates saturation but introduces undersampling
+            (parameters are normalized with respect to the highest value in a
+            batch). To overcome this, the spikerates of each layer are
+            monitored during simulation. If they drop below the maximum firing
+            rate by more than 'diff to max rate', we divide the parameters of
+            the layer by its highest rate. Set the parameter in Hz.""")
+        ToolTip(diff_to_max_rate_frame, text=tip, wraplength=750)
+
+        # Timestep fraction
+        timestep_fraction_frame = tk.Frame(
+            self.experimental_settings_container, bg='white')
+        timestep_fraction_frame.pack(**self.kwargs)
+        self.timestep_fraction_label = tk.Label(
+            timestep_fraction_frame, bg='white', text="timestep_fraction")
+        self.timestep_fraction_label.pack(fill='both', expand=True)
+        self.timestep_fraction_sb = tk.Spinbox(
+            timestep_fraction_frame, from_=0, to_=1000, increment=1, width=10,
+            textvariable=self.settings['timestep_fraction'])
+        self.timestep_fraction_sb.pack(fill='y', expand=True, ipady=3)
+        tip = dedent("""\
+            If set to 10 (default), the parameter modification mechanism
+            described in 'diff_to_max_rate' will be performed at every 10th
+            timestep.""")
+        ToolTip(timestep_fraction_frame, text=tip, wraplength=750)
+
+        # Minimum firing rate
+        diff_to_min_rate_frame = tk.Frame(self.experimental_settings_container,
+                                          bg='white')
+        diff_to_min_rate_frame.pack(**self.kwargs)
+        self.diff_to_min_rate_label = tk.Label(
+            diff_to_min_rate_frame, bg='white', text="diff_to_min_rate")
+        self.diff_to_min_rate_label.pack(fill='both', expand=True)
+        self.diff_to_min_rate_sb = tk.Spinbox(
+            diff_to_min_rate_frame, from_=0, to_=10000, increment=1, width=10,
+            textvariable=self.settings['diff_to_min_rate'])
+        self.diff_to_min_rate_sb.pack(fill='y', expand=True, ipady=3)
+        tip = dedent("""\
+            When The firing rates of a layer are below this value, the weights
+            will NOT be modified in the feedback mechanism described in
+            'diff_to_max_rate'. This is useful in the beginning of a
+            simulation, when higher layers need some time to integrate up a
+            sufficiently high membrane potential.""")
+        ToolTip(diff_to_min_rate_frame, text=tip, wraplength=750)
+
+        # Normalization schedule
+        normalization_schedule_cb = tk.Checkbutton(
+            self.experimental_settings_container,
+            text="Normalization schedule",
+            variable=self.settings['normalization_schedule'],
+            height=2, width=20, bg='white')
+        normalization_schedule_cb.pack(**self.kwargs)
+        tip = dedent("""\
+            Reduce the normalization factor each layer.""")
+        ToolTip(normalization_schedule_cb, text=tip, wraplength=750)
+
+        # Online normalization
+        online_normalization_cb = tk.Checkbutton(
+            self.experimental_settings_container, text="Online normalization",
+            variable=self.settings['online_normalization'],
+            height=2, width=20, bg='white')
+        online_normalization_cb.pack(**self.kwargs)
+        tip = dedent("""\
+              Monitor the maximum firing rate in each layer. If too low,
+              reduce threshold.""")
+        ToolTip(online_normalization_cb, text=tip, wraplength=750)
+
     def graph_widgets(self):
         """Create graph widgets."""
         # Create a container for buttons that display plots for individual
@@ -849,7 +893,7 @@ class SNNToolboxGUI():
                 and not self.is_plot_container_destroyed:
             self.plot_container.wm_withdraw()
         self.plot_container = tk.Toplevel(bg='white')
-        self.plot_container.geometry('800x600')
+        self.plot_container.geometry('1920x1080')
         self.is_plot_container_destroyed = False
         self.plot_container.wm_title('Results from simulation run {}'.format(
             self.selected_plots_dir.get()))
@@ -942,6 +986,11 @@ class SNNToolboxGUI():
         filemenu.add_command(label="Quit", command=self.quit_toolbox)
         menubar.add_cascade(label="File", menu=filemenu)
 
+        editmenu = tk.Menu(menubar, tearoff=0)
+        editmenu.add_command(label='Experimental settings',
+                             command=self.display_experimental_settings)
+        menubar.add_cascade(label='Edit', menu=editmenu)
+
         helpmenu = tk.Menu(menubar, tearoff=0)
         helpmenu.add_command(label="About", command=self.about)
         helpmenu.add_command(label="Documentation", command=self.documentation)
@@ -1008,7 +1057,7 @@ class SNNToolboxGUI():
                          'input_rate': tk.IntVar(),
                          'diff_to_max_rate': tk.IntVar(),
                          'timestep_fraction': tk.IntVar(),
-                         'min_rate': tk.IntVar(),
+                         'diff_to_min_rate': tk.IntVar(),
                          'delay': tk.IntVar(),
                          'num_to_test': tk.IntVar(),
                          'runlabel': tk.StringVar(),
@@ -1016,7 +1065,11 @@ class SNNToolboxGUI():
                          'log_dir_of_current_run': tk.StringVar(),
                          'state_pyNN': tk.StringVar(value='normal'),
                          'samples_to_test': tk.StringVar(),
-                         'state_num_to_test': tk.StringVar(value='normal')}
+                         'state_num_to_test': tk.StringVar(value='normal'),
+                         'experimental_settings': tk.BooleanVar(),
+                         'online_normalization': tk.BooleanVar(),
+                         'normalization_schedule': tk.BooleanVar()}
+
         # These will not be written to disk as preferences.
         self.is_plot_container_destroyed = True
         self.store_last_settings = False

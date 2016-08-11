@@ -139,37 +139,34 @@ def get_sample_activity_from_batch(activity_batch, i=0):
     return [(layer_act[0][i], layer_act[1]) for layer_act in activity_batch]
 
 
-def norm_parameters(parameters, activations, prev_scale_fac, idx):
+def get_scale_fac(activations, idx=0):
     """
-    Normalize parameters
-
-    Determine the maximum activation of a layer and apply this factor to
-    normalize the parameters.
+    Determine the maximum activation of a layer.
 
     Parameters
     ----------
 
-    parameters: array
-        The parameters of a layer (both weights and biases).
     activations: array
         The activations of cells in a specific layer. Has the same shape as the
         layer.
 
+    idx: int, optional
+        The index of the layer. May be used to decrease the scale factor in
+        higher layers, to maintain high spike rates.
+
     Returns
     -------
 
-    parameters_norm: array
-        The parameters of a layer, divided by ``scale_fac``.
     scale_fac: float
-        Maximum (or percentile) of activations or parameters of this layer.
+        Maximum (or percentile) of activations in this layer.
         Parameters of the respective layer are scaled by this value.
 
     """
 
-    scale_fac = np.percentile(activations, settings['percentile']) #-idx/10)
-    print("Maximum value: {:.2f}.".format(scale_fac))
-    return [parameters[0] * prev_scale_fac / scale_fac,
-            parameters[1] / scale_fac], scale_fac
+    scale_fac = np.percentile(activations, settings['percentile']-idx/10)
+    if settings['verbose'] > 1:
+        print("Scale factor: {:.2f}.".format(scale_fac))
+    return scale_fac
 
 
 def get_activations_layer(get_activ, X_train):

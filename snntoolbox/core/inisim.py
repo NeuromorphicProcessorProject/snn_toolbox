@@ -63,10 +63,11 @@ def update_neurons(self, impulse, time, updates):
         output_spikes = softmax_activation(self, impulse, time, updates)
     else:
         output_spikes = linear_activation(self, impulse, time, updates)
-    updates.append((self.spikecounts, self.spikecounts + output_spikes))
-    updates.append((self.max_spikerate,
-                    T.max(self.spikecounts) / (time + settings['dt'])))
     updates.append((self.spiketrain, output_spikes * time))
+    if settings['online_normalization']:
+        updates.append((self.spikecounts, self.spikecounts + output_spikes))
+        updates.append((self.max_spikerate,
+                        T.max(self.spikecounts) / (time + settings['dt'])))
     return output_spikes
 
 
@@ -139,9 +140,10 @@ def reset(self):
     self.mem.set_value(floatX(np.zeros(self.output_shape)))
     self.refrac_until.set_value(floatX(np.zeros(self.output_shape)))
     self.spiketrain.set_value(floatX(np.zeros(self.output_shape)))
-    self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
-    self.max_spikerate.set_value(0.0)
-    self.v_thresh.set_value(settings['v_thresh'])
+    if settings['online_normalization']:
+        self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
+        self.max_spikerate.set_value(0.0)
+        self.v_thresh.set_value(settings['v_thresh'])
 
 
 def get_input(self):
@@ -196,9 +198,10 @@ def init_layer(self, layer, v_thresh, tau_refrac):
     layer.refrac_until = shared_zeros(self.output_shape)
     layer.mem = shared_zeros(self.output_shape)
     layer.spiketrain = shared_zeros(self.output_shape)
-    layer.spikecounts = shared_zeros(self.output_shape)
-    layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
     layer.updates = []
+    if settings['online_normalization']:
+        layer.spikecounts = shared_zeros(self.output_shape)
+        layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
     if len(layer.get_weights()) > 0:
         layer.W = K.variable(layer.get_weights()[0])
         layer.b = K.variable(layer.get_weights()[1])
@@ -208,7 +211,7 @@ def get_new_thresh(self, time):
     """Get new threshhold."""
     return theano.ifelse.ifelse(
         T.eq(time / settings['dt'] % settings['timestep_fraction'], 0) *
-        T.gt(self.max_spikerate, settings['min_rate'] / 1000) *
+        T.gt(self.max_spikerate, settings['diff_to_min_rate'] / 1000) *
         T.gt(1 / settings['dt'] - self.max_spikerate,
              settings['diff_to_max_rate'] / 1000),
         self.max_spikerate, self.v_thresh)
@@ -253,8 +256,9 @@ class SpikeDense(Dense):
         # Recurse
         inp, time, updates = get_input(self)
 
-        # Modify parameters if firing rate of layer too low
-#        updates.append((self.v_thresh, get_new_thresh(self, time)))
+        if settings['online_normalization']:
+            # Modify threshold if firing rate of layer too low
+            updates.append((self.v_thresh, get_new_thresh(self, time)))
 
         # Get impulse
         self.impulse = T.add(T.dot(inp, self.W), self.b)
@@ -287,8 +291,9 @@ class SpikeConv2DReLU(Convolution2D):
         # Recurse
         inp, time, updates = get_input(self)
 
-        # Modify parameters if firing rate of layer too low
-#        updates.append((self.v_thresh, get_new_thresh(self, time)))
+        if settings['online_normalization']:
+            # Modify threshold if firing rate of layer too low
+            updates.append((self.v_thresh, get_new_thresh(self, time)))
 
         # CALCULATE SYNAPTIC SUMMED INPUT
         border_mode = self.border_mode
