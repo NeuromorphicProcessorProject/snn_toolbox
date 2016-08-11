@@ -187,10 +187,8 @@ class SNN():
         from snntoolbox.io_utils.plotting import plot_hist
         from snntoolbox.core.util import get_scale_fac
         from snntoolbox.io_utils.load import load_dataset
-#        import matplotlib.pyplot as plt
-#        import numpy as np
 
-        print("Loading normalization data set")
+        print("Loading normalization data set.\n")
         X_norm = load_dataset(settings['dataset_path'], 'X_norm.npz')
 
         print("Normalizing parameters:\n")
@@ -212,28 +210,6 @@ class SNN():
             self.set_layer_params([parameters[0] * scale_fac_prev_layer,
                                    parameters[1]], idx-1)
             activations = layer['get_activ'](X_norm)
-#            plt.figure()
-#            plt.hist(np.max(
-#                activations, axis=tuple(range(1, activations.ndim))),
-#                bins=len(activations))
-#            plt.title("Distribution of maximum activations \n in layer " +
-#                      "{}".format(self.labels[idx-1]))
-#            plt.xlabel("max activation")
-#            plt.ylabel("sample count")
-#            plt.show()
-#            if 'Dense' in self.labels[idx-1]:
-#                plt.figure()
-#                p = np.percentile(activations, settings['percentile'])
-#                plt.hist(np.nonzero(activations >= p)[1],
-#                         bins=activations.shape[1])
-#                plt.title("Histogram of 'hot' neurons\n" +
-#                          "in  layer {}".format(self.labels[idx-1]))
-#                plt.text(0.8, 0.8, "percentile = {}\nscale = {:.2f}".format(
-#                    settings['percentile'], p))
-#                plt.xlabel("Neuron index")
-#                plt.ylabel("Sample count")
-#                plt.show()
-
             if settings['normalization_schedule']:
                 scale_fac = get_scale_fac(activations, idx)
             else:

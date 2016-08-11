@@ -272,12 +272,15 @@ class SNN_compiled():
         # (batch_size, n_chnls, n_rows, n_cols, duration)
         # ``label`` is a string specifying both the layer type and the index,
         # e.g. ``'03Dense'``.
-        spiketrains_batch = []
-        for layer in self.snn.layers:
-            if 'Flatten' not in layer.name:
-                shape = list(layer.output_shape) + [int(settings['duration'] /
-                                                        settings['dt'])]
-                spiketrains_batch.append((np.zeros(shape), layer.name))
+        if settings['verbose'] > 2:
+            spiketrains_batch = []
+            for layer in self.snn.layers:
+                if 'Flatten' in layer.name:
+                    continue
+                shape = list(layer.output_shape) + \
+                    [int(settings['duration'] / settings['dt'])]
+                spiketrains_batch.append((np.zeros(shape, 'float32'),
+                                          layer.name))
 
         for batch_idx in range(num_batches):
             # Determine batch indices.
@@ -322,7 +325,7 @@ class SNN_compiled():
                     out_spikes, ts = self.get_output(inp, float(t))
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
-                if batch_idx == 0 and settings['verbose'] > 1:
+                if batch_idx == 0 and settings['verbose'] > 2:
                     j = 0
                     for i, layer in enumerate(self.snn.layers):
                         if 'Flatten' not in self.snn.layers[i].name:
@@ -355,6 +358,7 @@ class SNN_compiled():
                                           settings['log_dir_of_current_run'])
                     output_graphs(spiketrains_batch, snn_precomp, batch,
                                   settings['log_dir_of_current_run'])
+                    del spiketrains_batch
 
         guesses = np.argmax(output, axis=1)
         total_acc = np.mean(guesses == truth)
