@@ -153,8 +153,7 @@ class SNN_compiled():
         self.compile_snn(input_time)
 
     def compile_snn(self, input_time):
-        """
-        Sets the ``snn`` and ``get_output`` attributes of this class.
+        """Set the ``snn`` and ``get_output`` attributes of this class.
 
         Todo: Allow user to specify loss function here (optimizer is not
         relevant as we do not train any more). Unfortunately, Keras does not
@@ -162,7 +161,6 @@ class SNN_compiled():
         by calling 'model.loss' and 'model.optimizer'.
 
         """
-
         print("Compiling spiking network...\n")
         self.snn.compile(loss='categorical_crossentropy', optimizer='sgd',
                          metrics=['accuracy'])
