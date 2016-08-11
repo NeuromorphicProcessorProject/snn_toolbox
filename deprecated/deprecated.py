@@ -98,3 +98,31 @@ def switch_simulator(_config_path):
             # Add new line in order for bash 'cat' display the content
             # correctly
             f.write(json.dumps(_config) + '\n')
+
+
+def plot_hot_neurons(self, activations, idx):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from snntoolbox.config import settings
+
+    plt.figure()
+    plt.hist(np.max(
+        activations, axis=tuple(range(1, activations.ndim))),
+        bins=len(activations))
+    plt.title("Distribution of maximum activations \n in layer " +
+              "{}".format(self.labels[idx-1]))
+    plt.xlabel("max activation")
+    plt.ylabel("sample count")
+    plt.show()
+    if 'Dense' in self.labels[idx-1]:
+        plt.figure()
+        p = np.percentile(activations, settings['percentile'])
+        plt.hist(np.nonzero(activations >= p)[1],
+                 bins=activations.shape[1])
+        plt.title("Histogram of 'hot' neurons\n" +
+                  "in  layer {}".format(self.labels[idx-1]))
+        plt.text(0.8, 0.8, "percentile = {}\nscale = {:.2f}".format(
+            settings['percentile'], p))
+        plt.xlabel("Neuron index")
+        plt.ylabel("Sample count")
+        plt.show()

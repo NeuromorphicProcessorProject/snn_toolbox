@@ -126,9 +126,14 @@ class SNNToolboxGUI():
             'X_test.npz' and 'Y_test.npz' containing the testset and
             groundtruth. In addition, if the network should be normalized, put
             a file 'X_norm.npz' in the folder. This can be a the training set
-            X_train, or a subset of it (Take care of memory limitations:
-            compression factor approx. 5). With original data of the form
-            (channels, num_rows, num_cols), X_norm and X_test have dimension
+            X_train, or a subset of it. Take care of memory limitations: If
+            numpy can allocate a 4 GB float32 container for the activations to
+            be computed during normalization, X_norm should contain not more
+            than 4*1e9*8bit/(fc*fx*fy*32bit) = 1/n samples, where (fc, fx, fy)
+            is the shape of the largest layer, and n = fc*fx*fy its total cell
+            count.
+            With original data of the form (channels, num_rows, num_cols),
+            X_norm and X_test have dimension
             (num_samples, channels*num_rows*num_cols) for a fully-connected
             network, and (num_samples, channels, num_rows, num_cols) otherwise.
             Y_train and Y_test have dimension (num_samples, num_classes).
