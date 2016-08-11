@@ -182,10 +182,11 @@ def extract(model):
 
 
 def get_activ_fn_for_layer(model, i):
-    return theano.function(
+    f = theano.function(
         [model.layers[0].input, theano.In(K.learning_phase(), value=0)],
         model.layers[i].output, allow_input_downcast=True,
         on_unused_input='ignore')
+    return lambda x: f(x).astype('float16', copy=False)
 
 
 def model_from_py(path=None, filename=None):
