@@ -313,9 +313,11 @@ class SNN_compiled():
                 if settings['online_normalization']:
                     out_spikes, ts, thresh, max_spikerate, spiketrain = \
                         self.get_output(inp, float(t))
-                    print('thresh: {:.2f}, max_spikerate: {:.2f}'.format(
-                        float(np.array(thresh)),
-                        float(np.array(max_spikerate))))
+                    print('Time: {:.2f}, thresh: {:.2f},'
+                          ' max_spikerate: {:.2f}'.format(
+                            float(np.array(ts)),
+                            float(np.array(thresh)),
+                            float(np.array(max_spikerate))))
                 else:
                     out_spikes, ts = self.get_output(inp, float(t))
                 # For the first batch only, record the spiketrains of each
