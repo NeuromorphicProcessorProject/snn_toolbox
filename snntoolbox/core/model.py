@@ -189,7 +189,15 @@ class SNN():
         from snntoolbox.io_utils.load import load_dataset
 
         print("Loading normalization data set.\n")
-        X_norm = load_dataset(settings['dataset_path'], 'X_norm.npz')
+        X_norm = load_dataset(settings['dataset_path'], 'X_norm.npz')  # t=0.2%
+
+#        import numpy as np
+#        sizes = [len(X_norm) * np.array(layer['output_shape'][1:]).prod() *
+#                 32 / (8 * 1e9) for idx, layer in enumerate(self.layers)
+#                 if idx != 0 and 'parameters' in self.layers[idx-1]]
+#        size_str = ['{:.2f}'.format(s) for s in sizes]
+#        print("INFO: Need {} GB for layer activations.\n".format(size_str) +
+#              "May have to reduce size of data set used for normalization.\n")
 
         print("Normalizing parameters:\n")
         newpath = os.path.join(settings['log_dir_of_current_run'],
@@ -209,27 +217,30 @@ class SNN():
             # Undo previous scaling before calculating activations:
             self.set_layer_params([parameters[0] * scale_fac_prev_layer,
                                    parameters[1]], idx-1)
-            activations = layer['get_activ'](X_norm)
+            activations = layer['get_activ'](X_norm)  # t=4.9%
             if settings['normalization_schedule']:
                 scale_fac = get_scale_fac(activations, idx)
             else:
-                scale_fac = get_scale_fac(activations)
+                scale_fac = get_scale_fac(activations)  # t=3.7%
             parameters_norm = [
                 parameters[0] * scale_fac_prev_layer / scale_fac,
                 parameters[1] / scale_fac]
             scale_fac_prev_layer = scale_fac
             # Update model with modified parameters
             self.set_layer_params(parameters_norm, idx-1)
+            if settings['verbose'] < 3:
+                continue
             # Compute activations with modified parameters
-            activations_norm = layer['get_activ'](X_norm)
+            activations_norm = layer['get_activ'](X_norm)  # t=4.8%
             activation_dict = {'Activations': activations.flatten(),
                                'Activations_norm': activations_norm.flatten()}
             weight_dict = {
                 'weights': parameters[0].flatten(),
                 'weights_norm': self.layers[idx-1]['parameters'][0].flatten()}
             plot_hist(activation_dict, 'Activation', self.labels[idx-1],
-                      newpath, scale_fac)
+                      newpath, scale_fac)  # t=83.1%
             plot_hist(weight_dict, 'Weight', self.labels[idx-1], newpath)
+            # t=2.8%
 
     def set_layer_params(self, parameters, i):
         """

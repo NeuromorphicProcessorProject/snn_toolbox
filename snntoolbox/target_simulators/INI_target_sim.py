@@ -277,7 +277,7 @@ class SNN_compiled():
                 spiketrains_batch.append((np.zeros(shape, 'float32'),
                                           layer.name))
 
-        for batch_idx in range(num_batches):
+        for batch_idx in range(num_batches):  # m=2.3GB
             # Determine batch indices.
             max_idx = min((batch_idx + 1) * settings['batch_size'],
                           Y_test.shape[0])
@@ -315,7 +315,7 @@ class SNN_compiled():
                         float(np.array(thresh)),
                         float(np.array(max_spikerate))))
                 else:
-                    out_spikes, ts = self.get_output(inp, float(t))
+                    out_spikes, ts = self.get_output(inp, float(t))  # t=27.6%
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
                 if batch_idx == 0 and settings['verbose'] > 2:
@@ -323,7 +323,7 @@ class SNN_compiled():
                     for i, layer in enumerate(self.snn.layers):
                         if 'Flatten' not in self.snn.layers[i].name:
                             spiketrains_batch[j][0][Ellipsis, t_idx] = \
-                                layer.spiketrain.get_value()
+                                layer.spiketrain.get_value()  # t=1.8% m=0.6GB
                             j += 1
                 t_idx += 1
                 # Count number of spikes in output layer during whole
@@ -351,6 +351,7 @@ class SNN_compiled():
                                           settings['log_dir_of_current_run'])
                     output_graphs(spiketrains_batch, snn_precomp, batch,
                                   settings['log_dir_of_current_run'])
+                    # t=70.1% m=0.6GB
                     del spiketrains_batch
 
         guesses = np.argmax(output, axis=1)
