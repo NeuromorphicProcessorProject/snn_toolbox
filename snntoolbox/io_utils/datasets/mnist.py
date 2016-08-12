@@ -94,7 +94,7 @@ def get_mnist(path=None, filename=None, flat=False):
 
     if path is not None:
         if filename is None:
-            filename = 'mnist_flat_' if flat else ''
+            filename = ''
         filepath = os.path.join(path, filename)
         np.savez_compressed(filepath+'X_norm', X_train)
         np.savez_compressed(filepath+'X_test', X_test)

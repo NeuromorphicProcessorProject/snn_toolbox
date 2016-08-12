@@ -73,6 +73,8 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
     # _____________________________ LOAD MODEL ______________________________ #
     # Extract architecture and parameters from input model.
+    if settings['verbose'] > 0:
+        print("Parsing input model.")
     snn = SNN(settings['path'], settings['filename'])  # t=0.5% m=0.6GB
 
     if settings['verbose'] > 0:

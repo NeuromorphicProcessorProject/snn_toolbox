@@ -190,6 +190,7 @@ class SNN():
 
         print("Loading normalization data set.\n")
         X_norm = load_dataset(settings['dataset_path'], 'X_norm.npz')  # t=0.2%
+        print("Using {} samples for normalization.".format(len(X_norm)))
 
 #        import numpy as np
 #        sizes = [len(X_norm) * np.array(layer['output_shape'][1:]).prod() *
