@@ -73,7 +73,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
     # _____________________________ LOAD MODEL ______________________________ #
     # Extract architecture and parameters from input model.
-    snn = SNN(settings['path'], settings['filename'])
+    snn = SNN(settings['path'], settings['filename'])  # t=0.5% m=0.6GB
 
     if settings['verbose'] > 0:
         print_description(snn)
@@ -88,7 +88,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
             if settings['evaluateANN'] and not is_stop(queue):
                 print("Before parameter normalization:")
                 snn.evaluate_ann(X_test, Y_test)
-            snn.normalize_parameters()
+            snn.normalize_parameters()  # t=9.1 (t=90.8% without sim) m=0.2GB
 
         # ____________________________ EVALUATE _____________________________ #
         # (Re-) evaluate ANN
@@ -101,7 +101,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
         # Compile spiking network from ANN
         if not is_stop(queue):
-            snn.build()
+            snn.build()  # t=0.1%
 
         # Export network in a format specific to the simulator with which it
         # will be tested later.
@@ -131,7 +131,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
                 print("Current value of parameter to sweep: " +
                       "{} = {:.2f}\n".format(param_name, p))
             # Simulate network
-            total_acc = snn.run(X_test, Y_test)
+            total_acc = snn.run(X_test, Y_test)  # t=90.1% m=2.3GB
 
             # Write out results
             results.append(total_acc)
