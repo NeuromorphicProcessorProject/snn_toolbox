@@ -62,7 +62,7 @@ def get_caltech101(path=None, filename=None):
     (X_train, y_train), (X_val, y_val) = caltech101_utils.load_cv_split_paths(
                                                                 base_path, 0)
 
-    X_train = caltech101_utils.load_samples(X_train, int(len(y_train)/2))
+    X_train = caltech101_utils.load_samples(X_train, int(len(y_train)/20))
     X_test = caltech101_utils.load_samples(X_test, len(y_test))
     y_train = y_train[:len(X_train)]
     y_test = y_test[:len(X_test)]

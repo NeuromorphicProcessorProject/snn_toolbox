@@ -107,6 +107,23 @@ def extract(model):
     layer_idx_map = []
     for (layer_num, layer) in enumerate(model.layers):
         if 'BatchNormalization' in layer.__class__.__name__:
+            flattened = False
+            bn_parameters = layer.get_weights()  # gamma, beta, mean, std
+            for k in range(layer_num + 1, len(model.layers)):
+                next_layer = model.layers[k]
+                label = next_layer.__class__.__name__
+                if 'Flatten' in label:
+                    flattened = True
+                if label in bn_layers:
+                    parameters = next_layer.get_weights()  # W, b of next layer
+                    print("Absorbing batch-normalization parameters into " +
+                          "parameters of layer {}, {}.".format(k, label))
+                    break
+            parameters_norm = absorb_bn(parameters[0], parameters[1],
+                                        bn_parameters[0], bn_parameters[1],
+                                        bn_parameters[2], bn_parameters[3],
+                                        layer.epsilon, flattened)
+            next_layer.set_weights(parameters_norm)
             continue
         attributes = {'layer_num': layer_num,
                       'layer_type': layer.__class__.__name__,
@@ -123,37 +140,13 @@ def extract(model):
         labels.append(num_str + attributes['layer_type'] + shape_string)
         attributes.update({'label': labels[-1]})
 
-        next_layer = model.layers[layer_num + 1] \
-            if layer_num + 1 < len(model.layers) else None
-        next_layer_name = next_layer.__class__.__name__ if next_layer else None
-        if next_layer_name == 'BatchNormalization' and \
-                attributes['layer_type'] not in bn_layers:
-            raise NotImplementedError(
-                "A batchnormalization layer must follow a layer of type " +
-                "{}, not {}.".format(bn_layers, attributes['layer_type']))
-
         if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
-            parameters = layer.get_weights()
-            if next_layer_name == 'BatchNormalization':
-                bn_parameters = next_layer.get_weights()
-                # W, b, beta, gamma, mean, std, epsilon
-                parameters_norm = absorb_bn(parameters[0], parameters[1],
-                                            bn_parameters[0], bn_parameters[1],
-                                            bn_parameters[2], bn_parameters[3],
-                                            next_layer.epsilon)
-                if len(parameters[0].shape) == 4:
-                    print("epsilon: {}".format(next_layer.epsilon))
-                    print("w: {}".format(parameters[0][0, 0, 0, 0]))
-                    print("gamma: {}".format(bn_parameters[1][0]))
-                    print("std: {}".format(bn_parameters[3][0]))
-                    print("w_norm: {}".format(parameters_norm[0][0, 0, 0, 0]))
-                    print("w_calc: {}".format(parameters[0][0, 0, 0, 0] * bn_parameters[1][0] / bn_parameters[3][0]))
-                set_layer_params(model, parameters_norm, layer_num)
-                parameters = parameters_norm
-            if next_layer_name == 'Activation':
-                attributes.update({'activation':
-                                   next_layer.get_config()['activation']})
-            attributes.update({'parameters': parameters})
+            attributes.update({'parameters': layer.get_weights()})
+            if layer_num + 1 < len(model.layers):
+                next_layer = model.layers[layer_num + 1]
+                if next_layer.__class__.__name__ == 'Activation':
+                    attributes.update({'activation':
+                                       next_layer.get_config()['activation']})
 
         if attributes['layer_type'] == 'Convolution2D':
             attributes.update({'input_shape': layer.input_shape,

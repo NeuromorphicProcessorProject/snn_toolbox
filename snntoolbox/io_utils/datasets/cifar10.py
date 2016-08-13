@@ -69,9 +69,9 @@ def get_cifar10(path=None, filename=None, flat=False):
 
     if path is not None:
         if filename is None:
-            filename = 'cifar10_flat_' if flat else ''
+            filename = ''
         filepath = os.path.join(path, filename)
-        np.savez_compressed(filepath+'X_norm', X_train)
+        np.savez_compressed(filepath+'X_norm', X_train[::3])
         np.savez_compressed(filepath+'X_test', X_test)
 #       np.savez_compressed(filepath+'Y_train', Y_train)
         np.savez_compressed(filepath+'Y_test', Y_test)
