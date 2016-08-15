@@ -62,7 +62,8 @@ def get_caltech101(path=None, filename=None):
     (X_train, y_train), (X_val, y_val) = caltech101_utils.load_cv_split_paths(
                                                                 base_path, 0)
 
-    X_train = caltech101_utils.load_samples(X_train, int(len(y_train)/20))
+    X_train = np.random.shuffle(X_train)
+    X_train = caltech101_utils.load_samples(X_train, int(len(y_train)/1000))
     X_test = caltech101_utils.load_samples(X_test, len(y_test))
     y_train = y_train[:len(X_train)]
     y_test = y_test[:len(X_test)]
@@ -81,8 +82,8 @@ def get_caltech101(path=None, filename=None):
             filename = ''
         filepath = os.path.join(path, filename)
         np.savez_compressed(filepath+'X_norm', X_train)
-        np.savez_compressed(filepath+'X_test', X_test)
+#        np.savez_compressed(filepath+'X_test', X_test)
 #       np.savez_compressed(filepath+'Y_train', Y_train)
-        np.savez_compressed(filepath+'Y_test', Y_test)
+#        np.savez_compressed(filepath+'Y_test', Y_test)
 
     return (X_train, Y_train, X_test, Y_test)

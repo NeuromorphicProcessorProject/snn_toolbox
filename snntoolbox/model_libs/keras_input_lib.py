@@ -20,8 +20,9 @@ Created on Thu May 19 08:21:05 2016
 
 import os
 import theano
+import numpy as np
 from keras import backend as K
-from snntoolbox.config import settings, bn_layers
+from snntoolbox.config import settings
 from snntoolbox.model_libs.common import absorb_bn, import_script
 
 
@@ -107,23 +108,25 @@ def extract(model):
     layer_idx_map = []
     for (layer_num, layer) in enumerate(model.layers):
         if 'BatchNormalization' in layer.__class__.__name__:
-            flattened = False
             bn_parameters = layer.get_weights()  # gamma, beta, mean, std
-            for k in range(layer_num + 1, len(model.layers)):
-                next_layer = model.layers[k]
-                label = next_layer.__class__.__name__
-                if 'Flatten' in label:
-                    flattened = True
-                if label in bn_layers:
-                    parameters = next_layer.get_weights()  # W, b of next layer
-                    print("Absorbing batch-normalization parameters into " +
-                          "parameters of layer {}, {}.".format(k, label))
-                    break
+            prev_layer = model.layers[layer_num - 1]
+            label = prev_layer.__class__.__name__
+            parameters = prev_layer.get_weights()  # W, b of next layer
+            print("Absorbing batch-normalization parameters into " +
+                  "parameters of layer {}, {}.".format(layer_num - 1, label))
             parameters_norm = absorb_bn(parameters[0], parameters[1],
                                         bn_parameters[0], bn_parameters[1],
                                         bn_parameters[2], bn_parameters[3],
-                                        layer.epsilon, flattened)
-            next_layer.set_weights(parameters_norm)
+                                        layer.epsilon)
+            # Remove Batch-normalization layer by setting gamma=1, beta=1,
+            # mean=0, std=1
+            zeros = np.zeros_like(bn_parameters[0])
+            ones = np.ones_like(bn_parameters[0])
+            layer.set_weights([ones, zeros, zeros, ones])
+            # Replace parameters of preceding Conv or FC layer by parameters
+            # that include the batch-normalization transformation.
+            prev_layer.set_weights(parameters_norm)
+            layers[-1]['parameters'] = parameters_norm
             continue
         attributes = {'layer_num': layer_num,
                       'layer_type': layer.__class__.__name__,
@@ -142,12 +145,12 @@ def extract(model):
 
         if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
             attributes.update({'parameters': layer.get_weights()})
-            if layer_num + 1 < len(model.layers):
-                next_layer = model.layers[layer_num + 1]
+            for k in range(layer_num+1, len(model.layers)):
+                next_layer = model.layers[k]
                 if next_layer.__class__.__name__ == 'Activation':
                     attributes.update({'activation':
                                        next_layer.get_config()['activation']})
-
+                    break
         if attributes['layer_type'] == 'Convolution2D':
             attributes.update({'input_shape': layer.input_shape,
                                'nb_filter': layer.nb_filter,

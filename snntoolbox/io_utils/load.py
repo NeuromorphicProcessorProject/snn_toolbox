@@ -15,7 +15,6 @@ from future import standard_library
 
 import os
 import numpy as np
-from snntoolbox.config import settings
 
 standard_library.install_aliases()
 
