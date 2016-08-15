@@ -26,7 +26,7 @@ img_rows, img_cols = 180, 240
 img_channels = 3
 
 # Load dataset
-dataset_path = '/home/rbodo/.snntoolbox/datasets/caltech101/caltech101'
+dataset_path = '/home/rbodo/.snntoolbox/datasets/caltech101/small/caltech101'
 X_train = np.load(dataset_path+'_X_train.npz')['arr_0']
 X_test = np.load(dataset_path+'_X_test.npz')['arr_0']
 Y_train = np.load(dataset_path+'_Y_train.npz')['arr_0']

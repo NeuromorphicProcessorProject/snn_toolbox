@@ -23,46 +23,25 @@ def border_mode_string(pad, pool_size):
     return border_mode
 
 
-def absorb_bn(w, b, gamma, beta, mean, std, epsilon, flattened):
+def absorb_bn(w, b, gamma, beta, mean, std, epsilon):
     """
-    Absorb the parameters of a batch-normalization layer into the next layer.
+    Absorb the parameters of a batch-normalization layer into the previous
+    layer.
 
     """
     import numpy as np
 
-    axis_in = 1 if w.ndim > 2 else 0
-    axis_out = 0 if w.ndim > 2 else 1
-    reduction_axes = list(range(w.ndim))
-    del reduction_axes[axis_out]
+    axis = 0 if w.ndim > 2 else 1
 
-    if flattened:
-        beta_broadcast = []
-        gamma_broadcast = []
-        mean_broadcast = []
-        std_broadcast = []
-        n = int(w.shape[0] / len(beta))
-        for i in range(len(beta)):
-            beta_broadcast += n * [beta[i]]
-            gamma_broadcast += n * [gamma[i]]
-            mean_broadcast += n * [mean[i]]
-            std_broadcast += n * [std[i]]
-        beta = beta_broadcast
-        gamma = gamma_broadcast
-        mean = mean_broadcast
-        std = std_broadcast
+    broadcast_shape = [1] * w.ndim  # e.g. [1, 1, 1, 1] for ConvLayer
+    broadcast_shape[axis] = w.shape[axis]  # [64, 1, 1, 1] for 64 features
+    std_broadcast = np.reshape(std, broadcast_shape)
+    gamma_broadcast = np.reshape(gamma, broadcast_shape)
 
-    broadcast_shape = [1] * w.ndim
-    broadcast_shape[axis_in] = w.shape[axis_in]
-    mean = np.reshape(mean, broadcast_shape)
-    std = np.reshape(std, broadcast_shape)
-    beta = np.reshape(beta, broadcast_shape)
-    gamma = np.reshape(gamma, broadcast_shape)
+    b_bn = beta + (b - mean) * gamma / (std + epsilon)
+    w_bn = w * gamma_broadcast / (std_broadcast + epsilon)
 
-    b += np.sum(w * (beta - mean * gamma / (std + epsilon)),
-                axis=tuple(reduction_axes))
-    w *= gamma / (std + epsilon)
-
-    return w, b
+    return w_bn, b_bn
 
 
 def import_script(path=None, filename=None):
