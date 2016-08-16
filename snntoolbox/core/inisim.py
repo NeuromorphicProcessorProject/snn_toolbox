@@ -271,6 +271,38 @@ class SpikeDense(Dense):
         return T.cast(output_spikes, 'float32')
 
 
+def pool_same_size(data_in, patch_size, ignore_border=None,
+                   st=None, padding=(0, 0)):
+    """Max-pooling in same size.
+
+    The indices of maximum values are 1s, else are 0s.
+
+    Parameters
+    ----------
+    data_in : 4-D tensor.
+        input images. Max-pooling will be done over the 2 last dimensions.
+    patch_size : tuple
+        with length 2 (patch height, patch width)
+    ignore_border : bool
+        When True, (5,5) input with ds=(2,2) will generate a (2,2) output.
+        (3,3) otherwise.
+    st : tuple
+        Stride size, which is the number of shifts over rows/cols to get the
+        next pool region. If st is None, it is considered equal to ds
+        (no overlap on pooling regions).
+    padding : tuple
+        (pad_h, pad_w) pad zeros to extend beyond four borders of the
+        images, pad_h is the size of the top and bottom margins, and
+        pad_w is the size of the left and right margins.
+    """
+    output = pool.Pool(ds=patch_size, ignore_border=ignore_border,
+                       st=st, padding=padding)(data_in)
+    outs = pool.MaxPoolGrad(ds=patch_size, ignore_border=ignore_border,
+                            st=st, padding=padding)(data_in, output,
+                                                    T.ones_like(output))
+    return outs
+
+
 class SpikeConv2DReLU(Convolution2D):
     """Spike 2D Convolution relu.
 
@@ -402,10 +434,11 @@ class MaxPool2DReLU(MaxPooling2D):
 
         if option == "avg_max":
             if settings['online_normalization']:
-                max_idx = pool.max_pool_2d_same_size(avg_spikerate,
-                                                     patch_size=self.pool_size)
-                max_idx_t = max_idx > 0
-                self.impulse = pool.pool_2d(inp*max_idx_t, ds=self.pool_size,
+                max_idx = pool_same_size(avg_spikerate,
+                                         patch_size=self.pool_size,
+                                         st=self.strides,
+                                         ignore_border=self.ignore_border)
+                self.impulse = pool.pool_2d(inp*max_idx, ds=self.pool_size,
                                             st=self.strides,
                                             ignore_border=self.ignore_border,
                                             mode='max')
