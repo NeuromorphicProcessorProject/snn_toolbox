@@ -55,10 +55,9 @@ def get_caltech101(path, filename=None):
     if filename is None:
         filename = ''
     filepath = os.path.join(path, filename)
-    np.savez_compressed(filepath + 'X_norm', X_test[::100])
-    np.savez_compressed(filepath + 'X_test', X_test)
+    np.savez_compressed(filepath + 'X_norm', X_test[::100].astype('float32'))
+    np.savez_compressed(filepath + 'X_test', X_test.astype('float32'))
     np.savez_compressed(filepath + 'Y_test', Y_test)
 
-
-if __name__ == 'main':
+if __name__ == '__main__':
     get_caltech101('/home/rbodo/.snntoolbox/datasets/caltech101/original/')

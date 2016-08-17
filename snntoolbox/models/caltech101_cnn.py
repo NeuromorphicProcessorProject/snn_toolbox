@@ -20,7 +20,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from snntoolbox.io_utils.plotting import plot_history
 
 batch_size = 64
-nb_epoch = 2
+nb_epoch = 100
 nb_classes = 102
 nb_samples = 9144
 

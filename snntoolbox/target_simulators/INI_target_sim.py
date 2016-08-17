@@ -169,11 +169,13 @@ class SNN_compiled():
             self.get_output = theano.function([self.snn.input, input_time],
                                               [output_spikes, output_time,
                                                thresh, max_spikerate,
-                                               spiketrain], updates=updates)
+                                               spiketrain], updates=updates,
+                                              allow_input_downcast=True)
         else:
             self.get_output = theano.function([self.snn.input, input_time],
                                               [output_spikes, output_time],
-                                              updates=updates)
+                                              updates=updates,
+                                              allow_input_downcast=True)
         print("Compilation finished.\n")
 
     def run(self, snn_precomp, X_test, Y_test):
