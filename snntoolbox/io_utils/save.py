@@ -53,6 +53,6 @@ def to_json(data, path):
         if type(obj).__name__ == type.__name__:
             return obj.__name__
 
-        raise TypeError('Not JSON serializable')
+        raise TypeError("{} not JSON serializable".format(type(obj).__name__))
 
     json.dump(data, open(path, 'w'), default=get_json_type)

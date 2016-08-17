@@ -1210,6 +1210,8 @@ class SNNToolboxGUI():
                 msg = "No '*.prototxt' file found in \n {}".format(P)
                 messagebox.showwarning(title="Warning", message=msg)
                 result = False
+            else:
+                result = True
         elif not any(fname.endswith('.json') for fname in os.listdir(P)):
             msg = "No model file '*.json' found in \n {}".format(P)
             messagebox.showwarning(title="Warning", message=msg)

@@ -185,7 +185,7 @@ class SNN():
         """
 
         from snntoolbox.io_utils.plotting import plot_hist
-        from snntoolbox.core.util import get_scale_fac
+        from snntoolbox.core.util import get_scale_fac, get_activations_layer
         from snntoolbox.io_utils.load import load_dataset
 
         print("Loading normalization data set.\n")
@@ -218,7 +218,8 @@ class SNN():
             # Undo previous scaling before calculating activations:
             self.set_layer_params([parameters[0] * scale_fac_prev_layer,
                                    parameters[1]], idx-1)
-            activations = layer['get_activ'](X_norm)  # t=4.9%
+            # t=4.9%
+            activations = get_activations_layer(layer['get_activ'], X_norm)
             if settings['normalization_schedule']:
                 scale_fac = get_scale_fac(activations, idx)
             else:
@@ -231,17 +232,21 @@ class SNN():
             self.set_layer_params(parameters_norm, idx-1)
             if settings['verbose'] < 3:
                 continue
-            # Compute activations with modified parameters
-            activations_norm = layer['get_activ'](X_norm)  # t=4.8%
-            activation_dict = {'Activations': activations.flatten(),
-                               'Activations_norm': activations_norm.flatten()}
             weight_dict = {
                 'weights': parameters[0].flatten(),
-                'weights_norm': self.layers[idx-1]['parameters'][0].flatten()}
+                'weights_norm': parameters_norm[0].flatten()}
+            # t=2.8%
+            plot_hist(weight_dict, 'Weight', self.labels[idx-1], newpath)
+
+            if True:  # Too costly
+                continue
+            # Compute activations with modified parameters
+            activations_norm = get_activations_layer(layer['get_activ'],
+                                                     X_norm)  # t=4.8%
+            activation_dict = {'Activations': activations.flatten(),
+                               'Activations_norm': activations_norm.flatten()}
             plot_hist(activation_dict, 'Activation', self.labels[idx-1],
                       newpath, scale_fac)  # t=83.1%
-            plot_hist(weight_dict, 'Weight', self.labels[idx-1], newpath)
-            # t=2.8%
 
     def set_layer_params(self, parameters, i):
         """
