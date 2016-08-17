@@ -12,13 +12,13 @@ from future import standard_library
 
 import os
 import numpy as np
-from snntoolbox.io_utils.datasets import caltech101_utils
-from snntoolbox.io_utils.load import to_categorical
+
+from keras.preprocessing.image import ImageDataGenerator
 
 standard_library.install_aliases()
 
 
-def get_caltech101(path=None, filename=None):
+def get_caltech101(path, filename=None):
     """
     Load caltech101 classification dataset.
 
@@ -47,43 +47,17 @@ def get_caltech101(path=None, filename=None):
 
     """
 
-    nb_classes = 102
+    datagen = ImageDataGenerator(rescale=1./255)
+    dataflow = datagen.flow_from_directory(path, target_size=(180, 240),
+                                           batch_size=9144)
+    X_test, Y_test = dataflow.next()
 
-    # Download & untar or get local path
-    base_path = caltech101_utils.download(dataset='img-gen-resized')
+    if filename is None:
+        filename = ''
+    filepath = os.path.join(path, filename)
+    np.savez_compressed(filepath + 'X_norm', X_test[::100].astype('float32'))
+    np.savez_compressed(filepath + 'X_test', X_test.astype('float32'))
+    np.savez_compressed(filepath + 'Y_test', Y_test)
 
-    # Path to image folder
-    base_path = os.path.join(base_path, caltech101_utils.tar_inner_dirname)
-
-    # X_test contains only paths to images
-    (X_test, y_test) = caltech101_utils.load_paths_from_files(base_path,
-                                                              'X_test.txt',
-                                                              'y_test.txt')
-    (X_train, y_train), (X_val, y_val) = caltech101_utils.load_cv_split_paths(
-                                                                base_path, 0)
-
-    X_train = np.random.shuffle(X_train)
-    X_train = caltech101_utils.load_samples(X_train, int(len(y_train)/1000))
-    X_test = caltech101_utils.load_samples(X_test, len(y_test))
-    y_train = y_train[:len(X_train)]
-    y_test = y_test[:len(X_test)]
-
-    X_train = X_train.astype('float32')
-    X_test = X_test.astype('float32')
-    X_train /= 255
-    X_test /= 255
-
-    # convert class vectors to binary class matrices
-    Y_train = to_categorical(y_train, nb_classes)
-    Y_test = to_categorical(y_test, nb_classes)
-
-    if path is not None:
-        if filename is None:
-            filename = ''
-        filepath = os.path.join(path, filename)
-        np.savez_compressed(filepath+'X_norm', X_train)
-#        np.savez_compressed(filepath+'X_test', X_test)
-#       np.savez_compressed(filepath+'Y_train', Y_train)
-#        np.savez_compressed(filepath+'Y_test', Y_test)
-
-    return (X_train, Y_train, X_test, Y_test)
+if __name__ == '__main__':
+    get_caltech101('/home/rbodo/.snntoolbox/datasets/caltech101/original/')

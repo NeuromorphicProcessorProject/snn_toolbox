@@ -174,11 +174,13 @@ class SNN_compiled():
             self.get_output = theano.function([self.snn.input, input_time],
                                               [output_spikes, output_time,
                                                thresh, max_spikerate,
-                                               spiketrain], updates=updates)
+                                               spiketrain], updates=updates,
+                                              allow_input_downcast=True)
         else:
             self.get_output = theano.function([self.snn.input, input_time],
                                               [output_spikes, output_time],
-                                              updates=updates)
+                                              updates=updates,
+                                              allow_input_downcast=True)
         print("Compilation finished.\n")
 
     def run(self, snn_precomp, X_test, Y_test):
@@ -282,6 +284,8 @@ class SNN_compiled():
                 spiketrains_batch.append((np.zeros(shape, 'float32'),
                                           layer.name))
 
+        count = np.zeros(Y_test.shape[1])
+        match = np.zeros(Y_test.shape[1])
         for batch_idx in range(num_batches):  # m=2.3GB
             # Determine batch indices.
             max_idx = min((batch_idx + 1) * settings['batch_size'],
@@ -346,7 +350,7 @@ class SNN_compiled():
                 echo('\n')
                 echo("Batch {} of {} completed ({:.1%})\n".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
-                avg = np.sum(guesses[:max_idx] == truth[:max_idx]) / max_idx
+                avg = np.sum(truth[:max_idx] == guesses[:max_idx]) / max_idx
                 echo("Moving average accuracy: {:.2%}.\n".format(avg))
                 with open(os.path.join(settings['log_dir_of_current_run'],
                                        'accuracy.txt'), 'w') as f:
@@ -362,7 +366,12 @@ class SNN_compiled():
                     del spiketrains_batch
 
         guesses = np.argmax(output, axis=1)
-        total_acc = np.mean(guesses == truth)
+        for gt, p in zip(truth, guesses):
+            count[gt] += 1
+            if gt == p:
+                match[gt] += 1
+        avg_acc = np.mean(match / count)
+        total_acc = np.mean(truth == guesses)
         if settings['verbose'] > 2:
             plot_confusion_matrix(truth, guesses,
                                   settings['log_dir_of_current_run'])
@@ -372,6 +381,7 @@ class SNN_compiled():
              np.mean(np.sum(output, axis=1))))
         echo("Total accuracy: {:.2%} on {} test samples.\n\n".format(total_acc,
              output.shape[0]))
+        echo("Accuracy averaged over classes: {}".format(avg_acc))
 
         return total_acc
 

@@ -18,8 +18,7 @@ from snntoolbox.io_utils.load import to_categorical
 standard_library.install_aliases()
 
 
-def get_facedetection(sourcepath, imagepath, targetpath=None, filename=None,
-                      flat=False):
+def get_facedetection(sourcepath, imagepath, targetpath=None, filename=None):
     """
     Load facedetection dataset.
 
@@ -42,8 +41,6 @@ def get_facedetection(sourcepath, imagepath, targetpath=None, filename=None,
         If a ``path`` is given, the dataset will be written to ``filename``.
         If ``filename`` is not specified, use ``facedetection`` or
         ``facedetection_flat``.
-    flat: Boolean, optional
-        If ``True``, the output is flattened. Defaults to ``False``.
 
     Returns
     -------
@@ -51,9 +48,7 @@ def get_facedetection(sourcepath, imagepath, targetpath=None, filename=None,
     The dataset as a tuple containing the training and test sample arrays
     (X_train, Y_train, X_test, Y_test).
     With data of the form (channels, num_rows, num_cols), ``X_train`` and
-    ``X_test`` have dimension (num_samples, channels*num_rows*num_cols)
-    in case ``flat==True``, and
-    (num_samples, channels, num_rows, num_cols) otherwise.
+    ``X_test`` have dimension (num_samples, channels, num_rows, num_cols).
     ``Y_train`` and ``Y_test`` have dimension (num_samples, num_classes).
 
     """
@@ -77,15 +72,14 @@ def get_facedetection(sourcepath, imagepath, targetpath=None, filename=None,
     Y_train = to_categorical(y_train, nb_classes)
     Y_test = to_categorical(y_test, nb_classes)
 
-    if flat:
-        X_train = X_train.reshape(X_train.shape[0], np.prod(X_train.shape[1:]))
-        X_test = X_test.reshape(X_test.shape[0], np.prod(X_test.shape[1:]))
-
     if targetpath is not None:
         if filename is None:
-            filename = 'facedetection_flat' if flat else 'facedetection'
+            filename = ''
         filepath = os.path.join(targetpath, filename)
-        np.save(filepath, (X_train, Y_train, X_test, Y_test))
+        np.savez_compressed(filepath + 'X_norm', X_train)
+        np.savez_compressed(filepath + 'X_test', X_test)
+        np.savez_compressed(filepath + 'Y_train', Y_train)
+        np.savez_compressed(filepath + 'Y_test', Y_test)
 
     return (X_train, Y_train, X_test, Y_test)
 
@@ -130,6 +124,6 @@ def load_samples(filepaths, nb_samples=None):
 if __name__ == '__main__':
     sourcepath = '/mnt/2646BAF446BAC3B9/.snntoolbox/datasets/facedetection/' +\
                  'Databases/All_combined/txt'
-    imagepath = os.path.abspath(os.path.join(sourcepath, '..', 'images_32x32'))
+    imagepath = os.path.abspath(os.path.join(sourcepath, '..', 'images_36x36'))
     targetpath = '/mnt/2646BAF446BAC3B9/.snntoolbox/datasets/facedetection/'
     get_facedetection(sourcepath, imagepath, targetpath)
