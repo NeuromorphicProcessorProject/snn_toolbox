@@ -70,6 +70,9 @@ def update_neurons(self, impulse, time, updates):
                         T.max(self.spikecounts) / (time + settings['dt'])))
         updates.append((self.avg_spikerate,
                         self.spikecounts / (time + settings['dt'])))
+        updates.append((self.fir_spikerate,
+                        self.fir_spikerate + output_spikes /
+                        (time + settings['dt'])))
     return output_spikes
 
 
@@ -145,6 +148,7 @@ def reset(self):
     if settings['online_normalization']:
         self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
         self.avg_spikerate.set_value(floatX(np.zeros(self.output_shape)))
+        self.fir_spikerate.set_value(floatX(np.zeros(self.output_shape)))
         self.max_spikerate.set_value(0.0)
         self.v_thresh.set_value(settings['v_thresh'])
 
@@ -205,6 +209,7 @@ def init_layer(self, layer, v_thresh, tau_refrac):
     if settings['online_normalization']:
         layer.spikecounts = shared_zeros(self.output_shape)
         layer.avg_spikerate = shared_zeros(self.output_shape)
+        layer.fir_spikerate = shared_zeros(self.output_shape)
         layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
     if len(layer.get_weights()) > 0:
         layer.W = K.variable(layer.get_weights()[0])
@@ -426,30 +431,61 @@ class MaxPool2DReLU(MaxPooling2D):
         """
         # Recurse
         inp, time, updates = get_input(self)
-        if self.inbound_nodes[0].inbound_layers:
-            avg_spikerate = \
-                self.inbound_nodes[0].inbound_layers[0].avg_spikerate
-        else:
-            avg_spikerate = K.placeholder(shape=self.input_shape)
 
         if option == "avg_max":
-            if settings['online_normalization']:
-                max_idx = pool_same_size(avg_spikerate,
-                                         patch_size=self.pool_size,
-                                         st=self.strides,
-                                         ignore_border=self.ignore_border)
-                self.impulse = pool.pool_2d(inp*max_idx, ds=self.pool_size,
-                                            st=self.strides,
-                                            ignore_border=self.ignore_border,
-                                            mode='max')
-            else:
-                print("Online Normalization is not enabled, "
-                      "choose First Max automatically")
-        if not settings['online_normalization'] or option == "fir_max":
+            spikerate = self.inbound_nodes[0].inbound_layers[0].avg_spikerate \
+                        if self.inbound_nodes[0].inbound_layers \
+                        else K.placeholder(shape=self.input_shape)
+        elif option == "fir_max":
+            spikerate = self.inbound_nodes[0].inbound_layers[0].fir_spikerate \
+                        if self.inbound_nodes[0].inbound_layers \
+                        else K.placeholder(shape=self.input_shape)
+
+        # if self.inbound_nodes[0].inbound_layers:
+        #     avg_spikerate = \
+        #         self.inbound_nodes[0].inbound_layers[0].avg_spikerate
+        #     fir_spikerate = \
+        #         self.inbound_nodes[0].inbound_layers[0].fir_spikerate
+        # else:
+        #     avg_spikerate = K.placeholder(shape=self.input_shape)
+        #     fir_spikerate = K.placeholder(shape=self.input_shape)
+
+        if (option == "avg_max" or option == "fir_max") \
+           and settings['online_normalization']:
+            max_idx = pool_same_size(spikerate,
+                                     patch_size=self.pool_size,
+                                     st=self.strides,
+                                     ignore_border=self.ignore_border)
+            self.impulse = pool.pool_2d(inp*max_idx, ds=self.pool_size,
+                                        st=self.strides,
+                                        ignore_border=self.ignore_border,
+                                        mode='max')
+        else:
+            print("Online Normalization is not enabled, "
+                  "choose Average Pooling automatically")
             self.impulse = pool.pool_2d(inp, ds=self.pool_size,
                                         st=self.strides,
                                         ignore_border=self.ignore_border,
                                         mode='average_inc_pad')
+
+        # if option == "avg_max":
+        #     if settings['online_normalization']:
+        #         max_idx = pool_same_size(spikerate,
+        #                                  patch_size=self.pool_size,
+        #                                  st=self.strides,
+        #                                  ignore_border=self.ignore_border)
+        #         self.impulse = pool.pool_2d(inp*max_idx, ds=self.pool_size,
+        #                                     st=self.strides,
+        #                                     ignore_border=self.ignore_border,
+        #                                     mode='max')
+        #     else:
+        #         print("Online Normalization is not enabled, "
+        #               "choose First Max automatically")
+        # if not settings['online_normalization'] or option == "fir_max":
+        #     self.impulse = pool.pool_2d(inp, ds=self.pool_size,
+        #                                 st=self.strides,
+        #                                 ignore_border=self.ignore_border,
+        #                                 mode='average_inc_pad')
 
         output_spikes = update_neurons(self, self.impulse, time, updates)
         self.updates = updates
