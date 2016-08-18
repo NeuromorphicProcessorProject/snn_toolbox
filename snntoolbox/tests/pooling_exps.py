@@ -1,4 +1,4 @@
-"""Running experiments for max-pooling experiments
+"""Running experiments for max-pooling experiments.
 
 Author: Yuhuang Hu
 Email : duguyue100@gmail.com
@@ -35,14 +35,19 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset, pool_type):
         the name of the max pooling type
         "avg_max" or "fir_max"
     """
+
     pref_path = os.path.join(pref_dir, pref_name)
     log_path = os.path.join(log_dir, exp_name)
     data_path = os.path.join(data_dir, dataset)
 
     if not os.path.exists(pref_path):
-        raise ValueError("The target preference "
+        raise ValueError("[MESSAGE] The target preference "
                          "file %s is not existed!" % (pref_path))
 
+    if not os.path.isdir(log_path):
+        os.mkdir(log_path)
+
+    print ("[MESSAGE] Running experiment %s." % (exp_name))
     print ("[MESSAGE] Loading Experiment settings.")
     settings = json.load(open(pref_path))
 
@@ -55,6 +60,8 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset, pool_type):
     snntoolbox.update_setup(settings)
 
     snntoolbox.test_full()
+
+    print ("[MESSAGE] The experiment result is saved at %s" % (log_path))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Running Max-Pooling \
