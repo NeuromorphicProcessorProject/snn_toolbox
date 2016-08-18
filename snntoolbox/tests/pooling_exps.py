@@ -35,7 +35,6 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset, pool_type):
         the name of the max pooling type
         "avg_max" or "fir_max"
     """
-
     pref_path = os.path.join(pref_dir, pref_name)
     log_path = os.path.join(log_dir, exp_name)
     data_path = os.path.join(data_dir, dataset)
