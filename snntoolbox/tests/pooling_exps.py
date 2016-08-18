@@ -18,7 +18,8 @@ log_dir = os.path.join(home_path, "workspace", "snntoolbox-log", "pool-exps")
 data_dir = os.path.join(config_path, "datasets")
 
 
-def maxpool_exp(exp_name, model_name, pref_name, dataset, pool_type):
+def maxpool_exp(exp_name, model_name, pref_name, dataset,
+                normalize, pool_type):
     """Max-Pooling experiment routine.
 
     Parameters
@@ -31,6 +32,9 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset, pool_type):
         the name of the perference
     dataset : string
         the name of the dataset, mnist or cifar10
+    normalizing : string
+        true : perform normalization and evaluation
+        false: otherwise
     pool_type : string
         the name of the max pooling type
         "avg_max" or "fir_max"
@@ -56,6 +60,10 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset, pool_type):
     settings["filename"] = model_name
     settings["path"] = config_path
 
+    if normalize == "false":
+        settings["normalize"] = False
+        settings["evaluateANN"] = False
+
     snntoolbox.update_setup(settings)
 
     snntoolbox.test_full()
@@ -73,6 +81,9 @@ if __name__ == "__main__":
                         help="Destination of the json perf file.")
     parser.add_argument("-d", "--dataset", type=str,
                         help="type of the datset, mnist or cifar10")
+    parser.add_argument("-n", "--normalize", type=str,
+                        default="true",
+                        help="no normalize if the model is normalized before")
     # as there is no setting parameters for this, not simply omit.
     parser.add_argument("--pool-type", type=str,
                         default="avg_max",
