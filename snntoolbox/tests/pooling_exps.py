@@ -18,7 +18,7 @@ log_dir = os.path.join(home_path, "workspace", "snntoolbox-log", "pool-exps")
 data_dir = os.path.join(config_path, "datasets")
 
 
-def maxpool_exp(exp_name, model_name, pref_name, dataset):
+def maxpool_exp(exp_name, model_name, pref_name, dataset, pool_type):
     """Max-Pooling experiment routine.
 
     Parameters
@@ -31,6 +31,9 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset):
         the name of the perference
     dataset : string
         the name of the dataset, mnist or cifar10
+    pool_type : string
+        the name of the max pooling type
+        "avg_max" or "fir_max"
     """
     pref_path = os.path.join(pref_dir, pref_name)
     log_path = os.path.join(log_dir, exp_name)
