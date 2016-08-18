@@ -59,6 +59,8 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
     settings["dataset_path"] = data_path
     settings["filename"] = model_name
     settings["path"] = config_path
+    settings["filename_snn"] = "snn_"+model_name + \
+                               "_"+str(int(settings["percentile"]))
 
     if normalize == "false":
         settings["normalize"] = False
