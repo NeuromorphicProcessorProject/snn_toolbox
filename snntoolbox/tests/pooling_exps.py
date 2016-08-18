@@ -12,9 +12,10 @@ import json
 import snntoolbox
 
 home_path = os.environ["HOME"]
-pref_dir = os.path.join(home_path, ".snntoolbox", "preferences")
+config_path = os.path.join(home_path, ".snntoolbox")
+pref_dir = os.path.join(config_path, "preferences")
 log_dir = os.path.join(home_path, "workspace", "snntoolbox-log", "pool-exps")
-data_dir = os.path.join(home_path, ".snntoolbox", "datasets")
+data_dir = os.path.join(config_path, "datasets")
 
 
 def maxpool_exp(exp_name, model_name, pref_name, dataset):
@@ -46,6 +47,7 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset):
     settings["runlabel"] = exp_name
     settings["dataset_path"] = data_path
     settings["filename"] = model_name
+    settings["path"] = config_path
 
     snntoolbox.update_setup(settings)
 
