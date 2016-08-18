@@ -276,7 +276,7 @@ class SpikeDense(Dense):
         return T.cast(output_spikes, 'float32')
 
 
-def pool_same_size(data_in, patch_size, ignore_border=None,
+def pool_same_size(data_in, patch_size, ignore_border=True,
                    st=None, padding=(0, 0)):
     """Max-pooling in same size.
 
@@ -304,8 +304,8 @@ def pool_same_size(data_in, patch_size, ignore_border=None,
                        st=st, padding=padding)(data_in)
     outs = pool.MaxPoolGrad(ds=patch_size, ignore_border=ignore_border,
                             st=st, padding=padding)(data_in, output,
-                                                    T.ones_like(output))
-    return outs
+                                                    output) > 0.
+    return T.cast(outs, 'float32')
 
 
 class SpikeConv2DReLU(Convolution2D):
@@ -420,7 +420,7 @@ class MaxPool2DReLU(MaxPooling2D):
         else:
             self.label = self.name
 
-    def get_output(self, train=False, option="avg_max"):
+    def get_output(self, train=False, option="fir_max"):
         """Get Output.
 
         Parameters
@@ -441,21 +441,12 @@ class MaxPool2DReLU(MaxPooling2D):
                         if self.inbound_nodes[0].inbound_layers \
                         else K.placeholder(shape=self.input_shape)
 
-        # if self.inbound_nodes[0].inbound_layers:
-        #     avg_spikerate = \
-        #         self.inbound_nodes[0].inbound_layers[0].avg_spikerate
-        #     fir_spikerate = \
-        #         self.inbound_nodes[0].inbound_layers[0].fir_spikerate
-        # else:
-        #     avg_spikerate = K.placeholder(shape=self.input_shape)
-        #     fir_spikerate = K.placeholder(shape=self.input_shape)
-
         if (option == "avg_max" or option == "fir_max") \
            and settings['online_normalization']:
             max_idx = pool_same_size(spikerate,
                                      patch_size=self.pool_size,
-                                     st=self.strides,
-                                     ignore_border=self.ignore_border)
+                                     ignore_border=self.ignore_border,
+                                     st=self.strides)
             self.impulse = pool.pool_2d(inp*max_idx, ds=self.pool_size,
                                         st=self.strides,
                                         ignore_border=self.ignore_border,
@@ -467,25 +458,6 @@ class MaxPool2DReLU(MaxPooling2D):
                                         st=self.strides,
                                         ignore_border=self.ignore_border,
                                         mode='average_inc_pad')
-
-        # if option == "avg_max":
-        #     if settings['online_normalization']:
-        #         max_idx = pool_same_size(spikerate,
-        #                                  patch_size=self.pool_size,
-        #                                  st=self.strides,
-        #                                  ignore_border=self.ignore_border)
-        #         self.impulse = pool.pool_2d(inp*max_idx, ds=self.pool_size,
-        #                                     st=self.strides,
-        #                                     ignore_border=self.ignore_border,
-        #                                     mode='max')
-        #     else:
-        #         print("Online Normalization is not enabled, "
-        #               "choose First Max automatically")
-        # if not settings['online_normalization'] or option == "fir_max":
-        #     self.impulse = pool.pool_2d(inp, ds=self.pool_size,
-        #                                 st=self.strides,
-        #                                 ignore_border=self.ignore_border,
-        #                                 mode='average_inc_pad')
 
         output_spikes = update_neurons(self, self.impulse, time, updates)
         self.updates = updates
