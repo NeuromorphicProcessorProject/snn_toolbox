@@ -199,7 +199,9 @@ def extract(model):
                                'nb_filter': p.num_output,
                                'nb_col': filter_size[0],
                                'nb_row': filter_size[1],
-                               'border_mode': border_mode})
+                               'border_mode': border_mode,
+                               'subsample': (p.stride[0], p.stride[0]),
+                               'filter_flip': False})  # p.filter_flip
 
         if attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
             p = layer.pooling_param

@@ -27,7 +27,9 @@ from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
 
 standard_library.install_aliases()
-lidx = 4
+
+if settings['online_normalization']:
+    lidx = 0
 
 
 class SNN_compiled():
@@ -120,7 +122,9 @@ class SNN_compiled():
                 self.snn.add(self.sim.SpikeConv2DReLU(
                     layer['nb_filter'], layer['nb_row'], layer['nb_col'],
                     self.sim.floatX(layer['parameters']),
-                    border_mode=layer['border_mode'], **kwargs))
+                    border_mode=layer['border_mode'],
+                    subsample=layer['subsample'],
+                    filter_flip=layer['filter_flip'], **kwargs))
             elif layer['layer_type'] == 'Dense':
                 self.snn.add(self.sim.SpikeDense(
                     layer['output_shape'][1],
@@ -139,21 +143,40 @@ class SNN_compiled():
                                       **kwargs2)
 
         # Compile
-        echo('\n')
-        echo("Compiling spiking network...\n")
+        self.compile_snn(input_time)
+
+    def compile_snn(self, input_time):
+        """
+        Sets the ``snn`` and ``get_output`` attributes of this class.
+
+        Todo: Allow user to specify loss function here (optimizer is not
+        relevant as we do not train any more). Unfortunately, Keras does not
+        save these parameters. They can be obtained from the compiled model
+        by calling 'model.loss' and 'model.optimizer'.
+
+        """
+
+        print("Compiling spiking network...\n")
         self.snn.compile(loss='categorical_crossentropy', optimizer='sgd',
                          metrics=['accuracy'])
         output_spikes = self.snn.layers[-1].get_output()
         output_time = self.sim.get_time(self.snn.layers[-1])
         updates = self.sim.get_updates(self.snn.layers[-1])
-        thresh = self.snn.layers[lidx].v_thresh
-        max_spikerate = self.snn.layers[lidx].max_spikerate
-        spiketrain = self.snn.layers[lidx].spiketrain
-        self.get_output = theano.function([self.snn.input, input_time],
-                                          [output_spikes, output_time,
-                                           thresh, max_spikerate, spiketrain],
-                                          updates=updates)
-        echo("Compilation finished.\n\n")
+        if settings['online_normalization']:
+            thresh = self.snn.layers[lidx].v_thresh
+            max_spikerate = self.snn.layers[lidx].max_spikerate
+            spiketrain = self.snn.layers[lidx].spiketrain
+            self.get_output = theano.function([self.snn.input, input_time],
+                                              [output_spikes, output_time,
+                                               thresh, max_spikerate,
+                                               spiketrain], updates=updates,
+                                              allow_input_downcast=True)
+        else:
+            self.get_output = theano.function([self.snn.input, input_time],
+                                              [output_spikes, output_time],
+                                              updates=updates,
+                                              allow_input_downcast=True)
+        print("Compilation finished.\n")
 
     def run(self, snn_precomp, X_test, Y_test):
         """
@@ -195,6 +218,7 @@ class SNN_compiled():
         import numpy as np
         from snntoolbox.io_utils.plotting import output_graphs
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
+        from snntoolbox.io_utils.plotting import plot_error_vs_time
 
         # Load neuron layers and connections if conversion was done during a
         # previous session.
@@ -246,14 +270,21 @@ class SNN_compiled():
         # (batch_size, n_chnls, n_rows, n_cols, duration)
         # ``label`` is a string specifying both the layer type and the index,
         # e.g. ``'03Dense'``.
-        spiketrains_batch = []
-        for layer in self.snn.layers:
-            if 'Flatten' not in layer.name:
-                shape = list(layer.output_shape) + [int(settings['duration'] /
-                                                        settings['dt'])]
-                spiketrains_batch.append((np.zeros(shape), layer.name))
+        if settings['verbose'] > 2:
+            spiketrains_batch = []
+            for layer in self.snn.layers:
+                if 'Flatten' in layer.name:
+                    continue
+                shape = list(layer.output_shape) + \
+                    [int(settings['duration'] / settings['dt'])]
+                spiketrains_batch.append((np.zeros(shape, 'float32'),
+                                          layer.name))
+            # Allocate list for plotting the error vs simulation time
+            err = []
 
-        for batch_idx in range(num_batches):
+        count = np.zeros(Y_test.shape[1])
+        match = np.zeros(Y_test.shape[1])
+        for batch_idx in range(num_batches):  # m=2.3GB
             # Determine batch indices.
             max_idx = min((batch_idx + 1) * settings['batch_size'],
                           Y_test.shape[0])
@@ -284,33 +315,43 @@ class SNN_compiled():
                     inp = (spike_snapshot <= batch).astype('float32')
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
-                out_spikes, ts, thresh, max_spikerate, spiketrain = self.get_output(inp, float(t))
-#                print('thresh: {:.2f}, max_spikerate: {:.2f}'.format(
-#                    float(np.array(thresh)), float(np.array(max_spikerate))))
+                if settings['online_normalization']:
+                    out_spikes, ts, thresh, max_spikerate, spiketrain = \
+                        self.get_output(inp, float(t))
+                    print('thresh: {:.2f}, max_spikerate: {:.2f}'.format(
+                        float(np.array(thresh)),
+                        float(np.array(max_spikerate))))
+                else:
+                    out_spikes, ts = self.get_output(inp, float(t))  # t=27.6%
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
-                if batch_idx == 0 and settings['verbose'] > 1:
+                if batch_idx == 0 and settings['verbose'] > 2:
                     j = 0
                     for i, layer in enumerate(self.snn.layers):
                         if 'Flatten' not in self.snn.layers[i].name:
                             spiketrains_batch[j][0][Ellipsis, t_idx] = \
-                                layer.spiketrain.get_value()
+                                layer.spiketrain.get_value()  # t=1.8% m=0.6GB
                             j += 1
                 t_idx += 1
                 # Count number of spikes in output layer during whole
                 # simulation.
                 output[batch_idxs, :] += out_spikes.astype('int32')
+                if batch_idx == 0 and settings['verbose'] > 2:
+                    # Get result by comparing the guessed class (i.e. the index
+                    # of the neuron in the last layer which spiked most) to the
+                    # ground truth.
+                    guesses = np.argmax(output, axis=1)
+                    err.append(
+                        np.sum(truth[:max_idx] != guesses[:max_idx]) / max_idx)
                 if settings['verbose'] > 1:
                     echo('.')
+
             if settings['verbose'] > 0:
-                # Get result by comparing the guessed class (i.e. the index of
-                # the neuron in the last layer which spiked most) to the ground
-                # truth.
-                guesses = np.argmax(output, axis=1)
                 echo('\n')
                 echo("Batch {} of {} completed ({:.1%})\n".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
-                avg = np.sum(guesses[:max_idx] == truth[:max_idx]) / max_idx
+                guesses = np.argmax(output, axis=1)
+                avg = np.sum(truth[:max_idx] == guesses[:max_idx]) / max_idx
                 echo("Moving average accuracy: {:.2%}.\n".format(avg))
                 with open(os.path.join(settings['log_dir_of_current_run'],
                                        'accuracy.txt'), 'w') as f:
@@ -318,13 +359,21 @@ class SNN_compiled():
                             "{} of {}: {:.2%}.\n".format(batch_idx + 1,
                                                          num_batches, avg))
                 if batch_idx == 0 and settings['verbose'] > 2:
+                    plot_error_vs_time(err, settings['log_dir_of_current_run'])
                     plot_confusion_matrix(truth[:max_idx], guesses[:max_idx],
                                           settings['log_dir_of_current_run'])
                     output_graphs(spiketrains_batch, snn_precomp, batch,
                                   settings['log_dir_of_current_run'])
+                    # t=70.1% m=0.6GB
+                    del spiketrains_batch
 
         guesses = np.argmax(output, axis=1)
-        total_acc = np.mean(guesses == truth)
+        for gt, p in zip(truth, guesses):
+            count[gt] += 1
+            if gt == p:
+                match[gt] += 1
+        avg_acc = np.mean(match / count)
+        total_acc = np.mean(truth == guesses)
         if settings['verbose'] > 2:
             plot_confusion_matrix(truth, guesses,
                                   settings['log_dir_of_current_run'])
@@ -334,6 +383,7 @@ class SNN_compiled():
              np.mean(np.sum(output, axis=1))))
         echo("Total accuracy: {:.2%} on {} test samples.\n\n".format(total_acc,
              output.shape[0]))
+        echo("Accuracy averaged over classes: {}".format(avg_acc))
 
         return total_acc
 
@@ -414,22 +464,7 @@ class SNN_compiled():
             kwargs = {}
 
         # Compile model
-        # Todo: Allow user to specify loss function here (optimizer is not
-        # relevant as we do not train any more). Unfortunately, Keras does not
-        # save these parameters. They can be obtained from the compiled model
-        # by calling 'model.loss' and 'model.optimizer'.
-        self.snn.compile(loss='categorical_crossentropy', optimizer='sgd',
-                         metrics=['accuracy'])
-        output_spikes = self.snn.layers[-1].get_output()
-        output_time = self.sim.get_time(self.snn.layers[-1])
-        updates = self.sim.get_updates(self.snn.layers[-1])
-        thresh = self.snn.layers[lidx].v_thresh
-        max_spikerate = self.snn.layers[lidx].max_spikerate
-        spiketrain = self.snn.layers[lidx].spiketrain
-        self.get_output = theano.function([self.snn.input, input_time],
-                                          [output_spikes, output_time,
-                                           thresh, max_spikerate, spiketrain],
-                                          updates=updates)
+        self.compile_snn(input_time)
 
     def assert_batch_size(self, batch_size):
         if batch_size != settings['batch_size']:

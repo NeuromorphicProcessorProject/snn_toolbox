@@ -175,29 +175,30 @@ class SNN():
 
         return score
 
-    def normalize_parameters(self, X_train):
+    def normalize_parameters(self):
         """
         Normalize the parameters of a network.
 
         The parameters of each layer are normalized with respect to the maximum
         activation or parameter value.
 
-        Parameters
-        ----------
-
-        X_train : float32 array
-            The input samples to use for determining the layer activations.
-            With data of the form (channels, num_rows, num_cols),
-            X_train has dimension (1, channels*num_rows*num_cols) for a
-            multi-layer perceptron, and (1, channels, num_rows, num_cols) for a
-            convnet.
-
         """
 
         from snntoolbox.io_utils.plotting import plot_hist
-        from snntoolbox.core.util import get_activations_layer, norm_parameters
-#        import matplotlib.pyplot as plt
+        from snntoolbox.core.util import get_scale_fac, get_activations_layer
+        from snntoolbox.io_utils.load import load_dataset
+
+        print("Loading normalization data set.\n")
+        X_norm = load_dataset(settings['dataset_path'], 'X_norm.npz')  # t=0.2%
+        print("Using {} samples for normalization.".format(len(X_norm)))
+
 #        import numpy as np
+#        sizes = [len(X_norm) * np.array(layer['output_shape'][1:]).prod() *
+#                 32 / (8 * 1e9) for idx, layer in enumerate(self.layers)
+#                 if idx != 0 and 'parameters' in self.layers[idx-1]]
+#        size_str = ['{:.2f}'.format(s) for s in sizes]
+#        print("INFO: Need {} GB for layer activations.\n".format(size_str) +
+#              "May have to reduce size of data set used for normalization.\n")
 
         print("Normalizing parameters:\n")
         newpath = os.path.join(settings['log_dir_of_current_run'],
@@ -205,7 +206,7 @@ class SNN():
         if not os.path.exists(newpath):
             os.makedirs(newpath)
         # Loop through all layers, looking for layers with parameters
-        scale_fac = 1
+        scale_fac_prev_layer = 1
         for idx, layer in enumerate(self.layers):
             # Skip layer if not preceeded by a layer with parameters
             if idx == 0 or 'parameters' not in self.layers[idx-1].keys():
@@ -215,50 +216,37 @@ class SNN():
                   self.labels[idx-1], layer['output_shape']))
             parameters = self.layers[idx-1]['parameters']
             # Undo previous scaling before calculating activations:
-            self.set_layer_params([parameters[0] * scale_fac, parameters[1]],
-                                  idx-1)
-            activations = get_activations_layer(layer['get_activ'], X_train)
-#            plt.figure()
-#            plt.hist(np.max(
-#                activations, axis=tuple(range(1, activations.ndim))),
-#                bins=len(activations))
-#            plt.title("Distribution of maximum activations \n in layer " +
-#                      "{}".format(self.labels[idx-1]))
-#            plt.xlabel("max activation")
-#            plt.ylabel("sample count")
-#            plt.show()
-#            if 'Dense' in self.labels[idx-1]:
-#                plt.figure()
-#                p = np.percentile(activations, settings['percentile'])
-#                plt.hist(np.nonzero(activations >= p)[1],
-#                         bins=activations.shape[1])
-#                plt.title("Histogram of 'hot' neurons\n" +
-#                          "in  layer {}".format(self.labels[idx-1]))
-#                plt.text(0.8, 0.8, "percentile = {}\nscale = {:.2f}".format(
-#                    settings['percentile'], p))
-#                plt.xlabel("Neuron index")
-#                plt.ylabel("Sample count")
-#                plt.show()
-
-            parameters_norm, scale_fac = norm_parameters(
-                parameters, activations, scale_fac, idx)
+            self.set_layer_params([parameters[0] * scale_fac_prev_layer,
+                                   parameters[1]], idx-1)
+            # t=4.9%
+            activations = get_activations_layer(layer['get_activ'], X_norm)
+            if settings['normalization_schedule']:
+                scale_fac = get_scale_fac(activations, idx)
+            else:
+                scale_fac = get_scale_fac(activations)  # t=3.7%
+            parameters_norm = [
+                parameters[0] * scale_fac_prev_layer / scale_fac,
+                parameters[1] / scale_fac]
+            scale_fac_prev_layer = scale_fac
             # Update model with modified parameters
             self.set_layer_params(parameters_norm, idx-1)
-            # Compute activations with modified parameters
-            activations_norm = get_activations_layer(layer['get_activ'],
-                                                     X_train)
-            # For memory reasons, use only a fraction of samples for plotting a
-            # histogram of activations.
-            frac = int(len(activations) / 1)
-            activation_dict = {
-                'Activations': activations[:frac].flatten(),
-                'Activations_norm': activations_norm[:frac].flatten()}
+            if settings['verbose'] < 3:
+                continue
             weight_dict = {
                 'weights': parameters[0].flatten(),
-                'weights_norm': self.layers[idx-1]['parameters'][0].flatten()}
-            plot_hist(activation_dict, 'Activation', self.labels[idx-1],
-                      newpath, scale_fac)
+                'weights_norm': parameters_norm[0].flatten()}
+            # t=2.8%
             plot_hist(weight_dict, 'Weight', self.labels[idx-1], newpath)
+
+            if True:  # Too costly
+                continue
+            # Compute activations with modified parameters
+            activations_norm = get_activations_layer(layer['get_activ'],
+                                                     X_norm)  # t=4.8%
+            activation_dict = {'Activations': activations.flatten(),
+                               'Activations_norm': activations_norm.flatten()}
+            plot_hist(activation_dict, 'Activation', self.labels[idx-1],
+                      newpath, scale_fac)  # t=83.1%
 
     def set_layer_params(self, parameters, i):
         """

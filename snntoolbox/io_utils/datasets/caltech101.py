@@ -12,13 +12,13 @@ from future import standard_library
 
 import os
 import numpy as np
-from snntoolbox.io_utils.datasets import caltech101_utils
-from snntoolbox.io_utils.load import to_categorical
+
+from keras.preprocessing.image import ImageDataGenerator
 
 standard_library.install_aliases()
 
 
-def get_caltech101(path=None, filename=None, flat=False):
+def get_caltech101(path, filename=None):
     """
     Load caltech101 classification dataset.
 
@@ -33,60 +33,31 @@ def get_caltech101(path=None, filename=None, flat=False):
         If a ``path`` is given, the loaded and modified dataset is saved to
         ``path`` directory.
     filename: string, optional
-        If a ``path`` is given, the dataset will be written to ``filename``.
-        If ``filename`` is not specified, use ``caltech101`` or
-        ``caltech101_flat``.
-    flat: Boolean, optional
-        If ``True``, the output is flattened. Defaults to ``False``.
+        Basename of file to create. Individual files will be appended
+        ``_X_norm``, ``_X_test``, etc.
 
     Returns
     -------
 
-    The dataset as a tuple containing the training and test sample arrays
-    (X_train, Y_train, X_test, Y_test).
-    With data of the form (channels, num_rows, num_cols), ``X_train`` and
-    ``X_test`` have dimension (num_samples, channels*num_rows*num_cols)
-    in case ``flat==True``, and
-    (num_samples, channels, num_rows, num_cols) otherwise.
-    ``Y_train`` and ``Y_test`` have dimension (num_samples, num_classes).
+    Three compressed files ``path/filename_X_norm.npz``,
+    ``path/filename_X_test.npz``, and ``path/filename_Y_test.npz``.
+    With data of the form (channels, num_rows, num_cols), ``X_norm`` and
+    ``X_test`` have dimension (num_samples, channels, num_rows, num_cols).
+    ``Y_test`` has dimension (num_samples, num_classes).
 
     """
 
-    nb_classes = 102
+    datagen = ImageDataGenerator(rescale=1./255)
+    dataflow = datagen.flow_from_directory(path, target_size=(180, 240),
+                                           batch_size=9144)
+    X_test, Y_test = dataflow.next()
 
-    # Download & untar or get local path
-    base_path = caltech101_utils.download(dataset='img-gen-resized')
+    if filename is None:
+        filename = ''
+    filepath = os.path.join(path, filename)
+    np.savez_compressed(filepath + 'X_norm', X_test[::100].astype('float32'))
+    np.savez_compressed(filepath + 'X_test', X_test.astype('float32'))
+    np.savez_compressed(filepath + 'Y_test', Y_test)
 
-    # Path to image folder
-    base_path = os.path.join(base_path, caltech101_utils.tar_inner_dirname)
-
-    # X_test contains only paths to images
-    (X_test, y_test) = caltech101_utils.load_paths_from_files(base_path,
-                                                              'X_test.txt',
-                                                              'y_test.txt')
-    (X_train, y_train), (X_val, y_val) = caltech101_utils.load_cv_split_paths(
-                                                                base_path, 0)
-    print("Warning: Used only 200 samples for X_train.")
-    X_train = caltech101_utils.load_samples(X_train, 200)
-    X_test = caltech101_utils.load_samples(X_test, 200)
-
-    X_train = X_train.astype('float32')
-    X_test = X_test.astype('float32')
-    X_train /= 255
-    X_test /= 255
-
-    # convert class vectors to binary class matrices
-    Y_train = to_categorical(y_train, nb_classes)
-    Y_test = to_categorical(y_test, nb_classes)
-
-    if flat:
-        X_train = X_train.reshape(X_train.shape[0], np.prod(X_train.shape[1:]))
-        X_test = X_test.reshape(X_test.shape[0], np.prod(X_test.shape[1:]))
-
-    if path is not None:
-        if filename is None:
-            filename = 'caltech101_flat' if flat else 'caltech101'
-        filepath = os.path.join(path, filename)
-        np.save(filepath, (X_train, Y_train, X_test, Y_test))
-
-    return (X_train, Y_train, X_test, Y_test)
+if __name__ == '__main__':
+    get_caltech101('/home/rbodo/.snntoolbox/datasets/caltech101/original/')

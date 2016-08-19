@@ -29,13 +29,19 @@ def absorb_bn(w, b, gamma, beta, mean, std, epsilon):
     layer.
 
     """
-
     import numpy as np
-    ax = 0 if w.ndim < 3 else 1
-    w_normed = w*np.swapaxes(gamma, 0, ax) / (np.swapaxes(std, 0, ax)+epsilon)
-    b_normed = ((b - mean.flatten()) * gamma.flatten() /
-                (std.flatten() + epsilon) + beta.flatten())
-    return [w_normed, b_normed]
+
+    axis = 0 if w.ndim > 2 else 1
+
+    broadcast_shape = [1] * w.ndim  # e.g. [1, 1, 1, 1] for ConvLayer
+    broadcast_shape[axis] = w.shape[axis]  # [64, 1, 1, 1] for 64 features
+    std_broadcast = np.reshape(std, broadcast_shape)
+    gamma_broadcast = np.reshape(gamma, broadcast_shape)
+
+    b_bn = beta + (b - mean) * gamma / (std + epsilon)
+    w_bn = w * gamma_broadcast / (std_broadcast + epsilon)
+
+    return w_bn, b_bn
 
 
 def import_script(path=None, filename=None):

@@ -18,86 +18,116 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from snntoolbox.config import settings
-from snntoolbox.core.util import wilson_score
 
 standard_library.install_aliases()
 
 
-def plot_confusion_matrix(Y_test, Y_pred, path=None, class_labels=None):
-    from sklearn.metrics import confusion_matrix
-
-    cm = confusion_matrix(Y_test, Y_pred)
-    plt.figure()
-    plt.imshow(cm, interpolation='nearest')
-    plt.title('Confusion Matrix')
-    plt.colorbar()
-    if class_labels:
-        tick_marks = np.arange(len(class_labels))
-        plt.xticks(tick_marks, class_labels, rotation=45)
-        plt.yticks(tick_marks, class_labels)
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    if path is not None:
-        filename = 'Confusion'
-        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
-    else:
-        plt.show()
-    plt.close()
-
-
-def plot_spiketrains(layer, path=None):
+def output_graphs(spiketrains_batch, ann, X_batch, path=None, i=0):
     """
-    Plot which neuron fired at what time during the simulation.
+    Wrapper function to display / save a number of plots.
 
     Parameters
     ----------
 
-    layer: tuple
-        ``(spiketimes, label)``.
-
-        ``spiketimes`` is a 2D array where the first index runs over the number
-        of neurons in the layer, and the second index contains the spike times
-        of the specific neuron.
-
+    spiketrains_batch: list
+        Each entry in ``spiketrains_batch`` contains a tuple
+        ``(spiketimes, label)`` for each layer of the network (for the first
+        batch only, and excluding ``Flatten`` layers).
+        ``spiketimes`` is an array where the last index contains the spike
+        times of the specific neuron, and the first indices run over the
+        number of neurons in the layer:
+        (batch_size, n_chnls, n_rows, n_cols, duration)
         ``label`` is a string specifying both the layer type and the index,
-        e.g. ``'3Dense'``.
+        e.g. ``'03Dense'``.
+    ann: SNN
+        An instance of the SNN class. Contains the ``get_activ`` Theano
+        functions which allow computation of layer activations of the original
+        input model (hence the name 'ann'). Needed in activation and
+        correlation plots.
+    X_batch: float32 array
+        The input samples to use for determining the layer activations. With
+        data of the form (channels, num_rows, num_cols), X_batch has dimension
+        (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
+        and (batch_size, channels, num_rows, num_cols) for a convolutional net.
+    path: string, optional
+        If not ``None``, specifies where to save the resulting image. Else,
+        display plots without saving.
+    i: int, optional
+        Index of sample to plot.
 
+    """
+
+    from snntoolbox.core.util import get_activations_batch
+    from snntoolbox.core.util import spiketrains_to_rates
+    from snntoolbox.core.util import get_sample_activity_from_batch
+
+    print("Saving plots of one sample to {}...\n".format(path))
+
+    spikerates_batch = spiketrains_to_rates(spiketrains_batch)
+    spikerates = get_sample_activity_from_batch(spikerates_batch)
+    activations_batch = get_activations_batch(ann, X_batch)
+    activations = get_sample_activity_from_batch(activations_batch)
+    spiketrains = None  # get_sample_activity_from_batch(spiketrains_batch)
+
+    plot_layer_summaries(spikerates, activations, spiketrains, path)
+    plot_pearson_coefficients(spikerates_batch, activations_batch, path)
+    plot_hist_combined({'Spikerates': spikerates_batch,
+                        'Activations': activations_batch}, path)
+    print("Done.\n")
+
+
+def plot_layer_summaries(spikerates, activations, spiketrains=None, path=None):
+    """
+    Display or save a number of plots for a specific layer.
+
+    Parameters
+    ----------
+
+    spiketrains: list
+        Each entry in ``spiketrains`` contains a tuple
+        ``(spiketimes, label)`` for each layer of the network (for the first
+        batch only, and excluding ``Flatten`` layers).
+        ``spiketimes`` is an array where the last index contains the spike
+        times of the specific neuron, and the first indices run over the
+        number of neurons in the layer: (n_chnls, n_rows, n_cols, duration)
+        ``label`` is a string specifying both the layer type and the index,
+        e.g. ``'03Dense'``.
+    spikerates: list
+        Each entry in ``spikerates`` contains a tuple ``(rates, label)`` for
+        each layer of the network (for the first batch only, and excluding
+        ``Flatten`` layers).
+        ``rates`` contains the average firing rates of all neurons in a layer.
+        It has the same shape as the original layer, e.g.
+        (n_features, n_rows, n_cols) for a convolution layer.
+        ``label`` is a string specifying both the layer type and the index,
+        e.g. ``'03Dense'``.
+    activations: list
+        Contains the activations of a net. Same structure as ``spikerates``.
     path: string, optional
         If not ``None``, specifies where to save the resulting image. Else,
         display plots without saving.
 
     """
 
-    shape = [np.prod(layer[0].shape[:-1]), layer[0].shape[-1]]
-    spiketrains = np.reshape(layer[0], shape)
-    plt.figure()
-    # Iterate over neurons in layer
-    for (neuron, spiketrain) in enumerate(spiketrains):
-        # Remove zeros from spiketrain which falsely indicate spikes at time 0.
-        # Spikes at time 0 are forbidden (and indeed prevented in the
-        # simulation), because of this difficulty to distinguish them from a 0
-        # entry indicating no spike.
-        if 0 in spiketrain:
-            spikelist = [j for j in spiketrain if j != 0]
-            # Create an array of the same size as the spikelist containing just
-            # the neuron index.
-            y = np.ones_like(spikelist) * neuron
-            plt.plot(spikelist, y, '.')
-        else:
-            y = np.ones_like(spiketrain) * neuron
-            plt.plot(spiketrain, y, '.')
-    plt.gca().set_xlim(0, settings['duration'])
-    plt.gca().set_ylim([-0.1, neuron + 1])
-    plt.title('Spiketrains \n of layer {}'.format(layer[1]))
-    plt.xlabel('time [ms]')
-    plt.ylabel('neuron index')
-    if path is not None:
-        filename = '7Spiketrains'
-        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
-    else:
-        plt.show()
-    plt.close()
+    # Loop over layers
+    for i in range(len(spikerates)):
+        label = spikerates[i][1]
+        print("Plotting layer {}".format(label))
+        newpath = os.path.join(path, label)
+        if not os.path.exists(newpath):
+            os.makedirs(newpath)
+        if spiketrains:
+            plot_spiketrains(spiketrains[i], newpath)  # t=75.5%
+        plot_layer_activity(spikerates[i], 'Spikerates', newpath)  # t=7.8%
+        plot_layer_activity(activations[i], 'Activations', newpath)  # t=6.5%
+        plot_rates_minus_activations(spikerates[i][0], activations[i][0],
+                                     label, newpath)  # t=6.7%
+        plot_layer_correlation(spikerates[i][0].flatten(),
+                               activations[i][0].flatten(),
+                               'ANN-SNN correlations\n of layer ' + label,
+                               newpath)  # t=0.8%
+        plot_hist({'Spikerates': spikerates[i][0].flatten()}, 'Spikerates',
+                  label, newpath)  # t=2.7%
 
 
 def plot_layer_activity(layer, title, path=None, limits=None):
@@ -207,113 +237,6 @@ def plot_layer_activity(layer, title, path=None, limits=None):
     plt.close()
 
 
-def plot_correlations(spikerates, layer_activations):
-    """
-    Plot the correlation between SNN spiketrains and ANN activations.
-
-    For each layer, the method draws a scatter plot, showing the correlation
-    between the average firing rate of neurons in the SNN layer and the
-    activation of the corresponding neurons in the ANN layer.
-
-    Parameters
-    ----------
-
-    spikerates: list of tuples ``(spikerate, label)``.
-
-        ``spikerate`` is a 1D array containing the mean firing rates of the
-        neurons in a specific layer.
-
-        ``label`` is a string specifying both the layer type and the index,
-        e.g. ``'3Dense'``.
-
-    layer_activations: list of tuples ``(activations, label)``
-        Each entry represents a layer in the ANN for which an activation can be
-        calculated (e.g. ``Dense``, ``Convolution2D``).
-
-        ``activations`` is an array of the same dimension as the corresponding
-        layer, containing the activations of Dense or Convolution layers.
-
-        ``label`` is a string specifying the layer type, e.g. ``'Dense'``.
-
-    """
-
-    num_layers = len(layer_activations)
-    # Determine optimal shape for rectangular arrangement of plots
-    num_rows = int(np.ceil(np.sqrt(num_layers)))
-    num_cols = int(np.ceil(num_layers / num_rows))
-    f, ax = plt.subplots(num_rows, num_cols, figsize=(8, 1 + num_rows * 4),
-                         squeeze=False)
-    for i in range(num_rows):
-        for j in range(num_cols):
-            layer_num = j + i * num_cols
-            if layer_num >= num_layers:
-                break
-            ax[i, j].plot(layer_activations[layer_num][0].flatten(),
-                          spikerates[layer_num][0], '.')
-            ax[i, j].set_title(spikerates[layer_num][1], fontsize='medium')
-            ax[i, j].locator_params(nbins=4)
-            ax[i, j].set_xlim([None,
-                               np.max(layer_activations[layer_num][0]) * 1.1])
-            ax[i, j].set_ylim([None, max(spikerates[layer_num][0]) * 1.1])
-    f.suptitle('ANN-SNN correlations', fontsize=20)
-    f.subplots_adjust(wspace=0.3, hspace=0.3)
-    f.text(0.5, 0.04, 'SNN spikerates (Hz)', ha='center', fontsize=16)
-    f.text(0.04, 0.5, 'ANN activations', va='center', rotation='vertical',
-           fontsize=16)
-
-
-def plot_layer_summaries(spiketrains, spikerates, activations, path=None):
-    """
-    Display or save a number of plots for a specific layer.
-
-    Parameters
-    ----------
-
-    spiketrains: list
-        Each entry in ``spiketrains`` contains a tuple
-        ``(spiketimes, label)`` for each layer of the network (for the first
-        batch only, and excluding ``Flatten`` layers).
-        ``spiketimes`` is an array where the last index contains the spike
-        times of the specific neuron, and the first indices run over the
-        number of neurons in the layer: (n_chnls, n_rows, n_cols, duration)
-        ``label`` is a string specifying both the layer type and the index,
-        e.g. ``'03Dense'``.
-    spikerates: list
-        Each entry in ``spikerates`` contains a tuple ``(rates, label)`` for
-        each layer of the network (for the first batch only, and excluding
-        ``Flatten`` layers).
-        ``rates`` contains the average firing rates of all neurons in a layer.
-        It has the same shape as the original layer, e.g.
-        (n_features, n_rows, n_cols) for a convolution layer.
-        ``label`` is a string specifying both the layer type and the index,
-        e.g. ``'03Dense'``.
-    activations: list
-        Contains the activations of a net. Same structure as ``spikerates``.
-    path: string, optional
-        If not ``None``, specifies where to save the resulting image. Else,
-        display plots without saving.
-
-    """
-
-    # Loop over layers
-    for i in range(len(spiketrains)):
-        label = spiketrains[i][1]
-        newpath = os.path.join(path, label)
-        if not os.path.exists(newpath):
-            os.makedirs(newpath)
-        plot_spiketrains(spiketrains[i], newpath)
-        plot_layer_activity(spikerates[i], 'Spikerates', newpath)
-        plot_layer_activity(activations[i], 'Activations', newpath)
-        plot_rates_minus_activations(spikerates[i][0], activations[i][0],
-                                     label, newpath)
-        plot_layer_correlation(spikerates[i][0].flatten(),
-                               activations[i][0].flatten(),
-                               'ANN-SNN correlations\n of layer ' + label,
-                               newpath)
-        plot_hist({'Spikerates': spikerates[i][0].flatten()}, 'Spikerates',
-                  label, newpath)
-
-
 def plot_rates_minus_activations(rates, activations, label, path=None):
     """
     Plot spikerates minus activations for a specific layer.
@@ -387,104 +310,59 @@ def plot_layer_correlation(rates, activations, title, path=None):
     plt.close()
 
 
-def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None):
+def plot_correlations(spikerates, layer_activations):
     """
-    Plot a histogram over two datasets.
+    Plot the correlation between SNN spiketrains and ANN activations.
+
+    For each layer, the method draws a scatter plot, showing the correlation
+    between the average firing rate of neurons in the SNN layer and the
+    activation of the corresponding neurons in the ANN layer.
 
     Parameters
     ----------
 
-    h: dict
-        Dictionary of datasets to plot in histogram.
-    title: string, optional
-        Title of histogram.
-    layer_label: string, optional
-        Label of layer from which data was taken.
-    path: string, optional
-        If not ``None``, specifies where to save the resulting image. Else,
-        display plots without saving.
-    scale_fac: float, optional
-        The value with which parameters are normalized (maximum of activations
-        or parameter value of a layer). If given, will be insterted into plot
-        title.
+    spikerates: list of tuples ``(spikerate, label)``.
 
-    """
+        ``spikerate`` is a 1D array containing the mean firing rates of the
+        neurons in a specific layer.
 
-    keys = sorted(h.keys())
-    plt.hist([h[key] for key in keys], label=keys, log=True, bottom=1)
-    plt.legend()
-    if title and layer_label:
-        if 'Spikerates' in title:
-            filename = '4' + title + '_distribution'
-            unit = '[Hz]'
-        else:
-            filename = layer_label + '_' + title + '_distribution'
-            unit = ''
-        facs = "Applied divisor: {:.2f}".format(scale_fac) if scale_fac else ''
-        plt.title('{} distribution {} \n of layer {} \n {}'.format(
-            title, unit, layer_label, facs))
-    else:
-        plt.title('Distribution')
-        filename = 'Activity_distribution'
-    if path:
-        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
-    else:
-        plt.show()
-    plt.close()
-
-
-def output_graphs(spiketrains_batch, ann, X_batch, path=None, i=0):
-    """
-    Wrapper function to display / save a number of plots.
-
-    Parameters
-    ----------
-
-    spiketrains_batch: list
-        Each entry in ``spiketrains_batch`` contains a tuple
-        ``(spiketimes, label)`` for each layer of the network (for the first
-        batch only, and excluding ``Flatten`` layers).
-        ``spiketimes`` is an array where the last index contains the spike
-        times of the specific neuron, and the first indices run over the
-        number of neurons in the layer:
-        (batch_size, n_chnls, n_rows, n_cols, duration)
         ``label`` is a string specifying both the layer type and the index,
-        e.g. ``'03Dense'``.
-    ann: SNN
-        An instance of the SNN class. Contains the ``get_activ`` Theano
-        functions which allow computation of layer activations of the original
-        input model (hence the name 'ann'). Needed in activation and
-        correlation plots.
-    X_batch: float32 array
-        The input samples to use for determining the layer activations. With
-        data of the form (channels, num_rows, num_cols), X_batch has dimension
-        (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
-        and (batch_size, channels, num_rows, num_cols) for a convolutional net.
-    path: string, optional
-        If not ``None``, specifies where to save the resulting image. Else,
-        display plots without saving.
-    i: int, optional
-        Index of sample to plot.
+        e.g. ``'3Dense'``.
+
+    layer_activations: list of tuples ``(activations, label)``
+        Each entry represents a layer in the ANN for which an activation can be
+        calculated (e.g. ``Dense``, ``Convolution2D``).
+
+        ``activations`` is an array of the same dimension as the corresponding
+        layer, containing the activations of Dense or Convolution layers.
+
+        ``label`` is a string specifying the layer type, e.g. ``'Dense'``.
 
     """
 
-    from snntoolbox.core.util import get_activations_batch
-    from snntoolbox.core.util import spiketrains_to_rates
-    from snntoolbox.core.util import get_sample_activity_from_batch
-
-    print("Saving plots of one sample to {}...\n".format(path))
-
-    spiketrains = get_sample_activity_from_batch(spiketrains_batch)
-    spikerates_batch = spiketrains_to_rates(spiketrains_batch)
-    spikerates = get_sample_activity_from_batch(spikerates_batch)
-    activations_batch = get_activations_batch(ann, X_batch)
-    activations = get_sample_activity_from_batch(activations_batch)
-
-    plot_layer_summaries(spiketrains, spikerates, activations, path)
-    plot_pearson_coefficients(spikerates_batch, activations_batch, path)
-    plot_hist_combined({'Spikerates': spikerates_batch,
-                        'Activations': activations_batch}, path)
-    print("Done.\n")
+    num_layers = len(layer_activations)
+    # Determine optimal shape for rectangular arrangement of plots
+    num_rows = int(np.ceil(np.sqrt(num_layers)))
+    num_cols = int(np.ceil(num_layers / num_rows))
+    f, ax = plt.subplots(num_rows, num_cols, figsize=(8, 1 + num_rows * 4),
+                         squeeze=False)
+    for i in range(num_rows):
+        for j in range(num_cols):
+            layer_num = j + i * num_cols
+            if layer_num >= num_layers:
+                break
+            ax[i, j].plot(layer_activations[layer_num][0].flatten(),
+                          spikerates[layer_num][0], '.')
+            ax[i, j].set_title(spikerates[layer_num][1], fontsize='medium')
+            ax[i, j].locator_params(nbins=4)
+            ax[i, j].set_xlim([None,
+                               np.max(layer_activations[layer_num][0]) * 1.1])
+            ax[i, j].set_ylim([None, max(spikerates[layer_num][0]) * 1.1])
+    f.suptitle('ANN-SNN correlations', fontsize=20)
+    f.subplots_adjust(wspace=0.3, hspace=0.3)
+    f.text(0.5, 0.04, 'SNN spikerates (Hz)', ha='center', fontsize=16)
+    f.text(0.04, 0.5, 'ANN activations', va='center', rotation='vertical',
+           fontsize=16)
 
 
 def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
@@ -546,6 +424,52 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
     plt.ylabel('Pearson Correlation Coefficient')
     if path is not None:
         filename = 'Pearson'
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
+def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None):
+    """
+    Plot a histogram over two datasets.
+
+    Parameters
+    ----------
+
+    h: dict
+        Dictionary of datasets to plot in histogram.
+    title: string, optional
+        Title of histogram.
+    layer_label: string, optional
+        Label of layer from which data was taken.
+    path: string, optional
+        If not ``None``, specifies where to save the resulting image. Else,
+        display plots without saving.
+    scale_fac: float, optional
+        The value with which parameters are normalized (maximum of activations
+        or parameter value of a layer). If given, will be insterted into plot
+        title.
+
+    """
+
+    keys = sorted(h.keys())
+    plt.hist([h[key] for key in keys], label=keys, log=True, bottom=1)
+    plt.legend()
+    if title and layer_label:
+        if 'Spikerates' in title:
+            filename = '4' + title + '_distribution'
+            unit = '[Hz]'
+        else:
+            filename = layer_label + '_' + title + '_distribution'
+            unit = ''
+        facs = "Applied divisor: {:.2f}".format(scale_fac) if scale_fac else ''
+        plt.title('{} distribution {} \n of layer {} \n {}'.format(
+            title, unit, layer_label, facs))
+    else:
+        plt.title('Distribution')
+        filename = 'Activity_distribution'
+    if path:
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
     else:
         plt.show()
@@ -625,6 +549,8 @@ def plot_param_sweep(results, n, params, param_name, param_logscale):
 
     """
 
+    from snntoolbox.core.util import wilson_score
+
     # Compute confidence intervals of the experiments
     ci = [wilson_score(q, n) for q in results]
     ax = plt.subplot()
@@ -639,6 +565,60 @@ def plot_param_sweep(results, n, params, param_name, param_logscale):
         fac += 0.2
     ax.set_xlim(fac * params[0], 1.1 * params[-1])
     ax.set_ylim(0, 1)
+
+
+def plot_spiketrains(layer, path=None):
+    """
+    Plot which neuron fired at what time during the simulation.
+
+    Parameters
+    ----------
+
+    layer: tuple
+        ``(spiketimes, label)``.
+
+        ``spiketimes`` is a 2D array where the first index runs over the number
+        of neurons in the layer, and the second index contains the spike times
+        of the specific neuron.
+
+        ``label`` is a string specifying both the layer type and the index,
+        e.g. ``'3Dense'``.
+
+    path: string, optional
+        If not ``None``, specifies where to save the resulting image. Else,
+        display plots without saving.
+
+    """
+
+    shape = [np.prod(layer[0].shape[:-1]), layer[0].shape[-1]]
+    spiketrains = np.reshape(layer[0], shape)
+    plt.figure()
+    # Iterate over neurons in layer
+    for (neuron, spiketrain) in enumerate(spiketrains):
+        # Remove zeros from spiketrain which falsely indicate spikes at time 0.
+        # Spikes at time 0 are forbidden (and indeed prevented in the
+        # simulation), because of this difficulty to distinguish them from a 0
+        # entry indicating no spike.
+        if 0 in spiketrain:
+            spikelist = [j for j in spiketrain if j != 0]
+            # Create an array of the same size as the spikelist containing just
+            # the neuron index.
+            y = np.ones_like(spikelist) * neuron
+            plt.plot(spikelist, y, '.')
+        else:
+            y = np.ones_like(spiketrain) * neuron
+            plt.plot(spiketrain, y, '.')
+    plt.gca().set_xlim(0, settings['duration'])
+    plt.gca().set_ylim([-0.1, neuron + 1])
+    plt.title('Spiketrains \n of layer {}'.format(layer[1]))
+    plt.xlabel('time [ms]')
+    plt.ylabel('neuron index')
+    if path is not None:
+        filename = '7Spiketrains'
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
 
 
 def plot_potential(times, layer, showLegend=False, path=None):
@@ -688,6 +668,50 @@ def plot_potential(times, layer, showLegend=False, path=None):
     plt.title('Membrane potential for neurons \n in layer {}'.format(layer[1]))
     if path is not None:
         filename = 'Potential'
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
+def plot_confusion_matrix(Y_test, Y_pred, path=None, class_labels=None):
+    from sklearn.metrics import confusion_matrix
+
+    cm = confusion_matrix(Y_test, Y_pred)
+    plt.figure()
+    plt.imshow(cm, interpolation='nearest')
+    plt.title('Confusion Matrix')
+    plt.colorbar()
+    if class_labels:
+        tick_marks = np.arange(len(class_labels))
+        plt.xticks(tick_marks, class_labels, rotation=45)
+        plt.yticks(tick_marks, class_labels)
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    if path is not None:
+        filename = 'Confusion'
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
+def plot_error_vs_time(err, path=None):
+
+    from snntoolbox.core.util import wilson_score
+
+    plt.figure()
+    plt.title('Error vs simulation time')
+    time = np.arange(len(err))
+    n = settings['batch_size']
+    # Compute confidence intervals of the experiments
+    ci = [wilson_score(q, n) for q in err]
+    plt.errorbar(time, err, yerr=ci, fmt='.', errorevery=3)
+    plt.ylabel('Error [%]')
+    plt.xlabel('Timestep')
+    if path is not None:
+        filename = 'Error_vs_time'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
     else:
         plt.show()
