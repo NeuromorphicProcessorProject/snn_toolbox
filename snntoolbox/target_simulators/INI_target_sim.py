@@ -223,6 +223,7 @@ class SNN_compiled():
         import numpy as np
         from snntoolbox.io_utils.plotting import output_graphs
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
+        from snntoolbox.io_utils.plotting import plot_error_vs_time
 
         # Load neuron layers and connections if conversion was done during a
         # previous session.
@@ -283,6 +284,8 @@ class SNN_compiled():
                     [int(settings['duration'] / settings['dt'])]
                 spiketrains_batch.append((np.zeros(shape, 'float32'),
                                           layer.name))
+            # Allocate list for plotting the error vs simulation time
+            err = []
 
         count = np.zeros(Y_test.shape[1])
         match = np.zeros(Y_test.shape[1])
@@ -340,16 +343,21 @@ class SNN_compiled():
                 # Count number of spikes in output layer during whole
                 # simulation.
                 output[batch_idxs, :] += out_spikes.astype('int32')
+                if batch_idx == 0 and settings['verbose'] > 2:
+                    # Get result by comparing the guessed class (i.e. the index
+                    # of the neuron in the last layer which spiked most) to the
+                    # ground truth.
+                    guesses = np.argmax(output, axis=1)
+                    err.append(
+                        np.sum(truth[:max_idx] != guesses[:max_idx]) / max_idx)
                 if settings['verbose'] > 1:
                     echo('.')
+
             if settings['verbose'] > 0:
-                # Get result by comparing the guessed class (i.e. the index of
-                # the neuron in the last layer which spiked most) to the ground
-                # truth.
-                guesses = np.argmax(output, axis=1)
                 echo('\n')
                 echo("Batch {} of {} completed ({:.1%})\n".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
+                guesses = np.argmax(output, axis=1)
                 avg = np.sum(truth[:max_idx] == guesses[:max_idx]) / max_idx
                 echo("Moving average accuracy: {:.2%}.\n".format(avg))
                 with open(os.path.join(settings['log_dir_of_current_run'],
@@ -358,6 +366,7 @@ class SNN_compiled():
                             "{} of {}: {:.2%}.\n".format(batch_idx + 1,
                                                          num_batches, avg))
                 if batch_idx == 0 and settings['verbose'] > 2:
+                    plot_error_vs_time(err, settings['log_dir_of_current_run'])
                     plot_confusion_matrix(truth[:max_idx], guesses[:max_idx],
                                           settings['log_dir_of_current_run'])
                     output_graphs(spiketrains_batch, snn_precomp, batch,

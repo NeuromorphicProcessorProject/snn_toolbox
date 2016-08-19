@@ -697,6 +697,27 @@ def plot_confusion_matrix(Y_test, Y_pred, path=None, class_labels=None):
     plt.close()
 
 
+def plot_error_vs_time(err, path=None):
+
+    from snntoolbox.core.util import wilson_score
+
+    plt.figure()
+    plt.title('Error vs simulation time')
+    time = np.arange(len(err))
+    n = settings['batch_size']
+    # Compute confidence intervals of the experiments
+    ci = [wilson_score(q, n) for q in err]
+    plt.errorbar(time, err, yerr=ci, fmt='.', errorevery=3)
+    plt.ylabel('Error [%]')
+    plt.xlabel('Timestep')
+    if path is not None:
+        filename = 'Error_vs_time'
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
 def plot_history(h):
     """
     Plot the training and validation loss and accuracy at each epoch.
