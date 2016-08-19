@@ -403,7 +403,6 @@ def initialize_simulator(simulator=None):
     elif simulator == 'INI':
         sim = import_module('snntoolbox.core.inisim')
     elif simulator == 'MegaSim':
-        sim = None  # evan - can add a module with helper functions
-
+        sim = import_module('snntoolbox.core.megasim')#None  # evan - can add a module with helper functions
     print("Initialized {} simulator.\n".format(simulator))
     return sim

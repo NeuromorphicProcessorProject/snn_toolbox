@@ -32,12 +32,6 @@ from snntoolbox.config import settings, initialize_simulator
 standard_library.install_aliases()
 
 
-#TODO This is ugly, i can use the sim object to store the megasim path
-MEGASIM_PATH = "/Users/Evangelos/Programming/NPP/megasim/megasim/bin/"
-
-#TODO there is a lot of duplicate code in these classes, maybe i can create a base class and use inheritance
-
-
 class Megasim_base(metaclass=ABCMeta):
     """
         Class that holds the common attributes and methods for the MegaSim modules.
@@ -1020,7 +1014,8 @@ class SNN_compiled():
 
     def __init__(self, ann):
         self.ann = ann
-        #self.sim = initialize_simulator() #TODO i can get the megasim path from here!
+        self.sim = initialize_simulator() #TODO i can get the megasim path from here!
+        self.megasim_path = self.sim.megasim_path()
         self.connections = []
         self.spikemonitors = []
         self.megadirname = ''
@@ -1422,7 +1417,7 @@ class SNN_compiled():
             #TODO this is ugly, in python3 i have to change folders to execute megasim
             current_dir = os.getcwd()
             os.chdir(self.megadirname)
-            run_megasim = subprocess.check_output([MEGASIM_PATH + "megasim", self.megaschematic])
+            run_megasim = subprocess.check_output([self.megasim_path + "megasim", self.megaschematic])
             os.chdir(current_dir)
 
             # Check megasim output for errors
