@@ -83,7 +83,9 @@ verbose: int, optional
        (spiketrains, spikerates, activations, correlations, ...)
     3: Record, plot and return the membrane potential of all layers for the
        last test sample. Very time consuming. Works only with pyNN simulators.
-
+scaling_factor: int, optional
+    Used by the MegaSim simulator to scale the neuron parameters and weights
+    because MegaSim uses integers.
 Cell Parameters
 ***************
 
@@ -274,7 +276,9 @@ settings = {'dataset_path': '',
             'online_normalization': False,
             'diff_to_max_rate': 200,
             'timestep_fraction': 10,
-            'diff_to_min_rate': 100}
+            'diff_to_min_rate': 100,
+            'scaling_factor' : 10000000,
+            }
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,
