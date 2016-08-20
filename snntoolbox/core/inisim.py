@@ -420,7 +420,7 @@ class MaxPool2DReLU(MaxPooling2D):
         else:
             self.label = self.name
 
-    def get_output(self, train=False, option="fir_max"):
+    def get_output(self, train=False, option="avg_max"):
         """Get Output.
 
         Parameters
