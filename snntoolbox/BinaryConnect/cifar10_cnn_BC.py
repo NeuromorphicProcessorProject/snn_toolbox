@@ -322,6 +322,6 @@ if __name__ == "__main__":
     plt.title("Weight distribution of first hidden convolution layer")
 
     # Dump the network weights to a file
-    filename = '../data/cifar10/cnn/weightsBC'
+    filename = 'weightsBC'
     params = lasagne.layers.get_all_param_values(cnn)
     cPickle.dump(params, open(filename, 'wb'))

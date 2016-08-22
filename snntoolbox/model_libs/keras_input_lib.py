@@ -107,10 +107,12 @@ def extract(model):
     labels = []
     layer_idx_map = []
     for (layer_num, layer) in enumerate(model.layers):
+        if layer_num == 0 and 'Dropout' in layer.__class__.__name__:
+            continue
         if 'BatchNormalization' in layer.__class__.__name__:
             bn_parameters = layer.get_weights()  # gamma, beta, mean, std
             prev_layer = model.layers[layer_num - 1]
-            label = prev_layer.__class__.__name__
+            label = labels[-1]
             parameters = prev_layer.get_weights()  # W, b of next layer
             print("Absorbing batch-normalization parameters into " +
                   "parameters of layer {}, {}.".format(layer_num - 1, label))

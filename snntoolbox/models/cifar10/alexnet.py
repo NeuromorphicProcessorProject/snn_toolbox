@@ -1,10 +1,10 @@
 """
-Train a (fairly simple) deep CNN on the CIFAR10 small images dataset.
 
-GPU run command:
-THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python cifar10_cnn.py
+Small CNN for Cifar10 classification, adapted from
+https://github.com/akrizhevsky/cuda-convnet2/blob/master/layers/layers-cifar10-11pct.cfg
 
-Gets to about 0.5 test loss or 83% accuracy after 65 epochs.
+Get to 11% error, using methodology described here:
+https://code.google.com/p/cuda-convnet/wiki/Methodology
 
 """
 
@@ -14,22 +14,17 @@ from __future__ import print_function
 from keras.datasets import cifar10
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers.convolutional import Convolution2D, MaxPooling2D
+from keras.layers import Dense, Dropout, Activation, Flatten, Convolution2D
+from keras.layers import AveragePooling2D, GaussianNoise
 from keras.optimizers import SGD
 from keras.utils import np_utils
 
 from snntoolbox.io_utils.plotting import plot_history
 
-batch_size = 32
-nb_classes = 10
-nb_epoch = 1
+batch_size = 64
+nb_epoch = 100
 
 data_augmentation = True
-
-# Input image dimensions
-img_rows, img_cols = 32, 32
-img_channels = 3
 
 # Data set
 (X_train, y_train), (X_test, y_test) = cifar10.load_data()
@@ -37,37 +32,40 @@ X_train = X_train.astype("float32")
 X_test = X_test.astype("float32")
 X_train /= 255
 X_test /= 255
-Y_train = np_utils.to_categorical(y_train, nb_classes)
-Y_test = np_utils.to_categorical(y_test, nb_classes)
+Y_train = np_utils.to_categorical(y_train, 10)
+Y_test = np_utils.to_categorical(y_test, 10)
 print('X_train shape:', X_train.shape)
 print(X_train.shape[0], 'train samples')
 print(X_test.shape[0], 'test samples')
 
+sigma = 0
+
 model = Sequential()
 
-model.add(Convolution2D(32, 3, 3, border_mode='same',
-                        input_shape=(img_channels, img_rows, img_cols)))
+model.add(Convolution2D(64, 5, 5, border_mode='same', input_shape=(3, 32, 32)))
 model.add(Activation('relu'))
-model.add(Convolution2D(32, 3, 3, border_mode='same'))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(GaussianNoise(sigma))
+model.add(AveragePooling2D(pool_size=(3, 3), strides=(2, 2)))
 model.add(Dropout(0.25))
+
+model.add(Convolution2D(64, 5, 5, border_mode='same'))
+model.add(Activation('relu'))
+model.add(GaussianNoise(sigma))
+model.add(Dropout(0.25))
+model.add(AveragePooling2D(pool_size=(3, 3), strides=(2, 2)))
 
 model.add(Convolution2D(64, 3, 3))
 model.add(Activation('relu'))
-model.add(Convolution2D(64, 3, 3))
+model.add(GaussianNoise(sigma))
+model.add(Convolution2D(32, 3, 3))
 model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.25))
+model.add(GaussianNoise(sigma))
 
 model.add(Flatten())
-model.add(Dense(512))
-model.add(Activation('relu'))
-model.add(Dropout(0.5))
-model.add(Dense(nb_classes))
+model.add(Dense(10))
 model.add(Activation('softmax'))
 
-sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+sgd = SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
 model.compile(loss='categorical_crossentropy', optimizer=sgd,
               metrics=['accuracy'])
 
