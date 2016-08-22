@@ -21,7 +21,6 @@ from builtins import super
 import numpy as np
 import theano
 import theano.tensor as T
-from theano.tensor.signal import pool
 from theano.tensor.shared_randomstreams import RandomStreams
 from keras.layers.core import Dense, Flatten
 from keras.layers.convolutional import AveragePooling2D, Convolution2D
@@ -300,10 +299,10 @@ class SpikeConv2DReLU(Convolution2D):
 
 class AvgPool2DReLU(AveragePooling2D):
     """ batch_size x input_shape x out_shape """
-    def __init__(self, pool_size=(2, 2), strides=None, ignore_border=True,
+    def __init__(self, pool_size=(2, 2), strides=None, border_mode='valid',
                  label=None, **kwargs):
-        self.ignore_border = ignore_border
-        super().__init__(pool_size=pool_size, strides=strides)
+        super().__init__(pool_size=pool_size, strides=strides,
+                         border_mode=border_mode)
         if label is not None:
             self.label = label
             self.name = label
@@ -316,9 +315,8 @@ class AvgPool2DReLU(AveragePooling2D):
         inp, time, updates = get_input(self)
 
         # CALCULATE SYNAPTIC SUMMED INPUT
-        self.impulse = pool.pool_2d(inp, ds=self.pool_size, st=self.strides,
-                                    ignore_border=self.ignore_border,
-                                    mode='average_inc_pad')
+        self.impulse = K.pool2d(inp, self.pool_size, self.strides,
+                                self.border_mode, pool_mode='avg')
 
         output_spikes = update_neurons(self, self.impulse, time, updates)
         self.updates = updates

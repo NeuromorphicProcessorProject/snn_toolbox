@@ -6,8 +6,9 @@
 # https://s3.amazonaws.com/lasagne/recipes/pretrained/cifar10/model.pkl
 
 """
-    IMPORTANT: This net does not flip filters in convolution layers.
-    Make sure the converted spiking net behaves the same.
+IMPORTANT: This net does not flip filters in convolution layers.
+Make sure the converted spiking net behaves the same.
+
 """
 
 

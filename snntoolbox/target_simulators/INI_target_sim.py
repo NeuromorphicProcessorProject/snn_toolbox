@@ -141,7 +141,6 @@ class SNN_compiled():
                                       v_thresh=settings['v_thresh'],
                                       tau_refrac=settings['tau_refrac'],
                                       **kwargs2)
-
         # Compile
         self.compile_snn(input_time)
 
