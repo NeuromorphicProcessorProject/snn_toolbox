@@ -21,7 +21,9 @@ Created on Thu Jun  9 08:11:09 2016
 import os
 import lasagne
 import theano
-from snntoolbox.config import settings, activation_layers, bn_layers
+import numpy as np
+
+from snntoolbox.config import settings, activation_layers
 from snntoolbox.io_utils.load import load_parameters
 from snntoolbox.model_libs.common import absorb_bn, import_script
 from snntoolbox.model_libs.common import border_mode_string
@@ -128,7 +130,7 @@ def extract(model):
         elif name == 'FlattenLayer':
             layer_type = 'Flatten'
         elif name == 'BatchNormLayer':
-            layer_type = 'BatchNorm'
+            layer_type = 'BatchNormalization'
         elif name == 'InputLayer':
             continue
         else:
@@ -137,6 +139,33 @@ def extract(model):
                       'layer_type': layer_type,
                       'output_shape': layer.output_shape}
 
+        if 'BatchNormalization' in layer.__class__.__name__:
+            bn_parameters = parameters[parameters_idx: parameters_idx + 4]
+            prev_layer = lasagne_layers[layer_num - 1]
+            label = labels[-1]
+            wb = parameters[parameters_idx - 2: parameters_idx]
+            print("Absorbing batch-normalization parameters into " +
+                  "parameters of layer {}, {}.".format(layer_num - 1, label))
+            parameters_norm = absorb_bn(wb[0], wb[1],
+                                        bn_parameters[0], bn_parameters[1],
+                                        bn_parameters[2], bn_parameters[3],
+                                        layer.epsilon)
+            # Remove Batch-normalization layer by setting gamma=1, beta=1,
+            # mean=0, std=1
+            zeros = np.zeros_like(bn_parameters[0])
+            ones = np.ones_like(bn_parameters[0])
+            layer.set_weights([ones, zeros, zeros, ones])
+            layer.gamma.set_value(ones)
+            layer.beta.set_value(zeros)
+            layer.mean.set_value(zeros)
+            layer.std.set_value(ones)
+            # Replace parameters of preceding Conv or FC layer by parameters
+            # that include the batch-normalization transformation.
+            prev_layer.W.set_value(parameters_norm[0])
+            prev_layer.b.set_value(parameters_norm[1])
+            layers[-1]['parameters'] = parameters_norm
+            parameters_idx += 4
+            continue
         # Append layer label
         if len(attributes['output_shape']) == 2:
             shape_string = '_{}'.format(attributes['output_shape'][1])
@@ -148,26 +177,9 @@ def extract(model):
         labels.append(num_str + attributes['layer_type'] + shape_string)
         attributes.update({'label': labels[-1]})
 
-        next_layer = lasagne_layers[layer_num + 1] \
-            if layer_num + 1 < len(lasagne_layers) else None
-        next_layer_name = next_layer.__class__.__name__ if next_layer else None
-        if next_layer_name == 'BatchNormLayer' and \
-                attributes['layer_type'] not in bn_layers:
-            raise NotImplementedError(
-                "A batchnormalization layer must follow a layer of type " +
-                "{}, not {}.".format(bn_layers, attributes['layer_type']))
-
         if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
             wb = parameters[parameters_idx: parameters_idx + 2]
             parameters_idx += 2  # For weights and biases
-            if next_layer_name == 'BatchNormLayer':
-                wb = absorb_bn(wb[0], wb[1],  # W, b
-                               parameters[parameters_idx + 0],  # gamma
-                               parameters[parameters_idx + 1],  # beta
-                               parameters[parameters_idx + 2],  # mean
-                               parameters[parameters_idx + 3],  # std
-                               next_layer.epsilon)
-                parameters_idx += 4
             attributes.update({'parameters': wb})
 
         if attributes['layer_type'] == 'Convolution2D':
@@ -177,6 +189,7 @@ def extract(model):
                                'nb_col': layer.filter_size[1],
                                'nb_row': layer.filter_size[0],
                                'border_mode': border_mode,
+                               'subsample': layer.stride,
                                'filter_flip': layer.flip_filters})
 
         if attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
