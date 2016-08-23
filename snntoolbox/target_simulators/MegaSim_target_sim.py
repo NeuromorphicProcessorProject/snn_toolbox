@@ -331,6 +331,7 @@ class Module_average_pooling(Megasim_base):
     '''
 
     def __init__(self, layer_params, neuron_params, reset_input_event = False, scaling_factor=10000000):
+        self.uses_biases = False
         if reset_input_event:
             self.module_string = 'module_conv_NPP'
         else:
@@ -587,6 +588,17 @@ class Module_conv(Megasim_base):
         self.num_of_FMs = layer_params['parameters'][0].shape[0]
         self.kernel_size = layer_params['parameters'][0].shape[2:] #(kx, ky)
         self.w = layer_params['parameters'][0]
+        try:
+            self.b = layer_params["parameters"][1]
+            if np.nonzero(self.b)[0].size!=0:
+                self.uses_biases=True
+                print("%s uses biases"%(self.module_string))
+            else:
+                self.uses_biases=False
+                print("%s does not use biases" % (self.module_string))
+        except(IndexError):
+            self.uses_biases = False
+            print("%s does not use biases" % (self.module_string))
 
         self.n_in_ports = self.w.shape[1]
         self.pre_shapes = layer_params['input_shape'] # (none, 1, 28 28) # last 2
@@ -630,6 +642,8 @@ class Module_conv(Megasim_base):
 
         if self.reset_input_event:
             self.n_in_ports += 1
+        if self.uses_biases:
+            self.n_in_ports += 1
 
     def build_parameter_file(self, dirname):
         sc = self.scaling_factor
@@ -642,11 +656,15 @@ class Module_conv(Megasim_base):
         for f in range(num_FMs):
             fm_filename = self.label+"_"+str(f)
             kernel = self.w[f]
+            if self.uses_biases:
+                bias = self.b[f]
+            else:
+                bias = 0.0
 
-            self.__build_single_fm(pre_num_ports,1,fm_size,kernel,dirname,fm_filename)
+            self.__build_single_fm(pre_num_ports,1,fm_size,kernel,bias,dirname,fm_filename)
         pass
 
-    def __build_single_fm(self, num_in_ports, num_out_ports, fm_size, kernel, dirname, fprmname):
+    def __build_single_fm(self, num_in_ports, num_out_ports, fm_size, kernel, bias,dirname, fprmname):
         '''
         Helper method to create a single feature map
 
@@ -732,6 +750,23 @@ Dy %d
             os.remove(dirname + "w.txt")
             kernels_list.append(param2)
 
+        if self.uses_biases:
+            param_biases1=(
+        """Nx_kernel %d
+Ny_kernel %d
+Dx %d
+Dy %d
+""" % (self.Nx_array,
+               self.Ny_array,
+               0, 0
+       ))
+            b=np.ones((self.Nx_array,self.Ny_array)) *int(bias * sc)
+            np.savetxt(dirname + "b.txt", b, delimiter=" ", fmt="%d")
+            q = open(dirname + "b.txt")
+            param_biases2 = q.readlines()
+            q.close()
+            os.remove(dirname + "b.txt")
+
         if self.reset_input_event:
             param_reset1 =(
         """Nx_kernel %d
@@ -774,6 +809,11 @@ rectify %d
             q.write(param_k)
             for i in kernels_list[k]:#param2:
                 q.write(i)
+        if self.uses_biases:
+            q.write(param_biases1)
+            for i in param_biases2:
+                q.write(i)
+
         if self.reset_input_event:
             q.write(param_reset1)
             q.write(param_reset2)
@@ -842,6 +882,19 @@ class Module_fully_connected(Megasim_base):
         self.population_size = layer_params['output_shape'][1]
         self.scaling_factor = int(scaling_factor)
         self.w = layer_params["parameters"][0]
+        try:
+            self.b = layer_params["parameters"][1]
+            if np.nonzero(self.b)[0].size!=0:
+                self.uses_biases=True
+                print("%s uses biases"%(self.module_string))
+            else:
+                self.uses_biases=False
+                print("%s does not use biases" % (self.module_string))
+        except(IndexError):
+            self.uses_biases = False
+            print("%s does not use biases" % (self.module_string))
+
+
         self.Nx_array_pre = len(self.w)
 
         self.enable_softmax = enable_softmax
@@ -875,6 +928,8 @@ class Module_fully_connected(Megasim_base):
         if self.reset_input_event:
             self.n_in_ports +=1
 
+        if self.uses_biases:
+            self.n_in_ports +=1
 
     def build_parameter_file(self, dirname):
         sc = self.scaling_factor
@@ -922,6 +977,14 @@ Ny_array_pre 1
         q.close()
         os.remove(dirname+"w.txt")
 
+        if self.uses_biases:
+            param_biases1= (
+                """Nx_array_pre 1
+Ny_array_pre 1
+"""
+            )
+            param_biases2= " ".join([str(int(x*sc)) for x in self.b])
+
         # if the output activation is softmax add one more input for the control in events
         if self.module_string == 'module_softmax':
             param_softmax2 = " ".join([str(x) for x in [0]*self.population_size])
@@ -959,6 +1022,10 @@ rectify %d
             q.write(i)
 
         # if we use a softmax use 0 weights for the control events
+        if self.uses_biases:
+            q.write(param_biases1)
+            q.write(param_biases2)
+            q.write("\n")
         if self.module_string == 'module_softmax':
             q.write(param_softmax1)
             q.write(param_softmax2)
@@ -1260,10 +1327,11 @@ class SNN_compiled():
         reset_events = []
         softmax_in_events = []
 
+        timestamps = []
+
         rescale_fac = 1000 / (settings['input_rate'] * settings['dt'])
         ts_offset =settings['duration']
         last_ts = 0
-
 
         for i,digit in enumerate(mnist_digits):
             np.random.seed(1) #TODO remove me, here for debugging
@@ -1294,12 +1362,11 @@ class SNN_compiled():
                 rnd = np.random.uniform(0,settings["input_rate"])
                 if rnd< settings["softmax_clockrate"]:
                     softmax_in_events.append([t+last_ts, -1, -1, 0, -1, -1])
-
+            timestamps.append([last_ts, spike_for_t[-1][0]])
             last_ts = spike_for_t[-1][0]+1#(settings['duration']*(i+1)) + 1
             # reset control events
             reset_events.append([last_ts, -1, -1, 0, -2, -2])
             last_ts += 1
-
         if last_ts>=INT32_MAX:
             print("Timestamp larger than maximum 32bit integer, please use smaller batch size")
             sys.exit(1)
@@ -1312,7 +1379,31 @@ class SNN_compiled():
         np.savetxt(self.megadirname + self.layers[0].label + ".stim", spikes, delimiter=" ", fmt=("%d"))
         np.savetxt(self.megadirname + "reset_event.stim", reset_events, delimiter=" ", fmt=("%d"))
         np.savetxt(self.megadirname + "softmax_input.stim", softmax_in_events, delimiter=" ", fmt="%d")
-        return last_ts
+        return timestamps
+
+    def generate_bias_clk(self,timestamp_batches):
+        '''
+        An external periodic (per timestep) event is used to trigger the biases, since megasim simulator is not a
+        time-stepped simulator.
+
+        Parameters
+        ----------
+        timestamp_batches: List of lists
+            list that includes the first and last timestamps of the input source. Eg [ [start0, stop0], [start1, stop1]]
+
+        Returns
+        -------
+        Generates a megasim stimulus file in the experiment folder
+        '''
+        bias_clk = []
+        ts_count = 0
+        fname = "bias_clk.stim"
+        for ts in timestamp_batches:
+            for t in np.arange(ts[0], ts[1]+1, settings['dt']):
+                bias_clk.append([t, -1, -1,0, 0, 1 ])
+
+        np.savetxt(self.megadirname + fname, np.asarray(bias_clk), delimiter=" ", fmt="%d")
+
 
     def build_schematic_updated(self):
         '''
@@ -1323,6 +1414,17 @@ class SNN_compiled():
         '''
         #input_stimulus_file = self.input_stimulus_file
         #input_stimulus_node = "input_evs"
+
+        use_biases = False
+        bias_node = "bias_clk"
+        for l in self.layers:
+            try:
+                if l.uses_biases:
+                    use_biases=True
+                    self.use_biases=True
+            except(AttributeError):
+                pass
+
         reset_event_string = "reset_event"
         fileo = open(self.megadirname+self.megaschematic, "w")
 
@@ -1331,6 +1433,10 @@ class SNN_compiled():
         fileo.write(self.layers[0].module_string +" {" + self.layers[0].label + "} " + self.layers[0].label+".stim" + "\n")
         fileo.write("\n")
         self.layers[0].evs_files.append("node_"+self.layers[0].label+".evs")
+
+        if use_biases:
+            fileo.write("source {bias_clk} bias_clk.stim")
+            fileo.write("\n")
 
         # Check if the output layer is softmax
         if self.layers[-1].module_string =="module_softmax":
@@ -1344,21 +1450,29 @@ class SNN_compiled():
 
         for n in range(1,len(self.layers)):
             # CONVOLUTIONAL AND AVERAGE POOLING MODULES
+            #import  pdb;pdb.set_trace()
             if self.layers[n].module_string == 'module_conv' or self.layers[n].module_string=='module_conv_NPP':
                 for f in range(self.layers[n].num_of_FMs):
                     # if there is only one input or we use reset signals
-                    if self.layers[n].n_in_ports == 1 or (self.layers[n].n_in_ports == 2 and self.reset_signal_event==True):
+                    if self.layers[n].n_in_ports == 1 or (self.layers[n].n_in_ports == 2 and self.reset_signal_event)\
+                        or (self.layers[n].n_in_ports == 3 and use_biases):
                         # check if the presynaptic population is the input layer
                         if n==1:
+                            #import pdb;pdb.set_trace()
+                            pre_label_node = self.layers[n - 1].label
+
+                            if use_biases and self.layers[n].uses_biases:
+                                pre_label_node = pre_label_node +","+bias_node
                             if self.reset_signal_event:
-                                pre_label_node = self.layers[n - 1].label+","+reset_event_string
-                            else:
-                                pre_label_node = self.layers[n - 1].label
+                                pre_label_node = pre_label_node+","+reset_event_string
+
                         else:
+                            pre_label_node = self.layers[n - 1].label + "_" + str(f)
+
+                            if use_biases and self.layers[n].uses_biases:
+                                pre_label_node = pre_label_node +","+bias_node
                             if self.reset_signal_event:
-                                pre_label_node = self.layers[n - 1].label + "_" + str(f)+","+reset_event_string
-                            else:
-                                pre_label_node = self.layers[n-1].label+"_"+str(f)
+                                pre_label_node = pre_label_node+","+reset_event_string
 
                         buildline = self.layers[n].module_string + " {" + pre_label_node + "}" + "{" + \
                                     self.layers[n].label+"_"+str(f) + "} " + self.layers[n].label+"_"+str(f) + ".prm" + " " + self.layers[
@@ -1367,6 +1481,8 @@ class SNN_compiled():
                         num_pre_nodes_in = self.layers[n].n_in_ports
                         pre_label = self.layers[n-1].label
                         pre_nodes_str = [pre_label+"_"+str(x) for x in range(num_pre_nodes_in)]
+                        if use_biases and self.layers[n].uses_biases:
+                            pre_nodes_str[-2] = bias_node
                         if self.reset_signal_event:
                             pre_nodes_str[-1] = reset_event_string
 
@@ -1402,18 +1518,26 @@ class SNN_compiled():
                 #check if previous layer is flatten
                 pre_label_node = self.layers[n-1].label
                 if self.layers[n].module_string =="module_softmax":
+                    pre_nodes = self.layers[n - 1].label #+ ",softmax_input"
+                    if use_biases:
+                        pre_nodes = pre_nodes + ","+bias_node
+
+                    pre_nodes = pre_nodes +",softmax_input"
                     if self.reset_signal_event:
-                        pre_nodes = self.layers[n-1].label+",softmax_input,"+reset_event_string
-                    else:
-                        pre_nodes = self.layers[n-1].label+",softmax_input"
+                        pre_nodes = pre_nodes+","+reset_event_string
+
                     buildline = self.layers[n].module_string + " {" +pre_nodes+ "}" + "{" + \
                                     self.layers[n].label + "} " + self.layers[n].label + ".prm" + " " + self.layers[
                                         n].label + ".stt"
                 else:
+                    pre_nodes = self.layers[n - 1].label
+
+                    if use_biases:
+                        pre_nodes = pre_nodes+","+bias_node
                     if self.reset_signal_event:
-                        pre_nodes =  self.layers[n-1].label +","+reset_event_string
-                    else:
-                        pre_nodes = self.layers[n-1].label
+                        pre_nodes =  pre_nodes +","+reset_event_string
+
+
                     buildline = self.layers[n].module_string + " {" +pre_nodes + "}" + "{" + \
                                     self.layers[n].label + "} " + self.layers[n].label + ".prm" + " " + self.layers[
                                         n].label + ".stt"
@@ -1499,8 +1623,11 @@ class SNN_compiled():
             else:
                 for fevs in l.evs_files:
                     events_tmp = np.genfromtxt(self.megadirname + fevs, delimiter=" ", dtype="int")
-                    indeces = np.where(np.logical_and(events_tmp[:, 0] >= start, events_tmp[:, 0] < stop))
-                    events.append(events_tmp[indeces])
+                    if events_tmp.size!=0:
+                        indeces = np.where(np.logical_and(events_tmp[:, 0] >= start, events_tmp[:, 0] < stop))
+                        events.append(events_tmp[indeces])
+                    else:
+                        events.append(np.asarray([[0, 0, 0, 0,0,0],[0, 0, 0, 0,0,0]]))
         return events
 
     def get_output_spikes_batch(self,):
@@ -1516,11 +1643,13 @@ class SNN_compiled():
         reset_events = np.genfromtxt(self.megadirname + "reset_event.stim", delimiter=" ",dtype="int")
         reset_ts = reset_events[:, 0]
         start = 0
+
         for i in range(len(reset_ts)):
             stop = reset_ts[i]
             start_dbg.append(start)
             stop_dbg.append(stop)
             indeces = np.where(np.logical_and(output_events[:,0]>=start,output_events[:,0]<stop))
+
             outspikes_per_symbol.append(output_events[indeces])
             start=stop#output_events[indeces][-1][0]+1
         return outspikes_per_symbol, start_dbg, stop_dbg
@@ -1723,7 +1852,11 @@ class SNN_compiled():
 
                 echo("Using the same random seed for debugging\n")
                 np.random.seed(1)
-                last_ts_for_batch = self.poisson_spike_generator_batchmode_megasim( X_test[current_batch])
+                timestamp_batches = self.poisson_spike_generator_batchmode_megasim( X_test[current_batch])
+
+                if self.use_biases:
+                    self.generate_bias_clk(timestamp_batches)
+
                 if settings['verbose'] > 0:
                     print("Running MegaSim")
                 #TODO this is ugly, in python3 i have to change folders to execute megasim
@@ -1758,7 +1891,7 @@ class SNN_compiled():
 
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
-                if i == 0:
+                if i == -1:
                     spike_monitors = self.get_spikes_batch(idx=0)
                     self.spikemonitors.append(spike_monitors)
                     output_shapes = [x.output_shapes for x in self.layers[1:]]
