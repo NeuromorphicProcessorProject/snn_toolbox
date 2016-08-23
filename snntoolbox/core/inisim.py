@@ -68,11 +68,13 @@ def update_neurons(self, impulse, time, updates):
         updates.append((self.spikecounts, self.spikecounts + output_spikes))
         updates.append((self.max_spikerate,
                         T.max(self.spikecounts) / (time + settings['dt'])))
-        updates.append((self.avg_spikerate,
-                        self.spikecounts / (time + settings['dt'])))
-        updates.append((self.fir_spikerate,
-                        self.fir_spikerate + output_spikes /
-                        (time + settings['dt'])))
+        if settings["maxpool_type"] == "avg_max":
+            updates.append((self.avg_spikerate,
+                            self.spikecounts / (time + settings['dt'])))
+        elif settings["maxpool_type"] == "fir_max":
+            updates.append((self.fir_spikerate,
+                            self.fir_spikerate + output_spikes /
+                            (time + settings['dt'])))
     return output_spikes
 
 
@@ -147,8 +149,10 @@ def reset(self):
     self.spiketrain.set_value(floatX(np.zeros(self.output_shape)))
     if settings['online_normalization']:
         self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
-        self.avg_spikerate.set_value(floatX(np.zeros(self.output_shape)))
-        self.fir_spikerate.set_value(floatX(np.zeros(self.output_shape)))
+        if settings["maxpool_type"] == "avg_max":
+            self.avg_spikerate.set_value(floatX(np.zeros(self.output_shape)))
+        elif settings["maxpool_type"] == "fir_max":
+            self.fir_spikerate.set_value(floatX(np.zeros(self.output_shape)))
         self.max_spikerate.set_value(0.0)
         self.v_thresh.set_value(settings['v_thresh'])
 
@@ -208,8 +212,10 @@ def init_layer(self, layer, v_thresh, tau_refrac):
     layer.updates = []
     if settings['online_normalization']:
         layer.spikecounts = shared_zeros(self.output_shape)
-        layer.avg_spikerate = shared_zeros(self.output_shape)
-        layer.fir_spikerate = shared_zeros(self.output_shape)
+        if settings["maxpool_type"] == "avg_max":
+            layer.avg_spikerate = shared_zeros(self.output_shape)
+        elif settings["maxpool_type"] == "fir_max":
+            layer.fir_spikerate = shared_zeros(self.output_shape)
         layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
     if len(layer.get_weights()) > 0:
         layer.W = K.variable(layer.get_weights()[0])
@@ -406,7 +412,7 @@ class MaxPool2DReLU(MaxPooling2D):
     """
 
     def __init__(self, pool_size=(2, 2), strides=None, ignore_border=True,
-                 label=None, **kwargs):
+                 label=None, pool_type="fir_max", **kwargs):
         """Init function."""
         self.ignore_border = ignore_border
         super().__init__(pool_size=pool_size, strides=strides)
@@ -415,8 +421,9 @@ class MaxPool2DReLU(MaxPooling2D):
             self.name = label
         else:
             self.label = self.name
+        self.pool_type = pool_type
 
-    def get_output(self, train=False, option="avg_max"):
+    def get_output(self, train=False):
         """Get Output.
 
         Parameters
@@ -428,16 +435,16 @@ class MaxPool2DReLU(MaxPooling2D):
         # Recurse
         inp, time, updates = get_input(self)
 
-        if option == "avg_max":
+        if self.pool_type == "avg_max":
             spikerate = self.inbound_nodes[0].inbound_layers[0].avg_spikerate \
                         if self.inbound_nodes[0].inbound_layers \
                         else K.placeholder(shape=self.input_shape)
-        elif option == "fir_max":
+        elif self.pool_type == "fir_max":
             spikerate = self.inbound_nodes[0].inbound_layers[0].fir_spikerate \
                         if self.inbound_nodes[0].inbound_layers \
                         else K.placeholder(shape=self.input_shape)
 
-        if (option == "avg_max" or option == "fir_max") \
+        if (self.pool_type in ["avg_max", "fir_max"]) \
            and settings['online_normalization']:
             max_idx = pool_same_size(spikerate,
                                      patch_size=self.pool_size,

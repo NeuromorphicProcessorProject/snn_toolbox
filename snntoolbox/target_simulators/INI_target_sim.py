@@ -137,7 +137,8 @@ class SNN_compiled():
             elif layer['layer_type'] == 'MaxPooling2D':
                 self.snn.add(self.sim.MaxPool2DReLU(
                     pool_size=layer['pool_size'], strides=layer['strides'],
-                    border_mode=layer['border_mode'], label=layer['label']))
+                    border_mode=layer['border_mode'], label=layer['label'],
+                    pool_type=settings["maxpool_type"]))
             elif layer['layer_type'] == 'AveragePooling2D':
                 self.snn.add(self.sim.AvgPool2DReLU(
                     pool_size=layer['pool_size'], strides=layer['strides'],
