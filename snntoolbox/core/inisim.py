@@ -64,22 +64,26 @@ def update_neurons(self, impulse, time, updates):
     else:
         output_spikes = linear_activation(self, impulse, time, updates)
     updates.append((self.spiketrain, output_spikes * time))
+
     if settings['online_normalization']:
         updates.append((self.spikecounts, self.spikecounts + output_spikes))
         updates.append((self.max_spikerate,
                         T.max(self.spikecounts) / (time + settings['dt'])))
-        if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-            if settings["maxpool_type"] == "avg_max":
-                updates.append((self.avg_spikerate,
-                                self.spikecounts / (time + settings['dt'])))
-            elif settings["maxpool_type"] == "fir_max":
-                updates.append((self.fir_spikerate,
-                                self.fir_spikerate + output_spikes /
-                                (time + settings['dt'])))
-            elif settings["maxpool_type"] == "exp_max":
-                updates.append((self.exp_spikerate,
-                                self.exp_spikerate + output_spikes /
-                                2.**((time+settings['dt'])/settings['dt'])))
+    else:
+        updates.append((self.spikecounts, self.spikecounts + output_spikes))
+
+    if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
+        if settings["maxpool_type"] == "avg_max":
+            updates.append((self.avg_spikerate,
+                            self.spikecounts / (time + settings['dt'])))
+        elif settings["maxpool_type"] == "fir_max":
+            updates.append((self.fir_spikerate,
+                            self.fir_spikerate + output_spikes /
+                            (time + settings['dt'])))
+        elif settings["maxpool_type"] == "exp_max":
+            updates.append((self.exp_spikerate,
+                            self.exp_spikerate + output_spikes /
+                            2.**((time+settings['dt'])/settings['dt'])))
     return output_spikes
 
 
@@ -226,14 +230,18 @@ def init_layer(self, layer, v_thresh, tau_refrac, layer_type=None):
         if layer_type in layer_type_dict else layer_type
     if settings['online_normalization']:
         layer.spikecounts = shared_zeros(self.output_shape)
-        if layer.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-            if settings["maxpool_type"] == "avg_max":
-                layer.avg_spikerate = shared_zeros(self.output_shape)
-            elif settings["maxpool_type"] == "fir_max":
-                layer.fir_spikerate = shared_zeros(self.output_shape)
-            elif settings["maxpool_type"] == "exp_max":
-                layer.exp_spikerate = shared_zeros(self.output_shape)
         layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
+    else:
+        layer.spikecounts = shared_zeros(self.output_shape)
+
+    if layer.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
+        if settings["maxpool_type"] == "avg_max":
+            layer.avg_spikerate = shared_zeros(self.output_shape)
+        elif settings["maxpool_type"] == "fir_max":
+            layer.fir_spikerate = shared_zeros(self.output_shape)
+        elif settings["maxpool_type"] == "exp_max":
+            layer.exp_spikerate = shared_zeros(self.output_shape)
+
     if len(layer.get_weights()) > 0:
         layer.W = K.variable(layer.get_weights()[0])
         layer.b = K.variable(layer.get_weights()[1])
