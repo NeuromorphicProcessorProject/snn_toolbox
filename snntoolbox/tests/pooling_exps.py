@@ -70,7 +70,7 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
         settings["evaluateANN"] = False
 
     if online_normalize == "false":
-        settings["online_normalize"] = False
+        settings["online_normalization"] = False
 
     settings["maxpool_type"] = pool_type
 
