@@ -242,22 +242,6 @@ class SNN():
             plot_hist(activation_dict, 'Activation', self.labels[idx-1],
                       newpath, scale_fac)  # t=83.1%
 
-    def model_based_normalize(self):
-        """Model based normalization."""
-        scale_fac_prev_layer = 1
-        for idx, layer in enumerate(self.layers):
-            if idx == 0 or 'parameters' not in self.layers[idx-1].keys():
-                continue
-            print("Calculating output of activation layer {}".format(idx) +
-                  " following layer {} with shape {}...".format(
-                  self.labels[idx-1], layer['output_shape']))
-            parameters = self.layers[idx-1]['parameters']
-            # Undo previous scaling before calculating activations:
-            self.set_layer_params([parameters[0] * scale_fac_prev_layer,
-                                   parameters[1]], idx-1)
-
-            # TODO: normalize based on maximum weights in the layer.
-
     def set_layer_params(self, parameters, i):
         """Set ``parameters`` of layer ``i``."""
         self.layers[i]['parameters'] = parameters
