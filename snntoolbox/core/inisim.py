@@ -79,7 +79,7 @@ def update_neurons(self, impulse, time, updates):
             elif settings["maxpool_type"] == "exp_max":
                 updates.append((self.exp_spikerate,
                                 self.exp_spikerate + output_spikes /
-                                2.**(time + settings['dt'])))
+                                2.**((time+settings['dt'])/settings['dt'])))
     return output_spikes
 
 
