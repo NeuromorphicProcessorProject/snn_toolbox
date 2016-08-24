@@ -194,14 +194,15 @@ def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
     # has been initialized and connected to the network. Otherwise
     # 'output_shape' is not known (obtained from previous layer), and
     # the 'input' attribute will not be overwritten by the layer's __init__.
-    init_layer(self, self, v_thresh, tau_refrac)
+    init_layer(self, self, v_thresh, tau_refrac, kwargs["layer_type"])
     if 'time_var' in kwargs:
         input_layer = self.inbound_nodes[0].inbound_layers[0]
         input_layer.time_var = kwargs['time_var']
-        init_layer(self, input_layer, v_thresh, tau_refrac)
+        init_layer(self, input_layer, v_thresh,
+                   tau_refrac, kwargs["layer_type"])
 
 
-def init_layer(self, layer, v_thresh, tau_refrac):
+def init_layer(self, layer, v_thresh, tau_refrac, layer_type=None):
     """init layer."""
     layer.v_thresh = theano.shared(
         np.asarray(v_thresh, dtype=theano.config.floatX), 'v_thresh')
@@ -212,10 +213,11 @@ def init_layer(self, layer, v_thresh, tau_refrac):
     layer.updates = []
     if settings['online_normalization']:
         layer.spikecounts = shared_zeros(self.output_shape)
-        if settings["maxpool_type"] == "avg_max":
-            layer.avg_spikerate = shared_zeros(self.output_shape)
-        elif settings["maxpool_type"] == "fir_max":
-            layer.fir_spikerate = shared_zeros(self.output_shape)
+        if layer_type == "MaxPooling2D":
+            if settings["maxpool_type"] == "avg_max":
+                layer.avg_spikerate = shared_zeros(self.output_shape)
+            elif settings["maxpool_type"] == "fir_max":
+                layer.fir_spikerate = shared_zeros(self.output_shape)
         layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
     if len(layer.get_weights()) > 0:
         layer.W = K.variable(layer.get_weights()[0])

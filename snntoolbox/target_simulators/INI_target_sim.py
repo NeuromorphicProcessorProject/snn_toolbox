@@ -110,6 +110,7 @@ class SNN_compiled():
         for (layer_num, layer) in enumerate(self.ann['layers']):
             kwargs = {'name': layer['label'], 'trainable': False}
             kwargs2 = {}
+            kwargs2.update({'layer_type': layer['layer_type']})
             if 'activation' in layer:
                 kwargs.update({'activation': layer['activation']})
             if layer_num == 0:
