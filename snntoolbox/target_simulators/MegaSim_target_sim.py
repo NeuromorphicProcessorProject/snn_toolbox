@@ -1838,11 +1838,11 @@ class SNN_compiled():
             num_batches = int( total_samples/batch_size)
 
             digit_idc_per_batch= [range(batch_size * x, batch_size * (x + 1)) for x in range(num_batches)]
-            digit_idc_per_batch[-1] = range(digit_idc_per_batch[-1][0], total_samples-1)
+            #digit_idc_per_batch[-1] = range(digit_idc_per_batch[-1][0], total_samples-1)
 
+            debug_np_status = np.zeros((total_samples,5),dtype="int")
             # build input spikes, softmax event spikes and reset event spikes per batch
             for i, current_batch in enumerate(digit_idc_per_batch):
-
                 # Clean any previous data. This is not necessary, only for debugging
                 self.clean_megasim_sim_data()
                 self.spikemonitors = []
@@ -1883,6 +1883,12 @@ class SNN_compiled():
                 truth.append(truth_batch)
                 results.append(results_batch)
 
+                debug_np_status[current_batch, 0] = current_batch
+                debug_np_status[current_batch, 1] = [np.argmax(y) for y in Y_test[current_batch]]
+                debug_np_status[current_batch, 2] = guess_batch
+                debug_np_status[current_batch, 3] = results_batch
+                debug_np_status[current_batch, 4] = [len(x) for x in out_spikes_per_symbol]
+
                 #concatenate results to one list (they are list of lists now, one per batch)
                 results_onelist = [item for sublist in results for item in sublist]
                 #avg = np.average([np.sum(x) for x in results])#np.average(results)
@@ -1891,7 +1897,7 @@ class SNN_compiled():
 
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
-                if i == -1:
+                if i == 0:
                     spike_monitors = self.get_spikes_batch(idx=0)
                     self.spikemonitors.append(spike_monitors)
                     output_shapes = [x.output_shapes for x in self.layers[1:]]
@@ -1917,6 +1923,8 @@ class SNN_compiled():
             #echo("Accuracy averaged over classes: {}".format(avg_acc))
             echo("Total Accuracy {:.2%}.\n".format(total_acc))
             #total_acc=0.0
+
+            np.savetxt(self.megadirname+"debug_status.csv",debug_np_status, delimiter=",",fmt="%d")
         return total_acc
 
     def end_sim(self):
