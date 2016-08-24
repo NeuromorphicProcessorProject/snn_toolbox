@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu May 19 16:03:06 2016
-
-Class for neural networks that have been converted from analog to spiking.
+"""Class for neural networks that have been converted from analog to spiking.
 
 @author: rbodo
 """
@@ -100,6 +97,7 @@ class SNN():
     """
 
     def __init__(self, path=None, filename=None):
+        """Init a SNN model."""
         if path is None:
             path = settings['path']
         if filename is None:
@@ -127,12 +125,12 @@ class SNN():
         self.compiled_snn = self.target_sim.SNN_compiled(ann)
 
     def import_modules(self):
-        """
+        """Import utility functions of input model library.
+
         Import utility functions of input model library ('model_lib') and of
         the simulator to use ('target_sim')
 
         """
-
         from importlib import import_module
         self.model_lib = import_module('snntoolbox.model_libs.' +
                                        settings['model_lib'] + '_input_lib')
@@ -140,8 +138,7 @@ class SNN():
                                         settings['simulator'] + '_target_sim')
 
     def evaluate_ann(self, X_test, Y_test, **kwargs):
-        """
-        Evaluate the performance of a network.
+        """Evaluate the performance of a network.
 
         Wrapper for the evaluation functions of specific input neural network
         libraries ``settings['model_lib']`` like keras, caffe, torch, etc.
@@ -166,7 +163,6 @@ class SNN():
         score of a Keras model.
 
         """
-
         score = self.model_lib.evaluate(self.val_fn, X_test, Y_test)
 
         print('\n')
@@ -176,14 +172,12 @@ class SNN():
         return score
 
     def normalize_parameters(self):
-        """
-        Normalize the parameters of a network.
+        """Normalize the parameters of a network.
 
         The parameters of each layer are normalized with respect to the maximum
         activation or parameter value.
 
         """
-
         from snntoolbox.io_utils.plotting import plot_hist
         from snntoolbox.core.util import get_scale_fac, get_activations_layer
         from snntoolbox.io_utils.load import load_dataset
@@ -248,29 +242,35 @@ class SNN():
             plot_hist(activation_dict, 'Activation', self.labels[idx-1],
                       newpath, scale_fac)  # t=83.1%
 
+    def model_based_normalize(self):
+        """Model based normalization."""
+        scale_fac_prev_layer = 1
+        for idx, layer in enumerate(self.layers):
+            if idx == 0 or 'parameters' not in self.layers[idx-1].keys():
+                continue
+            print("Calculating output of activation layer {}".format(idx) +
+                  " following layer {} with shape {}...".format(
+                  self.labels[idx-1], layer['output_shape']))
+            parameters = self.layers[idx-1]['parameters']
+            # Undo previous scaling before calculating activations:
+            self.set_layer_params([parameters[0] * scale_fac_prev_layer,
+                                   parameters[1]], idx-1)
+
+            # TODO: normalize based on maximum weights in the layer.
+
     def set_layer_params(self, parameters, i):
-        """
-        Set ``parameters`` of layer ``i``.
-
-        """
-
+        """Set ``parameters`` of layer ``i``."""
         self.layers[i]['parameters'] = parameters
         self.model_lib.set_layer_params(self.model, parameters,
                                         self.layer_idx_map[i])
 
     def get_params(self):
-        """
-        Return list where each entry contains the parameters of a layer of the
-        model.
-
-        """
-
+        """Return list where each entry contains the parameters of a layer."""
         return [l['parameters'] for l in self.layers
                 if 'parameters' in l.keys()]
 
     def save(self, path=None, filename=None):
-        """
-        Write model architecture and parameters to disk.
+        """Write model architecture and parameters to disk.
 
         Parameters
         ----------
@@ -284,7 +284,6 @@ class SNN():
             ``settings['filename_snn']``.
 
         """
-
         from snntoolbox.io_utils.save import confirm_overwrite
 
         if path is None:
@@ -307,11 +306,7 @@ class SNN():
         print("Done.\n")
 
     def get_config(self):
-        """
-        Return a dictionary describing the model.
-
-        """
-
+        """Return a dictionary describing the model."""
         # When adding a parser for a new input model format, you may need to
         # supplement the following list by non-JSON-serializable objects.
         skip_keys = ['parameters', 'get_activ', 'model', 'model_protobuf']
@@ -324,10 +319,7 @@ class SNN():
                 'layers': layer_config}
 
     def save_config(self, path=None):
-        """
-        Save model configuration to disk.
-        """
-
+        """Save model configuration to disk."""
         from snntoolbox.io_utils.save import to_json
 
         if path is None:
@@ -336,11 +328,7 @@ class SNN():
         to_json(self.get_config(), path)
 
     def save_parameters(self, path=None):
-        """
-        Dump all layer parameters to a HDF5 file.
-
-        """
-
+        """Dump all layer parameters to a HDF5 file."""
         import h5py
 
         if path is None:
@@ -368,13 +356,15 @@ class SNN():
         f.close()
 
     def build(self):
+        """Build model."""
         self.compiled_snn.build()
 
     def run(self, X_test, Y_test):
+        """Run model."""
         return self.compiled_snn.run(self, X_test, Y_test)
 
     def export_to_sim(self, path=None, filename=None):
-
+        """Export converted SNN."""
         if path is None:
             path = settings['path']
         if filename is None:
@@ -383,4 +373,5 @@ class SNN():
         self.compiled_snn.save(path, filename)
 
     def end_sim(self):
+        """End simulation."""
         self.compiled_snn.end_sim()
