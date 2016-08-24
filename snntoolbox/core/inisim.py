@@ -158,18 +158,21 @@ def reset(self):
     self.spiketrain.set_value(floatX(np.zeros(self.output_shape)))
     if settings['online_normalization']:
         self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
-        if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-            if settings["maxpool_type"] == "avg_max":
-                self.avg_spikerate.set_value(
-                    floatX(np.zeros(self.output_shape)))
-            elif settings["maxpool_type"] == "fir_max":
-                self.fir_spikerate.set_value(
-                    floatX(np.zeros(self.output_shape)))
-            elif settings["maxpool_type"] == "exp_max":
-                self.exp_spikerate.set_value(
-                    floatX(np.zeros(self.output_shape)))
         self.max_spikerate.set_value(0.0)
         self.v_thresh.set_value(settings['v_thresh'])
+    else:
+        self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
+
+    if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
+        if settings["maxpool_type"] == "avg_max":
+            self.avg_spikerate.set_value(
+                floatX(np.zeros(self.output_shape)))
+        elif settings["maxpool_type"] == "fir_max":
+            self.fir_spikerate.set_value(
+                floatX(np.zeros(self.output_shape)))
+        elif settings["maxpool_type"] == "exp_max":
+            self.exp_spikerate.set_value(
+                floatX(np.zeros(self.output_shape)))
 
 
 def get_input(self):
