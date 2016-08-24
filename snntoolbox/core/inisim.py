@@ -489,8 +489,7 @@ class MaxPool2DReLU(MaxPooling2D):
                         if self.inbound_nodes[0].inbound_layers \
                         else K.placeholder(shape=self.input_shape)
 
-        if (self.pool_type in ["avg_max", "fir_max", "exp_max"]) \
-           and settings['online_normalization']:
+        if self.pool_type in ["avg_max", "fir_max", "exp_max"]:
             max_idx = pool_same_size(spikerate,
                                      patch_size=self.pool_size,
                                      ignore_border=self.ignore_border,
@@ -500,8 +499,7 @@ class MaxPool2DReLU(MaxPooling2D):
                                         ignore_border=self.ignore_border,
                                         mode='max')
         else:
-            print("Online Normalization is not enabled, "
-                  "or wrong max pooling type, "
+            print("wrong max pooling type,"
                   "choose Average Pooling automatically")
             self.impulse = pool.pool_2d(inp, ds=self.pool_size,
                                         st=self.strides,
