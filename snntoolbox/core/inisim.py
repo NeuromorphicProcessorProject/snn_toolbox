@@ -68,13 +68,18 @@ def update_neurons(self, impulse, time, updates):
         updates.append((self.spikecounts, self.spikecounts + output_spikes))
         updates.append((self.max_spikerate,
                         T.max(self.spikecounts) / (time + settings['dt'])))
-        if settings["maxpool_type"] == "avg_max":
-            updates.append((self.avg_spikerate,
-                            self.spikecounts / (time + settings['dt'])))
-        elif settings["maxpool_type"] == "fir_max":
-            updates.append((self.fir_spikerate,
-                            self.fir_spikerate + output_spikes /
-                            (time + settings['dt'])))
+        if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
+            if settings["maxpool_type"] == "avg_max":
+                updates.append((self.avg_spikerate,
+                                self.spikecounts / (time + settings['dt'])))
+            elif settings["maxpool_type"] == "fir_max":
+                updates.append((self.fir_spikerate,
+                                self.fir_spikerate + output_spikes /
+                                (time + settings['dt'])))
+            elif settings["maxpool_type"] == "exp_max":
+                updates.append((self.exp_spikerate,
+                                self.exp_spikerate + output_spikes /
+                                2.**(time + settings['dt'])))
     return output_spikes
 
 
@@ -149,10 +154,16 @@ def reset(self):
     self.spiketrain.set_value(floatX(np.zeros(self.output_shape)))
     if settings['online_normalization']:
         self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
-        if settings["maxpool_type"] == "avg_max":
-            self.avg_spikerate.set_value(floatX(np.zeros(self.output_shape)))
-        elif settings["maxpool_type"] == "fir_max":
-            self.fir_spikerate.set_value(floatX(np.zeros(self.output_shape)))
+        if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
+            if settings["maxpool_type"] == "avg_max":
+                self.avg_spikerate.set_value(
+                    floatX(np.zeros(self.output_shape)))
+            elif settings["maxpool_type"] == "fir_max":
+                self.fir_spikerate.set_value(
+                    floatX(np.zeros(self.output_shape)))
+            elif settings["maxpool_type"] == "exp_max":
+                self.exp_spikerate.set_value(
+                    floatX(np.zeros(self.output_shape)))
         self.max_spikerate.set_value(0.0)
         self.v_thresh.set_value(settings['v_thresh'])
 
@@ -211,13 +222,17 @@ def init_layer(self, layer, v_thresh, tau_refrac, layer_type=None):
     layer.mem = shared_zeros(self.output_shape)
     layer.spiketrain = shared_zeros(self.output_shape)
     layer.updates = []
+    layer.layer_type = layer_type_dict[layer_type] \
+        if layer_type in layer_type_dict else layer_type
     if settings['online_normalization']:
         layer.spikecounts = shared_zeros(self.output_shape)
-        if layer_type == "MaxPooling2D":
+        if layer.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
             if settings["maxpool_type"] == "avg_max":
                 layer.avg_spikerate = shared_zeros(self.output_shape)
             elif settings["maxpool_type"] == "fir_max":
                 layer.fir_spikerate = shared_zeros(self.output_shape)
+            elif settings["maxpool_type"] == "exp_max":
+                layer.exp_spikerate = shared_zeros(self.output_shape)
         layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
     if len(layer.get_weights()) > 0:
         layer.W = K.variable(layer.get_weights()[0])
@@ -253,6 +268,10 @@ class SpikeFlatten(Flatten):
         reshaped_inp = T.reshape(inp, self.output_shape)
         return reshaped_inp
 
+    def get_name(self):
+        """Get class name."""
+        return self.__class__.__name__
+
 
 class SpikeDense(Dense):
     """Spike Dense layer.
@@ -282,6 +301,10 @@ class SpikeDense(Dense):
         output_spikes = update_neurons(self, self.impulse, time, updates)
         self.updates = updates
         return T.cast(output_spikes, 'float32')
+
+    def get_name(self):
+        """Get class name."""
+        return self.__class__.__name__
 
 
 def pool_same_size(data_in, patch_size, ignore_border=True,
@@ -378,6 +401,10 @@ class SpikeConv2DReLU(Convolution2D):
         self.updates = updates
         return T.cast(output_spikes, 'float32')
 
+    def get_name(self):
+        """Get class name."""
+        return self.__class__.__name__
+
 
 class AvgPool2DReLU(AveragePooling2D):
     """batch_size x input_shape x out_shape."""
@@ -405,6 +432,10 @@ class AvgPool2DReLU(AveragePooling2D):
         output_spikes = update_neurons(self, self.impulse, time, updates)
         self.updates = updates
         return T.cast(output_spikes, 'float32')
+
+    def get_name(self):
+        """Get class name."""
+        return self.__class__.__name__
 
 
 class MaxPool2DReLU(MaxPooling2D):
@@ -445,8 +476,12 @@ class MaxPool2DReLU(MaxPooling2D):
             spikerate = self.inbound_nodes[0].inbound_layers[0].fir_spikerate \
                         if self.inbound_nodes[0].inbound_layers \
                         else K.placeholder(shape=self.input_shape)
+        elif self.pool_type == "exp_max":
+            spikerate = self.inbound_nodes[0].inbound_layers[0].exp_spikerate \
+                        if self.inbound_nodes[0].inbound_layers \
+                        else K.placeholder(shape=self.input_shape)
 
-        if (self.pool_type in ["avg_max", "fir_max"]) \
+        if (self.pool_type in ["avg_max", "fir_max", "exp_max"]) \
            and settings['online_normalization']:
             max_idx = pool_same_size(spikerate,
                                      patch_size=self.pool_size,
@@ -458,6 +493,7 @@ class MaxPool2DReLU(MaxPooling2D):
                                         mode='max')
         else:
             print("Online Normalization is not enabled, "
+                  "or wrong max pooling type, "
                   "choose Average Pooling automatically")
             self.impulse = pool.pool_2d(inp, ds=self.pool_size,
                                         st=self.strides,
@@ -468,9 +504,19 @@ class MaxPool2DReLU(MaxPooling2D):
         self.updates = updates
         return T.cast(output_spikes, 'float32')
 
+    def get_name(self):
+        """Get class name."""
+        return self.__class__.__name__
+
 
 custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeDense': SpikeDense,
                  'SpikeConv2DReLU': SpikeConv2DReLU,
                  'AvgPool2DReLU': AvgPool2DReLU,
                  'MaxPool2DReLU': MaxPool2DReLU}
+
+layer_type_dict = {'Flatten': 'SpikeFlatten',
+                   'Dense': 'SpikeDense',
+                   'Convolution2D': 'SpikeConv2DReLU',
+                   'AveragePooling2D': 'AvgPool2DReLU',
+                   'MaxPooling2D': 'MaxPool2DReLU'}

@@ -48,7 +48,7 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
                          "file %s is not existed!" % (pref_path))
 
     if not os.path.isdir(log_path):
-        os.mkdir(log_path)
+        os.makedirs(log_path)
 
     print ("[MESSAGE] Running experiment %s." % (exp_name))
     print ("[MESSAGE] Loading Experiment settings.")
@@ -65,6 +65,8 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
     if normalize == "false":
         settings["normalize"] = False
         settings["evaluateANN"] = False
+
+    settings["maxpool_type"] = pool_type
 
     snntoolbox.update_setup(settings)
 
@@ -87,7 +89,7 @@ if __name__ == "__main__":
                         default="true",
                         help="no normalize if the model is normalized before")
     # as there is no setting parameters for this, not simply omit.
-    parser.add_argument("--pool-type", type=str,
+    parser.add_argument("-pt", "--pool-type", type=str,
                         default="avg_max",
                         help="The type of max-pooling")
     args = parser.parse_args()
