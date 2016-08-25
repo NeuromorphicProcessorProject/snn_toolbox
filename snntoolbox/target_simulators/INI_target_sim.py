@@ -24,7 +24,7 @@ import theano
 from textwrap import dedent
 from keras.models import Sequential
 from snntoolbox import echo
-from snntoolbox.config import settings, initialize_simulator
+from snntoolbox.config import settings, initialize_simulator, spiking_layers
 
 standard_library.install_aliases()
 
@@ -112,6 +112,8 @@ class SNN_compiled():
             kwargs2 = {}
             kwargs2.update({'layer_type': layer['layer_type']})
             if 'activation' in layer:
+                # if layer['activation'] == 'softsign':
+                #    kwargs.update({'activation': K.sign})
                 kwargs.update({'activation': layer['activation']})
             if layer_num == 0:
                 # For the input layer, pass extra keyword argument
@@ -144,8 +146,7 @@ class SNN_compiled():
                 self.snn.add(self.sim.AvgPool2DReLU(
                     pool_size=layer['pool_size'], strides=layer['strides'],
                     border_mode=layer['border_mode'], label=layer['label']))
-            if layer['layer_type'] in {'Convolution2D', 'Dense', 'Flatten',
-                                       'MaxPooling2D', 'AveragePooling2D'}:
+            if layer['layer_type'] in spiking_layers:
                 self.sim.init_neurons(self.snn.layers[-1],
                                       v_thresh=settings['v_thresh'],
                                       tau_refrac=settings['tau_refrac'],

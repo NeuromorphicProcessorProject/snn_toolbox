@@ -23,7 +23,7 @@ import lasagne
 import theano
 import numpy as np
 
-from snntoolbox.config import settings, activation_layers
+from snntoolbox.config import settings, spiking_layers
 from snntoolbox.io_utils.load import load_parameters
 from snntoolbox.model_libs.common import absorb_bn, import_script
 from snntoolbox.model_libs.common import border_mode_string
@@ -131,34 +131,36 @@ def extract(model):
             layer_type = 'Flatten'
         elif name == 'BatchNormLayer':
             layer_type = 'BatchNormalization'
-        elif name == 'InputLayer':
-            continue
+        elif name == 'NonlinearityLayer':
+            layer_type = 'Activation'
         else:
             layer_type = layer.__class__.__name__
         attributes = {'layer_num': idx,
                       'layer_type': layer_type,
                       'output_shape': layer.output_shape}
 
-        if 'BatchNormalization' in layer.__class__.__name__:
+        if layer_type == 'BatchNormalization':
             bn_parameters = parameters[parameters_idx: parameters_idx + 4]
-            prev_layer = lasagne_layers[layer_num - 1]
-            label = labels[-1]
+            for k in [layer_num - i for i in range(1, 3)]:
+                prev_layer = lasagne_layers[k]
+                label = prev_layer.__class__.__name__
+                if prev_layer.get_params() != []:
+                    break
             wb = parameters[parameters_idx - 2: parameters_idx]
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of layer {}, {}.".format(layer_num - 1, label))
+                  "parameters of layer {}, {}.".format(k, label))
             parameters_norm = absorb_bn(wb[0], wb[1],
-                                        bn_parameters[0], bn_parameters[1],
-                                        bn_parameters[2], bn_parameters[3],
+                                        bn_parameters[1], bn_parameters[0],
+                                        bn_parameters[2], 1/bn_parameters[3],
                                         layer.epsilon)
             # Remove Batch-normalization layer by setting gamma=1, beta=1,
             # mean=0, std=1
             zeros = np.zeros_like(bn_parameters[0])
             ones = np.ones_like(bn_parameters[0])
-            layer.set_weights([ones, zeros, zeros, ones])
             layer.gamma.set_value(ones)
             layer.beta.set_value(zeros)
             layer.mean.set_value(zeros)
-            layer.std.set_value(ones)
+            layer.inv_std.set_value(ones)
             # Replace parameters of preceding Conv or FC layer by parameters
             # that include the batch-normalization transformation.
             prev_layer.W.set_value(parameters_norm[0])
@@ -166,6 +168,29 @@ def extract(model):
             layers[-1]['parameters'] = parameters_norm
             parameters_idx += 4
             continue
+
+        if layer_type not in spiking_layers:
+            continue
+
+        # Insert Flatten layer
+        prev_layer_output_shape = lasagne_layers[layer_num-1].output_shape
+        if len(attributes['output_shape']) < len(prev_layer_output_shape) and \
+                layer_type != 'Flatten':
+            print("Inserting Flatten layer")
+            flat_output_shape = [layers[-1]['output_shape'][0],
+                                 np.prod(layers[-1]['output_shape'][1:])]
+            attributes2 = {'layer_num': idx,
+                           'layer_type': 'Flatten',
+                           'output_shape': flat_output_shape}
+            # Append layer label
+            num_str = str(idx) if idx > 9 else '0' + str(idx)
+            shape_string = '_{}'.format(attributes2['output_shape'][1])
+            labels.append(num_str + attributes2['layer_type'] + shape_string)
+            attributes2.update({'label': labels[-1]})
+            layers.append(attributes2)
+            layer_idx_map.append(layer_num)
+            idx += 1
+
         # Append layer label
         if len(attributes['output_shape']) == 2:
             shape_string = '_{}'.format(attributes['output_shape'][1])
@@ -174,15 +199,39 @@ def extract(model):
                                               attributes['output_shape'][2],
                                               attributes['output_shape'][3])
         num_str = str(idx) if idx > 9 else '0' + str(idx)
-        labels.append(num_str + attributes['layer_type'] + shape_string)
+        labels.append(num_str + layer_type + shape_string)
         attributes.update({'label': labels[-1]})
 
-        if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
+        if layer_type in {'Dense', 'Convolution2D'}:
             wb = parameters[parameters_idx: parameters_idx + 2]
             parameters_idx += 2  # For weights and biases
-            attributes.update({'parameters': wb})
+            # Get type of nonlinearity if the activation is directly in the
+            # Dense / Conv layer:
+            activation = layer.nonlinearity.__name__
+            # Otherwise, search for the activation layer:
+            for k in range(layer_num+1, min(layer_num+4, len(lasagne_layers))):
+                next_layer = lasagne_layers[k]
+                if next_layer.__class__.__name__ == 'NonlinearityLayer':
+                    nonlinearity = next_layer.nonlinearity.__name__
+                    if nonlinearity == 'rectify':
+                        activation = 'relu'
+                        layer.nonlinearity = next_layer.nonlinearity
+                    elif nonlinearity == 'softmax':
+                        activation = 'softmax'
+                        layer.nonlinearity = next_layer.nonlinearity
+                    elif nonlinearity == 'binary_tanh_unit':
+                        activation = 'softsign'
+                        layer.nonlinearity = next_layer.nonlinearity
+                    else:
+                        activation = 'linear'
+                        layer.nonlinearity = lasagne.nonlinearities.linear
+                    break
+            attributes.update({'parameters': wb,
+                               'activation': activation,
+                               'get_activ': get_activ_fn_for_layer(model,
+                                                                   layer_num)})
 
-        if attributes['layer_type'] == 'Convolution2D':
+        if layer_type == 'Convolution2D':
             border_mode = border_mode_string(layer.pad, layer.filter_size)
             attributes.update({'input_shape': layer.input_shape,
                                'nb_filter': layer.num_filters,
@@ -192,7 +241,7 @@ def extract(model):
                                'subsample': layer.stride,
                                'filter_flip': layer.flip_filters})
 
-        if attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
+        if layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
             border_mode = border_mode_string(layer.pad, layer.pool_size)
             attributes.update({'input_shape': layer.input_shape,
                                'pool_size': layer.pool_size,
@@ -200,27 +249,10 @@ def extract(model):
                                'border_mode': border_mode,
                                'get_activ': get_activ_fn_for_layer(model,
                                                                    layer_num)})
-
         # Append layer
         layers.append(attributes)
         layer_idx_map.append(layer_num)
         idx += 1
-
-        # Add activation layer after Dense, Conv, etc.
-        # Probably need to adapt this in case there is a BatchNorm layer.
-        if attributes['layer_type'] in activation_layers:
-            attributes = {'layer_num': idx,
-                          'layer_type': 'Activation',
-                          'output_shape': layer.output_shape}
-            # Append layer label
-            num_str = str(idx) if idx > 9 else '0' + str(idx)
-            labels.append(num_str + attributes['layer_type'] + shape_string)
-            attributes.update({'label': labels[-1]})
-            attributes.update({'get_activ': get_activ_fn_for_layer(model,
-                                                                   layer_num)})
-            layers.append(attributes)
-            layer_idx_map.append(layer_num)
-            idx += 1
 
     return {'input_shape': input_shape, 'layers': layers, 'labels': labels,
             'layer_idx_map': layer_idx_map}
@@ -228,10 +260,11 @@ def extract(model):
 
 def get_activ_fn_for_layer(model, i):
     layers = lasagne.layers.get_all_layers(model)
-    return theano.function(
+    f = theano.function(
         [layers[0].input_var, theano.In(theano.tensor.scalar(), value=0)],
         lasagne.layers.get_output(layers[i], layers[0].input_var),
         allow_input_downcast=True, on_unused_input='ignore')
+    return lambda x: f(x).astype('float16', copy=False)
 
 
 def model_from_py(path=None, filename=None):
@@ -287,6 +320,23 @@ def load_ann(path=None, filename=None):
         filename = settings['filename']
 
     return model_from_py(path, filename)
+
+
+def save_parameters(parameters, path):
+    """
+    Dump all layer parameters to a HDF5 file.
+
+    """
+
+    import h5py
+
+    f = h5py.File(path, 'w')
+
+    for i, p in enumerate(parameters):
+        idx = '0' + str(i) if i < 10 else str(i)
+        f.create_dataset('param_' + idx, data=p, dtype=p.dtype)
+    f.flush()
+    f.close()
 
 
 def evaluate(val_fn, X_test, Y_test):

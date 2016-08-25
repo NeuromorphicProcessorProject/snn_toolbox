@@ -59,7 +59,7 @@ def get_cifar10(path=None, filename=None, flat=False):
     (X_train, y_train), (X_test, y_test) = cifar10.load_data()
 
     # Convert class vectors to binary class matrices
-    Y_train = to_categorical(y_train, nb_classes)
+#    Y_train = to_categorical(y_train, nb_classes)
     Y_test = to_categorical(y_test, nb_classes)
 
     datagen = ImageDataGenerator(rescale=1./255, featurewise_center=gcn,
@@ -79,8 +79,8 @@ def get_cifar10(path=None, filename=None, flat=False):
         filepath = os.path.join(path, filename)
         np.savez_compressed(filepath+'X_norm', X_train[::3].astype('float32'))
         np.savez_compressed(filepath+'X_test', X_test.astype('float32'))
-#       np.savez_compressed(filepath+'Y_train', Y_train)
-        np.savez_compressed(filepath+'Y_test', Y_test)
+#       np.savez_compressed(filepath+'Y_train', Y_train.astype('float32'))
+        np.savez_compressed(filepath+'Y_test', Y_test.astype('float32'))
 
 #    return (X_train, Y_train, X_test, Y_test)
 

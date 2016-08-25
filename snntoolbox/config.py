@@ -282,8 +282,7 @@ settings = {'dataset_path': '',
             'timestep_fraction': 10,
             'diff_to_min_rate': 100,
             'scaling_factor': 10000000,
-            'maxpool_type': "fir_max"
-            }
+            'maxpool_type': "fir_max"}
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,
@@ -301,10 +300,14 @@ pyNN_settings = {'v_reset': 0,
 # Merge settings
 settings.update(pyNN_settings)
 
-# Layers followed by an Activation layer
-activation_layers = {'Dense', 'Convolution2D'}
+# Layers for which we can compute activations
+activation_layers = {'Dense', 'Convolution2D', 'MaxPooling2D',
+                     'AveragePooling2D'}
 
 bn_layers = {'Dense', 'Convolution2D'}
+
+spiking_layers = {'Dense', 'Convolution2D', 'MaxPooling2D', 'AveragePooling2D',
+                  'Flatten'}
 
 
 def update_setup(s=None):
@@ -380,8 +383,8 @@ def update_setup(s=None):
             SNN toolbox Warning: Currently, turning off Poisson input is
             only possible in INI simulator. Falling back on Poisson input."""))
 
-    if s['maxpool_type'] == "" or "maxpool_type" not in s:
-        s['maxpool_type'] == "fir_max"
+    if 'maxpool_type' not in s or s['maxpool_type'] == "":
+        s.update({'maxpool_type': 'fir_max'})
 
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)
@@ -411,7 +414,6 @@ def initialize_simulator(simulator=None):
     elif simulator == 'INI':
         sim = import_module('snntoolbox.core.inisim')
     elif simulator == 'MegaSim':
-        # None  # evan - can add a module with helper functions
         sim = import_module('snntoolbox.core.megasim')
     print("Initialized {} simulator.\n".format(simulator))
     return sim

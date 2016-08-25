@@ -51,7 +51,7 @@ def main():
     train.apply_preprocessor(preprocessor=preprocessor, can_fit=True)
 
     print('Saving the unsupervised data')
-    train.use_design_loc(output_dir+'/train.npy')
+    train.use_design_loc(output_dir + '/train.npy')
     serial.save(output_dir + '/train.pkl', train)
 
     print("Loading the test data")
@@ -61,8 +61,8 @@ def main():
     test.apply_preprocessor(preprocessor=preprocessor, can_fit=False)
 
     print("Saving the test data")
-    test.use_design_loc(output_dir+'/test.npy')
-    serial.save(output_dir+'/test.pkl', test)
+    test.use_design_loc(output_dir + '/test.npy')
+    serial.save(output_dir + '/test.pkl', test)
 
     serial.save(output_dir + '/preprocessor.pkl', preprocessor)
 

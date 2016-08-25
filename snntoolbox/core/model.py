@@ -203,15 +203,14 @@ class SNN():
         scale_fac_prev_layer = 1
         for idx, layer in enumerate(self.layers):
             # Skip layer if not preceeded by a layer with parameters
-            if idx == 0 or 'parameters' not in self.layers[idx-1].keys():
+            if 'parameters' not in layer:
                 continue
-            print("Calculating output of activation layer {}".format(idx) +
-                  " following layer {} with shape {}...".format(
-                  self.labels[idx-1], layer['output_shape']))
-            parameters = self.layers[idx-1]['parameters']
+            print("Calculating activation of layer {} with shape {}...".format(
+                  self.labels[idx], layer['output_shape']))
+            parameters = layer['parameters']
             # Undo previous scaling before calculating activations:
             self.set_layer_params([parameters[0] * scale_fac_prev_layer,
-                                   parameters[1]], idx-1)
+                                   parameters[1]], idx)
             # t=4.9%
             activations = get_activations_layer(layer['get_activ'], X_norm)
             if settings['normalization_schedule']:
@@ -223,14 +222,14 @@ class SNN():
                 parameters[1] / scale_fac]
             scale_fac_prev_layer = scale_fac
             # Update model with modified parameters
-            self.set_layer_params(parameters_norm, idx-1)
+            self.set_layer_params(parameters_norm, idx)
             if settings['verbose'] < 3:
                 continue
             weight_dict = {
                 'weights': parameters[0].flatten(),
                 'weights_norm': parameters_norm[0].flatten()}
             # t=2.8%
-            plot_hist(weight_dict, 'Weight', self.labels[idx-1], newpath)
+            plot_hist(weight_dict, 'Weight', self.labels[idx], newpath)
 
             if True:  # Too costly
                 continue
@@ -239,7 +238,7 @@ class SNN():
                                                      X_norm)  # t=4.8%
             activation_dict = {'Activations': activations.flatten(),
                                'Activations_norm': activations_norm.flatten()}
-            plot_hist(activation_dict, 'Activation', self.labels[idx-1],
+            plot_hist(activation_dict, 'Activation', self.labels[idx],
                       newpath, scale_fac)  # t=83.1%
 
     def set_layer_params(self, parameters, i):
