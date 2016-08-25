@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from snntoolbox.io_utils.plotting import plot_layer_activity
+from snntoolbox.core.inisim import custom_layers
 np.set_printoptions(threshold=np.inf)
 
 cifar10_label = {
@@ -66,12 +67,12 @@ cifar10_path = join(data_path, "cifar10")
 
 # model path
 model_name = "82.65.bodo"
-model_json = os.path.join(config_path, model_name+".json")
-model_data = os.path.join(config_path, model_name+".h5")
+model_json = join(config_path, model_name+".json")
+model_data = join(config_path, model_name+".h5")
 
 # output paths
 out_path = join(config_path, "ann_investigate", model_name)
-image_id = 55
+image_id = 300
 record_path = join(out_path, "sample_image_"+str(image_id))
 if not os.path.isdir(record_path):
     os.makedirs(record_path)
@@ -93,7 +94,8 @@ print ("[MESSAGE] sample image is saved at %s" % (image_path))
 
 # load the model
 json_file = open(model_json, 'r')
-model = model_from_json(json_file.read())
+model = model_from_json(json_file.read(),
+                        custom_objects=custom_layers)
 model.load_weights(model_data)
 
 # plot filters
