@@ -513,14 +513,11 @@ class AvgPool2DReLU(AveragePooling2D):
             error = shared_zeros(prev_shape)
             idxs = (inp > 0).nonzero()
             error = T.set_subtensor(error[idxs], prev_layer_error[idxs])
-            impulse = pool.pool_2d(inp, ds=self.pool_size, st=self.strides,
-                                   ignore_border=self.ignore_border,
-                                   mode='average_inc_pad')
+            impulse = K.pool2d(inp, self.pool_size, self.strides,
+                               self.border_mode, pool_mode='avg')
 
-            error_pool = pool.pool_2d(error, ds=self.pool_size,
-                                      st=self.strides,
-                                      ignore_border=self.ignore_border,
-                                      mode='average_inc_pad')
+            error_pool = K.pool2d(error, self.pool_size, self.strides,
+                                  self.border_mode, pool_mode='avg')
             self.impulse = impulse + error_pool
         else:
             self.impulse = K.pool2d(inp, self.pool_size, self.strides,
