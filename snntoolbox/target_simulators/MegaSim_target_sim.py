@@ -25,7 +25,7 @@ import sys
 import subprocess
 from abc import ABCMeta, abstractmethod
 from random import randint
-
+import time
 from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
 
@@ -1038,13 +1038,11 @@ rectify %d
         q.close()
 
     def build_softmax_conrol_events(self, megadirname):
-        print("Generating control events for the softmax module")
         softmax_in_events = []
         for t in range(0,int(settings['duration'] / settings['dt'])):
             rnd = np.random.uniform(0,settings["input_rate"])
             if rnd< settings["softmax_clockrate"]:
                 softmax_in_events.append([t, -1, -1, 0, -1, -1])
-        print(megadirname+"softmax_input.stim")
         softmax_in_events = np.asarray(softmax_in_events)
         np.savetxt(megadirname+"softmax_input.stim",softmax_in_events,delimiter=" ",fmt="%d")
 
@@ -1408,12 +1406,14 @@ class SNN_compiled():
     def build_schematic_updated(self):
         '''
 
-        This method generates the main MegaSim schematic file to test sample by sample
+        This method generates the main MegaSim schematic file
+
+        TODO: this method is quite ugly! need to refactor it
+        99.20 non normalised first 100 samples = 100% reset to zero
         -------
 
         '''
-        #input_stimulus_file = self.input_stimulus_file
-        #input_stimulus_node = "input_evs"
+
 
         use_biases = False
         bias_node = "bias_clk"
@@ -1454,9 +1454,10 @@ class SNN_compiled():
             if self.layers[n].module_string == 'module_conv' or self.layers[n].module_string=='module_conv_NPP':
                 for f in range(self.layers[n].num_of_FMs):
                     # if there is only one input or we use reset signals
-                    if self.layers[n].n_in_ports == 1 or (self.layers[n].n_in_ports == 2 and self.reset_signal_event)\
-                        or (self.layers[n].n_in_ports == 3 and use_biases):
+                    if self.layers[n].n_in_ports == 1 or (self.layers[n].n_in_ports == 2 and use_biases)\
+                        or (self.layers[n].n_in_ports == 3 and use_biases and self.reset_signal_event):
                         # check if the presynaptic population is the input layer
+
                         if n==1:
                             #import pdb;pdb.set_trace()
                             pre_label_node = self.layers[n - 1].label
@@ -1481,10 +1482,15 @@ class SNN_compiled():
                         num_pre_nodes_in = self.layers[n].n_in_ports
                         pre_label = self.layers[n-1].label
                         pre_nodes_str = [pre_label+"_"+str(x) for x in range(num_pre_nodes_in)]
-                        if use_biases and self.layers[n].uses_biases:
-                            pre_nodes_str[-2] = bias_node
+                        # if we are in batch mode
                         if self.reset_signal_event:
+                            if use_biases and self.layers[n].uses_biases:
+                                pre_nodes_str[-2] = bias_node
+
                             pre_nodes_str[-1] = reset_event_string
+                        else:
+                            # if testing sample by sample we dont need to use reset signals
+                            pre_nodes_str[-1] = bias_node
 
                         build_in_nodes = ",".join(pre_nodes_str)
 
@@ -1574,7 +1580,6 @@ class SNN_compiled():
         for stim in stim_data:
             os.remove(self.megadirname+stim)
 
-
     def store(self):
         '''
         Not needed since megasim always stores the simulation files, params and schematics in the
@@ -1602,6 +1607,7 @@ class SNN_compiled():
     def get_spikes_batch(self, idx=0):
         '''
         Method that fetches all the events from all layers after a simulation is over
+        uses the reset signal events to slice the symbols
 
         Returns: a list of all the events from all the layers
         -------
@@ -1632,13 +1638,13 @@ class SNN_compiled():
 
     def get_output_spikes_batch(self,):
         """
+        Method that fetches the events from the output layer
 
-        Returns
+        Returns: a numpy array of the output events
         -------
 
         """
         outspikes_per_symbol = []
-        start_dbg, stop_dbg = [], []
         output_events = np.genfromtxt(self.megadirname+self.layers[-1].evs_files[0], delimiter=" ",dtype="int")
         reset_events = np.genfromtxt(self.megadirname + "reset_event.stim", delimiter=" ",dtype="int")
         reset_ts = reset_events[:, 0]
@@ -1646,13 +1652,11 @@ class SNN_compiled():
 
         for i in range(len(reset_ts)):
             stop = reset_ts[i]
-            start_dbg.append(start)
-            stop_dbg.append(stop)
             indeces = np.where(np.logical_and(output_events[:,0]>=start,output_events[:,0]<stop))
 
             outspikes_per_symbol.append(output_events[indeces])
-            start=stop#output_events[indeces][-1][0]+1
-        return outspikes_per_symbol, start_dbg, stop_dbg
+            start=stop
+        return outspikes_per_symbol
 
     def spike_count_histogram(self, events, pop_size=10):
         '''
@@ -1728,51 +1732,84 @@ class SNN_compiled():
         results = []
         guesses = []
         truth = []
-        if settings['batch_size']<=1:
-            # Iterate over the number of samples to test
-            for test_num in range(settings['num_to_test']):
-                # If a list of specific input samples is given, iterate over that,
-                # and otherwise pick a random test sample from among all possible
-                # input samples in X_test.
-                si = settings['sample_indices_to_test']
-                #ind = randint(0, len(X_test) - 1) if si == [] else si[test_num]
 
-                # Go through all the test set digits in the same order
-                ind = test_num#range(settings['num_to_test'])
+        # used for debugging purposes; will generate a CSV file that stores the sample ID, label, guess, status, # of output spikes
+        total_samples = len(X_test)
+        debug_np_status = np.zeros((total_samples, 5), dtype="int")
 
-                # Clean any previous data. This is not necessary, only for debugging
-                self.clean_megasim_sim_data()
-                self.spikemonitors = []
+        # check if we are in batch mode or symbol by symbol mode
+        if settings['batch_size']>1:
+            batch_mode = True
+        else:
+            batch_mode = False
 
-                # Add Poisson input.
-                if settings['verbose'] > 1:
-                    echo("Creating poisson input...\n")
+        batch_size = settings["batch_size"]
+        num_batches = int(total_samples / batch_size)
+        digit_idc_per_batch = [range(batch_size * x, batch_size * (x + 1)) for x in range(num_batches)]
 
-                # Generate stimulus file
-                echo("Using the same random seed for debugging\n")
-                if settings['poisson_input']:
-                    self.poisson_spike_generator_megasim(mnist_digit=X_test[ind, :])
+        if batch_mode:
+            samples_iterate = digit_idc_per_batch
+        else:
+            samples_iterate = range(settings['num_to_test'])
+
+        for i,current_batch in enumerate(samples_iterate):
+            # Clean any previous data. This is not necessary, only for debugging
+            self.clean_megasim_sim_data()
+            self.spikemonitors = []
+
+            # Add Poisson input.
+            if settings['verbose'] > 1:
+                echo("Creating poisson input...\n")
+
+            if settings['poisson_input']:
+                np.random.seed(1)
+                if batch_mode:
+                    timestamp_batches = self.poisson_spike_generator_batchmode_megasim(X_test[current_batch])
                 else:
-                    print("Only Poisson input supported")
-                    sys.exit(66)
+                    self.poisson_spike_generator_megasim(mnist_digit=X_test[i, :])
+                    timestamp_batches = [[0, settings['duration']]]
 
-                # Generate control events for the softmax module if it exists
-                if self.layers[-1].module_string == "module_softmax":
-                    self.layers[-1].build_softmax_conrol_events(self.megadirname)
+                    # Generate control events for the softmax module if it exists
+                    if self.layers[-1].module_string == "module_softmax":
+                        self.layers[-1].build_softmax_conrol_events(self.megadirname)
+            else:
+                print("Only Poisson input supported")
+                sys.exit(66)
 
-                # Run simulation for 'duration'.
-                if settings['verbose'] > 1:
-                    echo("Starting new simulation...\n")
+            # check if biases are used and generate timestamps to apply them
+            if self.use_biases:
+                self.generate_bias_clk(timestamp_batches)
 
-                #TODO this is ugly, in python3 i have to change folders to execute megasim
-                current_dir = os.getcwd()
-                os.chdir(self.megadirname)
-                run_megasim = subprocess.check_output([self.megasim_path + "megasim", self.megaschematic])
-                os.chdir(current_dir)
+            # Run MegaSim simulation
+            if settings['verbose'] > 0:
+                print("Running MegaSim")
 
-                # Check megasim output for errors
-                self.check_megasim_output(run_megasim)
+            current_dir = os.getcwd()
+            os.chdir(self.megadirname)
+            run_megasim = subprocess.check_output([self.megasim_path + "megasim", self.megaschematic])
+            os.chdir(current_dir)
 
+            # Check megasim output for errors
+            self.check_megasim_output(run_megasim)
+            if settings['verbose'] > 0:
+                print("Retrieving spikes")
+
+            if batch_mode:
+                out_spikes_per_symbol= self.get_output_spikes_batch()
+
+                guess_batch = [self.spike_count_histogram(outspk, pop_size=self.layers[-1].population_size) for
+                               outspk in out_spikes_per_symbol]
+                truth_batch = [np.argmax(y) for y in Y_test[current_batch]]
+
+                results_batch = [x == y for x, y in zip(guess_batch, truth_batch)]
+
+                current_guess = guess_batch
+                current_truth = truth_batch
+                current_result = results_batch
+
+                # just for debugging
+                samples_indeces = current_batch
+            else:
                 # use this if you want to access all the generated events
                 spike_monitors = self.get_spikes()
 
@@ -1780,151 +1817,69 @@ class SNN_compiled():
                 self.spikemonitors.append(spike_monitors)
 
                 # use this to access spikes from a particular layer eg output
-                #spike_monitor = self.get_spikes_from_layer(layer)
-                #import pdb;pdb.set_trace()
                 output_pop_activity = self.spike_count_histogram(spike_monitors[-1], self.layers[-1].population_size)
-                # Get result by comparing the guessed class (i.e. the index of the
-                # neuron in the last layer which spiked most) to the ground truth.
-                #import pdb;pdb.set_trace()
 
-                guesses.append(output_pop_activity)
-                truth.append(np.argmax(Y_test[ind, :]))
-                results.append(guesses[-1] == truth[-1])
+                current_guess = output_pop_activity
+                current_truth = np.argmax(Y_test[i, :])
+                current_result = current_guess == current_truth
 
-                print("truth = %d guess = %d"%(np.argmax(Y_test[ind, :]),output_pop_activity ))
+                # just for debugging
+                samples_indeces = i
 
-                if settings['verbose'] > 0:
-                    echo("Sample {} of {} completed.\n".format(test_num + 1,
-                         settings['num_to_test']))
-                    echo("Moving average accuracy: {:.2%}.\n".format(
-                        np.mean(results)))
+            # just for debugging
+            debug_np_status[samples_indeces, 0] = samples_indeces
+            debug_np_status[samples_indeces, 1] = current_truth
+            debug_np_status[samples_indeces, 2] = current_guess
+            debug_np_status[samples_indeces, 3] = current_result
+            print(debug_np_status[samples_indeces])
 
-                if settings['verbose'] > 1 and \
-                        test_num == settings['num_to_test'] - 1:
-                    echo("Simulation finished. Collecting results...\n")
-                    output_shapes = [x.output_shapes for x in self.layers[1:]]
-                    self.collect_plot_results(
-                        self.layers, output_shapes, snn_precomp,
-                        X_test[ind:ind+settings['batch_size']])
-
-                # Reset simulation time and recorded network variables for next
-                # run.
-                if settings['verbose'] > 1:
-                    echo("Resetting simulator...\n")
-                # Skip during last run so the recorded variables are not discarded
-                if test_num < settings['num_to_test'] - 1:
-                    pass
-                    #self.snn.restore()
-                if settings['verbose'] > 1:
-                    echo("Done.\n")
-
-            total_acc = np.mean(results)
-
-            if settings['verbose'] > 1:
-                plot_confusion_matrix(truth, guesses,
-                                      settings['log_dir_of_current_run'])
-
-            s = '' if settings['num_to_test'] == 1 else 's'
-            echo("Total accuracy: {:.2%} on {} test sample{}.\n\n".format(
-                 total_acc, settings['num_to_test'], s))
-
-        ################################################################################################################
-        # BATCH MODE
-        ################################################################################################################
-
-        else:
-            batch_size = settings["batch_size"]
-            total_samples = len(X_test)
-            num_batches = int( total_samples/batch_size)
-
-            digit_idc_per_batch= [range(batch_size * x, batch_size * (x + 1)) for x in range(num_batches)]
-            #digit_idc_per_batch[-1] = range(digit_idc_per_batch[-1][0], total_samples-1)
-
-            debug_np_status = np.zeros((total_samples,5),dtype="int")
-            # build input spikes, softmax event spikes and reset event spikes per batch
-            for i, current_batch in enumerate(digit_idc_per_batch):
-                # Clean any previous data. This is not necessary, only for debugging
-                self.clean_megasim_sim_data()
-                self.spikemonitors = []
-
-                if settings['verbose'] > 0:
-                    print("Generating input spikes for batch %d out of %d of size %d"%(i+1,num_batches,len(current_batch)))
-
-                echo("Using the same random seed for debugging\n")
-                np.random.seed(1)
-                timestamp_batches = self.poisson_spike_generator_batchmode_megasim( X_test[current_batch])
-
-                if self.use_biases:
-                    self.generate_bias_clk(timestamp_batches)
-
-                if settings['verbose'] > 0:
-                    print("Running MegaSim")
-                #TODO this is ugly, in python3 i have to change folders to execute megasim
-                current_dir = os.getcwd()
-                os.chdir(self.megadirname)
-                run_megasim = subprocess.check_output([self.megasim_path + "megasim", self.megaschematic])
-                os.chdir(current_dir)
-
-                # Check megasim output for errors
-                self.check_megasim_output(run_megasim)
-                if settings['verbose'] > 0:
-                    print("Retrieving spikes")
-
-                out_spikes_per_symbol,starts, stops = self.get_output_spikes_batch()
+            guesses.append(current_guess)
+            truth.append(current_truth)
+            results.append(current_result)
 
 
-                guess_batch = [self.spike_count_histogram(outspk, pop_size=self.layers[-1].population_size) for
-                         outspk in out_spikes_per_symbol]
-                truth_batch =  [np.argmax(y) for y in Y_test[current_batch]]
-
-                results_batch = [x==y for x,y in zip(guess_batch,truth_batch)]
-
-                guesses.append(guess_batch)
-                truth.append(truth_batch)
-                results.append(results_batch)
-
-                debug_np_status[current_batch, 0] = current_batch
-                debug_np_status[current_batch, 1] = [np.argmax(y) for y in Y_test[current_batch]]
-                debug_np_status[current_batch, 2] = guess_batch
-                debug_np_status[current_batch, 3] = results_batch
-                debug_np_status[current_batch, 4] = [len(x) for x in out_spikes_per_symbol]
-
-                #concatenate results to one list (they are list of lists now, one per batch)
+            if batch_mode:
+                #concatenate in one list from list of lists
                 results_onelist = [item for sublist in results for item in sublist]
-                #avg = np.average([np.sum(x) for x in results])#np.average(results)
-                avg= np.average(results_onelist)
-                echo("Moving average accuracy: {:.2%}.\n".format(avg))
+                total_acc = np.mean(results_onelist)
+            else:
+                total_acc = np.mean(results)
 
-                # For the first batch only, record the spiketrains of each
-                # neuron in each layer.
-                if i == 0:
+            # Print status
+            if batch_mode:
+                print("Batch %d of %d completed, %d batches to go" % (
+                i + 1, num_batches, num_batches - (i+1)))
+            else:
+                echo("Sample {} of {} completed.\n".format(i + 1,
+                                                       settings['num_to_test']))
+            echo("Moving average accuracy: {:.2%}.\n".format(total_acc))
+
+            # plotting here
+            if i == 0:
+                # if we are in batch mode grab all spikes
+                # I have this here because we dont want to access all event files at every batch iteration
+                if batch_mode:
+                    print("Reading the generated event files")
                     spike_monitors = self.get_spikes_batch(idx=0)
                     self.spikemonitors.append(spike_monitors)
-                    output_shapes = [x.output_shapes for x in self.layers[1:]]
-                    if settings['verbose'] > 0:
-                        print("Ploting the activity of a single input sample")
-                    self.collect_plot_results(
-                        self.layers, output_shapes, snn_precomp,
-                        X_test[0:])
-                    # Count number of spikes in output layer during whole
-                    # simulation.
-                    #                output[batch_idxs, :] += out_spikes.astype('int32')
 
+                output_shapes = [x.output_shapes for x in self.layers[1:]]
+                if settings['verbose'] > 0:
+                    print("Ploting the activity of a single input sample")
+                self.collect_plot_results(
+                    self.layers, output_shapes, snn_precomp,
+                    X_test[0:])
+
+        if batch_mode:
             # concatenate results
             results_onelist = [item for sublist in results for item in sublist]
             total_acc = np.mean(results_onelist)
+        else:
+            total_acc = np.mean(results)
 
-            echo("Simulation finished.\n\n")
-            #echo("Total output spikes: {}\n".format(np.sum(output)))
-            #echo("Average output spikes per sample: {:.2f}\n".format(
-            #    np.mean(np.sum(output, axis=1))))
-            #echo("Total accuracy: {:.2%} on {} test samples.\n\n".format(total_acc,
-            #                                                             output.shape[0]))
-            #echo("Accuracy averaged over classes: {}".format(avg_acc))
-            echo("Total Accuracy {:.2%}.\n".format(total_acc))
-            #total_acc=0.0
-
-            np.savetxt(self.megadirname+"debug_status.csv",debug_np_status, delimiter=",",fmt="%d")
+        echo("Simulation finished.\n\n")
+        echo("Total Accuracy {:.2%}.\n".format(total_acc))
+        np.savetxt(self.megadirname+"debug_status.csv",debug_np_status, delimiter=",",fmt="%d")
         return total_acc
 
     def end_sim(self):
@@ -1985,7 +1940,7 @@ class SNN_compiled():
         for l in range(1,len(self.layers)):
             lbl = self.layers[l].label
 
-
+            # Fully connected layer
             if self.layers[l].module_string == 'module_fully_connected' or self.layers[l].module_string=='module_softmax' or self.layers[l].module_string == 'module_fully_connected_NPP':
                 print(self.layers[l].label)
                 tmp = self.spikemonitors[results_from_input_sample][plot_c]
@@ -1998,6 +1953,7 @@ class SNN_compiled():
                 spiketrains_batch.append([spiketrain,lbl])
                 plot_c += 1
 
+            # Convolutional and Average pooling layers
             elif self.layers[l].module_string == 'module_conv' or self.layers[l].module_string == 'module_conv_NPP':
                 removeme = []
 
@@ -2009,7 +1965,6 @@ class SNN_compiled():
                 for fm in range(num_fm):
                     tmp = self.spikemonitors[results_from_input_sample][plot_c]
                     spikes_megasim = tmp
-
 
                     neuron_x_addr = np.copy(spikes_megasim[:, 3])
                     neuron_y_addr = np.copy(spikes_megasim[:, 4])
@@ -2025,13 +1980,11 @@ class SNN_compiled():
                     spiketrain[0, f, :] = removeme[f]
                 spiketrains_batch.append([spiketrain, lbl])
 
+            # Ignore flatten layers
             elif self.layers[l].module_string == 'module_flatten':
                 # ignore the spikes from the flatten layer
                 plot_c += 1
 
-        print(len(spiketrains_batch))
-        #for ll in range(len(spiketrains_batch)):
-        #    print(ll)
-            #import pdb;pdb.set_trace()
+
         output_graphs(spiketrains_batch, ann, X_batch,
                       settings['log_dir_of_current_run'],results_from_input_sample )
