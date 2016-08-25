@@ -114,6 +114,6 @@ score = model.evaluate(X_test, Y_test, batch_size=batch_size)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 
-filename = '{:2.2f}'.format(score[1] * 100)+"_no_bias"
+filename = '{:2.2f}'.format(score[1] * 100)+".cifar.no.bias"
 open(filename + '.json', 'w').write(model.to_json())
 model.save_weights(filename + '.h5', overwrite=True)
