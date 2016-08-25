@@ -69,8 +69,6 @@ def update_neurons(self, time, updates):
         updates.append((self.spikecounts, self.spikecounts + output_spikes))
         updates.append((self.max_spikerate,
                         T.max(self.spikecounts) / (time + settings['dt'])))
-    else:
-        updates.append((self.spikecounts, self.spikecounts + output_spikes))
 
     if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
         if settings["maxpool_type"] == "avg_max":
@@ -185,8 +183,6 @@ def reset(self):
         self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
         self.max_spikerate.set_value(0.0)
         self.v_thresh.set_value(settings['v_thresh'])
-    else:
-        self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
 
     if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
         if settings["maxpool_type"] == "avg_max":
@@ -262,8 +258,6 @@ def init_layer(self, layer, v_thresh, tau_refrac, layer_type=None):
     if settings['online_normalization']:
         layer.spikecounts = shared_zeros(self.output_shape)
         layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
-    else:
-        layer.spikecounts = shared_zeros(self.output_shape)
 
     if layer.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
         if settings["maxpool_type"] == "avg_max":
