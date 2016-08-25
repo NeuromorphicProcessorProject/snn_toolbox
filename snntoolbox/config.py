@@ -277,7 +277,7 @@ settings = {'dataset_path': '',
             'diff_to_max_rate': 200,
             'timestep_fraction': 10,
             'diff_to_min_rate': 100,
-            'scaling_factor' : 10000000,
+            'scaling_factor': 10000000,
             }
 
 # pyNN specific parameters.
@@ -296,10 +296,14 @@ pyNN_settings = {'v_reset': 0,
 # Merge settings
 settings.update(pyNN_settings)
 
-# Layers followed by an Activation layer
-activation_layers = {'Dense', 'Convolution2D'}
+# Layers for which we can compute activations
+activation_layers = {'Dense', 'Convolution2D', 'MaxPooling2D',
+                     'AveragePooling2D'}
 
 bn_layers = {'Dense', 'Convolution2D'}
+
+spiking_layers = {'Dense', 'Convolution2D', 'MaxPooling2D', 'AveragePooling2D',
+                  'Flatten'}
 
 
 def update_setup(s=None):
@@ -403,6 +407,6 @@ def initialize_simulator(simulator=None):
     elif simulator == 'INI':
         sim = import_module('snntoolbox.core.inisim')
     elif simulator == 'MegaSim':
-        sim = import_module('snntoolbox.core.megasim')#None  # evan - can add a module with helper functions
+        sim = import_module('snntoolbox.core.megasim')
     print("Initialized {} simulator.\n".format(simulator))
     return sim

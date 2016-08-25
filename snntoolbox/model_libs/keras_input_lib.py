@@ -22,7 +22,7 @@ import os
 import theano
 import numpy as np
 from keras import backend as K
-from snntoolbox.config import settings
+from snntoolbox.config import settings, spiking_layers
 from snntoolbox.model_libs.common import absorb_bn, import_script
 
 
@@ -111,8 +111,11 @@ def extract(model):
             continue
         if 'BatchNormalization' in layer.__class__.__name__:
             bn_parameters = layer.get_weights()  # gamma, beta, mean, std
-            prev_layer = model.layers[layer_num - 1]
-            label = labels[-1]
+            for k in [layer_num - i for i in range(1, 3)]:
+                prev_layer = layers[k]
+                label = prev_layer.__class__.__name__
+                if prev_layer.weights != []:
+                    break
             parameters = prev_layer.get_weights()  # W, b of next layer
             print("Absorbing batch-normalization parameters into " +
                   "parameters of layer {}, {}.".format(layer_num - 1, label))
@@ -130,6 +133,10 @@ def extract(model):
             prev_layer.set_weights(parameters_norm)
             layers[-1]['parameters'] = parameters_norm
             continue
+
+        if layer.__class__.__name__ not in spiking_layers:
+            continue
+
         attributes = {'layer_num': layer_num,
                       'layer_type': layer.__class__.__name__,
                       'output_shape': layer.output_shape}
@@ -146,13 +153,20 @@ def extract(model):
         attributes.update({'label': labels[-1]})
 
         if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
-            attributes.update({'parameters': layer.get_weights()})
-            for k in range(layer_num+1, len(model.layers)):
+            # Get type of nonlinearity if the activation is directly in the
+            # Dense / Conv layer:
+            activation = layer.get_config()['activation']
+            # Otherwise, search for the activation layer:
+            for k in range(layer_num+1, min(layer_num+4, len(model.layers))):
                 next_layer = model.layers[k]
                 if next_layer.__class__.__name__ == 'Activation':
-                    attributes.update({'activation':
-                                       next_layer.get_config()['activation']})
+                    activation = next_layer.get_config()['activation']
+                    layer.activation = next_layer.activation
                     break
+            attributes.update({'parameters': layer.get_weights(),
+                               'activation': activation,
+                               'get_activ': get_activ_fn_for_layer(model,
+                                                                   layer_num)})
         if attributes['layer_type'] == 'Convolution2D':
             attributes.update({'input_shape': layer.input_shape,
                                'nb_filter': layer.nb_filter,
@@ -166,11 +180,8 @@ def extract(model):
             attributes.update({'input_shape': layer.input_shape,
                                'pool_size': layer.pool_size,
                                'strides': layer.strides,
-                               'border_mode': layer.border_mode})
-
-        if attributes['layer_type'] in {'Activation', 'AveragePooling2D',
-                                        'MaxPooling2D'}:
-            attributes.update({'get_activ': get_activ_fn_for_layer(model,
+                               'border_mode': layer.border_mode,
+                               'get_activ': get_activ_fn_for_layer(model,
                                                                    layer_num)})
         layers.append(attributes)
         layer_idx_map.append(layer_num)
