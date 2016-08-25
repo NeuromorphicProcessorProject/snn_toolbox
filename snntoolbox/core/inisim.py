@@ -71,6 +71,7 @@ def update_neurons(self, time, updates):
                         T.max(self.spikecounts) / (time + settings['dt'])))
 
     if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
+        updates.append((self.spikecounts, self.spikecounts + output_spikes))
         if settings["maxpool_type"] == "avg_max":
             updates.append((self.avg_spikerate,
                             self.spikecounts / (time + settings['dt'])))
@@ -185,6 +186,7 @@ def reset(self):
         self.v_thresh.set_value(settings['v_thresh'])
 
     if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
+        self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
         if settings["maxpool_type"] == "avg_max":
             self.avg_spikerate.set_value(
                 floatX(np.zeros(self.output_shape)))
@@ -260,6 +262,7 @@ def init_layer(self, layer, v_thresh, tau_refrac, layer_type=None):
         layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
 
     if layer.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
+        layer.spikecounts = shared_zeros(self.output_shape)
         if settings["maxpool_type"] == "avg_max":
             layer.avg_spikerate = shared_zeros(self.output_shape)
         elif settings["maxpool_type"] == "fir_max":
@@ -570,21 +573,21 @@ class MaxPool2DReLU(MaxPooling2D):
                         else K.placeholder(shape=self.input_shape)
 
         if self.pool_type in ["avg_max", "fir_max", "exp_max"]:
+            # Todo: Use K.pool2 to be consistent with AvgPool and independent
+            # of backend
             max_idx = pool_same_size(spikerate,
                                      patch_size=self.pool_size,
                                      ignore_border=self.ignore_border,
                                      st=self.strides)
-            self.impulse = pool.pool_2d(inp*max_idx, ds=self.pool_size,  # Use K.pool2
+            self.impulse = pool.pool_2d(inp*max_idx, ds=self.pool_size,
                                         st=self.strides,
                                         ignore_border=self.ignore_border,
                                         mode='max')
         else:
             print("wrong max pooling type,"
                   "choose Average Pooling automatically")
-            self.impulse = pool.pool_2d(inp, ds=self.pool_size,  # Use K.pool2
-                                        st=self.strides,
-                                        ignore_border=self.ignore_border,
-                                        mode='average_inc_pad')
+            self.impulse = K.pool2d(inp, self.pool_size, self.strides,
+                                    self.border_mode, pool_mode='avg')
 
         output_spikes = update_neurons(self, self.impulse, time, updates)
         self.updates = updates
