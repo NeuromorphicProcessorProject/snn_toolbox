@@ -65,13 +65,15 @@ def update_neurons(self, time, updates):
         output_spikes = linear_activation(self, time, updates)
     updates.append((self.spiketrain, output_spikes * time))
 
+    # Needed for online_normalization and MaxPool layers.
+    # Todo: Only do this when needed
+    updates.append((self.spikecounts, self.spikecounts + output_spikes))
+
     if settings['online_normalization']:
-        updates.append((self.spikecounts, self.spikecounts + output_spikes))
         updates.append((self.max_spikerate,
                         T.max(self.spikecounts) / (time + settings['dt'])))
 
     if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-        updates.append((self.spikecounts, self.spikecounts + output_spikes))
         if settings["maxpool_type"] == "avg_max":
             updates.append((self.avg_spikerate,
                             self.spikecounts / (time + settings['dt'])))
@@ -177,16 +179,20 @@ def reset(self):
     self.mem.set_value(floatX(np.zeros(self.output_shape)))
     self.refrac_until.set_value(floatX(np.zeros(self.output_shape)))
     self.spiketrain.set_value(floatX(np.zeros(self.output_shape)))
+
+    # Needed for online_normalization and MaxPool layers.
+    # Todo: Only do this when needed
+    self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
+
     if settings['payloads']:
         self.payloads.set_value(floatX(np.zeros(self.output_shape)))
         self.payloads_sum.set_value(floatX(np.zeros(self.output_shape)))
+
     if settings['online_normalization']:
-        self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
         self.max_spikerate.set_value(0.0)
         self.v_thresh.set_value(settings['v_thresh'])
 
     if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-        self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
         if settings["maxpool_type"] == "avg_max":
             self.avg_spikerate.set_value(
                 floatX(np.zeros(self.output_shape)))
@@ -257,12 +263,15 @@ def init_layer(self, layer, v_thresh, tau_refrac, layer_type=None):
     layer.updates = []
     layer.layer_type = layer_type_dict[layer_type] \
         if layer_type in layer_type_dict else layer_type
+
+    # Needed for online_normalization and MaxPool layers.
+    # Todo: Only do this when needed
+    layer.spikecounts = shared_zeros(self.output_shape)
+
     if settings['online_normalization']:
-        layer.spikecounts = shared_zeros(self.output_shape)
         layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
 
     if layer.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-        layer.spikecounts = shared_zeros(self.output_shape)
         if settings["maxpool_type"] == "avg_max":
             layer.avg_spikerate = shared_zeros(self.output_shape)
         elif settings["maxpool_type"] == "fir_max":
