@@ -64,22 +64,26 @@ def update_neurons(self, time, updates):
     else:
         output_spikes = linear_activation(self, time, updates)
     updates.append((self.spiketrain, output_spikes * time))
+
     if settings['online_normalization']:
         updates.append((self.spikecounts, self.spikecounts + output_spikes))
         updates.append((self.max_spikerate,
                         T.max(self.spikecounts) / (time + settings['dt'])))
-        if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-            if settings["maxpool_type"] == "avg_max":
-                updates.append((self.avg_spikerate,
-                                self.spikecounts / (time + settings['dt'])))
-            elif settings["maxpool_type"] == "fir_max":
-                updates.append((self.fir_spikerate,
-                                self.fir_spikerate + output_spikes /
-                                (time + settings['dt'])))
-            elif settings["maxpool_type"] == "exp_max":
-                updates.append((self.exp_spikerate,
-                                self.exp_spikerate + output_spikes /
-                                2.**((time+settings['dt'])/settings['dt'])))
+    else:
+        updates.append((self.spikecounts, self.spikecounts + output_spikes))
+
+    if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
+        if settings["maxpool_type"] == "avg_max":
+            updates.append((self.avg_spikerate,
+                            self.spikecounts / (time + settings['dt'])))
+        elif settings["maxpool_type"] == "fir_max":
+            updates.append((self.fir_spikerate,
+                            self.fir_spikerate + output_spikes /
+                            (time + settings['dt'])))
+        elif settings["maxpool_type"] == "exp_max":
+            updates.append((self.exp_spikerate,
+                            self.exp_spikerate + output_spikes /
+                            2.**((time+settings['dt'])/settings['dt'])))
     return output_spikes
 
 
@@ -179,18 +183,21 @@ def reset(self):
         self.payloads_sum.set_value(floatX(np.zeros(self.output_shape)))
     if settings['online_normalization']:
         self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
-        if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-            if settings["maxpool_type"] == "avg_max":
-                self.avg_spikerate.set_value(
-                    floatX(np.zeros(self.output_shape)))
-            elif settings["maxpool_type"] == "fir_max":
-                self.fir_spikerate.set_value(
-                    floatX(np.zeros(self.output_shape)))
-            elif settings["maxpool_type"] == "exp_max":
-                self.exp_spikerate.set_value(
-                    floatX(np.zeros(self.output_shape)))
         self.max_spikerate.set_value(0.0)
         self.v_thresh.set_value(settings['v_thresh'])
+    else:
+        self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
+
+    if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
+        if settings["maxpool_type"] == "avg_max":
+            self.avg_spikerate.set_value(
+                floatX(np.zeros(self.output_shape)))
+        elif settings["maxpool_type"] == "fir_max":
+            self.fir_spikerate.set_value(
+                floatX(np.zeros(self.output_shape)))
+        elif settings["maxpool_type"] == "exp_max":
+            self.exp_spikerate.set_value(
+                floatX(np.zeros(self.output_shape)))
 
 
 def get_input(self):
@@ -254,14 +261,18 @@ def init_layer(self, layer, v_thresh, tau_refrac, layer_type=None):
         if layer_type in layer_type_dict else layer_type
     if settings['online_normalization']:
         layer.spikecounts = shared_zeros(self.output_shape)
-        if layer.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-            if settings["maxpool_type"] == "avg_max":
-                layer.avg_spikerate = shared_zeros(self.output_shape)
-            elif settings["maxpool_type"] == "fir_max":
-                layer.fir_spikerate = shared_zeros(self.output_shape)
-            elif settings["maxpool_type"] == "exp_max":
-                layer.exp_spikerate = shared_zeros(self.output_shape)
         layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
+    else:
+        layer.spikecounts = shared_zeros(self.output_shape)
+
+    if layer.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
+        if settings["maxpool_type"] == "avg_max":
+            layer.avg_spikerate = shared_zeros(self.output_shape)
+        elif settings["maxpool_type"] == "fir_max":
+            layer.fir_spikerate = shared_zeros(self.output_shape)
+        elif settings["maxpool_type"] == "exp_max":
+            layer.exp_spikerate = shared_zeros(self.output_shape)
+
     if len(layer.get_weights()) > 0:
         layer.W = K.variable(layer.get_weights()[0])
         layer.b = K.variable(layer.get_weights()[1])
@@ -567,8 +578,7 @@ class MaxPool2DReLU(MaxPooling2D):
                         if self.inbound_nodes[0].inbound_layers \
                         else K.placeholder(shape=self.input_shape)
 
-        if (self.pool_type in ["avg_max", "fir_max", "exp_max"]) \
-           and settings['online_normalization']:
+        if self.pool_type in ["avg_max", "fir_max", "exp_max"]:
             max_idx = pool_same_size(spikerate,
                                      patch_size=self.pool_size,
                                      ignore_border=self.ignore_border,
@@ -578,8 +588,7 @@ class MaxPool2DReLU(MaxPooling2D):
                                         ignore_border=self.ignore_border,
                                         mode='max')
         else:
-            print("Online Normalization is not enabled, "
-                  "or wrong max pooling type, "
+            print("wrong max pooling type,"
                   "choose Average Pooling automatically")
             self.impulse = pool.pool_2d(inp, ds=self.pool_size,  # Use K.pool2
                                         st=self.strides,

@@ -19,7 +19,7 @@ data_dir = os.path.join(config_path, "datasets")
 
 
 def maxpool_exp(exp_name, model_name, pref_name, dataset,
-                normalize, pool_type):
+                normalize, online_normalize, pool_type):
     """Max-Pooling experiment routine.
 
     Parameters
@@ -35,6 +35,9 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
     normalizing : string
         true : perform normalization and evaluation
         false: otherwise
+    online_normalization : string
+        true : use online normalization
+        false : otherwise
     pool_type : string
         the name of the max pooling type
         "avg_max" or "fir_max"
@@ -66,6 +69,9 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
         settings["normalize"] = False
         settings["evaluateANN"] = False
 
+    if online_normalize == "false":
+        settings["online_normalization"] = False
+
     settings["maxpool_type"] = pool_type
 
     snntoolbox.update_setup(settings)
@@ -86,6 +92,9 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--dataset", type=str,
                         help="type of the datset, mnist or cifar10")
     parser.add_argument("-n", "--normalize", type=str,
+                        default="true",
+                        help="no normalize if the model is normalized before")
+    parser.add_argument("-on", "--online-normalize", type=str,
                         default="true",
                         help="no normalize if the model is normalized before")
     # as there is no setting parameters for this, not simply omit.
