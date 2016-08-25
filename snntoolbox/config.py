@@ -1,4 +1,5 @@
-"""
+"""Manage Parameters of SNNToolbox.
+
 In the GUI, the toolbox settings are grouped in three categories:
     1. Global parameters ``globalparams``, specifying global settings for
        loading / saving, and what steps of the workflow to include (evaluation,
@@ -172,6 +173,9 @@ timestep_fraction: int, optional
     'online_normalization' will be performed at every 10th timestep.
 num_to_test: int, optional
     How many samples to test.
+maxpool_type : string
+    "fir_max": accmulated absolute firing rate based max pooling
+    "avg_max": moving average of firing rate based max pooling
 
 Default values
 ..............
@@ -278,7 +282,7 @@ settings = {'dataset_path': '',
             'timestep_fraction': 10,
             'diff_to_min_rate': 100,
             'scaling_factor': 10000000,
-            }
+            'maxpool_type': "fir_max"}
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,
@@ -307,14 +311,12 @@ spiking_layers = {'Dense', 'Convolution2D', 'MaxPooling2D', 'AveragePooling2D',
 
 
 def update_setup(s=None):
-    """
-    Update parameters
+    """Update parameters.
 
     Check that parameter choices ``s`` are valid and update the global
     parameter settings ``snntoolbox.config.settings`` with the user-specified
     values. Default values are filled in where user did not give any.
     """
-
     import os
     import snntoolbox
 
@@ -367,8 +369,10 @@ def update_setup(s=None):
                                                    'test')
 
     # Specify filenames for models at different stages of the conversion.
-    s['filename_snn'] = 'snn_' + s['filename']
-    s['filename_snn_exported'] = s['filename_snn'] + '_' + s['simulator']
+    if s['filename_snn'] == "":
+        s['filename_snn'] = 'snn_' + s['filename']
+    if s['filename_snn_exported'] == "":
+        s['filename_snn_exported'] = s['filename_snn'] + '_' + s['simulator']
 
     if 'poisson_input' not in s:
         s.update({'poisson_input': True})
@@ -379,12 +383,15 @@ def update_setup(s=None):
             SNN toolbox Warning: Currently, turning off Poisson input is
             only possible in INI simulator. Falling back on Poisson input."""))
 
+    if s['maxpool_type'] == "" or "maxpool_type" not in s:
+        s['maxpool_type'] == "fir_max"
+
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)
 
 
 def initialize_simulator(simulator=None):
-    """ Import module containing utility functions of spiking simulator"""
+    """Import module containing utility functions of spiking simulator."""
     from importlib import import_module
 
     if simulator is None:
