@@ -32,7 +32,7 @@ import warnings
 
 from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
-from snntoolbox.io_utils.save import confirm_overwrite
+from snntoolbox.io_utils.common import confirm_overwrite
 
 standard_library.install_aliases()
 

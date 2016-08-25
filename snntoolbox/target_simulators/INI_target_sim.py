@@ -404,7 +404,7 @@ class SNN_compiled():
 
         """
 
-        from snntoolbox.io_utils.save import confirm_overwrite
+        from snntoolbox.io_utils.common import confirm_overwrite
 
         if path is None:
             path = settings['path']

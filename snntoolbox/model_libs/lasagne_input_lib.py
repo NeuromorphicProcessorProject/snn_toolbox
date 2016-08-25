@@ -22,7 +22,7 @@ import os
 import lasagne
 import theano
 from snntoolbox.config import settings, activation_layers, bn_layers
-from snntoolbox.io_utils.load import load_parameters
+from snntoolbox.io_utils.common import load_parameters
 from snntoolbox.model_libs.common import absorb_bn, import_script
 from snntoolbox.model_libs.common import border_mode_string
 

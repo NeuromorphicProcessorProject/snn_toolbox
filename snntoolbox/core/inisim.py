@@ -52,12 +52,12 @@ if on_gpu():
     from theano.sandbox.cuda import dnn
 
 
-def update_neurons(self, impulse, time, updates):
+def update_neurons(self, time, updates):
     if 'activation' in self.get_config() and \
             self.get_config()['activation'] == 'softmax':
-        output_spikes = softmax_activation(self, impulse, time, updates)
+        output_spikes = softmax_activation(self, time, updates)
     else:
-        output_spikes = linear_activation(self, impulse, time, updates)
+        output_spikes = linear_activation(self, time, updates)
     updates.append((self.spiketrain, output_spikes * time))
     if settings['online_normalization']:
         updates.append((self.spikecounts, self.spikecounts + output_spikes))
@@ -66,10 +66,20 @@ def update_neurons(self, impulse, time, updates):
     return output_spikes
 
 
-def linear_activation(self, impulse, time, updates):
+def update_payload(self, new_mem, spikes, time):
+    idxs=spikes.nonzero()            
+    v_error = new_mem[idxs]
+    payloads = T.set_subtensor(self.payloads[idxs],
+                                    v_error - self.payloads_sum[idxs])
+    payloads_sum = T.set_subtensor(self.payloads_sum[idxs],
+                                    self.payloads_sum[idxs]
+                                    + self.payloads[idxs])
+    return payloads, payloads_sum
+
+def linear_activation(self, time, updates):
     # Destroy impulse if in refractory period
     masked_imp = T.set_subtensor(
-        impulse[(self.refrac_until > time).nonzero()], 0.)
+        self.impulse[(self.refrac_until > time).nonzero()], 0.)
     # Add impulse
     new_mem = self.mem + masked_imp
     # Store spiking
@@ -83,19 +93,25 @@ def linear_activation(self, impulse, time, updates):
             new_mem[output_spikes.nonzero()], 0)
     elif settings['reset'] == 'Reset by subtraction':
         new_and_reset_mem = T.inc_subtensor(
-            new_mem[output_spikes.nonzero()], -1.)
+            new_mem[output_spikes.nonzero()], -self.v_thresh)
+        if settings['payloads']:    
+            payloads, payloads_sum = update_payload(self, new_and_reset_mem, 
+                                                    output_spikes, time)        
     # Store refractory
     new_refractory = T.set_subtensor(
         self.refrac_until[output_spikes.nonzero()], time + self.tau_refrac)
     updates.append((self.refrac_until, new_refractory))
     updates.append((self.mem, new_and_reset_mem))
+    if settings['payloads']:
+        updates.append((self.payloads, payloads))
+        updates.append((self.payloads_sum, payloads_sum))        
     return output_spikes
 
 
-def softmax_activation(self, impulse, time, updates):
+def softmax_activation(self, time, updates):
     # Destroy impulse if in refractory period
     masked_imp = T.set_subtensor(
-        impulse[(self.refrac_until > time).nonzero()], 0.)
+        self.impulse[(self.refrac_until > time).nonzero()], 0.)
     # Add impulse
     new_mem = self.mem + masked_imp
     # Store spiking
@@ -108,8 +124,14 @@ def softmax_activation(self, impulse, time, updates):
     # consider those that spiked. May have to change that...
     new_refractory = T.set_subtensor(
         self.refrac_until[output_spikes.nonzero()], time + self.tau_refrac)
+    if settings['payloads']:        
+        payloads, payloads_sum = update_payload(self, new_and_reset_mem, 
+                                                output_spikes, time)    
+        updates.append((self.payloads, payloads))
+        updates.append((self.payloads_sum, payloads_sum))  
+                                                
     updates.append((self.refrac_until, new_refractory))
-    updates.append((self.mem, new_and_reset_mem))
+    updates.append((self.mem, new_and_reset_mem))     
     return output_spikes
 
 
@@ -130,6 +152,9 @@ def reset(self):
     self.mem.set_value(floatX(np.zeros(self.output_shape)))
     self.refrac_until.set_value(floatX(np.zeros(self.output_shape)))
     self.spiketrain.set_value(floatX(np.zeros(self.output_shape)))
+    if settings['payloads']:            
+        self.payloads.set_value(floatX(np.zeros(self.output_shape)))
+        self.payloads_sum.set_value(floatX(np.zeros(self.output_shape)))
     if settings['online_normalization']:
         self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
         self.max_spikerate.set_value(0.0)
@@ -183,6 +208,9 @@ def init_layer(self, layer, v_thresh, tau_refrac):
     layer.refrac_until = shared_zeros(self.output_shape)
     layer.mem = shared_zeros(self.output_shape)
     layer.spiketrain = shared_zeros(self.output_shape)
+    if settings['payloads']:        
+        layer.payloads = shared_zeros(self.output_shape)
+        layer.payloads_sum = shared_zeros(self.output_shape)
     layer.updates = []
     if settings['online_normalization']:
         layer.spikecounts = shared_zeros(self.output_shape)
@@ -212,8 +240,13 @@ class SpikeFlatten(Flatten):
     def get_output(self, train=False):
         # Recurse
         inp, time, updates = get_input(self)
-        self.updates = updates
         reshaped_inp = T.reshape(inp, self.output_shape)
+        if settings['payloads']:                
+            payloads = T.reshape(self.payloads, self.output_shape)
+            payloads_sum = T.reshape(self.payloads_sum, self.output_shape)
+            updates.append((self.payloads, payloads))
+            updates.append((self.payloads_sum, payloads_sum))        
+        self.updates = updates           
         return reshaped_inp
 
 
@@ -228,15 +261,23 @@ class SpikeDense(Dense):
 
     def get_output(self, train=False):
         # Recurse
-        inp, time, updates = get_input(self)
-
+        inp, time, updates = get_input(self)             
         if settings['online_normalization']:
             # Modify threshold if firing rate of layer too low
             updates.append((self.v_thresh, get_new_thresh(self, time)))
-
-        # Get impulse
-        self.impulse = T.add(T.dot(inp, self.W), self.b)
-        output_spikes = update_neurons(self, self.impulse, time, updates)
+        if self.inbound_nodes[0].inbound_layers and settings['payloads']:                    
+                prev_layer_error = self.inbound_nodes[0].inbound_layers[0].payloads
+                prev_shape = self.inbound_nodes[0].inbound_layers[0].output_shape
+                error = shared_zeros(prev_shape)
+                idxs=(inp>0).nonzero()            
+                error = T.set_subtensor(error[idxs], prev_layer_error[idxs])                   
+                # Get impulse
+                self.impulse = T.add(T.dot(inp, self.W), self.b,
+                                     T.dot(error, self.W))
+        else:
+            self.impulse = T.add(T.dot(inp, self.W), self.b)            
+        # Update payload
+        output_spikes = update_neurons(self, time, updates)
         self.updates = updates
         return T.cast(output_spikes, 'float32')
 
@@ -258,6 +299,16 @@ class SpikeConv2DReLU(Convolution2D):
     def get_output(self, train=False):
         # Recurse
         inp, time, updates = get_input(self)
+        if self.inbound_nodes[0].inbound_layers and settings['payloads']:                                  
+            #add error from previous layer
+            prev_layer_error = self.inbound_nodes[0].inbound_layers[0].payloads       
+            print (self.inbound_nodes[0].inbound_layers[0].name)
+            print ("error to layer conv", prev_layer_error)
+                      
+            prev_shape = self.inbound_nodes[0].inbound_layers[0].output_shape
+            error = shared_zeros(prev_shape)
+            idxs=(inp>0).nonzero()            
+            error = T.set_subtensor(error[idxs], prev_layer_error[idxs]) 
 
         if settings['online_normalization']:
             # Modify threshold if firing rate of layer too low
@@ -274,26 +325,47 @@ class SpikeConv2DReLU(Convolution2D):
                 conv_out = dnn.dnn_conv(img=inp, kerns=self.W,
                                         border_mode=(pad_x, pad_y),
                                         conv_mode=conv_mode)
+                if (self.inbound_nodes[0].inbound_layers 
+                    and settings['payloads']):            
+                    error_conv = dnn.dnn_conv(img=error, kerns=self.W,
+                                            border_mode=(pad_x, pad_y),
+                                            conv_mode=conv_mode)
             else:
                 conv_out = dnn.dnn_conv(img=inp, kerns=self.W,
                                         border_mode=border_mode,
                                         subsample=self.subsample,
                                         conv_mode=conv_mode)
+                if (self.inbound_nodes[0].inbound_layers
+                    and settings['payloads']):                                            
+                    error_conv = dnn.dnn_conv(img=error, kerns=self.W,
+                                              border_mode=border_mode,
+                                              subsample=self.subsample,
+                                              conv_mode=conv_mode)
         else:
             if border_mode == 'same':
                 border_mode = 'full'
             conv_out = T.nnet.conv2d(inp, self.W, border_mode=border_mode,
                                      subsample=self.subsample,
                                      filter_flip=self.filter_flip)
+            if self.inbound_nodes[0].inbound_layers and settings['payloads']:                                     
+                error_conv = dnn.dnn_conv(error, kerns=self.W,
+                                            border_mode=(pad_x, pad_y),
+                                            conv_mode=conv_mode)
             if self.border_mode == 'same':
                 shift_x = (self.nb_row - 1) // 2
                 shift_y = (self.nb_col - 1) // 2
                 conv_out = conv_out[:, :, shift_x:inp.shape[2] + shift_x,
                                     shift_y:inp.shape[3] + shift_y]
-
-        self.impulse = conv_out + K.reshape(self.b, (1, self.nb_filter, 1, 1))
-
-        output_spikes = update_neurons(self, self.impulse, time, updates)
+        if self.inbound_nodes[0].inbound_layers and settings['payloads']:            
+            self.impulse = conv_out + error_conv + K.reshape(
+                                                 self.b,
+                                                 (1, self.nb_filter, 1, 1)
+                                                 )
+        else:
+            self.impulse = conv_out + K.reshape(self.b,
+                                                (1, self.nb_filter, 1, 1)
+                                               )            
+        output_spikes = update_neurons(self, time, updates)
         self.updates = updates
         return T.cast(output_spikes, 'float32')
 
@@ -314,13 +386,28 @@ class AvgPool2DReLU(AveragePooling2D):
 
         # Recurse
         inp, time, updates = get_input(self)
-
-        # CALCULATE SYNAPTIC SUMMED INPUT
-        self.impulse = pool.pool_2d(inp, ds=self.pool_size, st=self.strides,
-                                    ignore_border=self.ignore_border,
-                                    mode='average_inc_pad')
-
-        output_spikes = update_neurons(self, self.impulse, time, updates)
+        if self.inbound_nodes[0].inbound_layers and settings['payloads']:                         
+            prev_layer_error = self.inbound_nodes[0].inbound_layers[0].payloads
+            prev_shape = self.inbound_nodes[0].inbound_layers[0].output_shape
+            error = shared_zeros(prev_shape)
+            idxs=(inp>0).nonzero()            
+            error = T.set_subtensor(error[idxs], prev_layer_error[idxs])             
+            # CALCULATE SYNAPTIC SUMMED INPUT
+            impulse = pool.pool_2d(inp, ds=self.pool_size, st=self.strides,
+                                        ignore_border=self.ignore_border,
+                                        mode='average_inc_pad')
+                                        
+            error_pool = pool.pool_2d(error, ds=self.pool_size,
+                                      st=self.strides,
+                                      ignore_border=self.ignore_border,
+                                      mode='average_inc_pad')
+            self.impulse = impulse + error_pool
+        else:
+            self.impulse = pool.pool_2d(inp, ds=self.pool_size,
+                                        st=self.strides,
+                                        ignore_border=self.ignore_border,
+                                        mode='average_inc_pad')            
+        output_spikes = update_neurons(self, time, updates)
         self.updates = updates
         return T.cast(output_spikes, 'float32')
 
