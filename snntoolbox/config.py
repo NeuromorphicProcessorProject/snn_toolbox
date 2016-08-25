@@ -370,9 +370,10 @@ def update_setup(s=None):
                                                    'test')
 
     # Specify filenames for models at different stages of the conversion.
-    if s['filename_snn'] == "":
+    if 'filename_snn' not in s:
         s['filename_snn'] = 'snn_' + s['filename']
-    if s['filename_snn_exported'] == "":
+        
+    if 'filename_snn_exported' not in s:
         s['filename_snn_exported'] = s['filename_snn'] + '_' + s['simulator']
 
     if 'poisson_input' not in s:
