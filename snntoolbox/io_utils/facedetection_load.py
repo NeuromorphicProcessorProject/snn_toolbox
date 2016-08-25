@@ -13,7 +13,7 @@ from future import standard_library
 import os
 import numpy as np
 from PIL import Image
-from snntoolbox.io_utils.load import to_categorical
+from snntoolbox.io_utils.common import to_categorical
 
 standard_library.install_aliases()
 

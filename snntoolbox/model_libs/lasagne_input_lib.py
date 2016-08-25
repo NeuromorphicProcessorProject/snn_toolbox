@@ -21,10 +21,10 @@ Created on Thu Jun  9 08:11:09 2016
 import os
 import lasagne
 import theano
+from snntoolbox.config import settings, spiking_layers
+from snntoolbox.io_utils.common import load_parameters
 import numpy as np
 
-from snntoolbox.config import settings, spiking_layers
-from snntoolbox.io_utils.load import load_parameters
 from snntoolbox.model_libs.common import absorb_bn, import_script
 from snntoolbox.model_libs.common import border_mode_string
 

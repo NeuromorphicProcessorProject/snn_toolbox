@@ -107,7 +107,7 @@
         <div class="rst-content">
           
 
- 
+
 
 
 
@@ -135,9 +135,9 @@
 and running them in a spiking neuron simulator.</p>
 <div class="section" id="citation">
 <h2>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Diehl</span><span class="p">,</span> <span class="n">P</span><span class="o">.</span><span class="n">U</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Neil</span><span class="p">,</span> <span class="n">D</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Binas</span><span class="p">,</span> <span class="n">J</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Cook</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Liu</span><span class="p">,</span> <span class="n">S</span><span class="o">.</span><span class="n">C</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Pfeiffer</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span>
-<span class="n">Fast</span><span class="o">-</span><span class="n">Classifying</span><span class="p">,</span> <span class="n">High</span><span class="o">-</span><span class="n">Accuracy</span> <span class="n">Spiking</span> <span class="n">Deep</span> <span class="n">Networks</span> <span class="n">Through</span> <span class="n">Weight</span> <span class="ow">and</span> <span class="n">Threshold</span> <span class="n">Balancing</span><span class="p">,</span>
-<span class="n">IEEE</span> <span class="n">International</span> <span class="n">Joint</span> <span class="n">Conference</span> <span class="n">on</span> <span class="n">Neural</span> <span class="n">Networks</span> <span class="p">(</span><span class="n">IJCNN</span><span class="p">),</span> <span class="mi">2015</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span>Diehl, P.U. and Neil, D. and Binas, J. and Cook, M. and Liu, S.C. and Pfeiffer, M.
+Fast-Classifying, High-Accuracy Spiking Deep Networks Through Weight and Threshold Balancing,
+IEEE International Joint Conference on Neural Networks (IJCNN), 2015
 </pre></div>
 </div>
 <div class="figure" id="id1">
@@ -155,7 +155,7 @@ for evaluation in a spiking simulator. At any stage of the pipeline, models and 
 <li><p class="first">Before conversion, the input model is parsed into a custom class containing only essential model structure and
 weights in common python containers. This serves to abstract the core conversion process from possible input types.
 The conversion toolbox currently supports input networks generated with Keras or Lasagne.
-See <a class="reference internal" href="getting_started.html"><span class="doc">Getting Started</span></a> on how to extend the relevant methods to handle models from other
+See <a class="reference internal" href="getting_started.html"><em>Getting Started</em></a> on how to extend the relevant methods to handle models from other
 common libraries like caffe, torch etc.</p>
 </li>
 <li><p class="first">During conversion of the analog neural network to spiking, the toolbox allows normalizing model parameters
@@ -163,7 +163,7 @@ for achieving higher accuracy in the converted net.
 Batch normalization layers are absorbed into the preceeding layer to save computations at runtime.</p>
 </li>
 <li><p class="first">The resulting spiking network can then be exported to be tested in spiking simulators. The export format depends on the target
-simulator. See <a class="reference internal" href="getting_started.html"><span class="doc">Getting Started</span></a> on how to add a simulator to the toolbox.</p>
+simulator. See <a class="reference internal" href="getting_started.html"><em>Getting Started</em></a> on how to add a simulator to the toolbox.</p>
 </li>
 <li><p class="first">The toolbox currently provides the following output formats:</p>
 <blockquote>
@@ -252,9 +252,9 @@ the <code class="docutils literal"><span class="pre">io.load.get_dataset</span><
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
-<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
-<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
-<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+<li><a class="reference internal" href="genindex.html"><span>Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span>Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span>Search Page</span></a></li>
 </ul>
 </div>
 

@@ -15,7 +15,7 @@ from snntoolbox.config import settings
 standard_library.install_aliases()
 
 
-class SNN():
+class conversion_model():
     """
     Represent a neural network.
 
@@ -180,7 +180,7 @@ class SNN():
         """
         from snntoolbox.io_utils.plotting import plot_hist
         from snntoolbox.core.util import get_scale_fac, get_activations_layer
-        from snntoolbox.io_utils.load import load_dataset
+        from snntoolbox.io_utils.common import load_dataset
 
         print("Loading normalization data set.\n")
         X_norm = load_dataset(settings['dataset_path'], 'X_norm.npz')  # t=0.2%
@@ -267,7 +267,8 @@ class SNN():
             ``settings['filename_snn']``.
 
         """
-        from snntoolbox.io_utils.save import confirm_overwrite
+
+        from snntoolbox.io_utils.common import confirm_overwrite
 
         if path is None:
             path = settings['path']
@@ -303,7 +304,7 @@ class SNN():
 
     def save_config(self, path=None):
         """Save model configuration to disk."""
-        from snntoolbox.io_utils.save import to_json
+        from snntoolbox.io_utils.common import to_json
 
         if path is None:
             path = settings['path']

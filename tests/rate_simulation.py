@@ -70,9 +70,6 @@ class Layer():
         self.pred_rates[:, t_ind] = self.get_pred_rates(in_spikes,
                                   prev_layer_payload, t, t_ind)
         self.rate_rep = self.pred_rates / (self.rates + 1e-6)
-        # print(self.V)
-        print (self.name)
-        print (self.rates)
         return spikes, self.payload
 
     def set_activations(self, x):
@@ -214,7 +211,7 @@ if __name__ == "__main__":
     reset = 'subtract'  # reset mechanism 'zero' or 'subtract'
 
     # Randomly initialize parameters and set input
-    np.random.seed(121111)
+    np.random.seed(1211)
     x = np.random.random_sample(L1_insize)  # Input sample
     W1, b1 = init_params(L1_insize, L1_outsize, low_lim, high_lim)
     W2, b2 = init_params(L2_insize, L2_outsize, low_lim, high_lim)
@@ -259,22 +256,28 @@ if __name__ == "__main__":
     for t in times:
         L1_spikes, L1_error = layers[0].update_neurons(x, np.zeros(L1_outsize),
                                                        t, t_ind)
+        print (L1_spikes)
+                                                       
         sp1+=len(L1_spikes.nonzero()[0])
                                                        
         L2_spikes, L2_error = layers[1].update_neurons(L1_spikes, L1_error, t,
                                                        t_ind)
+        print (L2_spikes)
+                                                       
         sp2+=len(L2_spikes.nonzero()[0])
                                                        
         L3_spikes, L3_error = layers[2].update_neurons(L2_spikes, L2_error, t,
                                                        t_ind)
+        print (L3_spikes)
+                                                       
         sp3+=len(L3_spikes.nonzero()[0])
-   
+        
         t_ind += 1
     print (sp1)
     print (sp2)
     print (sp3)
     # Display results
     for l in layers:
-        l.plot_V()
+        #l.plot_V()
         l.plot_r()
-        l.plot_rate_report()
+        #l.plot_rate_report()
