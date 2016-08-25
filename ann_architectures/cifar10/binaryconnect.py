@@ -26,7 +26,7 @@ from __future__ import print_function
 
 import theano
 import lasagne
-from snntoolbox.BinaryConnect import binary_connect
+from ann_architectures.BinaryConnect import binary_connect
 
 theano.sandbox.cuda.use('gpu')
 
