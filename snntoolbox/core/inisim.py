@@ -580,6 +580,8 @@ class MaxPool2DReLU(MaxPooling2D):
                         else K.placeholder(shape=self.input_shape)
 
         if self.pool_type in ["avg_max", "fir_max", "exp_max"]:
+            # Todo: Use K.pool2 to be consistent with AvgPool and independent
+            # of backend
             max_idx = pool_same_size(spikerate,
                                      patch_size=self.pool_size,
                                      ignore_border=self.ignore_border,
