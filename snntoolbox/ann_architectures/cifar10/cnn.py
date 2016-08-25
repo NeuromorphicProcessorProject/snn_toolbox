@@ -23,7 +23,7 @@ from snntoolbox.io_utils.plotting import plot_history
 
 batch_size = 32
 nb_classes = 10
-nb_epoch = 1
+nb_epoch = 150
 
 data_augmentation = True
 

@@ -13,8 +13,8 @@ from future import standard_library
 import os
 import numpy as np
 from keras.datasets import cifar10
+from snntoolbox.io_utils.common import to_categorical
 from keras.preprocessing.image import ImageDataGenerator
-from snntoolbox.io_utils.load import to_categorical
 
 standard_library.install_aliases()
 

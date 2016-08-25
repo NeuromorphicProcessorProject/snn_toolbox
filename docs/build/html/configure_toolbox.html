@@ -83,7 +83,7 @@
             
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Configuration</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#global-parameters">Global Parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cell-parameters">Cell Parameters</a></li>
@@ -117,7 +117,7 @@
         <div class="rst-content">
           
 
- 
+
 
 
 
@@ -325,7 +325,7 @@ membrane potential.</dd>
 </div>
 <div class="section" id="default-values">
 <h2>Default values<a class="headerlink" href="#default-values" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">globalparams</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">globalparams</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;model_lib&#39;</span><span class="p">:</span> <span class="s1">&#39;keras&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
@@ -333,12 +333,12 @@ membrane potential.</dd>
                 <span class="s1">&#39;filename_snn&#39;</span><span class="p">:</span> <span class="s1">&#39;snn_&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;filename_snn_exported&#39;</span><span class="p">:</span> <span class="s1">&#39;snn_exported_&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;batch_size&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
-                <span class="s1">&#39;evaluateANN&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-                <span class="s1">&#39;normalize&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s1">&#39;evaluateANN&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+                <span class="s1">&#39;normalize&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
                 <span class="s1">&#39;percentile&#39;</span><span class="p">:</span> <span class="mi">99</span><span class="p">,</span>
-                <span class="s1">&#39;convert&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-                <span class="s1">&#39;overwrite&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-                <span class="s1">&#39;simulate&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s1">&#39;convert&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+                <span class="s1">&#39;overwrite&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+                <span class="s1">&#39;simulate&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
                 <span class="s1">&#39;verbose&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>
 <span class="n">cellparams</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;v_thresh&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
               <span class="s1">&#39;v_reset&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
@@ -356,7 +356,7 @@ membrane potential.</dd>
              <span class="s1">&#39;duration&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
              <span class="s1">&#39;dt&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
              <span class="s1">&#39;delay&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-             <span class="s1">&#39;poisson_input&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+             <span class="s1">&#39;poisson_input&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
              <span class="s1">&#39;reset&#39;</span><span class="p">:</span> <span class="s1">&#39;Reset by subtraction&#39;</span><span class="p">,</span>
              <span class="s1">&#39;input_rate&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
              <span class="s1">&#39;timestep_fraction&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>

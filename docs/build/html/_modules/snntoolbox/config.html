@@ -345,6 +345,8 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">matplotlib</span> <span class="kn">as</span> <span class="nn">mpl</span>
+<span class="kn">from</span> <span class="nn">textwrap</span> <span class="kn">import</span> <span class="n">dedent</span>
+
 
 <span class="c1"># Define text sizes of various plot properties relative to font.size, using the</span>
 <span class="c1"># following values: xx-small, x-small, small, medium, large, x-large, xx-large,</span>
@@ -454,11 +456,11 @@
     <span class="c1"># pre-converted network from disk.</span>
     <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;brian2&#39;</span> <span class="ow">and</span> <span class="s1">&#39;convert&#39;</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;convert&#39;</span><span class="p">]</span> \
             <span class="ow">or</span> <span class="s1">&#39;convert&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;convert&#39;</span><span class="p">]:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SNN toolbox Warning: When using Brian 2 simulator, you need to</span>
-<span class="s2">              convert the network each time you start a new session. (No</span>
-<span class="s2">              saving/reloading methods implemented.)</span>
-<span class="s2">              Setting convert = True.</span><span class="se">\n</span><span class="s2">&quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">dedent</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;\ </span><span class="se">\n</span><span class="s2"></span>
+<span class="s2">            SNN toolbox Warning: When using Brian 2 simulator, you need to</span>
+<span class="s2">            convert the network each time you start a new session. (No</span>
+<span class="s2">            saving/reloading methods implemented.) Setting convert = True.</span>
+<span class="s2">            </span><span class="se">\n</span><span class="s2">&quot;&quot;&quot;</span><span class="p">))</span>
         <span class="n">s</span><span class="p">[</span><span class="s1">&#39;convert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
     <span class="c1"># Set default path if user did not specify one.</span>
     <span class="k">if</span> <span class="s1">&#39;path&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">or</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
@@ -484,8 +486,9 @@
 
     <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;INI&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;poisson_input&#39;</span><span class="p">]:</span>
         <span class="n">s</span><span class="p">[</span><span class="s1">&#39;poisson_input&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
-        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SNN toolbox Warning: Currently, turning off Poisson input is</span>
-<span class="s2">            only possible in INI simulator. Falling back on Poisson input.&quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">dedent</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+<span class="s2">            SNN toolbox Warning: Currently, turning off Poisson input is</span>
+<span class="s2">            only possible in INI simulator. Falling back on Poisson input.&quot;&quot;&quot;</span><span class="p">))</span>
 
     <span class="c1"># If there are any parameters specified, merge with default parameters.</span>
     <span class="n">settings</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">s</span><span class="p">)</span></div>

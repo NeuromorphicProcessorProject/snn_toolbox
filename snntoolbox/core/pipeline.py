@@ -13,8 +13,8 @@ from __future__ import division, absolute_import
 from future import standard_library
 
 from snntoolbox.io_utils.plotting import plot_param_sweep
-from snntoolbox.io_utils.load import load_dataset
-from snntoolbox.core.model import SNN
+from snntoolbox.io_utils.common import load_dataset
+from snntoolbox.core.conversion_model import conversion_model
 from snntoolbox.core.util import print_description
 from snntoolbox.config import settings
 
@@ -75,10 +75,10 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
     # Extract architecture and parameters from input model.
     if settings['verbose'] > 0:
         print("Parsing input model.")
-    snn = SNN(settings['path'], settings['filename'])  # t=0.5% m=0.6GB
+    conversion = conversion_model(settings['path'], settings['filename'])  # t=0.5% m=0.6GB
 
     if settings['verbose'] > 0:
-        print_description(snn)
+        print_description(conversion)
 
     if settings['convert'] and not is_stop(queue):
 
@@ -89,26 +89,26 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
             # accuracy
             if settings['evaluateANN'] and not is_stop(queue):
                 print("Before parameter normalization:")
-                snn.evaluate_ann(X_test, Y_test)
-            snn.normalize_parameters()  # t=9.1 (t=90.8% without sim) m=0.2GB
+                conversion.evaluate_ann(X_test, Y_test)
+            conversion.normalize_parameters()  # t=9.1 (t=90.8% without sim) m=0.2GB
 
         # ____________________________ EVALUATE _____________________________ #
         # (Re-) evaluate ANN
         if settings['evaluateANN'] and not is_stop(queue):
-            snn.evaluate_ann(X_test, Y_test)
+            conversion.evaluate_ann(X_test, Y_test)
 
         # _____________________________ EXPORT ______________________________ #
         # Write model to disk
-        snn.save()
+        conversion.save()
 
         # Compile spiking network from ANN
         if not is_stop(queue):
-            snn.build()  # t=0.1%
+            conversion.build()  # t=0.1%
 
         # Export network in a format specific to the simulator with which it
         # will be tested later.
         if not is_stop(queue):
-            snn.export_to_sim()
+            conversion.export_to_sim()
 
     # ______________________________ SIMULATE _______________________________ #
     results = []
@@ -130,16 +130,17 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
             # Display current parameter value
             if len(params) > 1 and settings['verbose'] > 0:
+                print('\n')
                 print("Current value of parameter to sweep: " +
                       "{} = {:.2f}\n".format(param_name, p))
             # Simulate network
-            total_acc = snn.run(X_test, Y_test)  # t=90.1% m=2.3GB
+            total_acc = conversion.run(X_test, Y_test)  # t=90.1% m=2.3GB
 
             # Write out results
             results.append(total_acc)
 
         # Clean up
-        snn.end_sim()
+        conversion.end_sim()
 
     # _______________________________ OUTPUT _______________________________ #
     # Number of samples used in one run:

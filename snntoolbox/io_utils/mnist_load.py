@@ -16,7 +16,7 @@ import os
 import gzip
 import numpy as np
 from six.moves import cPickle
-from snntoolbox.io_utils.load import download_dataset, to_categorical
+from snntoolbox.io_utils.common import download_dataset, to_categorical
 
 standard_library.install_aliases()
 
