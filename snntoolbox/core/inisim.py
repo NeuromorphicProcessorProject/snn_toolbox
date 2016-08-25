@@ -88,6 +88,7 @@ def update_neurons(self, time, updates):
 
 
 def update_payload(self, new_mem, spikes, time):
+    """update payloads."""
     idxs = spikes.nonzero()
     v_error = new_mem[idxs]
     payloads = T.set_subtensor(
@@ -538,11 +539,21 @@ class MaxPool2DReLU(MaxPooling2D):
     batch_size x input_shape x out_shape.
     """
 
-    def __init__(self, pool_size=(2, 2), strides=None, ignore_border=True,
+    def __init__(self, pool_size=(2, 2), strides=None, border_mode='valid',
                  label=None, pool_type="fir_max", **kwargs):
-        """Init function."""
-        self.ignore_border = ignore_border
-        super().__init__(pool_size=pool_size, strides=strides)
+        """Init function.
+
+        Parameters
+        ----------
+        pool_type : string
+            avg_max : max depending on moving average spike rate.
+            fir_max : max depending on accumulated absolute spike rate.
+            exp_max : max depending on first arrived spike.
+        """
+        self.ignore_border = True if border_mode == "valid" else False
+
+        super().__init__(pool_size=pool_size, strides=strides,
+                         border_mode=border_mode)
         if label is not None:
             self.label = label
             self.name = label
@@ -551,14 +562,7 @@ class MaxPool2DReLU(MaxPooling2D):
         self.pool_type = pool_type
 
     def get_output(self, train=False):
-        """Get Output.
-
-        Parameters
-        ----------
-        option : string
-            avg_max : max depending on moving average max
-            fir_max : max depdnding on first arrived spike.
-        """
+        """Get Output."""
         # Recurse
         inp, time, updates = get_input(self)
 
@@ -580,17 +584,13 @@ class MaxPool2DReLU(MaxPooling2D):
                                      patch_size=self.pool_size,
                                      ignore_border=self.ignore_border,
                                      st=self.strides)
-            self.impulse = pool.pool_2d(inp*max_idx, ds=self.pool_size,  # Use K.pool2
-                                        st=self.strides,
-                                        ignore_border=self.ignore_border,
-                                        mode='max')
+            self.impulse = K.pool_2d(inp*max_idx, self.pool_size, self.strides,
+                                     self.border_mode, pool_mode='max')
         else:
             print("wrong max pooling type,"
                   "choose Average Pooling automatically")
-            self.impulse = pool.pool_2d(inp, ds=self.pool_size,  # Use K.pool2
-                                        st=self.strides,
-                                        ignore_border=self.ignore_border,
-                                        mode='average_inc_pad')
+            self.impulse = K.pool2d(inp, self.pool_size, self.strides,
+                                    self.border_mode, pool_mode='avg')
 
         output_spikes = update_neurons(self, self.impulse, time, updates)
         self.updates = updates
