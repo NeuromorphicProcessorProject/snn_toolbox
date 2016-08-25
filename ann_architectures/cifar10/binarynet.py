@@ -16,7 +16,7 @@ https://github.com/MatthieuCourbariaux/BinaryNet
 from __future__ import print_function
 
 import lasagne
-from snntoolbox.BinaryConnect import binary_net
+from ann_architectures.BinaryConnect import binary_net
 
 # specifying the gpu to use
 import theano.sandbox.cuda
