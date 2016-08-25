@@ -383,8 +383,8 @@ def update_setup(s=None):
             SNN toolbox Warning: Currently, turning off Poisson input is
             only possible in INI simulator. Falling back on Poisson input."""))
 
-    if s['maxpool_type'] == "" or "maxpool_type" not in s:
-        s['maxpool_type'] == "fir_max"
+    if 'maxpool_type' not in s or s['maxpool_type'] == "":
+        s.update({'maxpool_type': 'fir_max'})
 
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)
