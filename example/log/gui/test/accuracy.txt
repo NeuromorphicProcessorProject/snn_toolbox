@@ -1,1 +1,1 @@
-Moving average accuracy after batch 39 of 100: 15.08%.
+Moving average accuracy after batch 62 of 100: 14.74%.
