@@ -71,18 +71,21 @@ def update_neurons(self, time, updates):
                         T.max(self.spikecounts) / (time + settings['dt'])))
 
     if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-        if settings["maxpool_type"] == "avg_max":
+        if settings["maxpool_type"] == "avg_max" and \
+                hasattr(self, 'avg_spikerate'):
             updates.append(
                 (self.avg_spikerate,
                  self.avg_spikerate +
                  (output_spikes-self.avg_spikerate) /
                  ((time+settings['dt'])/settings['dt'])))
 
-        elif settings["maxpool_type"] == "fir_max":
+        elif settings["maxpool_type"] == "fir_max" and \
+                hasattr(self, 'fir_spikerate'):
             updates.append((self.fir_spikerate,
                             self.fir_spikerate + output_spikes /
                             ((time+settings['dt'])/settings['dt'])))
-        elif settings["maxpool_type"] == "exp_max":
+        elif settings["maxpool_type"] == "exp_max" and \
+                hasattr(self, 'exp_spikerate'):
             updates.append((self.exp_spikerate,
                             self.exp_spikerate + output_spikes /
                             2.**((time+settings['dt'])/settings['dt'])))
@@ -192,13 +195,16 @@ def reset(self):
         self.v_thresh.set_value(settings['v_thresh'])
 
     if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-        if settings["maxpool_type"] == "avg_max":
+        if settings["maxpool_type"] == "avg_max" and \
+                hasattr(self, 'avg_spikerate'):
             self.avg_spikerate.set_value(
                 floatX(np.zeros(self.output_shape)))
-        elif settings["maxpool_type"] == "fir_max":
+        elif settings["maxpool_type"] == "fir_max" and \
+                hasattr(self, 'fir_spikerate'):
             self.fir_spikerate.set_value(
                 floatX(np.zeros(self.output_shape)))
-        elif settings["maxpool_type"] == "exp_max":
+        elif settings["maxpool_type"] == "exp_max" and \
+                hasattr(self, 'exp_spikerate'):
             self.exp_spikerate.set_value(
                 floatX(np.zeros(self.output_shape)))
 
@@ -586,15 +592,15 @@ class MaxPool2DReLU(MaxPooling2D):
                                      patch_size=self.pool_size,
                                      ignore_border=self.ignore_border,
                                      st=self.strides)
-            self.impulse = K.pool_2d(inp*max_idx, self.pool_size, self.strides,
-                                     self.border_mode, pool_mode='max')
+            self.impulse = K.pool2d(inp*max_idx, self.pool_size, self.strides,
+                                    self.border_mode, pool_mode='max')
         else:
             print("Wrong max pooling type, "
                   "choose Average Pooling automatically")
             self.impulse = K.pool2d(inp, self.pool_size, self.strides,
                                     self.border_mode, pool_mode='avg')
 
-        output_spikes = update_neurons(self, self.impulse, time, updates)
+        output_spikes = update_neurons(self, time, updates)
         self.updates = updates
         return T.cast(output_spikes, 'float32')
 
