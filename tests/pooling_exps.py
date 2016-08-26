@@ -78,7 +78,7 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
     settings["log_dir_of_current_run"] = log_path
     settings["runlabel"] = exp_name
     settings["dataset_path"] = data_path
-    settings["filename"] = model_name
+    settings["filename_ann"] = model_name
     settings["path"] = config_path
     settings["filename_snn"] = "snn_"+model_name + \
                                "_"+str(int(settings["percentile"]))
