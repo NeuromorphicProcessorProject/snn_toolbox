@@ -99,9 +99,9 @@ class conversion_model():
     def __init__(self, path=None, filename=None):
         """Init a SNN model."""
         if path is None:
-            path = settings['path']
+            path = settings['path_wd']
         if filename is None:
-            filename = settings['filename']
+            filename = settings['filename_ann']
 
         # Import utility functions of input model library ('model_lib') and
         # of the simulator to use ('target_sim')
@@ -271,7 +271,7 @@ class conversion_model():
         from snntoolbox.io_utils.common import confirm_overwrite
 
         if path is None:
-            path = settings['path']
+            path = settings['path_wd']
         if filename is None:
             filename = settings['filename_snn']
 
@@ -307,7 +307,7 @@ class conversion_model():
         from snntoolbox.io_utils.common import to_json
 
         if path is None:
-            path = settings['path']
+            path = settings['path_wd']
 
         to_json(self.get_config(), path)
 
@@ -316,7 +316,7 @@ class conversion_model():
         import h5py
 
         if path is None:
-            path = settings['path']
+            path = settings['path_wd']
 
         f = h5py.File(path, 'w')
 
@@ -350,7 +350,7 @@ class conversion_model():
     def export_to_sim(self, path=None, filename=None):
         """Export converted SNN."""
         if path is None:
-            path = settings['path']
+            path = settings['path_wd']
         if filename is None:
             filename = settings['filename_snn_exported']
 

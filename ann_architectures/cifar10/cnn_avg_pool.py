@@ -15,14 +15,13 @@ from keras.datasets import cifar10
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers.convolutional import Convolution2D, MaxPooling2D
-from keras.layers.convolutional import AveragePooling2D
+from keras.layers.convolutional import Convolution2D, AveragePooling2D
 from keras.optimizers import SGD
 from keras.utils import np_utils
 
 from snntoolbox.io_utils.plotting import plot_history
 
-batch_size = 32
+batch_size = 128
 nb_classes = 10
 nb_epoch = 150
 

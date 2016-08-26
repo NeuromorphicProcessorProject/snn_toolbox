@@ -28,7 +28,7 @@ model_lib: string
     - 'lasagne'
     - 'caffe'
 
-path: string, optional
+path_wd: string, optional
     Working directory. There, the toolbox will look for ANN models to convert
     or SNN models to test, load the parameters it needs and store (normalized)
     parameters.
@@ -42,7 +42,7 @@ log_dir_of_current_run: string, optional
     Path to directory where the output plots are stored. If not specified, will
     be ``<path>/log/gui/<runlabel>``. ``<runlabel>`` can be specified in the
     GUI. Will be set to 'test' if None.
-filename: string
+filename_ann: string
     Base name of all loaded and saved files during this run. The ANN model to
     be converted is expected to be named '<basename>'.
 filename_snn: string, optional
@@ -184,9 +184,9 @@ Default values
 
     globalparams = {'dataset_path': '',
                     'model_lib': 'keras',
-                    'path': '',
+                    'path_wd': '',
                     'log_dir_of_current_run': '',
-                    'filename': '',
+                    'filename_ann': '',
                     'filename_snn': 'snn_',
                     'filename_snn_exported': 'snn_exported_',
                     'batch_size': 100,
@@ -253,9 +253,9 @@ simulators.update(simulators_other)
 # Default parameters:
 settings = {'dataset_path': '',
             'model_lib': 'keras',
-            'path': '',
+            'path_wd': '',
             'log_dir_of_current_run': '',
-            'filename': '',
+            'filename_ann': '',
             'filename_snn': 'snn_',
             'filename_snn_exported': 'snn_exported_',
             'batch_size': 100,
@@ -331,7 +331,7 @@ def update_setup(s=None):
             "Input model library '{}' ".format(s['model_lib']) + \
             "not supported yet. Possible values: {}".format(model_libs)
     # Name of input file must be given.
-    assert 'filename' in s, "Filename of stored model not specified."
+    assert 'filename_ann' in s, "Filename of stored model not specified."
     # Check that simulator choice is valid (not really needed when using GUI
     # because options are hardwired in dropdown list).
     if 'simulator' in s:
@@ -352,12 +352,12 @@ def update_setup(s=None):
             \n"""))
         s['convert'] = True
     # Set default path if user did not specify one.
-    if 'path' not in s or s['path'] == '':
-        s['path'] = os.path.join(snntoolbox._dir, 'data', s['filename'],
-                                 s['simulator'])
+    if 'path_wd' not in s or s['path_wd'] == '':
+        s['path_wd'] = os.path.join(snntoolbox._dir, 'data',
+                                             s['filename_ann'], s['simulator'])
     # Create directory if not there yet.
-    if not os.path.exists(s['path']):
-        os.makedirs(s['path'])
+    if not os.path.exists(s['path_wd']):
+        os.makedirs(s['path_wd'])
 
     # Convert string containing sample indices to list of indices.
     if 'samples_to_test' not in s:
@@ -366,12 +366,14 @@ def update_setup(s=None):
         int(i) for i in s['samples_to_test'].split() if i.isnumeric()]
 
     if 'log_dir_of_current_run' not in s:
-        s['log_dir_of_current_run'] = os.path.join(s['path'], 'log', 'gui',
-                                                   'test')
+        s['log_dir_of_current_run'] = os.path.join(s['path_wd'],
+                                                   'log', 'gui', 'test')
+        if not os.path.isdir(s['log_dir_of_current_run']):                                                  
+            os.makedirs(s['log_dir_of_current_run'])                                                  
 
     # Specify filenames for models at different stages of the conversion.
     if 'filename_snn' not in s:
-        s['filename_snn'] = 'snn_' + s['filename']
+        s['filename_snn'] = 'snn_' + s['filename_ann']
         
     if 'filename_snn_exported' not in s:
         s['filename_snn_exported'] = s['filename_snn'] + '_' + s['simulator']
