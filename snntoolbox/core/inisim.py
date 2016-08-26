@@ -388,7 +388,7 @@ def pool_same_size(data_in, patch_size, ignore_border=True,
         pad_w is the size of the left and right margins.
     """
     output = pool.Pool(ds=patch_size, ignore_border=ignore_border,
-                       st=st, padding=padding)(data_in)
+                       st=st, padding=padding, mode="max")(data_in)
     outs = pool.MaxPoolGrad(ds=patch_size, ignore_border=ignore_border,
                             st=st, padding=padding)(data_in, output,
                                                     output) > 0.
