@@ -70,25 +70,24 @@ def update_neurons(self, time, updates):
         updates.append((self.max_spikerate,
                         T.max(self.spikecounts) / (time + settings['dt'])))
 
-    if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-        if settings["maxpool_type"] == "avg_max" and \
-                hasattr(self, 'avg_spikerate'):
-            updates.append(
-                (self.avg_spikerate,
-                 self.avg_spikerate +
-                 (output_spikes-self.avg_spikerate) /
-                 ((time+settings['dt'])/settings['dt'])))
+    if settings["maxpool_type"] == "avg_max" and \
+            hasattr(self, 'avg_spikerate'):
+        updates.append(
+            (self.avg_spikerate,
+             self.avg_spikerate +
+             (output_spikes-self.avg_spikerate) /
+             ((time+settings['dt'])/settings['dt'])))
 
-        elif settings["maxpool_type"] == "fir_max" and \
-                hasattr(self, 'fir_spikerate'):
-            updates.append((self.fir_spikerate,
-                            self.fir_spikerate + output_spikes /
-                            ((time+settings['dt'])/settings['dt'])))
-        elif settings["maxpool_type"] == "exp_max" and \
-                hasattr(self, 'exp_spikerate'):
-            updates.append((self.exp_spikerate,
-                            self.exp_spikerate + output_spikes /
-                            2.**((time+settings['dt'])/settings['dt'])))
+    elif settings["maxpool_type"] == "fir_max" and \
+            hasattr(self, 'fir_spikerate'):
+        updates.append((self.fir_spikerate,
+                        self.fir_spikerate + output_spikes /
+                        ((time+settings['dt'])/settings['dt'])))
+    elif settings["maxpool_type"] == "exp_max" and \
+            hasattr(self, 'exp_spikerate'):
+        updates.append((self.exp_spikerate,
+                        self.exp_spikerate + output_spikes /
+                        2.**((time+settings['dt'])/settings['dt'])))
     return output_spikes
 
 
@@ -194,19 +193,15 @@ def reset(self):
         self.max_spikerate.set_value(0.0)
         self.v_thresh.set_value(settings['v_thresh'])
 
-    if self.layer_type in ["MaxPool2DReLU", "SpikeConv2DReLU"]:
-        if settings["maxpool_type"] == "avg_max" and \
-                hasattr(self, 'avg_spikerate'):
-            self.avg_spikerate.set_value(
-                floatX(np.zeros(self.output_shape)))
-        elif settings["maxpool_type"] == "fir_max" and \
-                hasattr(self, 'fir_spikerate'):
-            self.fir_spikerate.set_value(
-                floatX(np.zeros(self.output_shape)))
-        elif settings["maxpool_type"] == "exp_max" and \
-                hasattr(self, 'exp_spikerate'):
-            self.exp_spikerate.set_value(
-                floatX(np.zeros(self.output_shape)))
+    if settings["maxpool_type"] == "avg_max" and \
+            hasattr(self, 'avg_spikerate'):
+        self.avg_spikerate.set_value(floatX(np.zeros(self.output_shape)))
+    elif settings["maxpool_type"] == "fir_max" and \
+            hasattr(self, 'fir_spikerate'):
+        self.fir_spikerate.set_value(floatX(np.zeros(self.output_shape)))
+    elif settings["maxpool_type"] == "exp_max" and \
+            hasattr(self, 'exp_spikerate'):
+        self.exp_spikerate.set_value(floatX(np.zeros(self.output_shape)))
 
 
 def get_input(self):
