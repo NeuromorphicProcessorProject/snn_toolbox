@@ -35,6 +35,7 @@ if NOTIFICATION is True:
         NOTIFICATION = False
         print ("[MESSAGE] No valid API file is found.")
 
+
 def maxpool_exp(exp_name, model_name, pref_name, dataset,
                 normalize, online_normalize, pool_type):
     """Max-Pooling experiment routine.
