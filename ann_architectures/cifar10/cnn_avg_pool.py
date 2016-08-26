@@ -21,7 +21,7 @@ from keras.utils import np_utils
 
 from snntoolbox.io_utils.plotting import plot_history
 
-batch_size = 32
+batch_size = 128
 nb_classes = 10
 nb_epoch = 150
 

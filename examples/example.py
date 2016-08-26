@@ -52,11 +52,12 @@ def main():
 
     # Parameters
     settings = {'dataset_path': './dataset',  # Dataset file
-                'filename_ann': '83.14',
+                'filename_ann': '83.62',
                 'path_wd': '.',  # Working directory
                 'evaluateANN': True,
                 'normalize': True,
                 'percentile': 99,
+                'batch_size': 128,                
                 'overwrite': True,
                 'convert': True,
                 'simulate': True,
