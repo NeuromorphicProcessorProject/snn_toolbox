@@ -74,6 +74,9 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
 
     settings["maxpool_type"] = pool_type
 
+    # shutdown payloads
+    settings["payloads"] = False
+
     snntoolbox.update_setup(settings)
 
     snntoolbox.test_full()
