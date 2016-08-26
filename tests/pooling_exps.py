@@ -11,12 +11,29 @@ import json
 
 import snntoolbox
 
+try:
+    from pushbullet import Pushbullet
+    NOTIFICATION = True
+    print ("[MESSAGE] Notification is turned on.")
+except ImportError:
+    NOTIFICATION = False
+    print ("[MESSAGE] Notification is turned off.")
+
 home_path = os.environ["HOME"]
 config_path = os.path.join(home_path, ".snntoolbox")
 pref_dir = os.path.join(config_path, "preferences")
 log_dir = os.path.join(home_path, "workspace", "snntoolbox-log", "pool-exps")
 data_dir = os.path.join(config_path, "datasets")
 
+if NOTIFICATION is True:
+    notify_api_path = os.path.join(pref_dir, "api.txt")
+    try:
+        with open(notify_api_path, mode="r") as f:
+            api_key = f.read().replace("\n", "")
+        pb = Pushbullet(api_key)
+    except IOError:
+        NOTIFICATION = False
+        print ("[MESSAGE] No valid API file is found.")
 
 def maxpool_exp(exp_name, model_name, pref_name, dataset,
                 normalize, online_normalize, pool_type):
@@ -81,7 +98,11 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
 
     snntoolbox.test_full()
 
-    print ("[MESSAGE] The experiment result is saved at %s" % (log_path))
+    end_message = "[MESSAGE] The experiment result is saved at %s" % (log_path)
+
+    print (end_message)
+    if NOTIFICATION is True:
+        pb.push_note("Experiment %s Finished" % (exp_name), end_message)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Running Max-Pooling \
