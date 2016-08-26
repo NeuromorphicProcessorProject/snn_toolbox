@@ -52,8 +52,8 @@ def main():
 
     # Parameters
     settings = {'dataset_path': './dataset',  # Dataset file
-                'filename': '80.68',
-                'path': '.',  # Working directory
+                'filename_ann': '83.14',
+                'path_wd': '.',  # Working directory
                 'evaluateANN': True,
                 'normalize': True,
                 'percentile': 99,
@@ -76,7 +76,8 @@ def main():
                 'diff_to_max_rate': 200,
                 'timestep_fraction': 10,
                 'diff_to_min_rate': 100,
-                'scaling_factor' : 10000000}
+                'scaling_factor' : 10000000,
+                'maxpool_type': "fir_max"}
 
 
     # Update defaults with parameters specified above:
@@ -97,7 +98,7 @@ def main():
     # If set True, the converted model is simulated for three different values
     # of v_thresh. Otherwise use parameters as specified above,
     # for a single run.
-    do_param_sweep = True
+    do_param_sweep = False
     if do_param_sweep:
         param_name = 'duration'
         #params = snntoolbox.get_range(1, 101, 21, method='linear')
@@ -117,4 +118,6 @@ def main():
         snntoolbox.test_full()
 
 if __name__ == '__main__':
+    import pdb
+    #pdb.set_trace()
     main()

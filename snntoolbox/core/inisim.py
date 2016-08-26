@@ -598,7 +598,7 @@ class MaxPool2DReLU(MaxPooling2D):
             self.impulse = K.pool2d(inp, self.pool_size, self.strides,
                                     self.border_mode, pool_mode='avg')
 
-        output_spikes = update_neurons(self, self.impulse, time, updates)
+        output_spikes = update_neurons(self, time, updates)
         self.updates = updates
         return T.cast(output_spikes, 'float32')
 

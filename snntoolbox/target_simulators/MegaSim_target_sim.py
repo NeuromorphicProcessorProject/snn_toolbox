@@ -1179,7 +1179,7 @@ class SNN_compiled():
         echo("Compiling spiking network...\n")
 
         # Create megasim dir where it will store the SNN params and schematic
-        self.megadirname = settings['path'] + "MegaSim_"+settings['filename'] + '/'
+        self.megadirname = settings['path_wd'] + "MegaSim_"+settings['filename_ann'] + '/'
         if not os.path.exists(self.megadirname):
             os.makedirs(self.megadirname)
 
