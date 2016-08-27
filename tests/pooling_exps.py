@@ -102,7 +102,7 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
 
     snntoolbox.update_setup(settings)
 
-    # snntoolbox.test_full()
+    snntoolbox.test_full()
 
     end_message = "[MESSAGE] The experiment result is saved at %s" % (log_path)
 
