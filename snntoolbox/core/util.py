@@ -242,9 +242,18 @@ def get_activations_batch(ann, X_batch):
         ``label`` is a string specifying the layer type, e.g. ``'Dense'``.
 
     """
+    activations_batch = []
+    # Loop through all layers, looking for activation layers
+    for idx in range(len(ann.layers)):
+        if 'get_activ' not in ann.layers[idx].keys():
+            continue
+        i = idx if 'Pooling' in ann.layers[idx]['label'] else idx-1
+        activations_batch.append((ann.layers[idx]['get_activ'](X_batch),
+                                  ann.layers[i]['label']))
+    return activations_batch
 
-    return [(layer['get_activ'](X_batch), layer['label']) for layer
-            in ann.layers if 'get_activ' in layer]
+    # return [(layer['get_activ'](X_batch), layer['label']) for layer
+    #         in ann.layers if 'get_activ' in layer]
 
 
 def wilson_score(p, n):
