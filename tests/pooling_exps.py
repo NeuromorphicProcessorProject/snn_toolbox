@@ -22,7 +22,8 @@ except ImportError:
 home_path = os.environ["HOME"]
 config_path = os.path.join(home_path, ".snntoolbox")
 pref_dir = os.path.join(config_path, "preferences")
-log_dir = os.path.join(home_path, "workspace", "snntoolbox-log", "pool-exps")
+log_dir = os.path.join(home_path, "workspace", "snntoolbox-log",
+                       "pool-exps-new")
 data_dir = os.path.join(config_path, "datasets")
 
 if NOTIFICATION is True:
@@ -37,7 +38,8 @@ if NOTIFICATION is True:
 
 
 def maxpool_exp(exp_name, model_name, pref_name, dataset,
-                normalize, online_normalize, pool_type):
+                normalize, online_normalize, pool_type,
+                percentile):
     """Max-Pooling experiment routine.
 
     Parameters
@@ -56,9 +58,10 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
     online_normalization : string
         true : use online normalization
         false : otherwise
-    pool_type : string
+    pool_type : str
         the name of the max pooling type
         "avg_max" or "fir_max"
+    percentile : float
     """
     pref_path = os.path.join(pref_dir, pref_name)
     log_path = os.path.join(log_dir, exp_name)
@@ -80,8 +83,10 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
     settings["dataset_path"] = data_path
     settings["filename_ann"] = model_name
     settings["path"] = config_path
+    if percentile != 0.0:
+        settings["percentile"] = percentile
     settings["filename_snn"] = "snn_"+model_name + \
-                               "_"+str(int(settings["percentile"]))
+                               "_"+str(settings["percentile"])
 
     if normalize == "false":
         settings["normalize"] = False
@@ -97,7 +102,7 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
 
     snntoolbox.update_setup(settings)
 
-    snntoolbox.test_full()
+    # snntoolbox.test_full()
 
     end_message = "[MESSAGE] The experiment result is saved at %s" % (log_path)
 
@@ -126,5 +131,8 @@ if __name__ == "__main__":
     parser.add_argument("-pt", "--pool-type", type=str,
                         default="avg_max",
                         help="The type of max-pooling")
+    parser.add_argument("-pc", "--percentile", type=float,
+                        default=0.0,
+                        help="The value of percentile.")
     args = parser.parse_args()
     maxpool_exp(**vars(args))

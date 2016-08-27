@@ -1,0 +1,19 @@
+{
+    "99.16": ["mnist", "99.16"],
+    "99.17": ["mnist", "99.17"],
+    "99.38.deeper.mnist": ["mnist", "99.38-deeper-mnist"],
+    "99.44": ["mnist", "99.44"],
+    "98.97.mnist.larger.pool": ["mnist", "98.97-larger-pool"],
+    "99.44.mnist.overlap.pool": ["mnist", "99.44-overlap-pool"],
+    "98.76.mnist.non.overlap.pool": ["mnist", "98.76-non-overlap-pool"],
+    "98.72.mnist.avg.max.hybrid": ["mnist", "98.72-avg-max-hybrid"],
+    "74.16.cifar10.lenet": ["cifar10", "74.16"],
+    "78.08": ["cifar10", "78.08"],
+    "82.65.bodo": ["cifar10", "82.65"],
+    "70.96.cifar.larger.pool": ["cifar10", "70.96-larger-pool"],
+    "69.40.cifar.overlap.pool": ["cifar10", "69.40-overlap-pool"],
+    "73.28.cifar.non.overlap.pool": ["cifar10", "73.28-non-overlap-pool"],
+    "76.70.cifar.avg.max.hybrid": ["cifar10", "76.70-avg-max-hybrid"],
+    "73.11.cifar.deeper.max": ["cifar10", "73.11-deeper-max"],
+    "81.11.max.pool": ["cifar10", "81.11-max-pool"]
+}

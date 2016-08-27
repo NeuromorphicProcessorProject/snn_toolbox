@@ -354,7 +354,7 @@ def update_setup(s=None):
     # Set default path if user did not specify one.
     if 'path_wd' not in s or s['path_wd'] == '':
         s['path_wd'] = os.path.join(snntoolbox._dir, 'data',
-                                             s['filename_ann'], s['simulator'])
+                                    s['filename_ann'], s['simulator'])
     # Create directory if not there yet.
     if not os.path.exists(s['path_wd']):
         os.makedirs(s['path_wd'])
@@ -368,13 +368,13 @@ def update_setup(s=None):
     if 'log_dir_of_current_run' not in s:
         s['log_dir_of_current_run'] = os.path.join(s['path_wd'],
                                                    'log', 'gui', 'test')
-        if not os.path.isdir(s['log_dir_of_current_run']):                                                  
-            os.makedirs(s['log_dir_of_current_run'])                                                  
+        if not os.path.isdir(s['log_dir_of_current_run']):
+            os.makedirs(s['log_dir_of_current_run'])
 
     # Specify filenames for models at different stages of the conversion.
     if 'filename_snn' not in s:
         s['filename_snn'] = 'snn_' + s['filename_ann']
-        
+
     if 'filename_snn_exported' not in s:
         s['filename_snn_exported'] = s['filename_snn'] + '_' + s['simulator']
 
