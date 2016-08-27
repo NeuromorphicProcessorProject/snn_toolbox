@@ -59,3 +59,4 @@ snntoolbox.egg-info/
 ############
 examples/dataset/*
 examples/log/*
+examples/results*
