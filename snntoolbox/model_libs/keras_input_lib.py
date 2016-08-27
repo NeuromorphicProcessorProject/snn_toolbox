@@ -156,17 +156,19 @@ def extract(model):
             # Get type of nonlinearity if the activation is directly in the
             # Dense / Conv layer:
             activation = layer.get_config()['activation']
+            act_id = layer_num
             # Otherwise, search for the activation layer:
             for k in range(layer_num+1, min(layer_num+4, len(model.layers))):
                 next_layer = model.layers[k]
                 if next_layer.__class__.__name__ == 'Activation':
                     activation = next_layer.get_config()['activation']
                     layer.activation = next_layer.activation
+                    act_id = k
                     break
             attributes.update({'parameters': layer.get_weights(),
                                'activation': activation,
                                'get_activ': get_activ_fn_for_layer(model,
-                                                                   layer_num)})
+                                                                   act_id)})
         if attributes['layer_type'] == 'Convolution2D':
             attributes.update({'input_shape': layer.input_shape,
                                'nb_filter': layer.nb_filter,
