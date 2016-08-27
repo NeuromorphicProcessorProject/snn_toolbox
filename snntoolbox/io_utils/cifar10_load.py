@@ -14,7 +14,6 @@ import os
 import numpy as np
 from keras.datasets import cifar10
 from snntoolbox.io_utils.common import to_categorical
-from keras.preprocessing.image import ImageDataGenerator
 
 standard_library.install_aliases()
 
@@ -51,23 +50,18 @@ def get_cifar10(path=None, filename=None, flat=False):
 
     """
 
-    # Whether to apply global contrast normalization and ZCA whitening
-    gcn = True
-    zca = True
     nb_classes = 10
 
     (X_train, y_train), (X_test, y_test) = cifar10.load_data()
 
-    # Convert class vectors to binary class matrices
-#    Y_train = to_categorical(y_train, nb_classes)
-    Y_test = to_categorical(y_test, nb_classes)
+    X_train = X_train.astype('float32')
+    X_test = X_test.astype('float32')
+    X_train /= 255
+    X_test /= 255
 
-    datagen = ImageDataGenerator(rescale=1./255, featurewise_center=gcn,
-                                 featurewise_std_normalization=gcn,
-                                 zca_whitening=zca)
-    datagen.fit(X_test/255.)
-    dataflow = datagen.flow(X_test, Y_test, batch_size=len(X_test))
-    X_test, Y_test = dataflow.next()
+    # convert class vectors to binary class matrices
+    Y_train = to_categorical(y_train, nb_classes)
+    Y_test = to_categorical(y_test, nb_classes)
 
     if flat:
         X_train = X_train.reshape(X_train.shape[0], np.prod(X_train.shape[1:]))
@@ -77,12 +71,9 @@ def get_cifar10(path=None, filename=None, flat=False):
         if filename is None:
             filename = ''
         filepath = os.path.join(path, filename)
-        np.savez_compressed(filepath+'X_norm', X_train[::3].astype('float32'))
-        np.savez_compressed(filepath+'X_test', X_test.astype('float32'))
-#       np.savez_compressed(filepath+'Y_train', Y_train.astype('float32'))
-        np.savez_compressed(filepath+'Y_test', Y_test.astype('float32'))
+        np.savez_compressed(filepath+'X_norm', X_train[::3])
+        np.savez_compressed(filepath+'X_test', X_test)
+#       np.savez_compressed(filepath+'Y_train', Y_train)
+        np.savez_compressed(filepath+'Y_test', Y_test)
 
-#    return (X_train, Y_train, X_test, Y_test)
-
-if __name__ == '__main__':
-    get_cifar10('/home/rbodo/.snntoolbox/datasets/cifar10/processed/')
+    return (X_train, Y_train, X_test, Y_test)

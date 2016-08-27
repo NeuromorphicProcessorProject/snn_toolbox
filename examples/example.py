@@ -57,7 +57,7 @@ def main():
                 'evaluateANN': True,
                 'normalize': True,
                 'percentile': 99,
-                'batch_size': 128,                
+                'batch_size': 100,                
                 'overwrite': True,
                 'convert': True,
                 'simulate': True,
@@ -68,12 +68,12 @@ def main():
                 'simulator': 'INI',
                 'duration': 100,
                 'dt': 1,
-                'poisson_input': True,
+                'poisson_input': False,
                 'reset': 'Reset by subtraction',
                 'input_rate': 1000,
                 'normalization_schedule': False,
                 'online_normalization': False,
-                'payloads': False,          
+                'payloads': True,          
                 'diff_to_max_rate': 200,
                 'timestep_fraction': 10,
                 'diff_to_min_rate': 100,
@@ -99,22 +99,25 @@ def main():
     # If set True, the converted model is simulated for three different values
     # of v_thresh. Otherwise use parameters as specified above,
     # for a single run.
-    do_param_sweep = False
+    do_param_sweep = True
+    params = [1, 5, 10, 15, 20, 25, 35, 50, 75, 100]
+    network_runs = 5
+    results = np.zeros((network_runs, len(params)))
     if do_param_sweep:
-        param_name = 'duration'
-        #params = snntoolbox.get_range(1, 101, 21, method='linear')
-        params = [1, 10, 25, 50, 100]
-        #param_name = 'v_thresh'
-        #params = snntoolbox.get_range(0.1, 1.5, 3, method='linear')
-        results = snntoolbox.test_full(params=params,
-                             param_name=param_name,
-                             param_logscale=False)
-        if settings["payloads"]:
-            np.savetxt("results_with_payloads", results)
-        else:
-            np.savetxt("results_without_payloads", results)
-                             
-                             
+        for n in range(network_runs):
+            param_name = 'duration'
+            #params = snntoolbox.get_range(1, 101, 21, method='linear')
+            #param_name = 'v_thresh'
+            #params = snntoolbox.get_range(0.1, 1.5, 3, method='linear')
+            results[n, :] = snntoolbox.test_full(params=params,
+                                 param_name=param_name,
+                                 param_logscale=False)
+            if settings["payloads"]:
+                np.savetxt("results_with_payloads", results)
+            else:
+                np.savetxt("results_without_payloads", results)
+                                 
+                                 
     else:
         snntoolbox.test_full()
 
