@@ -1,0 +1,25 @@
+\BOOKMARK [0][-]{chapter.1}{Citation}{}% 1
+\BOOKMARK [0][-]{chapter.2}{Features}{}% 2
+\BOOKMARK [1][-]{section.2.1}{Getting Started}{chapter.2}% 3
+\BOOKMARK [2][-]{subsection.2.1.1}{Installation}{section.2.1}% 4
+\BOOKMARK [2][-]{subsection.2.1.2}{Running the toolbox}{section.2.1}% 5
+\BOOKMARK [2][-]{subsection.2.1.3}{Extending the toolbox}{section.2.1}% 6
+\BOOKMARK [2][-]{subsection.2.1.4}{Examples - Fully Connected Network on MNIST}{section.2.1}% 7
+\BOOKMARK [2][-]{subsection.2.1.5}{Contact}{section.2.1}% 8
+\BOOKMARK [1][-]{section.2.2}{Configuration}{chapter.2}% 9
+\BOOKMARK [2][-]{subsection.2.2.1}{Parameters}{section.2.2}% 10
+\BOOKMARK [2][-]{subsection.2.2.2}{Default values}{section.2.2}% 11
+\BOOKMARK [1][-]{section.2.3}{Tools}{chapter.2}% 12
+\BOOKMARK [2][-]{subsection.2.3.1}{pipeline}{section.2.3}% 13
+\BOOKMARK [2][-]{subsection.2.3.2}{inisim}{section.2.3}% 14
+\BOOKMARK [2][-]{subsection.2.3.3}{megasim}{section.2.3}% 15
+\BOOKMARK [2][-]{subsection.2.3.4}{util}{section.2.3}% 16
+\BOOKMARK [2][-]{subsection.2.3.5}{cifar10}{section.2.3}% 17
+\BOOKMARK [2][-]{subsection.2.3.6}{caltech101}{section.2.3}% 18
+\BOOKMARK [2][-]{subsection.2.3.7}{mnist}{section.2.3}% 19
+\BOOKMARK [2][-]{subsection.2.3.8}{facedetection}{section.2.3}% 20
+\BOOKMARK [2][-]{subsection.2.3.9}{plotting}{section.2.3}% 21
+\BOOKMARK [2][-]{subsection.2.3.10}{common}{section.2.3}% 22
+\BOOKMARK [0][-]{chapter.3}{Indices and tables}{}% 23
+\BOOKMARK [0][-]{section*.93}{Python Module Index}{}% 24
+\BOOKMARK [0][-]{section*.94}{Index}{}% 25

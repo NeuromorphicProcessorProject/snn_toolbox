@@ -25,7 +25,7 @@ Citation
    **SNN toolbox workflow.** The input network (e.g. a Keras model) is parsed and all the necessary information
    stored in an object that is independent of the input. This makes all following steps stable against changes
    in the input, and allows straight-forward extension of the toolbox to include other input model libraries.
-   The abstract ``ANN`` model can then be converted into a spiking network. The resulting SNN can be exported
+   The parsed model can then be converted into a spiking network. The resulting SNN can be exported
    for evaluation in a spiking simulator. At any stage of the pipeline, models and results can be written to disk.
 
 
@@ -34,12 +34,12 @@ Features
 
 * Before conversion, the input model is parsed into a custom class containing only essential model structure and
   weights in common python containers. This serves to abstract the core conversion process from possible input types.
-  The conversion toolbox currently supports input networks generated with Keras or Lasagne.
+  The conversion toolbox currently supports input networks generated with Keras, Lasagne, or Caffe.
   See :doc:`getting_started` on how to extend the relevant methods to handle models from other 
-  common libraries like caffe, torch etc.
+  common libraries like torch etc.
+* During parsing of the input model, several simplifications are performed to prepare the network for subsequent conversion:
 * During conversion of the analog neural network to spiking, the toolbox allows normalizing model parameters
   for achieving higher accuracy in the converted net.
-  Batch normalization layers are absorbed into the preceeding layer to save computations at runtime.
 * The resulting spiking network can then be exported to be tested in spiking simulators. The export format depends on the target
   simulator. See :doc:`getting_started` on how to add a simulator to the toolbox.
 * The toolbox currently provides the following output formats:
@@ -50,6 +50,7 @@ Features
       or by a custom simulator that allows pyNN models as inputs.
     - Models to be run in `Brian2 <http://brian2.readthedocs.io/en/latest/index.html#>`_.
     - An output format based on Keras models that can be run for instance on a built-in simulator developed at the University of Zurich.
+    - The toolbox integrates MegaSim, an event-driven asynchronous spiking simulator developed at the University of Seville.
 
 * In addition to supporting the simulators listed above, the toolbox includes a ready-to-use
   simulator developed at INI. This simulator features a very simple integrate-and-fire neuron.
@@ -78,7 +79,6 @@ Features
    getting_started
    configure_toolbox
    modules
-   Tests <tests>
 
 Indices and tables
 ==================

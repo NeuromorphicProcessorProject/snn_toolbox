@@ -39,7 +39,7 @@ Alternitively, read and run example.py in snntoolbox/tests/, which contains a nu
 Extending the toolbox
 ---------------------
 
-Have a look at the :doc:`pipeline </core/pipeline>` module to examine the complete pipeline of
+Have a look at the :doc:`pipeline </core/pipeline.py>` module to examine the complete pipeline of
 
     1. loading and testing a pretrained ANN,
     2. normalizing weights
@@ -68,7 +68,7 @@ Similarly, adding another simulator to run converted networks implies adding a f
 ``target_simulators`` package. Each file in there allow building a spiking network
 and exporting it for use in a specific spiking simulator.
 
-To add a simulator called 'custom', put a file named ``custom_target_sim.py`` into ``target_simulators``. Then implement the class ``SNN_compiled`` with its
+To add a simulator called 'custom', put a file named ``custom_target_sim.py`` into ``target_simulators``. Then implement the class ``SNN`` with its
 methods (``load``, ``save``, ``build``, ``run``) tailored to 'custom' simulator.
 
 Examples - Fully Connected Network on MNIST

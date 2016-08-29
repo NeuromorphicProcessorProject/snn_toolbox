@@ -4,7 +4,8 @@
 A collection of helper functions, including spiking layer classes derived from
 Keras layers, which were used to implement our own IF spiking simulator.
 
-Not needed when converting and running the SNN in pyNN.
+Not needed when converting and running the SNN in other simulators (pyNN,
+MegaSim, ...)
 
 Created on Tue Dec  8 10:41:10 2015
 
@@ -44,7 +45,7 @@ def sharedX(X, dtype=theano.config.floatX, name=None):
 
 
 def shared_zeros(shape, dtype=theano.config.floatX, name=None):
-    """Make shared 0s array."""
+    """Make shared zeros array."""
     return sharedX(np.zeros(shape), dtype=dtype, name=name)
 
 
@@ -57,7 +58,7 @@ if on_gpu():
 
 
 def update_neurons(self, time, updates):
-    """update neurons according to activation function."""
+    """Update neurons according to activation function."""
     if 'activation' in self.get_config() and \
             self.get_config()['activation'] == 'softmax':
         output_spikes = softmax_activation(self, time, updates)
@@ -92,7 +93,7 @@ def update_neurons(self, time, updates):
 
 
 def update_payload(self, new_mem, spikes, time):
-    """update payloads."""
+    """Update payloads."""
     idxs = spikes.nonzero()
     v_error = new_mem[idxs]
     payloads = T.set_subtensor(
@@ -241,16 +242,15 @@ def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
     # has been initialized and connected to the network. Otherwise
     # 'output_shape' is not known (obtained from previous layer), and
     # the 'input' attribute will not be overwritten by the layer's __init__.
-    init_layer(self, self, v_thresh, tau_refrac, kwargs["layer_type"])
+    init_layer(self, self, v_thresh, tau_refrac)
     if 'time_var' in kwargs:
         input_layer = self.inbound_nodes[0].inbound_layers[0]
         input_layer.time_var = kwargs['time_var']
-        init_layer(self, input_layer, v_thresh,
-                   tau_refrac, kwargs["layer_type"])
+        init_layer(self, input_layer, v_thresh, tau_refrac)
 
 
-def init_layer(self, layer, v_thresh, tau_refrac, layer_type=None):
-    """init layer."""
+def init_layer(self, layer, v_thresh, tau_refrac):
+    """Init layer."""
     layer.v_thresh = theano.shared(
         np.asarray(v_thresh, dtype=theano.config.floatX), 'v_thresh')
     layer.tau_refrac = tau_refrac
@@ -261,14 +261,13 @@ def init_layer(self, layer, v_thresh, tau_refrac, layer_type=None):
         layer.payloads = shared_zeros(self.output_shape)
         layer.payloads_sum = shared_zeros(self.output_shape)
     layer.updates = []
-    layer.layer_type = layer_type_dict[layer_type] \
-        if layer_type in layer_type_dict else layer_type
+    layer.layer_type = layer.__class__.__name__
 
     if settings['online_normalization']:
         layer.spikecounts = shared_zeros(self.output_shape)
         layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
 
-    if layer.layer_type == "MaxPool2DReLU":
+    if layer.layer_type == "SpikeMaxPooling2D":
         prev_layer = self.inbound_nodes[0].inbound_layers[0]
         if settings["maxpool_type"] == "avg_max":
             prev_layer.avg_spikerate = shared_zeros(self.output_shape)
@@ -322,10 +321,7 @@ class SpikeFlatten(Flatten):
 
 
 class SpikeDense(Dense):
-    """Spike Dense layer.
-
-    batch_size x input_shape x out_shape
-    """
+    """Spike Dense layer."""
 
     def __init__(self, output_dim, weights=None, label=None, **kwargs):
         """Init function."""
@@ -395,11 +391,8 @@ def pool_same_size(data_in, patch_size, ignore_border=True,
     return T.cast(outs, 'float32')
 
 
-class SpikeConv2DReLU(Convolution2D):
-    """Spike 2D Convolution relu.
-
-    batch_size x input_shape x out_shape
-    """
+class SpikeConvolution2D(Convolution2D):
+    """Spike 2D Convolution."""
 
     def __init__(self, nb_filter, nb_row, nb_col, weights=None,
                  border_mode='valid', subsample=(1, 1), label=None,
@@ -492,8 +485,8 @@ class SpikeConv2DReLU(Convolution2D):
         return self.__class__.__name__
 
 
-class AvgPool2DReLU(AveragePooling2D):
-    """batch_size x input_shape x out_shape."""
+class SpikeAveragePooling2D(AveragePooling2D):
+    """Average Pooling."""
 
     def __init__(self, pool_size=(2, 2), strides=None, border_mode='valid',
                  label=None, **kwargs):
@@ -507,7 +500,7 @@ class AvgPool2DReLU(AveragePooling2D):
             self.label = self.name
 
     def get_output(self, train=False):
-        """Get Output."""
+        """Get output."""
         # Recurse
         inp, time, updates = get_input(self)
 
@@ -536,11 +529,8 @@ class AvgPool2DReLU(AveragePooling2D):
         return self.__class__.__name__
 
 
-class MaxPool2DReLU(MaxPooling2D):
-    """Max Pooling ReLU.
-
-    batch_size x input_shape x out_shape.
-    """
+class SpikeMaxPooling2D(MaxPooling2D):
+    """Max Pooling."""
 
     def __init__(self, pool_size=(2, 2), strides=None, border_mode='valid',
                  label=None, pool_type="fir_max", **kwargs):
@@ -565,7 +555,7 @@ class MaxPool2DReLU(MaxPooling2D):
         self.pool_type = pool_type
 
     def get_output(self, train=False):
-        """Get Output."""
+        """Get output."""
         # Recurse
         inp, time, updates = get_input(self)
 
@@ -606,12 +596,6 @@ class MaxPool2DReLU(MaxPooling2D):
 
 custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeDense': SpikeDense,
-                 'SpikeConv2DReLU': SpikeConv2DReLU,
-                 'AvgPool2DReLU': AvgPool2DReLU,
-                 'MaxPool2DReLU': MaxPool2DReLU}
-
-layer_type_dict = {'Flatten': 'SpikeFlatten',
-                   'Dense': 'SpikeDense',
-                   'Convolution2D': 'SpikeConv2DReLU',
-                   'AveragePooling2D': 'AvgPool2DReLU',
-                   'MaxPooling2D': 'MaxPool2DReLU'}
+                 'SpikeConvolution2D': SpikeConvolution2D,
+                 'SpikeAveragePooling2D': SpikeAveragePooling2D,
+                 'SpikeMaxPooling2D': SpikeMaxPooling2D}

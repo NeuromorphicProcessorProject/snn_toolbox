@@ -1,0 +1,140 @@
+\begin{theindex}
+\def\bigletter#1{{\Large\sffamily#1}\nopagebreak\vspace{1mm}}
+
+  \bigletter C
+  \item confirm\_overwrite() (in module snntoolbox.io\_utils.common), \hyperpage{26}
+  \item core.inisim (module), \hyperpage{15}
+  \item core.megasim (module), \hyperpage{17}
+  \item core.pipeline (module), \hyperpage{14}
+  \item core.util (module), \hyperpage{17}
+
+  \indexspace
+  \bigletter D
+  \item download\_dataset() (in module snntoolbox.io\_utils.common), \hyperpage{26}
+
+  \indexspace
+  \bigletter E
+  \item extract\_label() (in module core.util), \hyperpage{18}
+
+  \indexspace
+  \bigletter F
+  \item floatX() (in module core.inisim), \hyperpage{16}
+
+  \indexspace
+  \bigletter G
+  \item get\_activ\_fn\_for\_layer() (in module core.util), \hyperpage{18}
+  \item get\_activations\_batch() (in module core.util), \hyperpage{18}
+  \item get\_activations\_layer() (in module core.util), \hyperpage{18}
+  \item get\_caltech101() (in module snntoolbox.io\_utils.caltech101\_load), \hyperpage{20}
+  \item get\_cifar10() (in module snntoolbox.io\_utils.cifar10\_load), \hyperpage{20}
+  \item get\_facedetection() (in module snntoolbox.io\_utils.facedetection\_load), \hyperpage{22}
+  \item get\_input() (in module core.inisim), \hyperpage{16}
+  \item get\_mnist() (in module snntoolbox.io\_utils.mnist\_load), \hyperpage{21}
+  \item get\_name() (core.inisim.SpikeAveragePooling2D method), \hyperpage{15}
+  \item get\_name() (core.inisim.SpikeConvolution2D method), \hyperpage{15}
+  \item get\_name() (core.inisim.SpikeDense method), \hyperpage{16}
+  \item get\_name() (core.inisim.SpikeFlatten method), \hyperpage{16}
+  \item get\_name() (core.inisim.SpikeMaxPooling2D method), \hyperpage{16}
+  \item get\_new\_thresh() (in module core.inisim), \hyperpage{16}
+  \item get\_output() (core.inisim.SpikeAveragePooling2D method), \hyperpage{15}
+  \item get\_output() (core.inisim.SpikeConvolution2D method), \hyperpage{15}
+  \item get\_output() (core.inisim.SpikeDense method), \hyperpage{16}
+  \item get\_output() (core.inisim.SpikeFlatten method), \hyperpage{16}
+  \item get\_output() (core.inisim.SpikeMaxPooling2D method), \hyperpage{16}
+  \item get\_range() (in module core.util), \hyperpage{18}
+  \item get\_sample\_activity\_from\_batch() (in module core.util), \hyperpage{19}
+  \item get\_scale\_fac() (in module core.util), \hyperpage{19}
+  \item get\_time() (in module core.inisim), \hyperpage{16}
+  \item get\_updates() (in module core.inisim), \hyperpage{16}
+
+  \indexspace
+  \bigletter I
+  \item init\_layer() (in module core.inisim), \hyperpage{16}
+  \item init\_neurons() (in module core.inisim), \hyperpage{16}
+  \item initialize\_simulator() (in module snntoolbox.config), \hyperpage{14}
+  \item is\_stop() (in module core.pipeline), \hyperpage{14}
+
+  \indexspace
+  \bigletter L
+  \item linear\_activation() (in module core.inisim), \hyperpage{16}
+  \item load\_dataset() (in module snntoolbox.io\_utils.common), \hyperpage{27}
+  \item load\_parameters() (in module snntoolbox.io\_utils.common), \hyperpage{27}
+  \item load\_paths\_from\_files() (in module snntoolbox.io\_utils.facedetection\_load), 
+		\hyperpage{22}
+  \item load\_samples() (in module snntoolbox.io\_utils.facedetection\_load), \hyperpage{22}
+
+  \indexspace
+  \bigletter M
+  \item megasim\_path() (in module core.megasim), \hyperpage{17}
+
+  \indexspace
+  \bigletter N
+  \item normalize\_parameters() (in module core.util), \hyperpage{19}
+
+  \indexspace
+  \bigletter O
+  \item on\_gpu() (in module core.inisim), \hyperpage{16}
+  \item output\_graphs() (in module snntoolbox.io\_utils.plotting), \hyperpage{22}
+
+  \indexspace
+  \bigletter P
+  \item parse() (in module core.util), \hyperpage{19}
+  \item plot\_confusion\_matrix() (in module snntoolbox.io\_utils.plotting), \hyperpage{23}
+  \item plot\_correlations() (in module snntoolbox.io\_utils.plotting), \hyperpage{23}
+  \item plot\_error\_vs\_time() (in module snntoolbox.io\_utils.plotting), \hyperpage{23}
+  \item plot\_hist() (in module snntoolbox.io\_utils.plotting), \hyperpage{23}
+  \item plot\_hist\_combined() (in module snntoolbox.io\_utils.plotting), \hyperpage{23}
+  \item plot\_history() (in module snntoolbox.io\_utils.plotting), \hyperpage{23}
+  \item plot\_layer\_activity() (in module snntoolbox.io\_utils.plotting), \hyperpage{24}
+  \item plot\_layer\_correlation() (in module snntoolbox.io\_utils.plotting), \hyperpage{24}
+  \item plot\_layer\_summaries() (in module snntoolbox.io\_utils.plotting), \hyperpage{24}
+  \item plot\_param\_sweep() (in module snntoolbox.io\_utils.plotting), \hyperpage{25}
+  \item plot\_pearson\_coefficients() (in module snntoolbox.io\_utils.plotting), \hyperpage{25}
+  \item plot\_potential() (in module snntoolbox.io\_utils.plotting), \hyperpage{25}
+  \item plot\_rates\_minus\_activations() (in module snntoolbox.io\_utils.plotting), \hyperpage{25}
+  \item plot\_spiketrains() (in module snntoolbox.io\_utils.plotting), \hyperpage{26}
+  \item pool\_same\_size() (in module core.inisim), \hyperpage{16}
+  \item print\_description() (in module core.util), \hyperpage{19}
+
+  \indexspace
+  \bigletter R
+  \item reset() (in module core.inisim), \hyperpage{17}
+
+  \indexspace
+  \bigletter S
+  \item shared\_zeros() (in module core.inisim), \hyperpage{17}
+  \item sharedX() (in module core.inisim), \hyperpage{17}
+  \item skip\_spike() (in module core.inisim), \hyperpage{17}
+  \item snntoolbox.config (module), \hyperpage{11}
+  \item snntoolbox.io\_utils.caltech101\_load (module), \hyperpage{20}
+  \item snntoolbox.io\_utils.cifar10\_load (module), \hyperpage{20}
+  \item snntoolbox.io\_utils.common (module), \hyperpage{26}
+  \item snntoolbox.io\_utils.facedetection\_load (module), \hyperpage{22}
+  \item snntoolbox.io\_utils.mnist\_load (module), \hyperpage{21}
+  \item snntoolbox.io\_utils.plotting (module), \hyperpage{22}
+  \item softmax\_activation() (in module core.inisim), \hyperpage{17}
+  \item SpikeAveragePooling2D (class in core.inisim), \hyperpage{15}
+  \item SpikeConvolution2D (class in core.inisim), \hyperpage{15}
+  \item SpikeDense (class in core.inisim), \hyperpage{15}
+  \item SpikeFlatten (class in core.inisim), \hyperpage{16}
+  \item SpikeMaxPooling2D (class in core.inisim), \hyperpage{16}
+  \item spiketrains\_to\_rates() (in module core.util), \hyperpage{19}
+
+  \indexspace
+  \bigletter T
+  \item test\_full() (in module core.pipeline), \hyperpage{14}
+  \item to\_categorical() (in module snntoolbox.io\_utils.common), \hyperpage{27}
+  \item to\_json() (in module snntoolbox.io\_utils.common), \hyperpage{27}
+  \item trigger\_spike() (in module core.inisim), \hyperpage{17}
+
+  \indexspace
+  \bigletter U
+  \item update\_neurons() (in module core.inisim), \hyperpage{17}
+  \item update\_payload() (in module core.inisim), \hyperpage{17}
+  \item update\_setup() (in module snntoolbox.config), \hyperpage{14}
+
+  \indexspace
+  \bigletter W
+  \item wilson\_score() (in module core.util), \hyperpage{19}
+
+\end{theindex}

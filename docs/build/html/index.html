@@ -84,7 +84,6 @@
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure_toolbox.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
 </ul>
 
             
@@ -107,7 +106,7 @@
         <div class="rst-content">
           
 
-
+ 
 
 
 
@@ -135,9 +134,9 @@
 and running them in a spiking neuron simulator.</p>
 <div class="section" id="citation">
 <h2>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-python"><div class="highlight"><pre><span></span>Diehl, P.U. and Neil, D. and Binas, J. and Cook, M. and Liu, S.C. and Pfeiffer, M.
-Fast-Classifying, High-Accuracy Spiking Deep Networks Through Weight and Threshold Balancing,
-IEEE International Joint Conference on Neural Networks (IJCNN), 2015
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Diehl</span><span class="p">,</span> <span class="n">P</span><span class="o">.</span><span class="n">U</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Neil</span><span class="p">,</span> <span class="n">D</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Binas</span><span class="p">,</span> <span class="n">J</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Cook</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Liu</span><span class="p">,</span> <span class="n">S</span><span class="o">.</span><span class="n">C</span><span class="o">.</span> <span class="ow">and</span> <span class="n">Pfeiffer</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span>
+<span class="n">Fast</span><span class="o">-</span><span class="n">Classifying</span><span class="p">,</span> <span class="n">High</span><span class="o">-</span><span class="n">Accuracy</span> <span class="n">Spiking</span> <span class="n">Deep</span> <span class="n">Networks</span> <span class="n">Through</span> <span class="n">Weight</span> <span class="ow">and</span> <span class="n">Threshold</span> <span class="n">Balancing</span><span class="p">,</span>
+<span class="n">IEEE</span> <span class="n">International</span> <span class="n">Joint</span> <span class="n">Conference</span> <span class="n">on</span> <span class="n">Neural</span> <span class="n">Networks</span> <span class="p">(</span><span class="n">IJCNN</span><span class="p">),</span> <span class="mi">2015</span>
 </pre></div>
 </div>
 <div class="figure" id="id1">
@@ -145,7 +144,7 @@ IEEE International Joint Conference on Neural Networks (IJCNN), 2015
 <p class="caption"><span class="caption-text"><strong>SNN toolbox workflow.</strong> The input network (e.g. a Keras model) is parsed and all the necessary information
 stored in an object that is independent of the input. This makes all following steps stable against changes
 in the input, and allows straight-forward extension of the toolbox to include other input model libraries.
-The abstract <code class="docutils literal"><span class="pre">ANN</span></code> model can then be converted into a spiking network. The resulting SNN can be exported
+The parsed model can then be converted into a spiking network. The resulting SNN can be exported
 for evaluation in a spiking simulator. At any stage of the pipeline, models and results can be written to disk.</span></p>
 </div>
 </div>
@@ -154,16 +153,17 @@ for evaluation in a spiking simulator. At any stage of the pipeline, models and 
 <ul>
 <li><p class="first">Before conversion, the input model is parsed into a custom class containing only essential model structure and
 weights in common python containers. This serves to abstract the core conversion process from possible input types.
-The conversion toolbox currently supports input networks generated with Keras or Lasagne.
-See <a class="reference internal" href="getting_started.html"><em>Getting Started</em></a> on how to extend the relevant methods to handle models from other
-common libraries like caffe, torch etc.</p>
+The conversion toolbox currently supports input networks generated with Keras, Lasagne, or Caffe.
+See <a class="reference internal" href="getting_started.html"><span class="doc">Getting Started</span></a> on how to extend the relevant methods to handle models from other
+common libraries like torch etc.</p>
+</li>
+<li><p class="first">During parsing of the input model, several simplifications are performed to prepare the network for subsequent conversion:</p>
 </li>
 <li><p class="first">During conversion of the analog neural network to spiking, the toolbox allows normalizing model parameters
-for achieving higher accuracy in the converted net.
-Batch normalization layers are absorbed into the preceeding layer to save computations at runtime.</p>
+for achieving higher accuracy in the converted net.</p>
 </li>
 <li><p class="first">The resulting spiking network can then be exported to be tested in spiking simulators. The export format depends on the target
-simulator. See <a class="reference internal" href="getting_started.html"><em>Getting Started</em></a> on how to add a simulator to the toolbox.</p>
+simulator. See <a class="reference internal" href="getting_started.html"><span class="doc">Getting Started</span></a> on how to add a simulator to the toolbox.</p>
 </li>
 <li><p class="first">The toolbox currently provides the following output formats:</p>
 <blockquote>
@@ -174,6 +174,7 @@ models. It allows running the converted net in a spiking simulator like <a class
 or by a custom simulator that allows pyNN models as inputs.</li>
 <li>Models to be run in <a class="reference external" href="http://brian2.readthedocs.io/en/latest/index.html#">Brian2</a>.</li>
 <li>An output format based on Keras models that can be run for instance on a built-in simulator developed at the University of Zurich.</li>
+<li>The toolbox integrates MegaSim, an event-driven asynchronous spiking simulator developed at the University of Seville.</li>
 </ul>
 </div></blockquote>
 </li>
@@ -231,18 +232,16 @@ the <code class="docutils literal"><span class="pre">io.load.get_dataset</span><
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Tools</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="core.html">SNN class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.html#module-core.pipeline">pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html">pipeline</a></li>
 <li class="toctree-l2"><a class="reference internal" href="core.html#module-core.inisim">inisim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-core.megasim">megasim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="core.html#module-core.util">util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html">saving</a></li>
-<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.load">loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html">cifar10</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.caltech101_load">caltech101</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.mnist_load">mnist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.facedetection_load">facedetection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.plotting">plotting</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tests.html#module-tests.example">example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tests.html#module-tests.test_cellparams">test_cellparams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.common">common</a></li>
 </ul>
 </li>
 </ul>
@@ -252,9 +251,9 @@ the <code class="docutils literal"><span class="pre">io.load.get_dataset</span><
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
-<li><a class="reference internal" href="genindex.html"><span>Index</span></a></li>
-<li><a class="reference internal" href="py-modindex.html"><span>Module Index</span></a></li>
-<li><a class="reference internal" href="search.html"><span>Search Page</span></a></li>
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
 </ul>
 </div>
 
@@ -276,7 +275,7 @@ the <code class="docutils literal"><span class="pre">io.load.get_dataset</span><
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 08, 2016.
+      Last updated on Aug 29, 2016.
 
     </p>
   </div>

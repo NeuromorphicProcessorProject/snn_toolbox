@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Methods to parse an input model written in Keras and prepare it for further
+Methods to extract an input model written in Keras and prepare it for further
 processing in the SNN toolbox.
 
 The idea is to make all further steps in the conversion/simulation pipeline
@@ -10,8 +10,8 @@ be implemented and satisfy the return requirements specified in their
 respective docstrings:
 
     - extract
-    - evaluate
     - load_ann
+    - evaluate
 
 Created on Thu May 19 08:21:05 2016
 
@@ -19,16 +19,12 @@ Created on Thu May 19 08:21:05 2016
 """
 
 import os
-import theano
-import numpy as np
-from keras import backend as K
 from snntoolbox.config import settings, spiking_layers
-from snntoolbox.model_libs.common import absorb_bn, import_script
+from snntoolbox.model_libs.common import absorb_bn
 
 
 def extract(model):
-    """
-    Extract the essential information about a neural network.
+    """Extract the essential information about a neural network.
 
     This method serves to abstract the conversion process of a network from the
     language the input model was built in (e.g. Keras or Lasagne).
@@ -36,35 +32,52 @@ def extract(model):
     To extend the toolbox by another input format (e.g. Caffe), this method has
     to be implemented for the respective model library.
 
+    Implementation details:
+    The methods iterates over all layers of the input model and writes the
+    layer specifications and parameters into a dictionary. The keys are chosen
+    in accordance with Keras layer attributes to facilitate instantiation of a
+    new, parsed Keras model (done in a later step by the method
+    ``core.util.parse``).
+
+    This function applies several simplifications and adaptations to prepare
+    the model for conversion to spiking. These modifications include:
+
+    - Removing layers only used during training (Dropout, BatchNormalization,
+      ...)
+    - Absorbing the parameters of BatchNormalization layers into the parameters
+      of the preceeding layer. This does not affect performance because
+      batch-norm-parameters are constant at inference time.
+    - Removing ReLU activation layers, because their function is inherent to
+      the spike generation mechanism. The information which nonlinearity was
+      used in the original model is preserved in the layer specifications of
+      the parsed model. If the output layer employs the softmax function, a
+      spiking version is used when testing the SNN in INIsim or MegaSim
+      simulators.
+    - Inserting a Flatten layer between Conv and FC layers, if the input model
+      did not explicitly include one.
+
     Parameters
     ----------
 
     model: dict
         A dictionary of objects that constitute the input model. Contains at
         least the key
-        - 'model': A model instance of the network in the respective
-          ``model_lib``.
+            - ``model``: A model instance of the network in the respective
+              ``model_lib``.
         For instance, if the input model was written using Keras, the 'model'-
         value would be an instance of ``keras.Model``.
 
     Returns
     -------
 
-    Dictionary containing the parsed network.
-
-    input_shape: list
-        The dimensions of the input sample
-        [batch_size, n_chnls, n_rows, n_cols]. For instance, mnist would have
-        input shape [Null, 1, 28, 28].
+    Dictionary containing the parsed network specifications.
 
     layers: list
         List of all the layers of the network, where each layer contains a
         dictionary with keys
 
-        - layer_num (int): Index of layer.
         - layer_type (string): Describing the type, e.g. `Dense`,
           `Convolution`, `Pool`.
-        - output_shape (list): The output dimensions of the layer.
 
         In addition, `Dense` and `Convolution` layer types contain
 
@@ -82,136 +95,70 @@ def extract(model):
 
         - pool_size (list): Specifies the subsampling factor in each dimension.
         - strides (list): The stepsize in each dimension during pooling.
-
-        `Activation` layers (including Pooling) contain
-
-        - get_activ: A Theano function computing the activations of a layer.
-
-    labels: list
-        The layer labels.
-
-    layer_idx_map: list
-        A list mapping the layer indices of the original network to the parsed
-        network. (Not all layers of the original model are needed in the parsed
-        model.) For instance: To get the layer index i of the original input
-        ``model`` that corresponds to layer j of the parsed network ``layers``,
-        one would use ``i = layer_idx_map[j]``.
-
     """
-
-    model = model['model']
-
-    input_shape = model.input_shape
-
     layers = []
-    labels = []
-    layer_idx_map = []
     for (layer_num, layer) in enumerate(model.layers):
-        if layer_num == 0 and 'Dropout' in layer.__class__.__name__:
-            continue
-        if 'BatchNormalization' in layer.__class__.__name__:
+        layer_type = layer.__class__.__name__
+
+        # Absorb BatchNormalization layer into parameters of previous layer
+        if 'BatchNormalization' in layer_type:
             bn_parameters = layer.get_weights()  # gamma, beta, mean, std
             for k in [layer_num - i for i in range(1, 3)]:
                 prev_layer = layers[k]
-                label = prev_layer.__class__.__name__
                 if prev_layer.weights != []:
                     break
             parameters = prev_layer.get_weights()  # W, b of next layer
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of layer {}, {}.".format(layer_num - 1, label))
-            parameters_norm = absorb_bn(parameters[0], parameters[1],
-                                        bn_parameters[0], bn_parameters[1],
-                                        bn_parameters[2], bn_parameters[3],
-                                        layer.epsilon)
-            # Remove Batch-normalization layer by setting gamma=1, beta=1,
-            # mean=0, std=1
-            zeros = np.zeros_like(bn_parameters[0])
-            ones = np.ones_like(bn_parameters[0])
-            layer.set_weights([ones, zeros, zeros, ones])
-            # Replace parameters of preceding Conv or FC layer by parameters
-            # that include the batch-normalization transformation.
-            prev_layer.set_weights(parameters_norm)
-            layers[-1]['parameters'] = parameters_norm
+                  "parameters of layer {}, {}.".format(k, prev_layer.name))
+            layers[-1]['parameters'] = absorb_bn(
+                parameters[0], parameters[1], bn_parameters[0],
+                bn_parameters[1], bn_parameters[2], bn_parameters[3],
+                layer.epsilon)
+
+        if layer_type not in spiking_layers:
+            print("Skipping layer {}".format(layer_type))
             continue
 
-        if layer.__class__.__name__ not in spiking_layers:
-            continue
+        print("Parsing layer {}".format(layer_type))
 
-        attributes = {'layer_num': layer_num,
-                      'layer_type': layer.__class__.__name__,
-                      'output_shape': layer.output_shape}
+        if layer_num == 0:
+            batch_input_shape = list(layer.batch_input_shape)
+            batch_input_shape[0] = settings['batch_size']
+            layer.batch_input_shape = tuple(batch_input_shape)
 
-        # Append layer label
-        if len(attributes['output_shape']) == 2:
-            shape_string = '_{}'.format(attributes['output_shape'][1])
+        attributes = layer.get_config()
+        attributes['layer_type'] = layer.__class__.__name__
+
+        # Append layer name
+        if len(layer.output_shape) == 2:
+            shape_string = '_{}'.format(layer.output_shape[1])
         else:
-            shape_string = '_{}x{}x{}'.format(attributes['output_shape'][1],
-                                              attributes['output_shape'][2],
-                                              attributes['output_shape'][3])
+            shape_string = '_{}x{}x{}'.format(layer.output_shape[1],
+                                              layer.output_shape[2],
+                                              layer.output_shape[3])
         num_str = str(layer_num) if layer_num > 9 else '0' + str(layer_num)
-        labels.append(num_str + attributes['layer_type'] + shape_string)
-        attributes.update({'label': labels[-1]})
+        attributes['name'] = num_str + layer_type + shape_string
 
-        if attributes['layer_type'] in {'Dense', 'Convolution2D'}:
+        if layer_type in {'Dense', 'Convolution2D'}:
+            attributes['parameters'] = layer.get_weights()
             # Get type of nonlinearity if the activation is directly in the
             # Dense / Conv layer:
             activation = layer.get_config()['activation']
-            act_id = layer_num
             # Otherwise, search for the activation layer:
             for k in range(layer_num+1, min(layer_num+4, len(model.layers))):
-                next_layer = model.layers[k]
-                if next_layer.__class__.__name__ == 'Activation':
-                    activation = next_layer.get_config()['activation']
-                    layer.activation = next_layer.activation
-                    act_id = k
+                if model.layers[k].__class__.__name__ == 'Activation':
+                    activation = model.layers[k].get_config()['activation']
                     break
-            attributes.update({'parameters': layer.get_weights(),
-                               'activation': activation,
-                               'get_activ': get_activ_fn_for_layer(model,
-                                                                   act_id)})
-        if attributes['layer_type'] == 'Convolution2D':
-            attributes.update({'input_shape': layer.input_shape,
-                               'nb_filter': layer.nb_filter,
-                               'nb_col': layer.nb_col,
-                               'nb_row': layer.nb_row,
-                               'border_mode': layer.border_mode,
-                               'subsample': layer.subsample,
-                               'filter_flip': True})
+            attributes['activation'] = activation
+            print("Detected activation {}".format(activation))
 
-        if attributes['layer_type'] in {'MaxPooling2D', 'AveragePooling2D'}:
-            attributes.update({'input_shape': layer.input_shape,
-                               'pool_size': layer.pool_size,
-                               'strides': layer.strides,
-                               'border_mode': layer.border_mode,
-                               'get_activ': get_activ_fn_for_layer(model,
-                                                                   layer_num)})
         layers.append(attributes)
-        layer_idx_map.append(layer_num)
 
-    return {'input_shape': input_shape, 'layers': layers, 'labels': labels,
-            'layer_idx_map': layer_idx_map}
-
-
-def get_activ_fn_for_layer(model, i):
-    f = theano.function(
-        [model.layers[0].input, theano.In(K.learning_phase(), value=0)],
-        model.layers[i].output, allow_input_downcast=True,
-        on_unused_input='ignore')
-    return lambda x: f(x).astype('float16', copy=False)
-
-
-def model_from_py(path=None, filename=None):
-    if path is None:
-        path = settings['path']
-    if filename is None:
-        filename = settings['filename']
-    mod = import_script(path, filename)
-    return {'model': mod.build_network()}
+    return layers
 
 
 def load_ann(path=None, filename=None):
-    """
-    Load network from file.
+    """Load network from file.
 
     Parameters
     ----------
@@ -239,30 +186,27 @@ def load_ann(path=None, filename=None):
         ``keras.Model.evaluate`` method.
 
     """
+    from keras import models
 
     if path is None:
         path = settings['path']
     if filename is None:
         filename = settings['filename']
+    filepath = os.path.join(path, filename)
 
-    from keras import models
-    model = models.model_from_json(open(os.path.join(
-        path, filename + '.json')).read())
-    model.load_weights(os.path.join(path, filename + '.h5'))
-    # Todo: Allow user to specify loss function here (optimizer is not
-    # relevant as we do not train any more). Unfortunately, Keras does not
-    # save these parameters. They can be obtained from the compiled model
-    # by calling 'model.loss' and 'model.optimizer'.
-    model.compile(loss='categorical_crossentropy', optimizer='sgd',
-                  metrics=['accuracy'])
+    if os.path.exists(filepath + '.json'):
+        model = models.model_from_json(open(filepath + '.json').read())
+        model.load_weights(filepath + '.h5')
+        # With this loading method, optimizer and loss cannot be recovered.
+        # Could be specified by user, but since they are not really needed
+        # at inference time, set them to the most common choice.
+        model.compile('sgd', 'categorical_crossentropy', metrics=['accuracy'])
+    else:
+        model = models.load_ann(filepath + '.h5')
+
     return {'model': model, 'val_fn': model.evaluate}
 
 
 def evaluate(val_fn, X_test, Y_test):
     """Evaluate the original ANN."""
     return val_fn(X_test, Y_test)
-
-
-def set_layer_params(model, params, i):
-    """Set ``params`` of layer ``i`` of a given ``model``."""
-    model.layers[i].set_weights(params)
