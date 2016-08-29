@@ -211,7 +211,7 @@ class SNNToolboxGUI():
         tk.Button(path_frame, text="Set working dir", font=self.header_font,
                   command=self.set_cwd).pack(side='top')
         self.path_entry = tk.Entry(
-            path_frame, textvariable=self.settings['path'], width=20,
+            path_frame, textvariable=self.settings['path_wd'], width=20,
             validate='focusout', bg='white',
             validatecommand=(path_frame.register(self.check_path), '%P'))
         self.path_entry.pack(fill='both', expand=True, side='left')
@@ -231,8 +231,8 @@ class SNNToolboxGUI():
         tk.Label(filename_frame, text="Filename base:", bg='white').pack(
             fill='both', expand=True)
         self.filename_entry = tk.Entry(
-            filename_frame, bg='white', textvariable=self.settings['filename'],
-            width=20, validate='focusout',
+            filename_frame, bg='white', width=20, validate='focusout',
+            textvariable=self.settings['filename_ann'],
             validatecommand=(filename_frame.register(self.check_file), '%P'))
         self.filename_entry.pack(fill='both', expand=True, side='bottom')
         tip = dedent("""\
@@ -867,7 +867,7 @@ class SNNToolboxGUI():
                                             text="Select dir", relief='raised',
                                             borderwidth='3', bg='white')
         self.plot_dir_frame.pack(side='top', fill=None, expand=False)
-        self.gui_log.set(os.path.join(self.settings['path'].get(),
+        self.gui_log.set(os.path.join(self.settings['path_wd'].get(),
                                       'log', 'gui'))
         if os.path.isdir(self.gui_log.get()):
             plot_dirs = [d for d in sorted(os.listdir(self.gui_log.get()))
@@ -1062,8 +1062,8 @@ class SNNToolboxGUI():
                          'overwrite': tk.BooleanVar(),
                          'batch_size': tk.IntVar(),
                          'verbose': tk.IntVar(),
-                         'path': tk.StringVar(value=snntoolbox._dir),
-                         'filename': tk.StringVar(),
+                         'path_wd': tk.StringVar(value=snntoolbox._dir),
+                         'filename_ann': tk.StringVar(),
                          'filename_parsed_model': tk.StringVar(),
                          'filename_snn': tk.StringVar(),
                          'v_thresh': tk.DoubleVar(),
@@ -1127,8 +1127,8 @@ class SNNToolboxGUI():
         """Set preferences."""
         [self.settings[key].set(p[key]) for key in p]
 
-        if self.settings['path'] == '':
-            self.settings['path'] = os.getcwd()
+        if self.settings['path_wd'] == '':
+            self.settings['path_wd'] = os.getcwd()
 
     def save_settings(self):
         """Save current settings."""
@@ -1169,7 +1169,7 @@ class SNNToolboxGUI():
 
     def start_processing(self):
         """Start processing."""
-        if self.settings['filename'].get() == '':
+        if self.settings['filename_ann'].get() == '':
             messagebox.showwarning(title="Warning",
                                    message="Please specify a filename base.")
             return
@@ -1223,9 +1223,9 @@ class SNNToolboxGUI():
 
     def check_file(self, P):
         """Check files."""
-        if not os.path.exists(self.settings['path'].get()) or \
+        if not os.path.exists(self.settings['path_wd'].get()) or \
                 not any(P in fname for fname in
-                        os.listdir(self.settings['path'].get())):
+                        os.listdir(self.settings['path_wd'].get())):
             msg = ("Failed to set filename base:\n"
                    "Either working directory does not exist or contains no "
                    "files with base name \n '{}'".format(P))
@@ -1264,7 +1264,7 @@ class SNNToolboxGUI():
             result = True
 
         if result:
-            self.settings['path'].set(P)
+            self.settings['path_wd'].set(P)
             self.gui_log.set(os.path.join(P, 'log', 'gui'))
             # Look for plots in working directory to display
             self.graph_widgets()

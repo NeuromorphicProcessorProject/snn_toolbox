@@ -1176,7 +1176,7 @@ class SNN():
         self.add_input_layer(parsed_model.layers[0].batch_input_shape)
 
         # Create megasim dir where it will store the SNN params and schematic
-        self.megadirname = settings['path'] + "MegaSim_"+settings['filename'] + '/'
+        self.megadirname = settings['path_wd'] + "MegaSim_"+settings['filename_ann'] + '/'
         if not os.path.exists(self.megadirname):
             os.makedirs(self.megadirname)
 

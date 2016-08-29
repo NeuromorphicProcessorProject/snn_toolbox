@@ -25,7 +25,7 @@ from snntoolbox.io_utils.plotting import plot_history
 
 batch_size = 128
 nb_classes = 10
-nb_epoch = 40
+nb_epoch = 100
 
 # input image dimensions
 img_rows, img_cols = 28, 28

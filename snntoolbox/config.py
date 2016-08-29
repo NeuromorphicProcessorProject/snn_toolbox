@@ -28,21 +28,21 @@ model_lib: string
     - 'lasagne'
     - 'caffe'
 
-path: string, optional
+path_wd: string, optional
     Working directory. There, the toolbox will look for ANN models to convert
     or SNN models to test, load the parameters it needs and store (normalized)
     parameters.
     If not specified, the toolbox will use as destination for all files it
     needs to load and save:
-    ``~/.snntoolbox/data/<filename>/<simulator>/``.
+    ``~/.snntoolbox/data/<filename_ann>/<simulator>/``.
     For instance, if we give ``'98.29'`` as filename of the ANN model to load,
     and use default parameters otherwise, the toolbox will perform all
     io-operations in ``~/.snntoolbox/data/mnist/mlp/98.29/INI/``.
 log_dir_of_current_run: string, optional
     Path to directory where the output plots are stored. If not specified, will
-    be ``<path>/log/gui/<runlabel>``. ``<runlabel>`` can be specified in the
+    be ``<path_wd>/log/gui/<runlabel>``. ``<runlabel>`` can be specified in the
     GUI. Will be set to 'test' if None.
-filename: string
+filename_ann: string
     Base name of all loaded and saved files during this run. The ANN model to
     be converted is expected to be named '<basename>'.
 filename_parsed_model: string, optional
@@ -70,9 +70,9 @@ percentile: int, optional
     Set to ``50`` for the median, ``100`` for the max. Typical values are
     ``99, 99.9, 100``.
 convert: boolean, optional
-    If enabled, load an ANN from ``<path>`` and convert it to spiking.
+    If enabled, load an ANN from ``<path_wd>`` and convert it to spiking.
 simulate: boolean, optional
-    If enabled, try to load SNN from ``<path>`` and test it on the specified
+    If enabled, try to load SNN from ``<path_wd>`` and test it on the specified
     simulator (see parameter ``simulator``).
 overwrite: boolean, optional
     If disabled, the save methods will ask for permission to overwrite files
@@ -192,10 +192,14 @@ Default values
 
     globalparams = {'dataset_path': '',
                     'model_lib': 'keras',
-                    'path': '',
+                    'path_wd': '',
                     'log_dir_of_current_run': '',
-                    'filename': '',
+<<<<<<< HEAD
+                    'filename_ann': '',
                     'filename_parsed_model': '',
+=======
+                    'filename_ann': '',
+>>>>>>> bbbdbcc1bda5260269cfa60beab33ea654ffd768
                     'filename_snn': 'snn_',
                     'batch_size': 100,
                     'evaluateANN': True,
@@ -260,10 +264,10 @@ simulators.update(simulators_other)
 # Default parameters:
 settings = {'dataset_path': '',
             'model_lib': 'keras',
-            'path': '',
+            'path_wd': '',
             'log_dir_of_current_run': '',
-            'filename': '',
             'filename_parsed_model': '',
+            'filename_ann': '',
             'filename_snn': 'snn_',
             'batch_size': 100,
             'samples_to_test': '',
@@ -338,7 +342,7 @@ def update_setup(s=None):
             "Input model library '{}' ".format(s['model_lib']) + \
             "not supported yet. Possible values: {}".format(model_libs)
     # Name of input file must be given.
-    assert 'filename' in s, "Filename of stored model not specified."
+    assert 'filename_ann' in s, "Filename of stored model not specified."
     # Check that simulator choice is valid (not really needed when using GUI
     # because options are hardwired in dropdown list).
     if 'simulator' in s:
@@ -359,12 +363,12 @@ def update_setup(s=None):
             \n"""))
         s['convert'] = True
     # Set default path if user did not specify one.
-    if 'path' not in s or s['path'] == '':
-        s['path'] = os.path.join(snntoolbox._dir, 'data', s['filename'],
-                                 s['simulator'])
+    if 'path_wd' not in s or s['path_wd'] == '':
+        s['path_wd'] = os.path.join(snntoolbox._dir, 'data',
+                                    s['filename_ann'], s['simulator'])
     # Create directory if not there yet.
-    if not os.path.exists(s['path']):
-        os.makedirs(s['path'])
+    if not os.path.exists(s['path_wd']):
+        os.makedirs(s['path_wd'])
 
     # Convert string containing sample indices to list of indices.
     if 'samples_to_test' not in s:
@@ -373,14 +377,16 @@ def update_setup(s=None):
         int(i) for i in s['samples_to_test'].split() if i.isnumeric()]
 
     if 'log_dir_of_current_run' not in s:
-        s['log_dir_of_current_run'] = os.path.join(s['path'], 'log', 'gui',
-                                                   'test')
+        s['log_dir_of_current_run'] = os.path.join(s['path_wd'],
+                                                   'log', 'gui', 'test')
+        if not os.path.isdir(s['log_dir_of_current_run']):
+            os.makedirs(s['log_dir_of_current_run'])
 
     # Specify filenames for models at different stages of the conversion.
-    if s['filename_parsed_model'] == "":
-        s['filename_parsed_model'] = s['filename'] + '_parsed'
-    if s['filename_snn'] == "":
-        s['filename_snn'] = 'snn_' + s['filename'] + '_' + s['simulator']
+    if 'filename_parsed_model' not in s or s['filename_parsed_model'] == '':
+        s['filename_parsed_model'] = s['filename_ann'] + '_parsed'
+    if 'filename_snn' not in s or s['filename_snn'] == '':
+        s['filename_snn'] = 'snn_' + s['filename_ann'] + '_' + s['simulator']
 
     if 'poisson_input' not in s:
         s['poisson_input'] = True
@@ -391,7 +397,7 @@ def update_setup(s=None):
             SNN toolbox Warning: Currently, turning off Poisson input is
             only possible in INI simulator. Falling back on Poisson input."""))
 
-    if 'maxpool_type' not in s or s['maxpool_type'] == "":
+    if 'maxpool_type' not in s or s['maxpool_type'] == '':
         s['maxpool_type'] = 'fir_max'
 
     # If there are any parameters specified, merge with default parameters.

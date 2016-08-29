@@ -83,8 +83,8 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
         # Extract architecture and parameters from input model.
         model_lib = import_module('snntoolbox.model_libs.' +
                                   settings['model_lib'] + '_input_lib')
-        input_model = model_lib.load_ann(settings['path'],
-                                         settings['filename'])
+        input_model = model_lib.load_ann(settings['path_wd'],
+                                         settings['filename_ann'])
         if settings['evaluateANN']:
             print('\n' + "Evaluating input model...")
             score = model_lib.evaluate(input_model['val_fn'], X_test, Y_test)
@@ -120,7 +120,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
         # _____________________________ EXPORT ______________________________ #
         # Write model to disk
         parsed_model.save(os.path.join(
-            settings['path'], settings['filename_parsed_model'] + '.h5'))
+            settings['path_wd'], settings['filename_parsed_model'] + '.h5'))
 
         # Compile spiking network from ANN
         if not is_stop(queue):
@@ -129,7 +129,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
         # Export network in a format specific to the simulator with which it
         # will be tested later.
         if not is_stop(queue):
-            spiking_model.save(settings['path'], settings['filename_snn'])
+            spiking_model.save(settings['path_wd'], settings['filename_snn'])
 
     # ______________________________ SIMULATE _______________________________ #
     results = []
