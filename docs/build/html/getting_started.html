@@ -82,7 +82,7 @@
             
             
                 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="">Getting Started</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#prebuild-version">Prebuild version</a></li>
@@ -106,7 +106,6 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="configure_toolbox.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
 </ul>
 
             
@@ -129,7 +128,7 @@
         <div class="rst-content">
           
 
-
+ 
 
 
 
@@ -190,7 +189,7 @@ simulator that accepts a pyNN or Keras model as input.</li>
 </div>
 <div class="section" id="extending-the-toolbox">
 <h2>Extending the toolbox<a class="headerlink" href="#extending-the-toolbox" title="Permalink to this headline">¶</a></h2>
-<p>Have a look at the <code class="xref doc docutils literal"><span class="pre">pipeline</span></code> module to examine the complete pipeline of</p>
+<p>Have a look at the <span class="xref doc">pipeline</span> module to examine the complete pipeline of</p>
 <blockquote>
 <div><ol class="arabic simple">
 <li>loading and testing a pretrained ANN,</li>
@@ -217,7 +216,7 @@ information about layers into a common format used by the toolbox further down t
 <p>Similarly, adding another simulator to run converted networks implies adding a file to the
 <code class="docutils literal"><span class="pre">target_simulators</span></code> package. Each file in there allow building a spiking network
 and exporting it for use in a specific spiking simulator.</p>
-<p>To add a simulator called &#8216;custom&#8217;, put a file named <code class="docutils literal"><span class="pre">custom_target_sim.py</span></code> into <code class="docutils literal"><span class="pre">target_simulators</span></code>. Then implement the class <code class="docutils literal"><span class="pre">SNN_compiled</span></code> with its
+<p>To add a simulator called &#8216;custom&#8217;, put a file named <code class="docutils literal"><span class="pre">custom_target_sim.py</span></code> into <code class="docutils literal"><span class="pre">target_simulators</span></code>. Then implement the class <code class="docutils literal"><span class="pre">SNN</span></code> with its
 methods (<code class="docutils literal"><span class="pre">load</span></code>, <code class="docutils literal"><span class="pre">save</span></code>, <code class="docutils literal"><span class="pre">build</span></code>, <code class="docutils literal"><span class="pre">run</span></code>) tailored to &#8216;custom&#8217; simulator.</p>
 </div>
 </div>
@@ -258,7 +257,7 @@ then call <code class="xref py py-func docutils literal"><span class="pre">tests
 </ol>
 </div></blockquote>
 <p>For a description of the possible values for the parameters in <code class="docutils literal"><span class="pre">settings</span></code>,
-see <a class="reference internal" href="configure_toolbox.html"><em>Configuration</em></a>.</p>
+see <a class="reference internal" href="configure_toolbox.html"><span class="doc">Configuration</span></a>.</p>
 <div class="section" id="usecase-a-conversion-only">
 <span id="spiking-network"></span><span id="conversion-only"></span><h3>Usecase A - Conversion only<a class="headerlink" href="#usecase-a-conversion-only" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
@@ -405,7 +404,7 @@ hyperparameter</li>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 08, 2016.
+      Last updated on Aug 29, 2016.
 
     </p>
   </div>

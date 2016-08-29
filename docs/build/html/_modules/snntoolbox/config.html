@@ -84,7 +84,6 @@
 <li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../configure_toolbox.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../modules.html">Tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
 </ul>
 
             
@@ -130,7 +129,8 @@
            <div itemprop="articleBody">
             
   <h1>Source code for snntoolbox.config</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;Manage Parameters of SNNToolbox.</span>
+
 <span class="sd">In the GUI, the toolbox settings are grouped in three categories:</span>
 <span class="sd">    1. Global parameters ``globalparams``, specifying global settings for</span>
 <span class="sd">       loading / saving, and what steps of the workflow to include (evaluation,</span>
@@ -159,45 +159,51 @@
 <span class="sd">    - &#39;lasagne&#39;</span>
 <span class="sd">    - &#39;caffe&#39;</span>
 
-<span class="sd">path: string, optional</span>
+<span class="sd">path_wd: string, optional</span>
 <span class="sd">    Working directory. There, the toolbox will look for ANN models to convert</span>
 <span class="sd">    or SNN models to test, load the parameters it needs and store (normalized)</span>
 <span class="sd">    parameters.</span>
 <span class="sd">    If not specified, the toolbox will use as destination for all files it</span>
 <span class="sd">    needs to load and save:</span>
-<span class="sd">    ``~/.snntoolbox/data/&lt;filename&gt;/&lt;simulator&gt;/``.</span>
+<span class="sd">    ``~/.snntoolbox/data/&lt;filename_ann&gt;/&lt;simulator&gt;/``.</span>
 <span class="sd">    For instance, if we give ``&#39;98.29&#39;`` as filename of the ANN model to load,</span>
 <span class="sd">    and use default parameters otherwise, the toolbox will perform all</span>
 <span class="sd">    io-operations in ``~/.snntoolbox/data/mnist/mlp/98.29/INI/``.</span>
 <span class="sd">log_dir_of_current_run: string, optional</span>
 <span class="sd">    Path to directory where the output plots are stored. If not specified, will</span>
-<span class="sd">    be ``&lt;path&gt;/log/gui/&lt;runlabel&gt;``. ``&lt;runlabel&gt;`` can be specified in the</span>
+<span class="sd">    be ``&lt;path_wd&gt;/log/gui/&lt;runlabel&gt;``. ``&lt;runlabel&gt;`` can be specified in the</span>
 <span class="sd">    GUI. Will be set to &#39;test&#39; if None.</span>
-<span class="sd">filename: string</span>
+<span class="sd">filename_ann: string</span>
 <span class="sd">    Base name of all loaded and saved files during this run. The ANN model to</span>
 <span class="sd">    be converted is expected to be named &#39;&lt;basename&gt;&#39;.</span>
+<span class="sd">filename_parsed_model: string, optional</span>
+<span class="sd">    Name given to parsed SNN models. If not specified by the user, the</span>
+<span class="sd">    toolbox sets it to &#39;&lt;basename&gt;_parsed&#39;.</span>
 <span class="sd">filename_snn: string, optional</span>
-<span class="sd">    Name given to converted SNN models. If not specified by the user, the</span>
-<span class="sd">    toolbox sets it to &#39;snn_&lt;basename&gt;&#39;.</span>
-<span class="sd">filename_snn_exported: string, optional</span>
 <span class="sd">    Name given to converted spiking nets when exported to test it in a specific</span>
 <span class="sd">    simulator. If not specified by the user, the toolbox set it to</span>
 <span class="sd">    ``snn_&lt;basename&gt;_&lt;simulator&gt;``.</span>
 <span class="sd">evaluateANN: boolean, optional</span>
-<span class="sd">    If enabled, test the ANN before conversion. If you also enabled</span>
-<span class="sd">    &#39;normalization&#39; (see parameter ``normalize`` below), then the network will</span>
-<span class="sd">    be evaluated again after normalization.</span>
+<span class="sd">    If enabled, test the input model before and after it is parsed, to ensure</span>
+<span class="sd">    we do not lose performance. (Parsing extracts all necessary information</span>
+<span class="sd">    from the input model and creates a new network with some simplifications in</span>
+<span class="sd">    preparation for conversion to SNN.)</span>
+<span class="sd">    If you also enabled &#39;normalization&#39; (see parameter ``normalize`` below),</span>
+<span class="sd">    then the network will be evaluated again after normalization. This</span>
+<span class="sd">    operation should preserve accuracy as well.</span>
 <span class="sd">normalize: boolean, optional</span>
 <span class="sd">    Only relevant when converting a network, not during simulation. If enabled,</span>
 <span class="sd">    the parameters of the spiking network will be normalized by the highest</span>
-<span class="sd">    parameter or activation value.</span>
+<span class="sd">    activation value, or by the ``n``-th percentile (see parameter</span>
+<span class="sd">    ``percentile`` below).</span>
 <span class="sd">percentile: int, optional</span>
 <span class="sd">    Use the activation value in the specified percentile for normalization.</span>
-<span class="sd">    Set to ``50`` for the median, ``100`` for the max.</span>
+<span class="sd">    Set to ``50`` for the median, ``100`` for the max. Typical values are</span>
+<span class="sd">    ``99, 99.9, 100``.</span>
 <span class="sd">convert: boolean, optional</span>
-<span class="sd">    If enabled, load an ANN from ``&lt;path&gt;`` and convert it to spiking.</span>
+<span class="sd">    If enabled, load an ANN from ``&lt;path_wd&gt;`` and convert it to spiking.</span>
 <span class="sd">simulate: boolean, optional</span>
-<span class="sd">    If enabled, try to load SNN from ``&lt;path&gt;`` and test it on the specified</span>
+<span class="sd">    If enabled, try to load SNN from ``&lt;path_wd&gt;`` and test it on the specified</span>
 <span class="sd">    simulator (see parameter ``simulator``).</span>
 <span class="sd">overwrite: boolean, optional</span>
 <span class="sd">    If disabled, the save methods will ask for permission to overwrite files</span>
@@ -212,9 +218,12 @@
 <span class="sd">    0: No intermediate results or status reports.</span>
 <span class="sd">    1: Print progress of simulation and intermediate results.</span>
 <span class="sd">    2: Record spiketrains of all layers for one sample, and save various plots</span>
-<span class="sd">       (spiketrains, spikerates, activations, correlations, ...)</span>
+<span class="sd">    (spiketrains, spikerates, activations, correlations, ...)</span>
 <span class="sd">    3: Record, plot and return the membrane potential of all layers for the</span>
-<span class="sd">       last test sample. Very time consuming. Works only with pyNN simulators.</span>
+<span class="sd">    last test sample. Very time consuming. Works only with pyNN simulators.</span>
+<span class="sd">scaling_factor: int, optional</span>
+<span class="sd">    Used by the MegaSim simulator to scale the neuron parameters and weights</span>
+<span class="sd">    because MegaSim uses integers.</span>
 
 <span class="sd">Cell Parameters</span>
 <span class="sd">***************</span>
@@ -270,33 +279,42 @@
 <span class="sd">reset: string, optional</span>
 <span class="sd">    Choose the reset mechanism to apply after spike.</span>
 <span class="sd">    Reset to zero: After spike, the membrane potential is set to the resting</span>
-<span class="sd">                   potential.</span>
+<span class="sd">    potential.</span>
 <span class="sd">    Reset by subtraction: After spike, the membrane potential is reduced by a</span>
-<span class="sd">                          value equal to the threshold.</span>
+<span class="sd">    value equal to the threshold.</span>
 <span class="sd">input_rate: float, optional</span>
 <span class="sd">    Poisson spike rate in Hz for a fully-on pixel of the input image. Note that</span>
 <span class="sd">    the input_rate is limited by the maximum firing rate supported by the</span>
 <span class="sd">    simulator (given by the inverse time resolution 1000 * 1 / dt Hz).</span>
-<span class="sd">diff_to_max_rate: float, optional</span>
+<span class="sd">normalization_schedule: boolean, optional</span>
+<span class="sd">    Reduce the normalization factor each layer.</span>
+<span class="sd">online_normalization: boolean, optional</span>
 <span class="sd">    The converted spiking network performs best if the average firing rates of</span>
 <span class="sd">    each layer are not higher but also not much lower than the maximum rate</span>
 <span class="sd">    supported by the simulator (inverse time resolution). Normalization</span>
 <span class="sd">    eliminates saturation but introduces undersampling (parameters are</span>
 <span class="sd">    normalized with respect to the highest value in a batch). To overcome this,</span>
 <span class="sd">    the spikerates of each layer are monitored during simulation. If they drop</span>
-<span class="sd">    below the maximum firing rate by more than &#39;diff to max rate&#39;, we divide</span>
-<span class="sd">    the parameters of the layer by its highest rate. Set the parameter in Hz.</span>
+<span class="sd">    below the maximum firing rate by more than &#39;diff to max rate&#39;, we set the</span>
+<span class="sd">    threshold of the layer to its highest rate.</span>
+<span class="sd">diff_to_max_rate: float, optional</span>
+<span class="sd">    If the highest firing rate of neurons in a layer drops below the maximum</span>
+<span class="sd">    firing rate by more than &#39;diff to max rate&#39;, we set the threshold of the</span>
+<span class="sd">    layer to its highest rate. Set the parameter in Hz.</span>
+<span class="sd">diff_to_min_rate: float, optional</span>
+<span class="sd">    When The firing rates of a layer are below this value, the weights will NOT</span>
+<span class="sd">    be modified in the feedback mechanism described in &#39;online_normalization&#39;.</span>
+<span class="sd">    This is useful in the beginning of a simulation, when higher layers need</span>
+<span class="sd">    some time to integrate up a sufficiently high membrane potential.</span>
 <span class="sd">timestep_fraction: int, optional</span>
 <span class="sd">    If set to 10 (default), the parameter modification mechanism described in</span>
-<span class="sd">    &#39;diff_to_max_rate&#39; will be performed at every 10th timestep.</span>
-<span class="sd">min_rate: float, optional</span>
-<span class="sd">    Minimum spikerate in Hz. When The firing rates of a layer are below this</span>
-<span class="sd">    value, the weights will NOT be modified in the feedback mechanism described</span>
-<span class="sd">    in &#39;diff_to_max_rate&#39;. This is useful in the beginning of a simulation,</span>
-<span class="sd">    when higher layers need some time to integrate up a sufficiently high</span>
-<span class="sd">    membrane potential.</span>
+<span class="sd">    &#39;online_normalization&#39; will be performed at every 10th timestep.</span>
 <span class="sd">num_to_test: int, optional</span>
 <span class="sd">    How many samples to test.</span>
+<span class="sd">maxpool_type : string</span>
+<span class="sd">    Implementation variants of spiking MaxPooling layers, based on</span>
+<span class="sd">    fir_max: accmulated absolute firing rate</span>
+<span class="sd">    avg_max: moving average of firing rate</span>
 
 <span class="sd">Default values</span>
 <span class="sd">..............</span>
@@ -305,11 +323,11 @@
 
 <span class="sd">    globalparams = {&#39;dataset_path&#39;: &#39;&#39;,</span>
 <span class="sd">                    &#39;model_lib&#39;: &#39;keras&#39;,</span>
-<span class="sd">                    &#39;path&#39;: &#39;&#39;,</span>
+<span class="sd">                    &#39;path_wd&#39;: &#39;&#39;,</span>
 <span class="sd">                    &#39;log_dir_of_current_run&#39;: &#39;&#39;,</span>
-<span class="sd">                    &#39;filename&#39;: &#39;&#39;,</span>
+<span class="sd">                    &#39;filename_ann&#39;: &#39;&#39;,</span>
+<span class="sd">                    &#39;filename_parsed_model&#39;: &#39;&#39;,</span>
 <span class="sd">                    &#39;filename_snn&#39;: &#39;snn_&#39;,</span>
-<span class="sd">                    &#39;filename_snn_exported&#39;: &#39;snn_exported_&#39;,</span>
 <span class="sd">                    &#39;batch_size&#39;: 100,</span>
 <span class="sd">                    &#39;evaluateANN&#39;: True,</span>
 <span class="sd">                    &#39;normalize&#39;: True,</span>
@@ -340,8 +358,7 @@
 <span class="sd">                 &#39;timestep_fraction&#39;: 10,</span>
 <span class="sd">                 &#39;diff_to_max_rate&#39;: 200,</span>
 <span class="sd">                 &#39;num_to_test&#39;: 10,</span>
-<span class="sd">                 &#39;min_rate&#39;: 100}</span>
-
+<span class="sd">                 &#39;diff_to_min_rate&#39;: 100}</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">matplotlib</span> <span class="kn">as</span> <span class="nn">mpl</span>
@@ -367,18 +384,18 @@
 <span class="c1"># List supported model libraries, simulators, etc.</span>
 <span class="n">model_libs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;keras&#39;</span><span class="p">,</span> <span class="s1">&#39;lasagne&#39;</span><span class="p">,</span> <span class="s1">&#39;caffe&#39;</span><span class="p">}</span>
 <span class="n">simulators_pyNN</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;nest&#39;</span><span class="p">,</span> <span class="s1">&#39;brian&#39;</span><span class="p">,</span> <span class="s1">&#39;Neuron&#39;</span><span class="p">}</span>
-<span class="n">simulators_other</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;INI&#39;</span><span class="p">,</span> <span class="s1">&#39;brian2&#39;</span><span class="p">}</span>
+<span class="n">simulators_other</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;INI&#39;</span><span class="p">,</span> <span class="s1">&#39;brian2&#39;</span><span class="p">,</span> <span class="s1">&#39;MegaSim&#39;</span><span class="p">}</span>
 <span class="n">simulators</span> <span class="o">=</span> <span class="n">simulators_pyNN</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="n">simulators</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">simulators_other</span><span class="p">)</span>
 
 <span class="c1"># Default parameters:</span>
 <span class="n">settings</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
             <span class="s1">&#39;model_lib&#39;</span><span class="p">:</span> <span class="s1">&#39;keras&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;path_wd&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
             <span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;filename&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;filename_parsed_model&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;filename_ann&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
             <span class="s1">&#39;filename_snn&#39;</span><span class="p">:</span> <span class="s1">&#39;snn_&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;filename_snn_exported&#39;</span><span class="p">:</span> <span class="s1">&#39;snn_exported_&#39;</span><span class="p">,</span>
             <span class="s1">&#39;batch_size&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
             <span class="s1">&#39;samples_to_test&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
             <span class="s1">&#39;evaluateANN&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
@@ -397,9 +414,14 @@
             <span class="s1">&#39;poisson_input&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
             <span class="s1">&#39;reset&#39;</span><span class="p">:</span> <span class="s1">&#39;Reset by subtraction&#39;</span><span class="p">,</span>
             <span class="s1">&#39;input_rate&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+            <span class="s1">&#39;normalization_schedule&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
+            <span class="s1">&#39;online_normalization&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
+            <span class="s1">&#39;payloads&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
             <span class="s1">&#39;diff_to_max_rate&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
             <span class="s1">&#39;timestep_fraction&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-            <span class="s1">&#39;min_rate&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">}</span>
+            <span class="s1">&#39;diff_to_min_rate&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s1">&#39;scaling_factor&#39;</span><span class="p">:</span> <span class="mi">10000000</span><span class="p">,</span>
+            <span class="s1">&#39;maxpool_type&#39;</span><span class="p">:</span> <span class="s1">&#39;fir_max&#39;</span><span class="p">}</span>
 
 <span class="c1"># pyNN specific parameters.</span>
 <span class="n">pyNN_settings</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;v_reset&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
@@ -414,21 +436,26 @@
                  <span class="s1">&#39;delay&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># Constraint: delay &gt;= dt</span>
                  <span class="s1">&#39;num_to_test&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">}</span>
 
-<span class="c1"># Layers followed by an Activation layer</span>
-<span class="n">activation_layers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Dense&#39;</span><span class="p">,</span> <span class="s1">&#39;Convolution2D&#39;</span><span class="p">}</span>
+<span class="c1"># Merge settings</span>
+<span class="n">settings</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">pyNN_settings</span><span class="p">)</span>
+
+<span class="c1"># Layers for which we can compute activations</span>
+<span class="n">activation_layers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Dense&#39;</span><span class="p">,</span> <span class="s1">&#39;Convolution2D&#39;</span><span class="p">,</span> <span class="s1">&#39;MaxPooling2D&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;AveragePooling2D&#39;</span><span class="p">}</span>
 
 <span class="n">bn_layers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Dense&#39;</span><span class="p">,</span> <span class="s1">&#39;Convolution2D&#39;</span><span class="p">}</span>
 
+<span class="n">spiking_layers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Dense&#39;</span><span class="p">,</span> <span class="s1">&#39;Convolution2D&#39;</span><span class="p">,</span> <span class="s1">&#39;MaxPooling2D&#39;</span><span class="p">,</span> <span class="s1">&#39;AveragePooling2D&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Flatten&#39;</span><span class="p">}</span>
+
 
 <div class="viewcode-block" id="update_setup"><a class="viewcode-back" href="../../configure_toolbox.html#snntoolbox.config.update_setup">[docs]</a><span class="k">def</span> <span class="nf">update_setup</span><span class="p">(</span><span class="n">s</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Update parameters</span>
+    <span class="sd">&quot;&quot;&quot;Update parameters.</span>
 
 <span class="sd">    Check that parameter choices ``s`` are valid and update the global</span>
 <span class="sd">    parameter settings ``snntoolbox.config.settings`` with the user-specified</span>
 <span class="sd">    values. Default values are filled in where user did not give any.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="kn">import</span> <span class="nn">os</span>
     <span class="kn">import</span> <span class="nn">snntoolbox</span>
 
@@ -442,7 +469,7 @@
             <span class="s2">&quot;Input model library &#39;{}&#39; &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;model_lib&#39;</span><span class="p">])</span> <span class="o">+</span> \
             <span class="s2">&quot;not supported yet. Possible values: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model_libs</span><span class="p">)</span>
     <span class="c1"># Name of input file must be given.</span>
-    <span class="k">assert</span> <span class="s1">&#39;filename&#39;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">,</span> <span class="s2">&quot;Filename of stored model not specified.&quot;</span>
+    <span class="k">assert</span> <span class="s1">&#39;filename_ann&#39;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">,</span> <span class="s2">&quot;Filename of stored model not specified.&quot;</span>
     <span class="c1"># Check that simulator choice is valid (not really needed when using GUI</span>
     <span class="c1"># because options are hardwired in dropdown list).</span>
     <span class="k">if</span> <span class="s1">&#39;simulator&#39;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
@@ -451,7 +478,7 @@
             <span class="s2">&quot; Choose from {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">simulators</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># Fall back on default if none specified.</span>
-        <span class="n">s</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;simulator&#39;</span><span class="p">:</span> <span class="s1">&#39;INI&#39;</span><span class="p">})</span>
+        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;INI&#39;</span>
     <span class="c1"># Warn user that it is not possible to use Brian2 simulator by loading a</span>
     <span class="c1"># pre-converted network from disk.</span>
     <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;brian2&#39;</span> <span class="ow">and</span> <span class="s1">&#39;convert&#39;</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;convert&#39;</span><span class="p">]</span> \
@@ -463,12 +490,12 @@
 <span class="s2">            </span><span class="se">\n</span><span class="s2">&quot;&quot;&quot;</span><span class="p">))</span>
         <span class="n">s</span><span class="p">[</span><span class="s1">&#39;convert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
     <span class="c1"># Set default path if user did not specify one.</span>
-    <span class="k">if</span> <span class="s1">&#39;path&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">or</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
-        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">snntoolbox</span><span class="o">.</span><span class="n">_dir</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">],</span>
-                                 <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="s1">&#39;path_wd&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">or</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">snntoolbox</span><span class="o">.</span><span class="n">_dir</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span>
+                                    <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">])</span>
     <span class="c1"># Create directory if not there yet.</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]):</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">]):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">])</span>
 
     <span class="c1"># Convert string containing sample indices to list of indices.</span>
     <span class="k">if</span> <span class="s1">&#39;samples_to_test&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
@@ -477,12 +504,19 @@
         <span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;samples_to_test&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">()]</span>
 
     <span class="k">if</span> <span class="s1">&#39;log_dir_of_current_run&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
-        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">],</span> <span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="s1">&#39;gui&#39;</span><span class="p">,</span>
-                                                   <span class="s1">&#39;test&#39;</span><span class="p">)</span>
+        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span>
+                                                   <span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="s1">&#39;gui&#39;</span><span class="p">,</span> <span class="s1">&#39;test&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">]):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">])</span>
 
     <span class="c1"># Specify filenames for models at different stages of the conversion.</span>
-    <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_snn&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;snn_&#39;</span> <span class="o">+</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span>
-    <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_snn_exported&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_snn&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s1">&#39;filename_parsed_model&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">or</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_parsed_model&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_parsed_model&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_parsed&#39;</span>
+    <span class="k">if</span> <span class="s1">&#39;filename_snn&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">or</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_snn&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_snn&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;snn_&#39;</span> <span class="o">+</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="s1">&#39;poisson_input&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;poisson_input&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
 
     <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;INI&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;poisson_input&#39;</span><span class="p">]:</span>
         <span class="n">s</span><span class="p">[</span><span class="s1">&#39;poisson_input&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
@@ -490,12 +524,15 @@
 <span class="s2">            SNN toolbox Warning: Currently, turning off Poisson input is</span>
 <span class="s2">            only possible in INI simulator. Falling back on Poisson input.&quot;&quot;&quot;</span><span class="p">))</span>
 
+    <span class="k">if</span> <span class="s1">&#39;maxpool_type&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">or</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;maxpool_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">s</span><span class="p">[</span><span class="s1">&#39;maxpool_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;fir_max&#39;</span>
+
     <span class="c1"># If there are any parameters specified, merge with default parameters.</span>
     <span class="n">settings</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">s</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="initialize_simulator"><a class="viewcode-back" href="../../configure_toolbox.html#snntoolbox.config.initialize_simulator">[docs]</a><span class="k">def</span> <span class="nf">initialize_simulator</span><span class="p">(</span><span class="n">simulator</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Import module containing utility functions of spiking simulator&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Import module containing utility functions of spiking simulator.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">importlib</span> <span class="kn">import</span> <span class="n">import_module</span>
 
     <span class="k">if</span> <span class="n">simulator</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
@@ -517,7 +554,8 @@
         <span class="n">sim</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;brian2&#39;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">simulator</span> <span class="o">==</span> <span class="s1">&#39;INI&#39;</span><span class="p">:</span>
         <span class="n">sim</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;snntoolbox.core.inisim&#39;</span><span class="p">)</span>
-
+    <span class="k">elif</span> <span class="n">simulator</span> <span class="o">==</span> <span class="s1">&#39;MegaSim&#39;</span><span class="p">:</span>
+        <span class="n">sim</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;snntoolbox.core.megasim&#39;</span><span class="p">)</span>
     <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Initialized {} simulator.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">simulator</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">sim</span></div>
 </pre></div>
@@ -532,7 +570,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 08, 2016.
+      Last updated on Aug 29, 2016.
 
     </p>
   </div>

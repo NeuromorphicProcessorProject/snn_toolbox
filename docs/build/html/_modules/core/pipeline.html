@@ -84,7 +84,6 @@
 <li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../configure_toolbox.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../modules.html">Tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
 </ul>
 
             
@@ -144,10 +143,12 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">future</span> <span class="kn">import</span> <span class="n">standard_library</span>
 
+<span class="kn">from</span> <span class="nn">importlib</span> <span class="kn">import</span> <span class="n">import_module</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">snntoolbox.io_utils.plotting</span> <span class="kn">import</span> <span class="n">plot_param_sweep</span>
-<span class="kn">from</span> <span class="nn">snntoolbox.io_utils.load</span> <span class="kn">import</span> <span class="n">load_dataset</span>
-<span class="kn">from</span> <span class="nn">snntoolbox.core.model</span> <span class="kn">import</span> <span class="n">SNN</span>
-<span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="kn">import</span> <span class="n">print_description</span>
+<span class="kn">from</span> <span class="nn">snntoolbox.io_utils.common</span> <span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="kn">import</span> <span class="n">print_description</span><span class="p">,</span> <span class="n">normalize_parameters</span><span class="p">,</span> <span class="n">parse</span>
 <span class="kn">from</span> <span class="nn">snntoolbox.config</span> <span class="kn">import</span> <span class="n">settings</span>
 
 <span class="n">standard_library</span><span class="o">.</span><span class="n">install_aliases</span><span class="p">()</span>
@@ -155,8 +156,7 @@
 
 <div class="viewcode-block" id="test_full"><a class="viewcode-back" href="../../core.html#core.pipeline.test_full">[docs]</a><span class="k">def</span> <span class="nf">test_full</span><span class="p">(</span><span class="n">queue</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;v_thresh&#39;</span><span class="p">]],</span> <span class="n">param_name</span><span class="o">=</span><span class="s1">&#39;v_thresh&#39;</span><span class="p">,</span>
               <span class="n">param_logscale</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Convert an snn to a spiking neural network and simulate it.</span>
+    <span class="sd">&quot;&quot;&quot;Convert an snn to a spiking neural network and simulate it.</span>
 
 <span class="sd">    Complete pipeline of</span>
 <span class="sd">        1. loading and testing a pretrained ANN,</span>
@@ -169,7 +169,7 @@
 <span class="sd">    The testsuit allows specification of</span>
 <span class="sd">        - the dataset (e.g. MNIST or CIFAR10)</span>
 <span class="sd">        - the spiking simulator to use (currently Brian, Brian2, Nest, Neuron,</span>
-<span class="sd">          or INI&#39;s simulator.)</span>
+<span class="sd">          MegaSim or INI&#39;s simulator.)</span>
 
 <span class="sd">    Perform simulations of a spiking network, while optionally sweeping over a</span>
 <span class="sd">    specified hyper-parameter range. If the keyword arguments are not given,</span>
@@ -197,19 +197,34 @@
 <span class="sd">    results: list</span>
 <span class="sd">        List of the accuracies obtained after simulating with each parameter</span>
 <span class="sd">        value in param_range.</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="c1"># ____________________________ LOAD DATASET _____________________________ #</span>
-    <span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">])</span>
+    <span class="n">X_test</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">],</span> <span class="s1">&#39;X_test.npz&#39;</span><span class="p">)</span>
+    <span class="n">Y_test</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">],</span> <span class="s1">&#39;Y_test.npz&#39;</span><span class="p">)</span>
 
-    <span class="c1"># _____________________________ LOAD MODEL ______________________________ #</span>
-    <span class="c1"># Extract architecture and parameters from input model.</span>
-    <span class="n">snn</span> <span class="o">=</span> <span class="n">SNN</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">],</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">])</span>
-
-    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;verbose&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">print_description</span><span class="p">(</span><span class="n">snn</span><span class="p">)</span>
+    <span class="c1"># Instantiate an empty spiking network</span>
+    <span class="n">target_sim</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;snntoolbox.target_simulators.&#39;</span> <span class="o">+</span>
+                               <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_target_sim&#39;</span><span class="p">)</span>
+    <span class="n">spiking_model</span> <span class="o">=</span> <span class="n">target_sim</span><span class="o">.</span><span class="n">SNN</span><span class="p">()</span>  <span class="c1"># t=0.1%</span>
 
     <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;convert&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_stop</span><span class="p">(</span><span class="n">queue</span><span class="p">):</span>
+
+        <span class="c1"># ___________________________ LOAD MODEL ____________________________ #</span>
+        <span class="c1"># Extract architecture and parameters from input model.</span>
+        <span class="n">model_lib</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;snntoolbox.model_libs.&#39;</span> <span class="o">+</span>
+                                  <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;model_lib&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_input_lib&#39;</span><span class="p">)</span>
+        <span class="n">input_model</span> <span class="o">=</span> <span class="n">model_lib</span><span class="o">.</span><span class="n">load_ann</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span>
+                                         <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;evaluateANN&#39;</span><span class="p">]:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s2">&quot;Evaluating input model...&quot;</span><span class="p">)</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="n">model_lib</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">input_model</span><span class="p">[</span><span class="s1">&#39;val_fn&#39;</span><span class="p">],</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s2">&quot;Test score: {:.2f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">score</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Test accuracy: {:.2%}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">score</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Parsing input model...&quot;</span><span class="p">)</span>
+        <span class="n">parsed_model</span> <span class="o">=</span> <span class="n">parse</span><span class="p">(</span><span class="n">input_model</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">])</span>  <span class="c1"># t=0.5% m=0.6GB</span>
+        <span class="n">print_description</span><span class="p">(</span><span class="n">parsed_model</span><span class="p">)</span>
 
         <span class="c1"># ____________________________ NORMALIZE ____________________________ #</span>
         <span class="c1"># Normalize model</span>
@@ -217,37 +232,41 @@
             <span class="c1"># Evaluate ANN before normalization to ensure it doesn&#39;t affect</span>
             <span class="c1"># accuracy</span>
             <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;evaluateANN&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_stop</span><span class="p">(</span><span class="n">queue</span><span class="p">):</span>
-                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Before parameter normalization:&quot;</span><span class="p">)</span>
-                <span class="n">snn</span><span class="o">.</span><span class="n">evaluate_ann</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span>
-
-            <span class="c1"># For memory reasons, reduce number of samples to use during</span>
-            <span class="c1"># normalization.</span>
-            <span class="n">frac</span> <span class="o">=</span> <span class="mi">5</span>
-            <span class="n">snn</span><span class="o">.</span><span class="n">normalize_parameters</span><span class="p">(</span><span class="n">X_train</span><span class="p">[::</span><span class="n">frac</span><span class="p">])</span>
+                <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s2">&quot;Evaluating parsed model before parameter &quot;</span> <span class="o">+</span>
+                      <span class="s2">&quot;normalization...&quot;</span><span class="p">)</span>
+                <span class="n">score</span> <span class="o">=</span> <span class="n">parsed_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s2">&quot;Test score: {:.2f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">score</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Test accuracy: {:.2%}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">score</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="c1"># t=9.1 (t=90.8% without sim) m=0.2GB</span>
+            <span class="n">normalize_parameters</span><span class="p">(</span><span class="n">parsed_model</span><span class="p">)</span>
 
         <span class="c1"># ____________________________ EVALUATE _____________________________ #</span>
         <span class="c1"># (Re-) evaluate ANN</span>
         <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;evaluateANN&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_stop</span><span class="p">(</span><span class="n">queue</span><span class="p">):</span>
-            <span class="n">snn</span><span class="o">.</span><span class="n">evaluate_ann</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s2">&quot;Evaluating parsed model...&quot;</span><span class="p">)</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="n">parsed_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s2">&quot;Test score: {:.2f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">score</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Test accuracy: {:.2%}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">score</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
 
         <span class="c1"># _____________________________ EXPORT ______________________________ #</span>
         <span class="c1"># Write model to disk</span>
-        <span class="n">snn</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        <span class="n">parsed_model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_parsed_model&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span><span class="p">))</span>
 
         <span class="c1"># Compile spiking network from ANN</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">is_stop</span><span class="p">(</span><span class="n">queue</span><span class="p">):</span>
-            <span class="n">snn</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+            <span class="n">spiking_model</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">parsed_model</span><span class="p">)</span>
 
-        <span class="c1"># Export network in a format specific to the simulator with wich it</span>
+        <span class="c1"># Export network in a format specific to the simulator with which it</span>
         <span class="c1"># will be tested later.</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">is_stop</span><span class="p">(</span><span class="n">queue</span><span class="p">):</span>
-            <span class="n">snn</span><span class="o">.</span><span class="n">export_to_sim</span><span class="p">()</span>
+            <span class="n">spiking_model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_snn&#39;</span><span class="p">])</span>
 
     <span class="c1"># ______________________________ SIMULATE _______________________________ #</span>
     <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;simulate&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_stop</span><span class="p">(</span><span class="n">queue</span><span class="p">):</span>
 
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;verbose&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Testing SNN for hyperparameter values {} = &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                 <span class="n">param_name</span><span class="p">))</span>
             <span class="k">print</span><span class="p">([</span><span class="s1">&#39;{:.2f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">params</span><span class="p">])</span>
@@ -263,16 +282,17 @@
 
             <span class="c1"># Display current parameter value</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;verbose&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
                 <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Current value of parameter to sweep: &quot;</span> <span class="o">+</span>
                       <span class="s2">&quot;{} = {:.2f}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span>
             <span class="c1"># Simulate network</span>
-            <span class="n">total_acc</span> <span class="o">=</span> <span class="n">snn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span>
+            <span class="n">total_acc</span> <span class="o">=</span> <span class="n">spiking_model</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span>  <span class="c1"># t=90.1% m=2.3GB</span>
 
             <span class="c1"># Write out results</span>
             <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">total_acc</span><span class="p">)</span>
 
         <span class="c1"># Clean up</span>
-        <span class="n">snn</span><span class="o">.</span><span class="n">end_sim</span><span class="p">()</span>
+        <span class="n">spiking_model</span><span class="o">.</span><span class="n">end_sim</span><span class="p">()</span>
 
     <span class="c1"># _______________________________ OUTPUT _______________________________ #</span>
     <span class="c1"># Number of samples used in one run:</span>
@@ -310,7 +330,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 08, 2016.
+      Last updated on Aug 29, 2016.
 
     </p>
   </div>

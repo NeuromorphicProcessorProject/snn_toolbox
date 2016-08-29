@@ -83,7 +83,7 @@
             
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">Configuration</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#global-parameters">Global Parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cell-parameters">Cell Parameters</a></li>
@@ -94,7 +94,6 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
 </ul>
 
             
@@ -117,7 +116,7 @@
         <div class="rst-content">
           
 
-
+ 
 
 
 
@@ -141,6 +140,7 @@
             
   <div class="section" id="module-snntoolbox.config">
 <span id="configuration"></span><h1>Configuration<a class="headerlink" href="#module-snntoolbox.config" title="Permalink to this headline">¶</a></h1>
+<p>Manage Parameters of SNNToolbox.</p>
 <dl class="docutils">
 <dt>In the GUI, the toolbox settings are grouped in three categories:</dt>
 <dd><ol class="first last arabic simple">
@@ -172,45 +172,51 @@ to be in npy format.</dd>
 <li>&#8216;caffe&#8217;</li>
 </ul>
 </dd>
-<dt>path: string, optional</dt>
+<dt>path_wd: string, optional</dt>
 <dd>Working directory. There, the toolbox will look for ANN models to convert
 or SNN models to test, load the parameters it needs and store (normalized)
 parameters.
 If not specified, the toolbox will use as destination for all files it
 needs to load and save:
-<code class="docutils literal"><span class="pre">~/.snntoolbox/data/&lt;filename&gt;/&lt;simulator&gt;/</span></code>.
+<code class="docutils literal"><span class="pre">~/.snntoolbox/data/&lt;filename_ann&gt;/&lt;simulator&gt;/</span></code>.
 For instance, if we give <code class="docutils literal"><span class="pre">'98.29'</span></code> as filename of the ANN model to load,
 and use default parameters otherwise, the toolbox will perform all
 io-operations in <code class="docutils literal"><span class="pre">~/.snntoolbox/data/mnist/mlp/98.29/INI/</span></code>.</dd>
 <dt>log_dir_of_current_run: string, optional</dt>
 <dd>Path to directory where the output plots are stored. If not specified, will
-be <code class="docutils literal"><span class="pre">&lt;path&gt;/log/gui/&lt;runlabel&gt;</span></code>. <code class="docutils literal"><span class="pre">&lt;runlabel&gt;</span></code> can be specified in the
+be <code class="docutils literal"><span class="pre">&lt;path_wd&gt;/log/gui/&lt;runlabel&gt;</span></code>. <code class="docutils literal"><span class="pre">&lt;runlabel&gt;</span></code> can be specified in the
 GUI. Will be set to &#8216;test&#8217; if None.</dd>
-<dt>filename: string</dt>
+<dt>filename_ann: string</dt>
 <dd>Base name of all loaded and saved files during this run. The ANN model to
 be converted is expected to be named &#8216;&lt;basename&gt;&#8217;.</dd>
+<dt>filename_parsed_model: string, optional</dt>
+<dd>Name given to parsed SNN models. If not specified by the user, the
+toolbox sets it to &#8216;&lt;basename&gt;_parsed&#8217;.</dd>
 <dt>filename_snn: string, optional</dt>
-<dd>Name given to converted SNN models. If not specified by the user, the
-toolbox sets it to &#8216;snn_&lt;basename&gt;&#8217;.</dd>
-<dt>filename_snn_exported: string, optional</dt>
 <dd>Name given to converted spiking nets when exported to test it in a specific
 simulator. If not specified by the user, the toolbox set it to
 <code class="docutils literal"><span class="pre">snn_&lt;basename&gt;_&lt;simulator&gt;</span></code>.</dd>
 <dt>evaluateANN: boolean, optional</dt>
-<dd>If enabled, test the ANN before conversion. If you also enabled
-&#8216;normalization&#8217; (see parameter <code class="docutils literal"><span class="pre">normalize</span></code> below), then the network will
-be evaluated again after normalization.</dd>
+<dd>If enabled, test the input model before and after it is parsed, to ensure
+we do not lose performance. (Parsing extracts all necessary information
+from the input model and creates a new network with some simplifications in
+preparation for conversion to SNN.)
+If you also enabled &#8216;normalization&#8217; (see parameter <code class="docutils literal"><span class="pre">normalize</span></code> below),
+then the network will be evaluated again after normalization. This
+operation should preserve accuracy as well.</dd>
 <dt>normalize: boolean, optional</dt>
 <dd>Only relevant when converting a network, not during simulation. If enabled,
 the parameters of the spiking network will be normalized by the highest
-parameter or activation value.</dd>
+activation value, or by the <code class="docutils literal"><span class="pre">n</span></code>-th percentile (see parameter
+<code class="docutils literal"><span class="pre">percentile</span></code> below).</dd>
 <dt>percentile: int, optional</dt>
 <dd>Use the activation value in the specified percentile for normalization.
-Set to <code class="docutils literal"><span class="pre">50</span></code> for the median, <code class="docutils literal"><span class="pre">100</span></code> for the max.</dd>
+Set to <code class="docutils literal"><span class="pre">50</span></code> for the median, <code class="docutils literal"><span class="pre">100</span></code> for the max. Typical values are
+<code class="docutils literal"><span class="pre">99,</span> <span class="pre">99.9,</span> <span class="pre">100</span></code>.</dd>
 <dt>convert: boolean, optional</dt>
-<dd>If enabled, load an ANN from <code class="docutils literal"><span class="pre">&lt;path&gt;</span></code> and convert it to spiking.</dd>
+<dd>If enabled, load an ANN from <code class="docutils literal"><span class="pre">&lt;path_wd&gt;</span></code> and convert it to spiking.</dd>
 <dt>simulate: boolean, optional</dt>
-<dd>If enabled, try to load SNN from <code class="docutils literal"><span class="pre">&lt;path&gt;</span></code> and test it on the specified
+<dd>If enabled, try to load SNN from <code class="docutils literal"><span class="pre">&lt;path_wd&gt;</span></code> and test it on the specified
 simulator (see parameter <code class="docutils literal"><span class="pre">simulator</span></code>).</dd>
 <dt>overwrite: boolean, optional</dt>
 <dd>If disabled, the save methods will ask for permission to overwrite files
@@ -222,16 +228,15 @@ When using &#8216;INI&#8217; simulator, the batch size can only be run usingthe 
 size it has been converted with. To run it with a different batch size,
 convert the ANN from scratch.</dd>
 <dt>verbose: int, optional</dt>
-<dd><p class="first">0: No intermediate results or status reports.
+<dd>0: No intermediate results or status reports.
 1: Print progress of simulation and intermediate results.
-2: Record spiketrains of all layers for one sample, and save various plots</p>
-<blockquote>
-<div>(spiketrains, spikerates, activations, correlations, ...)</div></blockquote>
-<dl class="last docutils">
-<dt>3: Record, plot and return the membrane potential of all layers for the</dt>
-<dd>last test sample. Very time consuming. Works only with pyNN simulators.</dd>
-</dl>
-</dd>
+2: Record spiketrains of all layers for one sample, and save various plots
+(spiketrains, spikerates, activations, correlations, ...)
+3: Record, plot and return the membrane potential of all layers for the
+last test sample. Very time consuming. Works only with pyNN simulators.</dd>
+<dt>scaling_factor: int, optional</dt>
+<dd>Used by the MegaSim simulator to scale the neuron parameters and weights
+because MegaSim uses integers.</dd>
 </dl>
 </div>
 <div class="section" id="cell-parameters">
@@ -287,58 +292,63 @@ elicit a Poisson spiketrain of 700 Hz. Turn off for a less noisy
 simulation. Currently, turning off Poisson input is only possible in INI
 simulator.</dd>
 <dt>reset: string, optional</dt>
-<dd><p class="first">Choose the reset mechanism to apply after spike.
-Reset to zero: After spike, the membrane potential is set to the resting</p>
-<blockquote>
-<div>potential.</div></blockquote>
-<dl class="last docutils">
-<dt>Reset by subtraction: After spike, the membrane potential is reduced by a</dt>
-<dd>value equal to the threshold.</dd>
-</dl>
-</dd>
+<dd>Choose the reset mechanism to apply after spike.
+Reset to zero: After spike, the membrane potential is set to the resting
+potential.
+Reset by subtraction: After spike, the membrane potential is reduced by a
+value equal to the threshold.</dd>
 <dt>input_rate: float, optional</dt>
 <dd>Poisson spike rate in Hz for a fully-on pixel of the input image. Note that
 the input_rate is limited by the maximum firing rate supported by the
 simulator (given by the inverse time resolution 1000 * 1 / dt Hz).</dd>
-<dt>diff_to_max_rate: float, optional</dt>
+<dt>normalization_schedule: boolean, optional</dt>
+<dd>Reduce the normalization factor each layer.</dd>
+<dt>online_normalization: boolean, optional</dt>
 <dd>The converted spiking network performs best if the average firing rates of
 each layer are not higher but also not much lower than the maximum rate
 supported by the simulator (inverse time resolution). Normalization
 eliminates saturation but introduces undersampling (parameters are
 normalized with respect to the highest value in a batch). To overcome this,
 the spikerates of each layer are monitored during simulation. If they drop
-below the maximum firing rate by more than &#8216;diff to max rate&#8217;, we divide
-the parameters of the layer by its highest rate. Set the parameter in Hz.</dd>
+below the maximum firing rate by more than &#8216;diff to max rate&#8217;, we set the
+threshold of the layer to its highest rate.</dd>
+<dt>diff_to_max_rate: float, optional</dt>
+<dd>If the highest firing rate of neurons in a layer drops below the maximum
+firing rate by more than &#8216;diff to max rate&#8217;, we set the threshold of the
+layer to its highest rate. Set the parameter in Hz.</dd>
+<dt>diff_to_min_rate: float, optional</dt>
+<dd>When The firing rates of a layer are below this value, the weights will NOT
+be modified in the feedback mechanism described in &#8216;online_normalization&#8217;.
+This is useful in the beginning of a simulation, when higher layers need
+some time to integrate up a sufficiently high membrane potential.</dd>
 <dt>timestep_fraction: int, optional</dt>
 <dd>If set to 10 (default), the parameter modification mechanism described in
-&#8216;diff_to_max_rate&#8217; will be performed at every 10th timestep.</dd>
-<dt>min_rate: float, optional</dt>
-<dd>Minimum spikerate in Hz. When The firing rates of a layer are below this
-value, the weights will NOT be modified in the feedback mechanism described
-in &#8216;diff_to_max_rate&#8217;. This is useful in the beginning of a simulation,
-when higher layers need some time to integrate up a sufficiently high
-membrane potential.</dd>
+&#8216;online_normalization&#8217; will be performed at every 10th timestep.</dd>
 <dt>num_to_test: int, optional</dt>
 <dd>How many samples to test.</dd>
+<dt>maxpool_type</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">string</span><dd>Implementation variants of spiking MaxPooling layers, based on
+fir_max: accmulated absolute firing rate
+avg_max: moving average of firing rate</dd>
 </dl>
 </div>
 </div>
 <div class="section" id="default-values">
 <h2>Default values<a class="headerlink" href="#default-values" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">globalparams</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">globalparams</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;model_lib&#39;</span><span class="p">:</span> <span class="s1">&#39;keras&#39;</span><span class="p">,</span>
-                <span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;path_wd&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
-                <span class="s1">&#39;filename&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;filename_ann&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;filename_parsed_model&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;filename_snn&#39;</span><span class="p">:</span> <span class="s1">&#39;snn_&#39;</span><span class="p">,</span>
-                <span class="s1">&#39;filename_snn_exported&#39;</span><span class="p">:</span> <span class="s1">&#39;snn_exported_&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;batch_size&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
-                <span class="s1">&#39;evaluateANN&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
-                <span class="s1">&#39;normalize&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+                <span class="s1">&#39;evaluateANN&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s1">&#39;normalize&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="s1">&#39;percentile&#39;</span><span class="p">:</span> <span class="mi">99</span><span class="p">,</span>
-                <span class="s1">&#39;convert&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
-                <span class="s1">&#39;overwrite&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
-                <span class="s1">&#39;simulate&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+                <span class="s1">&#39;convert&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s1">&#39;overwrite&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s1">&#39;simulate&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="s1">&#39;verbose&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>
 <span class="n">cellparams</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;v_thresh&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
               <span class="s1">&#39;v_reset&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
@@ -356,25 +366,25 @@ membrane potential.</dd>
              <span class="s1">&#39;duration&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
              <span class="s1">&#39;dt&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
              <span class="s1">&#39;delay&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-             <span class="s1">&#39;poisson_input&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
+             <span class="s1">&#39;poisson_input&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
              <span class="s1">&#39;reset&#39;</span><span class="p">:</span> <span class="s1">&#39;Reset by subtraction&#39;</span><span class="p">,</span>
              <span class="s1">&#39;input_rate&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
              <span class="s1">&#39;timestep_fraction&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
              <span class="s1">&#39;diff_to_max_rate&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
              <span class="s1">&#39;num_to_test&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-             <span class="s1">&#39;min_rate&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">}</span>
+             <span class="s1">&#39;diff_to_min_rate&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">}</span>
 </pre></div>
 </div>
 <dl class="function">
 <dt id="snntoolbox.config.initialize_simulator">
 <code class="descclassname">snntoolbox.config.</code><code class="descname">initialize_simulator</code><span class="sig-paren">(</span><em>simulator=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/config.html#initialize_simulator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.config.initialize_simulator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Import module containing utility functions of spiking simulator</p>
+<dd><p>Import module containing utility functions of spiking simulator.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="snntoolbox.config.update_setup">
 <code class="descclassname">snntoolbox.config.</code><code class="descname">update_setup</code><span class="sig-paren">(</span><em>s=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/config.html#update_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.config.update_setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update parameters</p>
+<dd><p>Update parameters.</p>
 <p>Check that parameter choices <code class="docutils literal"><span class="pre">s</span></code> are valid and update the global
 parameter settings <code class="docutils literal"><span class="pre">snntoolbox.config.settings</span></code> with the user-specified
 values. Default values are filled in where user did not give any.</p>
@@ -403,7 +413,7 @@ values. Default values are filled in where user did not give any.</p>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 08, 2016.
+      Last updated on Aug 29, 2016.
 
     </p>
   </div>

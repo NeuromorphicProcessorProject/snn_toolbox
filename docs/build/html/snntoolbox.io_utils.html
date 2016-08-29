@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>saving &mdash; SNN toolbox 0.1 documentation</title>
+  <title>cifar10 &mdash; SNN toolbox 0.1 documentation</title>
   
 
   
@@ -32,8 +32,7 @@
   
     <link rel="top" title="SNN toolbox 0.1 documentation" href="index.html"/>
         <link rel="up" title="Tools" href="modules.html"/>
-        <link rel="next" title="Tests" href="tests.html"/>
-        <link rel="prev" title="SNN class" href="core.html"/> 
+        <link rel="prev" title="pipeline" href="core.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -86,16 +85,18 @@
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure_toolbox.html">Configuration</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">Tools</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="core.html">SNN class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.html#module-core.pipeline">pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html">pipeline</a></li>
 <li class="toctree-l2"><a class="reference internal" href="core.html#module-core.inisim">inisim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.html#module-core.megasim">megasim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="core.html#module-core.util">util</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="">saving</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-snntoolbox.io_utils.load">loading</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">cifar10</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-snntoolbox.io_utils.caltech101_load">caltech101</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-snntoolbox.io_utils.mnist_load">mnist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-snntoolbox.io_utils.facedetection_load">facedetection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-snntoolbox.io_utils.plotting">plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-snntoolbox.io_utils.common">common</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
 </ul>
 
             
@@ -118,7 +119,7 @@
         <div class="rst-content">
           
 
-
+ 
 
 
 
@@ -128,7 +129,7 @@
       
           <li><a href="modules.html">Tools</a> &raquo;</li>
       
-    <li>saving</li>
+    <li>cifar10</li>
       <li class="wy-breadcrumbs-aside">
         
           
@@ -142,57 +143,164 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-snntoolbox.io_utils.save">
-<span id="saving"></span><h1>saving<a class="headerlink" href="#module-snntoolbox.io_utils.save" title="Permalink to this headline">¶</a></h1>
-<p>Functions to save various properties of interest in analog and spiking neural
-networks to disk.</p>
-<p>Created on Wed Nov 18 11:57:29 2015</p>
+  <div class="section" id="module-snntoolbox.io_utils.cifar10_load">
+<span id="cifar10"></span><h1>cifar10<a class="headerlink" href="#module-snntoolbox.io_utils.cifar10_load" title="Permalink to this headline">¶</a></h1>
+<p>Helper functions to load, process, augment and save Cifar10 dataset.</p>
+<p>Created on Mon Jun  6 12:55:10 2016</p>
 <p>&#64;author: rbodo</p>
 <dl class="function">
-<dt id="snntoolbox.io_utils.save.confirm_overwrite">
-<code class="descclassname">snntoolbox.io_utils.save.</code><code class="descname">confirm_overwrite</code><span class="sig-paren">(</span><em>filepath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/save.html#confirm_overwrite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.save.confirm_overwrite" title="Permalink to this definition">¶</a></dt>
-<dd><p>If settings[&#8216;overwrite&#8217;]==False and the file exists, ask user if it should
-be overwritten.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="snntoolbox.io_utils.save.to_json">
-<code class="descclassname">snntoolbox.io_utils.save.</code><code class="descname">to_json</code><span class="sig-paren">(</span><em>data</em>, <em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/save.html#to_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.save.to_json" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write <code class="docutils literal"><span class="pre">data</span></code> dictionary to <code class="docutils literal"><span class="pre">path</span></code>.</p>
-<p>A <code class="docutils literal"><span class="pre">TypeError</span></code> is raised if objects in <code class="docutils literal"><span class="pre">data</span></code> are not JSON serializable.</p>
-</dd></dl>
-
-</div>
-<div class="section" id="module-snntoolbox.io_utils.load">
-<span id="loading"></span><h1>loading<a class="headerlink" href="#module-snntoolbox.io_utils.load" title="Permalink to this headline">¶</a></h1>
-<p>Functions to load various properties of interest in analog and spiking neural
-networks from disk.</p>
-<p>Created on Wed Nov 18 13:38:46 2015</p>
-<p>&#64;author: rbodo</p>
-<dl class="function">
-<dt id="snntoolbox.io_utils.load.download_dataset">
-<code class="descclassname">snntoolbox.io_utils.load.</code><code class="descname">download_dataset</code><span class="sig-paren">(</span><em>fname</em>, <em>origin</em>, <em>untar=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/load.html#download_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.load.download_dataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Download a dataset, if not already there.</p>
+<dt id="snntoolbox.io_utils.cifar10_load.get_cifar10">
+<code class="descclassname">snntoolbox.io_utils.cifar10_load.</code><code class="descname">get_cifar10</code><span class="sig-paren">(</span><em>path=None</em>, <em>filename=None</em>, <em>flat=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/cifar10_load.html#get_cifar10"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.cifar10_load.get_cifar10" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get cifar10 classification dataset.</p>
+<p>Values are normalized and saved as <code class="docutils literal"><span class="pre">float32</span></code> type. Class vectors are
+converted to binary class matrices. Output can be flattened for use in
+fully-connected networks. Can perform preprocessing using a Keras
+ImageDataGenerator.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Full filename of dataset, e.g. <code class="docutils literal"><span class="pre">mnist.pkl.gz</span></code>.</li>
-<li><strong>origin</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Location of dataset, e.g. url
-<a class="reference external" href="https://s3.amazonaws.com/img-datasets/mnist.pkl.gz">https://s3.amazonaws.com/img-datasets/mnist.pkl.gz</a></li>
-<li><strong>untar</strong> (<em>boolean, optional</em>) &#8211; If <code class="docutils literal"><span class="pre">True</span></code>, untar file.</li>
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If a <code class="docutils literal"><span class="pre">path</span></code> is given, the loaded and modified dataset is saved to
+<code class="docutils literal"><span class="pre">path</span></code> directory.</li>
+<li><strong>filename</strong> (<em>string, optional</em>) &#8211; If a <code class="docutils literal"><span class="pre">path</span></code> is given, the dataset will be written to <code class="docutils literal"><span class="pre">filename</span></code>.
+If <code class="docutils literal"><span class="pre">filename</span></code> is not specified, use <code class="docutils literal"><span class="pre">cifar10</span></code> or <code class="docutils literal"><span class="pre">cifar10_flat</span></code>.</li>
+<li><strong>flat</strong> (<em>Boolean, optional</em>) &#8211; If <code class="docutils literal"><span class="pre">True</span></code>, the output is flattened. Defaults to <code class="docutils literal"><span class="pre">False</span></code>.</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
-<li><strong>fpath</strong> (<em>string</em>) &#8211;
-The path to the downloaded dataset. If the user has write access to
-<code class="docutils literal"><span class="pre">home</span></code>, the dataset will be stored in <code class="docutils literal"><span class="pre">~/.snntoolbox/datasets/</span></code>,
-otherwise in <code class="docutils literal"><span class="pre">/tmp/.snntoolbox/datasets/</span></code>.</li>
-<li><em>Todo</em></li>
-<li><em>&#8212;-</em></li>
-<li><em>Test under python2.</em></li>
+<li>Three compressed files <code class="docutils literal"><span class="pre">path/filename_X_norm.npz</span></code>,</li>
+<li><code class="docutils literal"><span class="pre">path/filename_X_test.npz</span></code>, and <code class="docutils literal"><span class="pre">path/filename_Y_test.npz</span></code>.</li>
+<li>With data of the form (channels, num_rows, num_cols), <code class="docutils literal"><span class="pre">X_norm</span></code> and</li>
+<li><code class="docutils literal"><span class="pre">X_test</span></code> have dimension (num_samples, channels*num_rows*num_cols)</li>
+<li>in case <code class="docutils literal"><span class="pre">flat==True</span></code>, and (num_samples, channels, num_rows, num_cols)</li>
+<li>otherwise. <code class="docutils literal"><span class="pre">Y_test</span></code> has dimension (num_samples, num_classes).</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snntoolbox.io_utils.caltech101_load">
+<span id="caltech101"></span><h1>caltech101<a class="headerlink" href="#module-snntoolbox.io_utils.caltech101_load" title="Permalink to this headline">¶</a></h1>
+<p>Helper functions to load, process, augment and save Caltech101 dataset.</p>
+<p>Created on Mon Jun  6 12:55:20 2016</p>
+<p>&#64;author: rbodo</p>
+<dl class="function">
+<dt id="snntoolbox.io_utils.caltech101_load.get_caltech101">
+<code class="descclassname">snntoolbox.io_utils.caltech101_load.</code><code class="descname">get_caltech101</code><span class="sig-paren">(</span><em>path</em>, <em>filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/caltech101_load.html#get_caltech101"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.caltech101_load.get_caltech101" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get caltech101 classification dataset.</p>
+<p>Values are normalized and saved as <code class="docutils literal"><span class="pre">float32</span></code> type. Class vectors are
+converted to binary class matrices. Output can be flattened for use in
+fully-connected networks. Can perform preprocessing using a Keras
+ImageDataGenerator.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If a <code class="docutils literal"><span class="pre">path</span></code> is given, the loaded and modified dataset is saved to
+<code class="docutils literal"><span class="pre">path</span></code> directory.</li>
+<li><strong>filename</strong> (<em>string, optional</em>) &#8211; Basename of file to create. Individual files will be appended
+<code class="docutils literal"><span class="pre">_X_norm</span></code>, <code class="docutils literal"><span class="pre">_X_test</span></code>, etc.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li>Three compressed files <code class="docutils literal"><span class="pre">path/filename_X_norm.npz</span></code>,</li>
+<li><code class="docutils literal"><span class="pre">path/filename_X_test.npz</span></code>, and <code class="docutils literal"><span class="pre">path/filename_Y_test.npz</span></code>.</li>
+<li>With data of the form (channels, num_rows, num_cols), <code class="docutils literal"><span class="pre">X_norm</span></code> and</li>
+<li><code class="docutils literal"><span class="pre">X_test</span></code> have dimension (num_samples, channels, num_rows, num_cols).</li>
+<li><code class="docutils literal"><span class="pre">Y_test</span></code> has dimension (num_samples, num_classes).</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snntoolbox.io_utils.mnist_load">
+<span id="mnist"></span><h1>mnist<a class="headerlink" href="#module-snntoolbox.io_utils.mnist_load" title="Permalink to this headline">¶</a></h1>
+<p>Helper functions to load, process, augment and save MNIST dataset.</p>
+<p>Created on Mon Jun  6 12:54:49 2016</p>
+<p>&#64;author: rbodo</p>
+<dl class="function">
+<dt id="snntoolbox.io_utils.mnist_load.get_mnist">
+<code class="descclassname">snntoolbox.io_utils.mnist_load.</code><code class="descname">get_mnist</code><span class="sig-paren">(</span><em>path=None</em>, <em>filename=None</em>, <em>flat=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/mnist_load.html#get_mnist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.mnist_load.get_mnist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get mnist classification dataset.</p>
+<p>Values are normalized and saved as <code class="docutils literal"><span class="pre">float32</span></code> type. Class vectors are
+converted to binary class matrices. Output can be flattened for use in
+fully-connected networks.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If a <code class="docutils literal"><span class="pre">path</span></code> is given, the loaded and modified dataset is saved to
+<code class="docutils literal"><span class="pre">path</span></code> directory.</li>
+<li><strong>filename</strong> (<em>string, optional</em>) &#8211; If a <code class="docutils literal"><span class="pre">path</span></code> is given, the dataset will be written to <code class="docutils literal"><span class="pre">filename</span></code>.
+If <code class="docutils literal"><span class="pre">filename</span></code> is not specified, use <code class="docutils literal"><span class="pre">mnist</span></code> or <code class="docutils literal"><span class="pre">mnist_flat</span></code>.</li>
+<li><strong>flat</strong> (<em>Boolean, optional</em>) &#8211; If <code class="docutils literal"><span class="pre">True</span></code>, the output is flattened. Defaults to <code class="docutils literal"><span class="pre">False</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><em>The dataset as a tuple containing the training and test sample arrays</em></li>
+<li><em>(X_train, Y_train, X_test, Y_test).</em></li>
+<li>With data of the form (channels, num_rows, num_cols), <code class="docutils literal"><span class="pre">X_train</span></code> and</li>
+<li><code class="docutils literal"><span class="pre">X_test</span></code> have dimension (num_samples, channels*num_rows*num_cols)</li>
+<li>in case <code class="docutils literal"><span class="pre">flat==True</span></code>, and</li>
+<li><em>(num_samples, channels, num_rows, num_cols) otherwise.</em></li>
+<li><code class="docutils literal"><span class="pre">Y_train</span></code> and <code class="docutils literal"><span class="pre">Y_test</span></code> have dimension (num_samples, num_classes).</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-snntoolbox.io_utils.facedetection_load">
+<span id="facedetection"></span><h1>facedetection<a class="headerlink" href="#module-snntoolbox.io_utils.facedetection_load" title="Permalink to this headline">¶</a></h1>
+<p>Helper functions to load, process, augment and save facedetection dataset.</p>
+<p>Created on Mon Jun  6 12:55:20 2016</p>
+<p>&#64;author: rbodo</p>
+<dl class="function">
+<dt id="snntoolbox.io_utils.facedetection_load.get_facedetection">
+<code class="descclassname">snntoolbox.io_utils.facedetection_load.</code><code class="descname">get_facedetection</code><span class="sig-paren">(</span><em>sourcepath</em>, <em>imagepath</em>, <em>targetpath=None</em>, <em>filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/facedetection_load.html#get_facedetection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.facedetection_load.get_facedetection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get facedetection dataset.</p>
+<p>Values are normalized and saved as <code class="docutils literal"><span class="pre">float32</span></code> type. Class vectors are
+converted to binary class matrices. Output can be flattened for use in
+fully-connected networks.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sourcepath</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Where to find text file containing the filenames and labels of the
+image samples.</li>
+<li><strong>imagepath</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Path to image folder.</li>
+<li><strong>targetpath</strong> (<em>string, optional</em>) &#8211; If a <code class="docutils literal"><span class="pre">path</span></code> is given, the loaded and modified dataset is saved to
+<code class="docutils literal"><span class="pre">path</span></code> directory.</li>
+<li><strong>filename</strong> (<em>string, optional</em>) &#8211; If a <code class="docutils literal"><span class="pre">path</span></code> is given, the dataset will be written to <code class="docutils literal"><span class="pre">filename</span></code>.
+If <code class="docutils literal"><span class="pre">filename</span></code> is not specified, use <code class="docutils literal"><span class="pre">facedetection</span></code> or
+<code class="docutils literal"><span class="pre">facedetection_flat</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><em>The dataset as a tuple containing the training and test sample arrays</em></li>
+<li><em>(X_train, Y_train, X_test, Y_test).</em></li>
+<li>With data of the form (channels, num_rows, num_cols), <code class="docutils literal"><span class="pre">X_train</span></code> and</li>
+<li><code class="docutils literal"><span class="pre">X_test</span></code> have dimension (num_samples, channels, num_rows, num_cols).</li>
+<li><code class="docutils literal"><span class="pre">Y_train</span></code> and <code class="docutils literal"><span class="pre">Y_test</span></code> have dimension (num_samples, num_classes).</li>
 </ul>
 </p>
 </td>
@@ -202,44 +310,14 @@ otherwise in <code class="docutils literal"><span class="pre">/tmp/.snntoolbox/d
 </dd></dl>
 
 <dl class="function">
-<dt id="snntoolbox.io_utils.load.load_dataset">
-<code class="descclassname">snntoolbox.io_utils.load.</code><code class="descname">load_dataset</code><span class="sig-paren">(</span><em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/load.html#load_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.load.load_dataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load dataset from an <code class="docutils literal"><span class="pre">.npy</span></code> file.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>string, optional</em>) &#8211; Location of dataset to load.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
-<li><em>The dataset as a tuple containing the training and test sample arrays</em></li>
-<li><em>(X_train, Y_train, X_test, Y_test).</em></li>
-<li>With original data of the form (channels, num_rows, num_cols), <code class="docutils literal"><span class="pre">X_train</span></code></li>
-<li>and <code class="docutils literal"><span class="pre">X_test</span></code> have dimension (num_samples, channels*num_rows*num_cols) for</li>
-<li><em>a fully-connected network, and (num_samples, channels, num_rows, num_cols)</em></li>
-<li><em>otherwise.</em></li>
-<li><code class="docutils literal"><span class="pre">Y_train</span></code> and <code class="docutils literal"><span class="pre">Y_test</span></code> have dimension (num_samples, num_classes).</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
+<dt id="snntoolbox.io_utils.facedetection_load.load_paths_from_files">
+<code class="descclassname">snntoolbox.io_utils.facedetection_load.</code><code class="descname">load_paths_from_files</code><span class="sig-paren">(</span><em>sourcepath</em>, <em>imagepath</em>, <em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/facedetection_load.html#load_paths_from_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.facedetection_load.load_paths_from_files" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="function">
-<dt id="snntoolbox.io_utils.load.load_parameters">
-<code class="descclassname">snntoolbox.io_utils.load.</code><code class="descname">load_parameters</code><span class="sig-paren">(</span><em>filepath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/load.html#load_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.load.load_parameters" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load all layer parameters from a HDF5 file.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="snntoolbox.io_utils.load.to_categorical">
-<code class="descclassname">snntoolbox.io_utils.load.</code><code class="descname">to_categorical</code><span class="sig-paren">(</span><em>y</em>, <em>nb_classes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/load.html#to_categorical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.load.to_categorical" title="Permalink to this definition">¶</a></dt>
-<dd><p>Convert class vector to binary class matrix.</p>
-<p>If the input <code class="docutils literal"><span class="pre">y</span></code> has shape (<code class="docutils literal"><span class="pre">nb_samples</span></code>,) and contains integers from 0
-to <code class="docutils literal"><span class="pre">nb_classes</span></code>, the output array will be of dimension
-(<code class="docutils literal"><span class="pre">nb_samples</span></code>, <code class="docutils literal"><span class="pre">nb_classes</span></code>).</p>
-</dd></dl>
+<dt id="snntoolbox.io_utils.facedetection_load.load_samples">
+<code class="descclassname">snntoolbox.io_utils.facedetection_load.</code><code class="descname">load_samples</code><span class="sig-paren">(</span><em>filepaths</em>, <em>nb_samples=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/facedetection_load.html#load_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.facedetection_load.load_samples" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </div>
 <div class="section" id="module-snntoolbox.io_utils.plotting">
@@ -250,7 +328,7 @@ network.</p>
 <p>&#64;author: rbodo</p>
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.output_graphs">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">output_graphs</code><span class="sig-paren">(</span><em>spiketrains_batch</em>, <em>ann</em>, <em>X_batch</em>, <em>path=None</em>, <em>i=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#output_graphs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.output_graphs" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">output_graphs</code><span class="sig-paren">(</span><em>spiketrains_batch</em>, <em>activations_batch</em>, <em>path=None</em>, <em>idx=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#output_graphs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.output_graphs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wrapper function to display / save a number of plots.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -266,17 +344,10 @@ number of neurons in the layer:
 (batch_size, n_chnls, n_rows, n_cols, duration)
 <code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
 e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</li>
-<li><strong>ann</strong> (<a class="reference internal" href="core.html#core.model.SNN" title="core.model.SNN"><em>SNN</em></a>) &#8211; An instance of the SNN class. Contains the <code class="docutils literal"><span class="pre">get_activ</span></code> Theano
-functions which allow computation of layer activations of the original
-input model (hence the name &#8216;ann&#8217;). Needed in activation and
-correlation plots.</li>
-<li><strong>X_batch</strong> (<em>float32 array</em>) &#8211; The input samples to use for determining the layer activations. With
-data of the form (channels, num_rows, num_cols), X_batch has dimension
-(batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
-and (batch_size, channels, num_rows, num_cols) for a convolutional net.</li>
+<li><strong>activations_batch</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; Activations of the SNN.</li>
 <li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
 display plots without saving.</li>
-<li><strong>i</strong> (<em>int, optional</em>) &#8211; Index of sample to plot.</li>
+<li><strong>idx</strong> (<em>int, optional</em>) &#8211; The index of the sample to display. Defaults to 0.</li>
 </ul>
 </td>
 </tr>
@@ -318,6 +389,11 @@ layer, containing the activations of Dense or Convolution layers.</p>
 </tbody>
 </table>
 </dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_error_vs_time">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_error_vs_time</code><span class="sig-paren">(</span><em>err</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_error_vs_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_error_vs_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_hist">
@@ -419,7 +495,7 @@ as 2D-dot-plot.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>rates</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; The spikerates of a layer, flattened to 1D.</li>
 <li><strong>activations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; The activations of a layer, flattened to 1D.</li>
-<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Layer label.</li>
+<li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Plot title.</li>
 <li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
 display plots without saving.</li>
 </ul>
@@ -431,30 +507,32 @@ display plots without saving.</li>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_layer_summaries">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_layer_summaries</code><span class="sig-paren">(</span><em>spiketrains</em>, <em>spikerates</em>, <em>activations</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_layer_summaries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_layer_summaries" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_layer_summaries</code><span class="sig-paren">(</span><em>spikerates</em>, <em>activations</em>, <em>spiketrains=None</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_layer_summaries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_layer_summaries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Display or save a number of plots for a specific layer.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>spiketrains</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; Each entry in <code class="docutils literal"><span class="pre">spiketrains</span></code> contains a tuple
-<code class="docutils literal"><span class="pre">(spiketimes,</span> <span class="pre">label)</span></code> for each layer of the network (for the first
-batch only, and excluding <code class="docutils literal"><span class="pre">Flatten</span></code> layers).
-<code class="docutils literal"><span class="pre">spiketimes</span></code> is an array where the last index contains the spike
-times of the specific neuron, and the first indices run over the
-number of neurons in the layer: (n_chnls, n_rows, n_cols, duration)
-<code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
-e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</li>
-<li><strong>spikerates</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; Each entry in <code class="docutils literal"><span class="pre">spikerates</span></code> contains a tuple <code class="docutils literal"><span class="pre">(rates,</span> <span class="pre">label)</span></code> for
+<li><strong>spikerates</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; <p>Each entry in <code class="docutils literal"><span class="pre">spikerates</span></code> contains a tuple <code class="docutils literal"><span class="pre">(rates,</span> <span class="pre">label)</span></code> for
 each layer of the network (for the first batch only, and excluding
-<code class="docutils literal"><span class="pre">Flatten</span></code> layers).
-<code class="docutils literal"><span class="pre">rates</span></code> contains the average firing rates of all neurons in a layer.
+<code class="docutils literal"><span class="pre">Flatten</span></code> layers).</p>
+<p><code class="docutils literal"><span class="pre">rates</span></code> contains the average firing rates of all neurons in a layer.
 It has the same shape as the original layer, e.g.
-(n_features, n_rows, n_cols) for a convolution layer.
-<code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
-e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</li>
+(n_features, n_rows, n_cols) for a convolution layer.</p>
+<p><code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
+e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</p>
+</li>
 <li><strong>activations</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; Contains the activations of a net. Same structure as <code class="docutils literal"><span class="pre">spikerates</span></code>.</li>
+<li><strong>spiketrains</strong> (<em>list, optional</em>) &#8211; <p>Each entry in <code class="docutils literal"><span class="pre">spiketrains</span></code> contains a tuple
+<code class="docutils literal"><span class="pre">(spiketimes,</span> <span class="pre">label)</span></code> for each layer of the network (for the first
+batch only, and excluding <code class="docutils literal"><span class="pre">Flatten</span></code> layers).</p>
+<p><code class="docutils literal"><span class="pre">spiketimes</span></code> is an array where the last index contains the spike
+times of the specific neuron, and the first indices run over the
+number of neurons in the layer: (n_chnls, n_rows, n_cols, duration)</p>
+<p><code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
+e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</p>
+</li>
 <li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
 display plots without saving.</li>
 </ul>
@@ -496,14 +574,15 @@ mini batch.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>spikerates_batch</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; Each entry in <code class="docutils literal"><span class="pre">spikerates_batch</span></code> contains a tuple
+<li><strong>spikerates_batch</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; <p>Each entry in <code class="docutils literal"><span class="pre">spikerates_batch</span></code> contains a tuple
 <code class="docutils literal"><span class="pre">(spikerates,</span> <span class="pre">label)</span></code> for each layer of the network (for the first
-batch only, and excluding <code class="docutils literal"><span class="pre">Flatten</span></code> layers).
-<code class="docutils literal"><span class="pre">spikerates</span></code> contains the average firing rates of all neurons in a
+batch only, and excluding <code class="docutils literal"><span class="pre">Flatten</span></code> layers).</p>
+<p><code class="docutils literal"><span class="pre">spikerates</span></code> contains the average firing rates of all neurons in a
 layer. It has the same shape as the original layer, e.g.
-(batch_size, n_features, n_rows, n_cols) for a convolution layer.
-<code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
-e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</li>
+(batch_size, n_features, n_rows, n_cols) for a convolution layer.</p>
+<p><code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
+e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</p>
+</li>
 <li><strong>activations_batch</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; Contains the activations of a net. Same structure as
 <code class="docutils literal"><span class="pre">spikerates_batch</span></code>.</li>
 </ul>
@@ -595,6 +674,98 @@ display plots without saving.</li>
 </dd></dl>
 
 </div>
+<div class="section" id="module-snntoolbox.io_utils.common">
+<span id="common"></span><h1>common<a class="headerlink" href="#module-snntoolbox.io_utils.common" title="Permalink to this headline">¶</a></h1>
+<p>Functions to load various properties of interest in analog and spiking neural
+networks from disk.</p>
+<p>Created on Wed Nov 18 13:38:46 2015</p>
+<p>&#64;author: rbodo</p>
+<dl class="function">
+<dt id="snntoolbox.io_utils.common.confirm_overwrite">
+<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">confirm_overwrite</code><span class="sig-paren">(</span><em>filepath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#confirm_overwrite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.confirm_overwrite" title="Permalink to this definition">¶</a></dt>
+<dd><p>If settings[&#8216;overwrite&#8217;]==False and the file exists, ask user if it should
+be overwritten.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.common.download_dataset">
+<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">download_dataset</code><span class="sig-paren">(</span><em>fname</em>, <em>origin</em>, <em>untar=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#download_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.download_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download a dataset, if not already there.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Full filename of dataset, e.g. <code class="docutils literal"><span class="pre">mnist.pkl.gz</span></code>.</li>
+<li><strong>origin</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Location of dataset, e.g. url
+<a class="reference external" href="https://s3.amazonaws.com/img-datasets/mnist.pkl.gz">https://s3.amazonaws.com/img-datasets/mnist.pkl.gz</a></li>
+<li><strong>untar</strong> (<em>boolean, optional</em>) &#8211; If <code class="docutils literal"><span class="pre">True</span></code>, untar file.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>fpath</strong> &#8211; The path to the downloaded dataset. If the user has write access to
+<code class="docutils literal"><span class="pre">home</span></code>, the dataset will be stored in <code class="docutils literal"><span class="pre">~/.snntoolbox/datasets/</span></code>,
+otherwise in <code class="docutils literal"><span class="pre">/tmp/.snntoolbox/datasets/</span></code>.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)">string</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Test under python2.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.common.load_dataset">
+<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">load_dataset</code><span class="sig-paren">(</span><em>path</em>, <em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#load_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.load_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load dataset from an <code class="docutils literal"><span class="pre">.npy</span></code> or <code class="docutils literal"><span class="pre">.npz</span></code> file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>string, optional</em>) &#8211; Location of dataset to load.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
+<li><em>The dataset as a numpy array containing samples. Example</em></li>
+<li>With original data of the form (channels, num_rows, num_cols), <code class="docutils literal"><span class="pre">X_train</span></code></li>
+<li>and <code class="docutils literal"><span class="pre">X_test</span></code> have dimension (num_samples, channels*num_rows*num_cols) for</li>
+<li><em>a fully-connected network, and (num_samples, channels, num_rows, num_cols)</em></li>
+<li><em>otherwise.</em></li>
+<li><code class="docutils literal"><span class="pre">Y_train</span></code> and <code class="docutils literal"><span class="pre">Y_test</span></code> have dimension (num_samples, num_classes).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.common.load_parameters">
+<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">load_parameters</code><span class="sig-paren">(</span><em>filepath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#load_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.load_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load all layer parameters from an HDF5 file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.common.to_categorical">
+<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">to_categorical</code><span class="sig-paren">(</span><em>y</em>, <em>nb_classes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#to_categorical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.to_categorical" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert class vector to binary class matrix.</p>
+<p>If the input <code class="docutils literal"><span class="pre">y</span></code> has shape (<code class="docutils literal"><span class="pre">nb_samples</span></code>,) and contains integers from 0
+to <code class="docutils literal"><span class="pre">nb_classes</span></code>, the output array will be of dimension
+(<code class="docutils literal"><span class="pre">nb_samples</span></code>, <code class="docutils literal"><span class="pre">nb_classes</span></code>).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.common.to_json">
+<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">to_json</code><span class="sig-paren">(</span><em>data</em>, <em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#to_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.to_json" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write <code class="docutils literal"><span class="pre">data</span></code> dictionary to <code class="docutils literal"><span class="pre">path</span></code>.</p>
+<p>A <code class="docutils literal"><span class="pre">TypeError</span></code> is raised if objects in <code class="docutils literal"><span class="pre">data</span></code> are not JSON serializable.</p>
+</dd></dl>
+
+</div>
 
 
            </div>
@@ -603,10 +774,8 @@ display plots without saving.</li>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="tests.html" class="btn btn-neutral float-right" title="Tests" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
-      
-        <a href="core.html" class="btn btn-neutral" title="SNN class" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="core.html" class="btn btn-neutral" title="pipeline" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -616,7 +785,7 @@ display plots without saving.</li>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 08, 2016.
+      Last updated on Aug 29, 2016.
 
     </p>
   </div>

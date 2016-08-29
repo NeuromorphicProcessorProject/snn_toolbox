@@ -84,7 +84,6 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../configure_toolbox.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../modules.html">Tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
 </ul>
 
             
@@ -150,91 +149,114 @@
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
 
 <span class="kn">from</span> <span class="nn">snntoolbox.config</span> <span class="kn">import</span> <span class="n">settings</span>
-<span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="kn">import</span> <span class="n">wilson_score</span>
 
 <span class="n">standard_library</span><span class="o">.</span><span class="n">install_aliases</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="plot_confusion_matrix"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_confusion_matrix">[docs]</a><span class="k">def</span> <span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span> <span class="n">Y_pred</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">class_labels</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span>
-
-    <span class="n">cm</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span> <span class="n">Y_pred</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">cm</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Confusion Matrix&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">class_labels</span><span class="p">:</span>
-        <span class="n">tick_marks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">class_labels</span><span class="p">))</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">tick_marks</span><span class="p">,</span> <span class="n">class_labels</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">tick_marks</span><span class="p">,</span> <span class="n">class_labels</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;True label&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Predicted label&#39;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;Confusion&#39;</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
-
-
-<div class="viewcode-block" id="plot_spiketrains"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_spiketrains">[docs]</a><span class="k">def</span> <span class="nf">plot_spiketrains</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Plot which neuron fired at what time during the simulation.</span>
+<div class="viewcode-block" id="output_graphs"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.output_graphs">[docs]</a><span class="k">def</span> <span class="nf">output_graphs</span><span class="p">(</span><span class="n">spiketrains_batch</span><span class="p">,</span> <span class="n">activations_batch</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper function to display / save a number of plots.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 
-<span class="sd">    layer: tuple</span>
-<span class="sd">        ``(spiketimes, label)``.</span>
+<span class="sd">    spiketrains_batch: list</span>
+<span class="sd">        Each entry in ``spiketrains_batch`` contains a tuple</span>
+<span class="sd">        ``(spiketimes, label)`` for each layer of the network (for the first</span>
+<span class="sd">        batch only, and excluding ``Flatten`` layers).</span>
+<span class="sd">        ``spiketimes`` is an array where the last index contains the spike</span>
+<span class="sd">        times of the specific neuron, and the first indices run over the</span>
+<span class="sd">        number of neurons in the layer:</span>
+<span class="sd">        (batch_size, n_chnls, n_rows, n_cols, duration)</span>
+<span class="sd">        ``label`` is a string specifying both the layer type and the index,</span>
+<span class="sd">        e.g. ``&#39;03Dense&#39;``.</span>
+<span class="sd">    activations_batch: list</span>
+<span class="sd">        Activations of the SNN.</span>
+<span class="sd">    path: string, optional</span>
+<span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
+<span class="sd">        display plots without saving.</span>
+<span class="sd">    idx: int, optional</span>
+<span class="sd">        The index of the sample to display. Defaults to 0.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
-<span class="sd">        ``spiketimes`` is a 2D array where the first index runs over the number</span>
-<span class="sd">        of neurons in the layer, and the second index contains the spike times</span>
-<span class="sd">        of the specific neuron.</span>
+    <span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="kn">import</span> <span class="n">spiketrains_to_rates</span>
+    <span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="kn">import</span> <span class="n">get_sample_activity_from_batch</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Saving plots of one sample to {}...</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+
+    <span class="n">spikerates_batch</span> <span class="o">=</span> <span class="n">spiketrains_to_rates</span><span class="p">(</span><span class="n">spiketrains_batch</span><span class="p">)</span>
+    <span class="n">spikerates</span> <span class="o">=</span> <span class="n">get_sample_activity_from_batch</span><span class="p">(</span><span class="n">spikerates_batch</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+    <span class="n">activations</span> <span class="o">=</span> <span class="n">get_sample_activity_from_batch</span><span class="p">(</span><span class="n">activations_batch</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+<span class="c1">#    spiketrains = get_sample_activity_from_batch(spiketrains_batch, idx)</span>
+    <span class="n">spiketrains</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c1"># Too costly</span>
+
+    <span class="n">plot_layer_summaries</span><span class="p">(</span><span class="n">spikerates</span><span class="p">,</span> <span class="n">activations</span><span class="p">,</span> <span class="n">spiketrains</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="n">plot_pearson_coefficients</span><span class="p">(</span><span class="n">spikerates_batch</span><span class="p">,</span> <span class="n">activations_batch</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="n">plot_hist_combined</span><span class="p">({</span><span class="s1">&#39;Spikerates&#39;</span><span class="p">:</span> <span class="n">spikerates_batch</span><span class="p">,</span>
+                        <span class="s1">&#39;Activations&#39;</span><span class="p">:</span> <span class="n">activations_batch</span><span class="p">},</span> <span class="n">path</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Done.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="plot_layer_summaries"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_layer_summaries">[docs]</a><span class="k">def</span> <span class="nf">plot_layer_summaries</span><span class="p">(</span><span class="n">spikerates</span><span class="p">,</span> <span class="n">activations</span><span class="p">,</span> <span class="n">spiketrains</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Display or save a number of plots for a specific layer.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    spikerates: list</span>
+<span class="sd">        Each entry in ``spikerates`` contains a tuple ``(rates, label)`` for</span>
+<span class="sd">        each layer of the network (for the first batch only, and excluding</span>
+<span class="sd">        ``Flatten`` layers).</span>
+
+<span class="sd">        ``rates`` contains the average firing rates of all neurons in a layer.</span>
+<span class="sd">        It has the same shape as the original layer, e.g.</span>
+<span class="sd">        (n_features, n_rows, n_cols) for a convolution layer.</span>
 
 <span class="sd">        ``label`` is a string specifying both the layer type and the index,</span>
-<span class="sd">        e.g. ``&#39;3Dense&#39;``.</span>
+<span class="sd">        e.g. ``&#39;03Dense&#39;``.</span>
+
+<span class="sd">    activations: list</span>
+<span class="sd">        Contains the activations of a net. Same structure as ``spikerates``.</span>
+
+<span class="sd">    spiketrains: list, optional</span>
+<span class="sd">        Each entry in ``spiketrains`` contains a tuple</span>
+<span class="sd">        ``(spiketimes, label)`` for each layer of the network (for the first</span>
+<span class="sd">        batch only, and excluding ``Flatten`` layers).</span>
+
+<span class="sd">        ``spiketimes`` is an array where the last index contains the spike</span>
+<span class="sd">        times of the specific neuron, and the first indices run over the</span>
+<span class="sd">        number of neurons in the layer: (n_chnls, n_rows, n_cols, duration)</span>
+
+<span class="sd">        ``label`` is a string specifying both the layer type and the index,</span>
+<span class="sd">        e.g. ``&#39;03Dense&#39;``.</span>
 
 <span class="sd">    path: string, optional</span>
 <span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
 <span class="sd">        display plots without saving.</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">layer</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">layer</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
-    <span class="n">spiketrains</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">layer</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">shape</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
-    <span class="c1"># Iterate over neurons in layer</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">neuron</span><span class="p">,</span> <span class="n">spiketrain</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">spiketrains</span><span class="p">):</span>
-        <span class="c1"># Remove zeros from spiketrain which falsely indicate spikes at time 0.</span>
-        <span class="c1"># Spikes at time 0 are forbidden (and indeed prevented in the</span>
-        <span class="c1"># simulation), because of this difficulty to distinguish them from a 0</span>
-        <span class="c1"># entry indicating no spike.</span>
-        <span class="k">if</span> <span class="mi">0</span> <span class="ow">in</span> <span class="n">spiketrain</span><span class="p">:</span>
-            <span class="n">spikelist</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">spiketrain</span> <span class="k">if</span> <span class="n">j</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
-            <span class="c1"># Create an array of the same size as the spikelist containing just</span>
-            <span class="c1"># the neuron index.</span>
-            <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">spikelist</span><span class="p">)</span> <span class="o">*</span> <span class="n">neuron</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">spikelist</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">spiketrain</span><span class="p">)</span> <span class="o">*</span> <span class="n">neuron</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">spiketrain</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">neuron</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Spiketrains </span><span class="se">\n</span><span class="s1"> of layer {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">layer</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;time [ms]&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;neuron index&#39;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;7Spiketrains&#39;</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+    <span class="c1"># Loop over layers</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">spikerates</span><span class="p">)):</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">spikerates</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Plotting layer {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">label</span><span class="p">))</span>
+        <span class="n">newpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">newpath</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">newpath</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">spiketrains</span><span class="p">:</span>
+            <span class="n">plot_spiketrains</span><span class="p">(</span><span class="n">spiketrains</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">newpath</span><span class="p">)</span>  <span class="c1"># t=75.5%</span>
+        <span class="n">plot_layer_activity</span><span class="p">(</span><span class="n">spikerates</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;Spikerates&#39;</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span>  <span class="c1"># t=7.8%</span>
+        <span class="n">plot_layer_activity</span><span class="p">(</span><span class="n">activations</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;Activations&#39;</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span>  <span class="c1"># t=6.5%</span>
+        <span class="n">plot_rates_minus_activations</span><span class="p">(</span><span class="n">spikerates</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">activations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                                     <span class="n">label</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span>  <span class="c1"># t=6.7%</span>
+        <span class="n">plot_layer_correlation</span><span class="p">(</span><span class="n">spikerates</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                               <span class="n">activations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                               <span class="s1">&#39;ANN-SNN correlations</span><span class="se">\n</span><span class="s1"> of layer &#39;</span> <span class="o">+</span> <span class="n">label</span><span class="p">,</span>
+                               <span class="n">newpath</span><span class="p">)</span>  <span class="c1"># t=0.8%</span>
+        <span class="n">plot_hist</span><span class="p">({</span><span class="s1">&#39;Spikerates&#39;</span><span class="p">:</span> <span class="n">spikerates</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()},</span> <span class="s1">&#39;Spikerates&#39;</span><span class="p">,</span>
+                  <span class="n">label</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span>  <span class="c1"># t=2.7%</span></div>
 
 
 <div class="viewcode-block" id="plot_layer_activity"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_layer_activity">[docs]</a><span class="k">def</span> <span class="nf">plot_layer_activity</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Visualize a layer by arranging the neurons in a line or on a 2D grid.</span>
+    <span class="sd">&quot;&quot;&quot;Visualize a layer by arranging the neurons in a line or on a 2D grid.</span>
 
 <span class="sd">    Can be used to show average firing rates of individual neurons in an SNN,</span>
 <span class="sd">    or the activation function per layer in an ANN.</span>
@@ -262,7 +284,6 @@
 <span class="sd">    limits: tuple, optional</span>
 <span class="sd">        If not ``None``, the colormap of the resulting image is limited by this</span>
 <span class="sd">        tuple.</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># Highest possible spike rate, used to normalize image plots. Need to</span>
@@ -339,9 +360,78 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_correlations"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_correlations">[docs]</a><span class="k">def</span> <span class="nf">plot_correlations</span><span class="p">(</span><span class="n">spikerates</span><span class="p">,</span> <span class="n">layer_activations</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_rates_minus_activations"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_rates_minus_activations">[docs]</a><span class="k">def</span> <span class="nf">plot_rates_minus_activations</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="n">activations</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plot spikerates minus activations for a specific layer.</span>
+
+<span class="sd">    Spikerates and activations are each normalized before subtraction.</span>
+<span class="sd">    The neurons in the layer are arranged in a line or on a 2D grid, depending</span>
+<span class="sd">    on layer type.</span>
+
+<span class="sd">    Activity is encoded by color.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    rates: array</span>
+<span class="sd">        The spikerates of a layer. The shape is that of the original layer,</span>
+<span class="sd">        e.g. (32, 28, 28) for 32 feature maps of size 28x28.</span>
+<span class="sd">    activations: array</span>
+<span class="sd">        The activations of a layer. The shape is that of the original layer,</span>
+<span class="sd">        e.g. (32, 28, 28) for 32 feature maps of size 28x28.</span>
+<span class="sd">    label: string</span>
+<span class="sd">        Layer label.</span>
+<span class="sd">    path: string, optional</span>
+<span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
+<span class="sd">        display plots without saving.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">rates_norm</span> <span class="o">=</span> <span class="n">rates</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">rates</span>
+    <span class="n">activations_norm</span> <span class="o">=</span> <span class="n">activations</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">activations</span><span class="p">)</span>
+    <span class="n">plot_layer_activity</span><span class="p">((</span><span class="n">rates_norm</span> <span class="o">-</span> <span class="n">activations_norm</span><span class="p">,</span> <span class="n">label</span><span class="p">),</span>
+                        <span class="s1">&#39;Spikerates_minus_Activations&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="plot_layer_correlation"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_layer_correlation">[docs]</a><span class="k">def</span> <span class="nf">plot_layer_correlation</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="n">activations</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Plot the correlation between SNN spiketrains and ANN activations.</span>
+<span class="sd">    Plot correlation between spikerates and activations of a specific layer,</span>
+<span class="sd">    as 2D-dot-plot.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    rates: list</span>
+<span class="sd">        The spikerates of a layer, flattened to 1D.</span>
+<span class="sd">    activations: list</span>
+<span class="sd">        The activations of a layer, flattened to 1D.</span>
+<span class="sd">    title: string</span>
+<span class="sd">        Plot title.</span>
+<span class="sd">    path: string, optional</span>
+<span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
+<span class="sd">        display plots without saving.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Determine percentage of saturated neurons. Need to subtract one time step</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">rates</span> <span class="o">&gt;=</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">activations</span><span class="p">,</span> <span class="n">rates</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">&quot;{:.2%} units saturated.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">locator_params</span><span class="p">(</span><span class="n">nbins</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="bp">None</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">activations</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="bp">None</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;ANN activations&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;SNN spikerates [Hz]&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;5Correlation&#39;</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="plot_correlations"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_correlations">[docs]</a><span class="k">def</span> <span class="nf">plot_correlations</span><span class="p">(</span><span class="n">spikerates</span><span class="p">,</span> <span class="n">layer_activations</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plot the correlation between SNN spiketrains and ANN activations.</span>
 
 <span class="sd">    For each layer, the method draws a scatter plot, showing the correlation</span>
 <span class="sd">    between the average firing rate of neurons in the SNN layer and the</span>
@@ -366,7 +456,6 @@
 <span class="sd">        layer, containing the activations of Dense or Convolution layers.</span>
 
 <span class="sd">        ``label`` is a string specifying the layer type, e.g. ``&#39;Dense&#39;``.</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">num_layers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">layer_activations</span><span class="p">)</span>
@@ -394,231 +483,6 @@
            <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="plot_layer_summaries"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_layer_summaries">[docs]</a><span class="k">def</span> <span class="nf">plot_layer_summaries</span><span class="p">(</span><span class="n">spiketrains</span><span class="p">,</span> <span class="n">spikerates</span><span class="p">,</span> <span class="n">activations</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Display or save a number of plots for a specific layer.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-
-<span class="sd">    spiketrains: list</span>
-<span class="sd">        Each entry in ``spiketrains`` contains a tuple</span>
-<span class="sd">        ``(spiketimes, label)`` for each layer of the network (for the first</span>
-<span class="sd">        batch only, and excluding ``Flatten`` layers).</span>
-<span class="sd">        ``spiketimes`` is an array where the last index contains the spike</span>
-<span class="sd">        times of the specific neuron, and the first indices run over the</span>
-<span class="sd">        number of neurons in the layer: (n_chnls, n_rows, n_cols, duration)</span>
-<span class="sd">        ``label`` is a string specifying both the layer type and the index,</span>
-<span class="sd">        e.g. ``&#39;03Dense&#39;``.</span>
-<span class="sd">    spikerates: list</span>
-<span class="sd">        Each entry in ``spikerates`` contains a tuple ``(rates, label)`` for</span>
-<span class="sd">        each layer of the network (for the first batch only, and excluding</span>
-<span class="sd">        ``Flatten`` layers).</span>
-<span class="sd">        ``rates`` contains the average firing rates of all neurons in a layer.</span>
-<span class="sd">        It has the same shape as the original layer, e.g.</span>
-<span class="sd">        (n_features, n_rows, n_cols) for a convolution layer.</span>
-<span class="sd">        ``label`` is a string specifying both the layer type and the index,</span>
-<span class="sd">        e.g. ``&#39;03Dense&#39;``.</span>
-<span class="sd">    activations: list</span>
-<span class="sd">        Contains the activations of a net. Same structure as ``spikerates``.</span>
-<span class="sd">    path: string, optional</span>
-<span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
-<span class="sd">        display plots without saving.</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="c1"># Loop over layers</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">spiketrains</span><span class="p">)):</span>
-        <span class="n">label</span> <span class="o">=</span> <span class="n">spiketrains</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">newpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">newpath</span><span class="p">):</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">newpath</span><span class="p">)</span>
-        <span class="n">plot_spiketrains</span><span class="p">(</span><span class="n">spiketrains</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">newpath</span><span class="p">)</span>
-        <span class="n">plot_layer_activity</span><span class="p">(</span><span class="n">spikerates</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;Spikerates&#39;</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span>
-        <span class="n">plot_layer_activity</span><span class="p">(</span><span class="n">activations</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;Activations&#39;</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span>
-        <span class="n">plot_rates_minus_activations</span><span class="p">(</span><span class="n">spikerates</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">activations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
-                                     <span class="n">label</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span>
-        <span class="n">plot_layer_correlation</span><span class="p">(</span><span class="n">spikerates</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-                               <span class="n">activations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-                               <span class="s1">&#39;ANN-SNN correlations</span><span class="se">\n</span><span class="s1"> of layer &#39;</span> <span class="o">+</span> <span class="n">label</span><span class="p">,</span>
-                               <span class="n">newpath</span><span class="p">)</span>
-        <span class="n">plot_hist</span><span class="p">({</span><span class="s1">&#39;Spikerates&#39;</span><span class="p">:</span> <span class="n">spikerates</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()},</span> <span class="s1">&#39;Spikerates&#39;</span><span class="p">,</span>
-                  <span class="n">label</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="plot_rates_minus_activations"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_rates_minus_activations">[docs]</a><span class="k">def</span> <span class="nf">plot_rates_minus_activations</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="n">activations</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Plot spikerates minus activations for a specific layer.</span>
-
-<span class="sd">    Spikerates and activations are each normalized before subtraction.</span>
-<span class="sd">    The neurons in the layer are arranged in a line or on a 2D grid, depending</span>
-<span class="sd">    on layer type.</span>
-
-<span class="sd">    Activity is encoded by color.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-
-<span class="sd">    rates: array</span>
-<span class="sd">        The spikerates of a layer. The shape is that of the original layer,</span>
-<span class="sd">        e.g. (32, 28, 28) for 32 feature maps of size 28x28.</span>
-<span class="sd">    activations: array</span>
-<span class="sd">        The activations of a layer. The shape is that of the original layer,</span>
-<span class="sd">        e.g. (32, 28, 28) for 32 feature maps of size 28x28.</span>
-<span class="sd">    label: string</span>
-<span class="sd">        Layer label.</span>
-<span class="sd">    path: string, optional</span>
-<span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
-<span class="sd">        display plots without saving.</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">rates_norm</span> <span class="o">=</span> <span class="n">rates</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">rates</span>
-    <span class="n">activations_norm</span> <span class="o">=</span> <span class="n">activations</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">activations</span><span class="p">)</span>
-    <span class="n">plot_layer_activity</span><span class="p">((</span><span class="n">rates_norm</span> <span class="o">-</span> <span class="n">activations_norm</span><span class="p">,</span> <span class="n">label</span><span class="p">),</span>
-                        <span class="s1">&#39;Spikerates_minus_Activations&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span></div>
-
-
-<div class="viewcode-block" id="plot_layer_correlation"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_layer_correlation">[docs]</a><span class="k">def</span> <span class="nf">plot_layer_correlation</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="n">activations</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Plot correlation between spikerates and activations of a specific layer,</span>
-<span class="sd">    as 2D-dot-plot.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-
-<span class="sd">    rates: list</span>
-<span class="sd">        The spikerates of a layer, flattened to 1D.</span>
-<span class="sd">    activations: list</span>
-<span class="sd">        The activations of a layer, flattened to 1D.</span>
-<span class="sd">    label: string</span>
-<span class="sd">        Layer label.</span>
-<span class="sd">    path: string, optional</span>
-<span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
-<span class="sd">        display plots without saving.</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="c1"># Determine percentage of saturated neurons. Need to subtract one time step</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">rates</span> <span class="o">&gt;=</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
-
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">activations</span><span class="p">,</span> <span class="n">rates</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;{:.2%} units saturated.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">locator_params</span><span class="p">(</span><span class="n">nbins</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="bp">None</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">activations</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">])</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="bp">None</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">])</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;ANN activations&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;SNN spikerates [Hz]&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;5Correlation&#39;</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
-
-
-<div class="viewcode-block" id="plot_hist"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_hist">[docs]</a><span class="k">def</span> <span class="nf">plot_hist</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">layer_label</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">scale_fac</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Plot a histogram over two datasets.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-
-<span class="sd">    h: dict</span>
-<span class="sd">        Dictionary of datasets to plot in histogram.</span>
-<span class="sd">    title: string, optional</span>
-<span class="sd">        Title of histogram.</span>
-<span class="sd">    layer_label: string, optional</span>
-<span class="sd">        Label of layer from which data was taken.</span>
-<span class="sd">    path: string, optional</span>
-<span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
-<span class="sd">        display plots without saving.</span>
-<span class="sd">    scale_fac: float, optional</span>
-<span class="sd">        The value with which parameters are normalized (maximum of activations</span>
-<span class="sd">        or parameter value of a layer). If given, will be insterted into plot</span>
-<span class="sd">        title.</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">keys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">([</span><span class="n">h</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">keys</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">title</span> <span class="ow">and</span> <span class="n">layer_label</span><span class="p">:</span>
-        <span class="k">if</span> <span class="s1">&#39;Spikerates&#39;</span> <span class="ow">in</span> <span class="n">title</span><span class="p">:</span>
-            <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;4&#39;</span> <span class="o">+</span> <span class="n">title</span> <span class="o">+</span> <span class="s1">&#39;_distribution&#39;</span>
-            <span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;[Hz]&#39;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">filename</span> <span class="o">=</span> <span class="n">layer_label</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">title</span> <span class="o">+</span> <span class="s1">&#39;_distribution&#39;</span>
-            <span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
-        <span class="n">facs</span> <span class="o">=</span> <span class="s2">&quot;Applied divisor: {:.2f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scale_fac</span><span class="p">)</span> <span class="k">if</span> <span class="n">scale_fac</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;{} distribution {} </span><span class="se">\n</span><span class="s1"> of layer {} </span><span class="se">\n</span><span class="s1"> {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">title</span><span class="p">,</span> <span class="n">unit</span><span class="p">,</span> <span class="n">layer_label</span><span class="p">,</span> <span class="n">facs</span><span class="p">))</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Distribution&#39;</span><span class="p">)</span>
-        <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;Activity_distribution&#39;</span>
-    <span class="k">if</span> <span class="n">path</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
-
-
-<div class="viewcode-block" id="output_graphs"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.output_graphs">[docs]</a><span class="k">def</span> <span class="nf">output_graphs</span><span class="p">(</span><span class="n">spiketrains_batch</span><span class="p">,</span> <span class="n">ann</span><span class="p">,</span> <span class="n">X_batch</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Wrapper function to display / save a number of plots.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-
-<span class="sd">    spiketrains_batch: list</span>
-<span class="sd">        Each entry in ``spiketrains_batch`` contains a tuple</span>
-<span class="sd">        ``(spiketimes, label)`` for each layer of the network (for the first</span>
-<span class="sd">        batch only, and excluding ``Flatten`` layers).</span>
-<span class="sd">        ``spiketimes`` is an array where the last index contains the spike</span>
-<span class="sd">        times of the specific neuron, and the first indices run over the</span>
-<span class="sd">        number of neurons in the layer:</span>
-<span class="sd">        (batch_size, n_chnls, n_rows, n_cols, duration)</span>
-<span class="sd">        ``label`` is a string specifying both the layer type and the index,</span>
-<span class="sd">        e.g. ``&#39;03Dense&#39;``.</span>
-<span class="sd">    ann: SNN</span>
-<span class="sd">        An instance of the SNN class. Contains the ``get_activ`` Theano</span>
-<span class="sd">        functions which allow computation of layer activations of the original</span>
-<span class="sd">        input model (hence the name &#39;ann&#39;). Needed in activation and</span>
-<span class="sd">        correlation plots.</span>
-<span class="sd">    X_batch: float32 array</span>
-<span class="sd">        The input samples to use for determining the layer activations. With</span>
-<span class="sd">        data of the form (channels, num_rows, num_cols), X_batch has dimension</span>
-<span class="sd">        (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,</span>
-<span class="sd">        and (batch_size, channels, num_rows, num_cols) for a convolutional net.</span>
-<span class="sd">    path: string, optional</span>
-<span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
-<span class="sd">        display plots without saving.</span>
-<span class="sd">    i: int, optional</span>
-<span class="sd">        Index of sample to plot.</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="kn">import</span> <span class="n">get_activations_batch</span>
-    <span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="kn">import</span> <span class="n">spiketrains_to_rates</span>
-    <span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="kn">import</span> <span class="n">get_sample_activity_from_batch</span>
-
-    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Saving plots of one sample to {}...</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
-
-    <span class="n">spiketrains</span> <span class="o">=</span> <span class="n">get_sample_activity_from_batch</span><span class="p">(</span><span class="n">spiketrains_batch</span><span class="p">)</span>
-    <span class="n">spikerates_batch</span> <span class="o">=</span> <span class="n">spiketrains_to_rates</span><span class="p">(</span><span class="n">spiketrains_batch</span><span class="p">)</span>
-    <span class="n">spikerates</span> <span class="o">=</span> <span class="n">get_sample_activity_from_batch</span><span class="p">(</span><span class="n">spikerates_batch</span><span class="p">)</span>
-    <span class="n">activations_batch</span> <span class="o">=</span> <span class="n">get_activations_batch</span><span class="p">(</span><span class="n">ann</span><span class="p">,</span> <span class="n">X_batch</span><span class="p">)</span>
-    <span class="n">activations</span> <span class="o">=</span> <span class="n">get_sample_activity_from_batch</span><span class="p">(</span><span class="n">activations_batch</span><span class="p">)</span>
-
-    <span class="n">plot_layer_summaries</span><span class="p">(</span><span class="n">spiketrains</span><span class="p">,</span> <span class="n">spikerates</span><span class="p">,</span> <span class="n">activations</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
-    <span class="n">plot_pearson_coefficients</span><span class="p">(</span><span class="n">spikerates_batch</span><span class="p">,</span> <span class="n">activations_batch</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
-    <span class="n">plot_hist_combined</span><span class="p">({</span><span class="s1">&#39;Spikerates&#39;</span><span class="p">:</span> <span class="n">spikerates_batch</span><span class="p">,</span>
-                        <span class="s1">&#39;Activations&#39;</span><span class="p">:</span> <span class="n">activations_batch</span><span class="p">},</span> <span class="n">path</span><span class="p">)</span>
-    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Done.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
-
-
 <div class="viewcode-block" id="plot_pearson_coefficients"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_pearson_coefficients">[docs]</a><span class="k">def</span> <span class="nf">plot_pearson_coefficients</span><span class="p">(</span><span class="n">spikerates_batch</span><span class="p">,</span> <span class="n">activations_batch</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plot the Pearson correlation coefficients for each layer, averaged over one</span>
@@ -631,16 +495,17 @@
 <span class="sd">        Each entry in ``spikerates_batch`` contains a tuple</span>
 <span class="sd">        ``(spikerates, label)`` for each layer of the network (for the first</span>
 <span class="sd">        batch only, and excluding ``Flatten`` layers).</span>
+
 <span class="sd">        ``spikerates`` contains the average firing rates of all neurons in a</span>
 <span class="sd">        layer. It has the same shape as the original layer, e.g.</span>
 <span class="sd">        (batch_size, n_features, n_rows, n_cols) for a convolution layer.</span>
+
 <span class="sd">        ``label`` is a string specifying both the layer type and the index,</span>
 <span class="sd">        e.g. ``&#39;03Dense&#39;``.</span>
 
 <span class="sd">    activations_batch: list</span>
 <span class="sd">        Contains the activations of a net. Same structure as</span>
 <span class="sd">        ``spikerates_batch``.</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">pearsonr</span>
@@ -684,9 +549,52 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
+<div class="viewcode-block" id="plot_hist"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_hist">[docs]</a><span class="k">def</span> <span class="nf">plot_hist</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">layer_label</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">scale_fac</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plot a histogram over two datasets.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    h: dict</span>
+<span class="sd">        Dictionary of datasets to plot in histogram.</span>
+<span class="sd">    title: string, optional</span>
+<span class="sd">        Title of histogram.</span>
+<span class="sd">    layer_label: string, optional</span>
+<span class="sd">        Label of layer from which data was taken.</span>
+<span class="sd">    path: string, optional</span>
+<span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
+<span class="sd">        display plots without saving.</span>
+<span class="sd">    scale_fac: float, optional</span>
+<span class="sd">        The value with which parameters are normalized (maximum of activations</span>
+<span class="sd">        or parameter value of a layer). If given, will be insterted into plot</span>
+<span class="sd">        title.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">keys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">([</span><span class="n">h</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">keys</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">title</span> <span class="ow">and</span> <span class="n">layer_label</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;Spikerates&#39;</span> <span class="ow">in</span> <span class="n">title</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;4&#39;</span> <span class="o">+</span> <span class="n">title</span> <span class="o">+</span> <span class="s1">&#39;_distribution&#39;</span>
+            <span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;[Hz]&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">layer_label</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">title</span> <span class="o">+</span> <span class="s1">&#39;_distribution&#39;</span>
+            <span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">facs</span> <span class="o">=</span> <span class="s2">&quot;Applied divisor: {:.2f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scale_fac</span><span class="p">)</span> <span class="k">if</span> <span class="n">scale_fac</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;{} distribution {} </span><span class="se">\n</span><span class="s1"> of layer {} </span><span class="se">\n</span><span class="s1"> {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">title</span><span class="p">,</span> <span class="n">unit</span><span class="p">,</span> <span class="n">layer_label</span><span class="p">,</span> <span class="n">facs</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Distribution&#39;</span><span class="p">)</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;Activity_distribution&#39;</span>
+    <span class="k">if</span> <span class="n">path</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
 <div class="viewcode-block" id="plot_hist_combined"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_hist_combined">[docs]</a><span class="k">def</span> <span class="nf">plot_hist_combined</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Plot a histogram over several datasets.</span>
+    <span class="sd">&quot;&quot;&quot;Plot a histogram over several datasets.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -696,7 +604,6 @@
 <span class="sd">    path: string, optional</span>
 <span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
 <span class="sd">        display plots without saving.</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># Flatten containers in data, because we don&#39;t need the original</span>
@@ -737,8 +644,7 @@
 
 
 <div class="viewcode-block" id="plot_param_sweep"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_param_sweep">[docs]</a><span class="k">def</span> <span class="nf">plot_param_sweep</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_logscale</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Plot accuracy versus parameter.</span>
+    <span class="sd">&quot;&quot;&quot;Plot accuracy versus parameter.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -754,8 +660,9 @@
 <span class="sd">        The name of the parameter that varied.</span>
 <span class="sd">    param_logscale: boolean</span>
 <span class="sd">        Whether to plot the parameter axis in log-scale.</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="kn">import</span> <span class="n">wilson_score</span>
 
     <span class="c1"># Compute confidence intervals of the experiments</span>
     <span class="n">ci</span> <span class="o">=</span> <span class="p">[</span><span class="n">wilson_score</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
@@ -773,9 +680,60 @@
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="plot_spiketrains"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_spiketrains">[docs]</a><span class="k">def</span> <span class="nf">plot_spiketrains</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plot which neuron fired at what time during the simulation.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    layer: tuple</span>
+<span class="sd">        ``(spiketimes, label)``.</span>
+
+<span class="sd">        ``spiketimes`` is a 2D array where the first index runs over the number</span>
+<span class="sd">        of neurons in the layer, and the second index contains the spike times</span>
+<span class="sd">        of the specific neuron.</span>
+
+<span class="sd">        ``label`` is a string specifying both the layer type and the index,</span>
+<span class="sd">        e.g. ``&#39;3Dense&#39;``.</span>
+
+<span class="sd">    path: string, optional</span>
+<span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
+<span class="sd">        display plots without saving.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">layer</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">layer</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">spiketrains</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">layer</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">shape</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="c1"># Iterate over neurons in layer</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">neuron</span><span class="p">,</span> <span class="n">spiketrain</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">spiketrains</span><span class="p">):</span>
+        <span class="c1"># Remove zeros from spiketrain which falsely indicate spikes at time 0.</span>
+        <span class="c1"># Spikes at time 0 are forbidden (and indeed prevented in the</span>
+        <span class="c1"># simulation), because of this difficulty to distinguish them from a 0</span>
+        <span class="c1"># entry indicating no spike.</span>
+        <span class="k">if</span> <span class="mi">0</span> <span class="ow">in</span> <span class="n">spiketrain</span><span class="p">:</span>
+            <span class="n">spikelist</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">spiketrain</span> <span class="k">if</span> <span class="n">j</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="c1"># Create an array of the same size as the spikelist containing just</span>
+            <span class="c1"># the neuron index.</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">spikelist</span><span class="p">)</span> <span class="o">*</span> <span class="n">neuron</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">spikelist</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">spiketrain</span><span class="p">)</span> <span class="o">*</span> <span class="n">neuron</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">spiketrain</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">neuron</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Spiketrains </span><span class="se">\n</span><span class="s1"> of layer {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">layer</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;time [ms]&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;neuron index&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;7Spiketrains&#39;</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
 <div class="viewcode-block" id="plot_potential"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_potential">[docs]</a><span class="k">def</span> <span class="nf">plot_potential</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">layer</span><span class="p">,</span> <span class="n">showLegend</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Plot the membrane potential of a layer.</span>
+    <span class="sd">&quot;&quot;&quot;Plot the membrane potential of a layer.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -801,7 +759,6 @@
 <span class="sd">    path: string, optional</span>
 <span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
 <span class="sd">        display plots without saving.</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
@@ -826,9 +783,52 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
+<div class="viewcode-block" id="plot_confusion_matrix"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_confusion_matrix">[docs]</a><span class="k">def</span> <span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span> <span class="n">Y_pred</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">class_labels</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span>
+
+    <span class="n">cm</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span> <span class="n">Y_pred</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">cm</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Confusion Matrix&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">class_labels</span><span class="p">:</span>
+        <span class="n">tick_marks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">class_labels</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">tick_marks</span><span class="p">,</span> <span class="n">class_labels</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">tick_marks</span><span class="p">,</span> <span class="n">class_labels</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;True label&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Predicted label&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;Confusion&#39;</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="plot_error_vs_time"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_error_vs_time">[docs]</a><span class="k">def</span> <span class="nf">plot_error_vs_time</span><span class="p">(</span><span class="n">err</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="kn">import</span> <span class="n">wilson_score</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Error vs simulation time&#39;</span><span class="p">)</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">err</span><span class="p">))</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]</span>
+    <span class="c1"># Compute confidence intervals of the experiments</span>
+    <span class="n">ci</span> <span class="o">=</span> <span class="p">[</span><span class="n">wilson_score</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">err</span><span class="p">]</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">err</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="n">ci</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">errorevery</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Error [%]&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Timestep&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;Error_vs_time&#39;</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
 <div class="viewcode-block" id="plot_history"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_history">[docs]</a><span class="k">def</span> <span class="nf">plot_history</span><span class="p">(</span><span class="n">h</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Plot the training and validation loss and accuracy at each epoch.</span>
+    <span class="sd">&quot;&quot;&quot;Plot the training and validation loss and accuracy at each epoch.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -836,7 +836,6 @@
 <span class="sd">    h: Keras history object</span>
 <span class="sd">        Contains the training and validation loss and accuracy at each epoch</span>
 <span class="sd">        during training.</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span>
@@ -871,7 +870,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 08, 2016.
+      Last updated on Aug 29, 2016.
 
     </p>
   </div>

@@ -120,7 +120,7 @@ setup(
     # Include documentation
     data_files=[
         ('', ['README.rst']),
-        ('docs', ['Documentation.html'])
+#        ('docs', ['Documentation.html'])
     ],
 
     # To provide executable scripts, use entry points in preference to the

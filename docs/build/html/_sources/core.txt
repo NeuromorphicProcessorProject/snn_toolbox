@@ -1,11 +1,3 @@
-SNN class
----------
-
-.. automodule:: core.model
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 pipeline
 --------
 
@@ -18,6 +10,14 @@ inisim
 ------
 
 .. automodule:: core.inisim
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+megasim
+-------
+
+.. automodule:: core.megasim
     :members:
     :undoc-members:
     :show-inheritance:
