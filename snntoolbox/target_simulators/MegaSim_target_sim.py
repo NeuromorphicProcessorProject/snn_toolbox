@@ -4,13 +4,13 @@
 The modules in ``target_simulators`` package allow building a spiking network
 and exporting it for use in a spiking simulator.
 
-This particular module offers functionality for Brian2 simulator. Adding
-another simulator requires implementing the class ``SNN_compiled`` with its
+This particular module offers functionality for MegaSim simulator. Adding
+another simulator requires implementing the class ``SNN`` with its
 methods tailored to the specific simulator.
 
 Created on Thu May 19 15:00:02 2016
 
-@author: rbodo
+@author: Evangelos Stromatias
 """
 
 # For compatibility with python2
@@ -255,9 +255,8 @@ class module_flatten(Megasim_base):
     Parameters
     ----------
 
-    layer_params: dict
-        Parsed input model; result of applying ``model_lib.extract(in)`` to the
-        input model ``in``.
+    layer_params: Keras layer
+        Layer from parsed input model.
 
     input_ports: int
         Number of input ports (eg feature maps from the previous layer)
@@ -280,8 +279,8 @@ class module_flatten(Megasim_base):
     '''
     def __init__(self, layer_params, input_ports, fm_size):
         self.module_string = "module_flatten"
-        self.label=layer_params["label"]
-        self.output_shapes = layer_params["output_shape"]
+        self.label=layer_params.name
+        self.output_shapes = layer_params.output_shape
         self.evs_files = []
 
         self.n_in_ports = input_ports
@@ -327,7 +326,7 @@ class Module_average_pooling(Megasim_base):
 
     duplicate code with the module_conv class - TODO: merge them
     layer_params
-    dict_keys(['label', 'layer_num', 'border_mode', 'layer_type', 'strides', 'input_shape', 'output_shape', 'get_activ', 'pool_size'])
+    Attributes: ['label', 'layer_num', 'border_mode', 'layer_type', 'strides', 'input_shape', 'output_shape', 'get_activ', 'pool_size']
     '''
 
     def __init__(self, layer_params, neuron_params, reset_input_event = False, scaling_factor=10000000):
@@ -337,26 +336,26 @@ class Module_average_pooling(Megasim_base):
         else:
             self.module_string = 'module_conv'
 
-        self.layer_type = layer_params['layer_type']
-        self.output_shapes = layer_params['output_shape'] #(none, 32, 26, 26) last two
-        self.label = layer_params['label']
+        self.layer_type = layer_params.__class__.__name__
+        self.output_shapes = layer_params.output_shape #(none, 32, 26, 26) last two
+        self.label = layer_params.name
         self.evs_files = []
         self.reset_input_event = reset_input_event
 
         self.n_in_ports = 1 # one average pooling layer per conv layer
         #self.in_ports = 1 # one average pooling layer per conv layer
-        self.num_of_FMs = layer_params['input_shape'][1]
+        self.num_of_FMs = layer_params.input_shape[1]
 
-        self.fm_size = layer_params['output_shape'][2:]
+        self.fm_size = layer_params.output_shape[2:]
         self.Nx_array, self.Ny_array = self.fm_size[1] * 2, self.fm_size[0] * 2
         self.Dx, self.Dy = 0, 0
         self.crop_xmin, self.crop_xmax = 0, self.fm_size[0] * 2 - 1
         self.crop_ymin, self.crop_ymax = 0, self.fm_size[1] * 2 - 1
         self.xshift_pre, self.yshift_pre = 0, 0
 
-        self.strides = layer_params["strides"]
+        self.strides = layer_params.strides
 
-        self.num_pre_modules = layer_params['input_shape'][1]
+        self.num_pre_modules = layer_params.input_shape[1]
 
         self.scaling_factor = int(scaling_factor)
 
@@ -367,7 +366,7 @@ class Module_average_pooling(Megasim_base):
         self.TLplus = 0
         self.TLminus = 0
 
-        self.kernel_size = (1,1)#layer_params['pool_size']
+        self.kernel_size = (1,1)#layer_params.pool_size
 
         self.Reset_to_reminder = 0
         if neuron_params["reset"] == 'Reset to zero':
@@ -375,9 +374,9 @@ class Module_average_pooling(Megasim_base):
         else:
             self.Reset_to_reminder = 1
 
-        self.pre_shapes = layer_params['input_shape'] # (none, 1, 28 28) # last 2
+        self.pre_shapes = layer_params.input_shape # (none, 1, 28 28) # last 2
 
-        self.border_mode = layer_params['border_mode']
+        self.border_mode = layer_params.border_mode
         if self.border_mode != 'valid':
             echo("Not implemented yet!")
             sys.exit(88)
@@ -533,9 +532,8 @@ class Module_conv(Megasim_base):
     Parameters
     ----------
 
-    layer_params: dict
-        Parsed input model; result of applying ``model_lib.extract(in)`` to the
-        input model ``in``.
+    layer_params: Keras layer
+        Layer from parsed input model.
 
     neuron_params: dictionary
         This is the settings dictionary that is set in the config.py module
@@ -569,7 +567,7 @@ class Module_conv(Megasim_base):
 
 
     layer_params
-    dict_keys(['nb_col', 'activation', 'layer_type', 'layer_num', 'nb_filter', 'output_shape', 'input_shape', 'nb_row', 'label', 'parameters', 'border_mode'])
+    Attributes: ['nb_col', 'activation', 'layer_type', 'layer_num', 'nb_filter', 'output_shape', 'input_shape', 'nb_row', 'label', 'parameters', 'border_mode']
     '''
 
     def __init__(self, layer_params, neuron_params, flip_kernels = True, reset_input_event = False, scaling_factor=10000000):
@@ -578,18 +576,18 @@ class Module_conv(Megasim_base):
         else:
             self.module_string = 'module_conv'
 
-        self.layer_type = layer_params["layer_type"]
-        self.output_shapes = layer_params['output_shape'] #(none, 32, 26, 26) last two
-        self.label = layer_params['label']
+        self.layer_type = layer_params.__class__.__name__
+        self.output_shapes = layer_params.output_shape #(none, 32, 26, 26) last two
+        self.label = layer_params.name
         self.evs_files = []
         self.reset_input_event = reset_input_event
 
         #self.size_of_FM = 0
-        self.num_of_FMs = layer_params['parameters'][0].shape[0]
-        self.kernel_size = layer_params['parameters'][0].shape[2:] #(kx, ky)
-        self.w = layer_params['parameters'][0]
+        self.num_of_FMs = layer_params.get_weights()[0].shape[0]
+        self.kernel_size = layer_params.get_weights()[0].shape[2:] #(kx, ky)
+        self.w = layer_params.get_weights()[0]
         try:
-            self.b = layer_params["parameters"][1]
+            self.b = layer_params.get_weights()[1]
             if np.nonzero(self.b)[0].size!=0:
                 self.uses_biases=True
                 print("%s uses biases"%(self.module_string))
@@ -601,12 +599,12 @@ class Module_conv(Megasim_base):
             print("%s does not use biases" % (self.module_string))
 
         self.n_in_ports = self.w.shape[1]
-        self.pre_shapes = layer_params['input_shape'] # (none, 1, 28 28) # last 2
+        self.pre_shapes = layer_params.input_shape # (none, 1, 28 28) # last 2
         self.fm_size = self.output_shapes[2:]
         self.Nx_array = self.output_shapes[2:][1]
         self.Ny_array = self.output_shapes[2:][0]
 
-        self.border_mode = layer_params["border_mode"] # 'same', 'valid',
+        self.border_mode = layer_params.border_mode # 'same', 'valid',
 
         self.Reset_to_reminder = 0
         if neuron_params["reset"] == 'Reset to zero':
@@ -829,9 +827,8 @@ class Module_fully_connected(Megasim_base):
     Parameters
     ----------
 
-    layer_params: dict
-        Parsed input model; result of applying ``model_lib.extract(in)`` to the
-        input model ``in``.
+    layer_params: Keras layer
+        Layer from parsed input model.
 
     neuron_params: dictionary
         This is the settings dictionary that is set in the config.py module
@@ -866,7 +863,7 @@ class Module_fully_connected(Megasim_base):
 
 
     layer_params
-    dict_keys(['nb_col', 'activation', 'layer_type', 'layer_num', 'nb_filter', 'output_shape', 'input_shape', 'nb_row', 'label', 'parameters', 'border_mode'])
+    Attributes: ['nb_col', 'activation', 'layer_type', 'layer_num', 'nb_filter', 'output_shape', 'input_shape', 'nb_row', 'label', 'parameters', 'border_mode']
     '''
     def __init__(self, layer_params, neuron_params, scaling_factor=10000000, reset_input_event = False, enable_softmax=True):
 
@@ -875,15 +872,15 @@ class Module_fully_connected(Megasim_base):
         else:
             self.module_string = 'module_fully_connected'
         print(self.module_string)
-        self.label= layer_params["label"]
-        self.output_shapes= layer_params['output_shape']
+        self.label= layer_params.name
+        self.output_shapes= layer_params.output_shape
         self.evs_files = []
 
-        self.population_size = layer_params['output_shape'][1]
+        self.population_size = layer_params.output_shape[1]
         self.scaling_factor = int(scaling_factor)
-        self.w = layer_params["parameters"][0]
+        self.w = layer_params.get_weights()[0]
         try:
-            self.b = layer_params["parameters"][1]
+            self.b = layer_params.get_weights()[1]
             if np.nonzero(self.b)[0].size!=0:
                 self.uses_biases=True
                 print("%s uses biases"%(self.module_string))
@@ -917,7 +914,7 @@ class Module_fully_connected(Megasim_base):
 
         # If its the output layer choose the type
         # either population of LIF neurons or softmax
-        if layer_params["activation"] == 'softmax' and self.enable_softmax == True:
+        if layer_params.activation == 'softmax' and self.enable_softmax == True:
             print("Using softmax for the output layer")
             self.module_string = 'module_softmax'
             self.n_in_ports = 2
@@ -1050,7 +1047,7 @@ rectify %d
 #----------------------------------------------------------------------------------------------------------------------#
 
 
-class SNN_compiled():
+class SNN():
     """
     Class to hold the compiled spiking neural network, ready for testing in a
     spiking simulator.
@@ -1142,8 +1139,7 @@ class SNN_compiled():
 
     """
 
-    def __init__(self, ann):
-        self.ann = ann
+    def __init__(self):
         self.sim = initialize_simulator() #TODO i can get the megasim path from here!
         self.megasim_path = self.sim.megasim_path()
         self.connections = []
@@ -1152,7 +1148,6 @@ class SNN_compiled():
         self.megaschematic = 'megasim.sch'
         self.input_stimulus_file = "input_events.stim"
         self.layers = []
-        self.add_input_layer()
 
         if settings["batch_size"]>1:
             self.reset_signal_event = True
@@ -1162,21 +1157,23 @@ class SNN_compiled():
             print("Symbol by Symbol operation")
         self.scaling_factor = settings['scaling_factor']
 
-    def add_input_layer(self):
-        input_shape = list(self.ann['input_shape'])
+    def add_input_layer(self, input_shape):
         self.layers.append(
             module_input_stimulus(label='InputLayer', pop_size = input_shape[1:])
         )
 
 
-    def build(self):
+    def build(self, parsed_model):
         """
         Compile a spiking neural network to prepare for simulation with MegaSim.
 
         """
 
-        echo('\n')
-        echo("Compiling spiking network...\n")
+        self.parsed_model = parsed_model
+
+        echo('\n' + "Compiling spiking network...\n")
+
+        self.add_input_layer(parsed_model.layers[0].batch_input_shape)
 
         # Create megasim dir where it will store the SNN params and schematic
         self.megadirname = settings['path'] + "MegaSim_"+settings['filename'] + '/'
@@ -1188,10 +1185,11 @@ class SNN_compiled():
 
         # Iterate over hidden layers to create spiking neurons and store
         # connections.
-        for (layer_num, layer) in enumerate(self.ann['layers']):
-            print (layer["layer_type"])
-            if layer['layer_type'] == 'Dense':
-                echo("Building layer: {}\n".format(layer['label']))
+        for layer in parsed_model.layers:
+            layer_type = layer.__class__.__name__
+            print (layer_type)
+            if layer_type == 'Dense':
+                echo("Building layer: {}\n".format(layer.name))
 
                 # Fully connected layers
                 try:
@@ -1207,26 +1205,26 @@ class SNN_compiled():
                                            reset_input_event= self.reset_signal_event)
                 )
 
-            elif layer['layer_type'] == 'Convolution2D':
-                echo("Building layer: {}\n".format(layer['label']))
+            elif layer_type == 'Convolution2D':
+                echo("Building layer: {}\n".format(layer.name))
                 self.layers.append(
                     Module_conv(layer_params=layer, neuron_params=settings,
                                 scaling_factor = self.scaling_factor,
                                 reset_input_event = self.reset_signal_event)
                 )
-            elif layer['layer_type'] == 'MaxPooling2D':
-                echo("Building layer: {}\n".format(layer['label']))
+            elif layer_type == 'MaxPooling2D':
+                echo("Building layer: {}\n".format(layer.name))
                 echo("Not Implemented!")
                 sys.exit(88)
-            elif layer['layer_type'] == 'AveragePooling2D':
-                echo("Building layer: {}\n".format(layer['label']))
+            elif layer_type == 'AveragePooling2D':
+                echo("Building layer: {}\n".format(layer.name))
                 self.layers.append(
                     Module_average_pooling(layer_params=layer, neuron_params=settings,
                                            scaling_factor = self.scaling_factor,
                                            reset_input_event= self.reset_signal_event)
                 )
-            elif layer['layer_type'] == 'Flatten':
-                echo("Building layer: {}\n".format(layer['label']))
+            elif layer_type == 'Flatten':
+                echo("Building layer: {}\n".format(layer.name))
                 c_layer_len = len(self.layers)-1
                 self.layers.append(
                     module_flatten(layer_params=layer, input_ports=self.layers[c_layer_len].num_of_FMs,
@@ -1685,7 +1683,7 @@ class SNN_compiled():
             import pdb;pdb.set_trace()
         return pop_spike_hist
 
-    def run(self, snn_precomp, X_test, Y_test):
+    def run(self, X_test, Y_test):
         """
         Simulate a spiking network with IF units and Poisson input in pyNN,
         using a simulator like Brian, NEST, NEURON, etc.
@@ -1706,9 +1704,6 @@ class SNN_compiled():
         Parameters
         ----------
 
-        snn_precomp: SNN
-            The converted spiking network, before compilation (i.e. independent
-            of simulator).
         X_test : float32 array
             The input samples to test. With data of the form
             (channels, num_rows, num_cols), X_test has dimension
@@ -1866,9 +1861,7 @@ class SNN_compiled():
                 output_shapes = [x.output_shapes for x in self.layers[1:]]
                 if settings['verbose'] > 0:
                     print("Ploting the activity of a single input sample")
-                self.collect_plot_results(
-                    self.layers, output_shapes, snn_precomp,
-                    X_test[0:])
+                self.collect_plot_results(X_test[0:])
 
         if batch_mode:
             # concatenate results
@@ -1891,7 +1884,7 @@ class SNN_compiled():
         print("MegaSim model is already saved at %s"%self.megadirname)
         pass
 
-    def collect_plot_results(self, layers, output_shapes, ann, X_batch, idx=0):
+    def collect_plot_results(self, X_batch, idx=0):
         """
         Collect spiketrains of all ``layers`` of a net from one simulation run,
         and plot results.
@@ -1915,11 +1908,8 @@ class SNN_compiled():
 
         """
 
-        from snntoolbox.io_utils.plotting import output_graphs, plot_potential
-
-        # Collect spiketrains of all layers, for the last test sample.
-        vmem = []
-        showLegend = False
+        from snntoolbox.io_utils.plotting import output_graphs
+        from snntoolbox.core.util import get_activations_batch
 
         # Allocate a list 'spiketrains_batch' with the following specification:
         # Each entry in ``spiketrains_batch`` contains a tuple
@@ -1985,6 +1975,6 @@ class SNN_compiled():
                 # ignore the spikes from the flatten layer
                 plot_c += 1
 
-
-        output_graphs(spiketrains_batch, ann, X_batch,
+        activations_batch = get_activations_batch(self.parsed_model, X_batch)
+        output_graphs(spiketrains_batch, activations_batch,
                       settings['log_dir_of_current_run'],results_from_input_sample )

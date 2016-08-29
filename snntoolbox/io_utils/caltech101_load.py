@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Helper functions to load, process, augment and save Caltech101 dataset.
+
 Created on Mon Jun  6 12:55:20 2016
 
 @author: rbodo
@@ -19,12 +21,12 @@ standard_library.install_aliases()
 
 
 def get_caltech101(path, filename=None):
-    """
-    Load caltech101 classification dataset.
+    """Get caltech101 classification dataset.
 
     Values are normalized and saved as ``float32`` type. Class vectors are
     converted to binary class matrices. Output can be flattened for use in
-    fully-connected networks.
+    fully-connected networks. Can perform preprocessing using a Keras
+    ImageDataGenerator.
 
     Parameters
     ----------
@@ -44,7 +46,6 @@ def get_caltech101(path, filename=None):
     With data of the form (channels, num_rows, num_cols), ``X_norm`` and
     ``X_test`` have dimension (num_samples, channels, num_rows, num_cols).
     ``Y_test`` has dimension (num_samples, num_classes).
-
     """
 
     datagen = ImageDataGenerator(rescale=1./255)

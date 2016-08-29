@@ -24,9 +24,7 @@ standard_library.install_aliases()
 
 
 def load_parameters(filepath):
-    """
-    Load all layer parameters from a HDF5 file.
-    """
+    """Load all layer parameters from an HDF5 file."""
 
     import h5py
 
@@ -42,8 +40,7 @@ def load_parameters(filepath):
 
 
 def to_categorical(y, nb_classes):
-    """
-    Convert class vector to binary class matrix.
+    """Convert class vector to binary class matrix.
 
     If the input ``y`` has shape (``nb_samples``,) and contains integers from 0
     to ``nb_classes``, the output array will be of dimension
@@ -58,8 +55,7 @@ def to_categorical(y, nb_classes):
 
 
 def load_dataset(path, filename):
-    """
-    Load dataset from an ``.npy`` or ``.npz`` file.
+    """Load dataset from an ``.npy`` or ``.npz`` file.
 
     Parameters
     ----------
@@ -83,8 +79,7 @@ def load_dataset(path, filename):
 
 
 def download_dataset(fname, origin, untar=False):
-    """
-    Download a dataset, if not already there.
+    """Download a dataset, if not already there.
 
     Parameters
     ----------
@@ -181,11 +176,9 @@ def confirm_overwrite(filepath):
 
 
 def to_json(data, path):
-    """
-    Write ``data`` dictionary to ``path``.
+    """Write ``data`` dictionary to ``path``.
 
     A ``TypeError`` is raised if objects in ``data`` are not JSON serializable.
-
     """
 
     def get_json_type(obj):

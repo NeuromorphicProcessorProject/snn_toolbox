@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Helper functions to load, process, augment and save MNIST dataset.
+
 Created on Mon Jun  6 12:54:49 2016
 
 @author: rbodo
@@ -22,8 +24,7 @@ standard_library.install_aliases()
 
 
 def get_mnist(path=None, filename=None, flat=False):
-    """
-    Load mnist classification dataset.
+    """Get mnist classification dataset.
 
     Values are normalized and saved as ``float32`` type. Class vectors are
     converted to binary class matrices. Output can be flattened for use in

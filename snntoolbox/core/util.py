@@ -13,15 +13,72 @@ from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
 from future import standard_library
 
+import os
+import theano
 import numpy as np
+from keras import backend as K
+from importlib import import_module
 from snntoolbox.config import settings
 
 standard_library.install_aliases()
 
 
-def get_range(start=0.0, stop=1.0, num=5, method='linear'):
+def parse(input_model):
+    """Create a Keras model suitable for conversion to SNN.
+
+    This parsing function takes as input an arbitrary neural network and builds
+    a Keras model from it with the same functionality and performance.
+    The resulting model contains all essential information about the network,
+    independently of the model library in which the original network was built
+    (e.g. Caffe). This makes the SNN toolbox stable against changes in input
+    formats. Another advantage is extensibility: In order to add a new input
+    language to the toolbox (e.g. Lasagne), a developer only needs to add a
+    single module to ``model_libs`` package, implementing a number of methods
+    (see the respective functions in 'keras_input_lib.py' for more details.)
+
+    Parameters
+    ----------
+
+    input_model: Analog Neural Network
+        A pretrained neural network model.
+
+    Returns
+    -------
+
+    parsed_model: Keras model
+        A Keras model functionally equivalent to ``input_model``.
     """
-    Return a range of parameter values.
+
+    import keras
+
+    model_lib = import_module('snntoolbox.model_libs.' +
+                              settings['model_lib'] + '_input_lib')
+    # Parse input model to our common format, extracting all necessary
+    # information about layers.
+    layers = model_lib.extract(input_model)
+    # Create new Keras model
+    parsed_model = keras.models.Sequential()
+    for layer in layers:
+        # Replace 'parameters' key with Keras key 'weights'
+        if 'parameters' in layer:
+            layer['weights'] = layer.pop('parameters')
+        # Remove keys that are not understood by Keras layer constructor
+        layer_type = layer.pop('layer_type')
+        filter_flip = layer.pop('filter_flip', None)
+        # Add layer
+        parsed_layer = getattr(keras.layers, layer_type)
+        parsed_model.add(parsed_layer(**layer))
+        if 'filter_flip' in layer:
+            parsed_layer.filter_flip = filter_flip
+    # Optimizer and loss should not matter at this stage, but it would be
+    # cleaner to set them to the actial values of the input model.
+    parsed_model.compile('sgd', 'categorical_crossentropy',
+                         metrics=['accuracy'])
+    return parsed_model
+
+
+def get_range(start=0.0, stop=1.0, num=5, method='linear'):
+    """Return a range of parameter values.
 
     Convenience function. For more flexibility, use ``numpy.linspace``,
     ``numpy.logspace``, ``numpy.random.random_sample`` directly.
@@ -65,11 +122,9 @@ def print_description(snn=None, log=True):
     Print a summary of the test run, parameters, and network. If ``log==True``,
     the output is written as ``settings.txt`` file to the folder given by
     ``settings['log_dir_of_current_run']``.
-
     """
 
     if log:
-        import os
         f = open(os.path.join(settings['log_dir_of_current_run'],
                               'settings.txt'), 'w')
     else:
@@ -93,13 +148,11 @@ def print_description(snn=None, log=True):
 
 
 def spiketrains_to_rates(spiketrains_batch):
-    """
-    Convert spiketrains to spikerates.
+    """Convert spiketrains to spikerates.
 
     The output will have the same shape as the input except for the last
     dimension, which is removed by replacing a sequence of spiketimes by a
     single rate value.
-
     """
 
     spikerates_batch = []
@@ -130,18 +183,88 @@ def spiketrains_to_rates(spiketrains_batch):
     return spikerates_batch
 
 
-def get_sample_activity_from_batch(activity_batch, i=0):
-    """
-    Returns layer activity for sample ``i`` of an ``activity_batch``.
-
+def get_sample_activity_from_batch(activity_batch, idx=0):
+    """Return layer activity for sample ``idx`` of an ``activity_batch``.
     """
 
-    return [(layer_act[0][i], layer_act[1]) for layer_act in activity_batch]
+    return [(layer_act[0][idx], layer_act[1]) for layer_act in activity_batch]
+
+
+def normalize_parameters(model):
+    """Normalize the parameters of a network.
+
+    The parameters of each layer are normalized with respect to the maximum
+    activation, or the ``n``-th percentile of activations.
+
+    Generates plots of the activity- and weight-distribution before and after
+    normalization. Note that plotting the activity-distribution can be very
+    time- and memory-consuming for larger networks.
+    """
+
+    from snntoolbox.io_utils.plotting import plot_hist
+    from snntoolbox.io_utils.common import load_dataset
+
+    print("Loading normalization data set.\n")
+    X_norm = load_dataset(settings['dataset_path'], 'X_norm.npz')  # t=0.2%
+    print("Using {} samples for normalization.".format(len(X_norm)))
+
+#        import numpy as np
+#        sizes = [len(X_norm) * np.array(layer['output_shape'][1:]).prod() *
+#                 32 / (8 * 1e9) for idx, layer in enumerate(self.layers)
+#                 if idx != 0 and 'parameters' in self.layers[idx-1]]
+#        size_str = ['{:.2f}'.format(s) for s in sizes]
+#        print("INFO: Need {} GB for layer activations.\n".format(size_str) +
+#              "May have to reduce size of data set used for normalization.\n")
+
+    print("Normalizing parameters:\n")
+    newpath = os.path.join(settings['log_dir_of_current_run'], 'normalization')
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+    # Loop through all layers, looking for layers with parameters
+    scale_fac_prev_layer = 1
+    for idx, layer in enumerate(model.layers):
+        # Skip layer if not preceeded by a layer with parameters
+        if layer.get_weights() == []:
+            continue
+        if settings['verbose'] > 1:
+            print("Calculating activation of layer {} with shape {}...".format(
+                  layer.name, layer.output_shape))
+        parameters = layer.get_weights()
+        # Undo previous scaling before calculating activations:
+        layer.set_weights([parameters[0]*scale_fac_prev_layer, parameters[1]])
+        # t=4.9%
+        get_activ = get_activ_fn_for_layer(model, idx)
+        activations = get_activations_layer(get_activ, X_norm)
+        if settings['normalization_schedule']:
+            scale_fac = get_scale_fac(activations, idx)
+        else:
+            scale_fac = get_scale_fac(activations)  # t=3.7%
+        parameters_norm = [parameters[0] * scale_fac_prev_layer / scale_fac,
+                           parameters[1] / scale_fac]
+        scale_fac_prev_layer = scale_fac
+        # Update model with modified parameters
+        layer.set_weights(parameters_norm)
+        if settings['verbose'] < 3:
+            continue
+        weight_dict = {
+            'weights': parameters[0].flatten(),
+            'weights_norm': parameters_norm[0].flatten()}
+        # t=2.8%
+        plot_hist(weight_dict, 'Weight', layer.name, newpath)
+
+        if True:  # Too costly
+            continue
+        # Compute activations with modified parameters
+        # t=4.8%
+        activations_norm = get_activations_layer(get_activ, X_norm)
+        activation_dict = {'Activations': activations.flatten(),
+                           'Activations_norm': activations_norm.flatten()}
+        plot_hist(activation_dict, 'Activation', layer.name, newpath,
+                  scale_fac)  # t=83.1%
 
 
 def get_scale_fac(activations, idx=0):
-    """
-    Determine the maximum activation of a layer.
+    """Determine the maximum activation of a layer.
 
     Parameters
     ----------
@@ -159,7 +282,6 @@ def get_scale_fac(activations, idx=0):
     scale_fac: float
         Maximum (or percentile) of activations in this layer.
         Parameters of the respective layer are scaled by this value.
-
     """
 
     scale_fac = np.percentile(activations, settings['percentile']-idx/10)
@@ -191,7 +313,6 @@ def get_activations_layer(get_activ, X_train):
     activations: array
         The activations of cells in a specific layer. Has the same shape as the
         layer.
-
     """
 
     shape = list(get_activ(X_train[:settings['batch_size']]).shape)
@@ -213,16 +334,13 @@ def get_activations_layer(get_activ, X_train):
 
 
 def get_activations_batch(ann, X_batch):
-    """
-    Compute layer activations of an ANN.
+    """Compute layer activations of an ANN.
 
     Parameters
     ----------
 
-    ann: SNN
-        An instance of the SNN class. Contains the ``get_activ`` function that
-        allow computation of layer activations of the original input model
-        (hence the name 'ann'). Needed in activation and correlation plots.
+    ann: Keras model
+        Needed to compute activations.
 
     X_batch: float32 array
         The input samples to use for determining the layer activations. With
@@ -240,16 +358,27 @@ def get_activations_batch(ann, X_batch):
         shape as the original layer, e.g.
         (batch_size, n_features, n_rows, n_cols) for a convolution layer.
         ``label`` is a string specifying the layer type, e.g. ``'Dense'``.
-
     """
 
-    return [(layer['get_activ'](X_batch), layer['label']) for layer
-            in ann.layers if 'get_activ' in layer]
+    activations_batch = []
+    for i, layer in enumerate(ann.layers):
+        if 'Flatten' in layer.name:
+            continue
+        get_activ = get_activ_fn_for_layer(ann, i)
+        activations_batch.append((get_activ(X_batch), layer.name))
+    return activations_batch
+
+
+def get_activ_fn_for_layer(model, i):
+    f = theano.function(
+        [model.layers[0].input, theano.In(K.learning_phase(), value=0)],
+        model.layers[i].output, allow_input_downcast=True,
+        on_unused_input='ignore')
+    return lambda x: f(x).astype('float16', copy=False)
 
 
 def wilson_score(p, n):
-    """
-    Confidence interval of a binomial distribution.
+    """Confidence interval of a binomial distribution.
 
     See https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval.
 
@@ -265,7 +394,6 @@ def wilson_score(p, n):
     -------
 
     The confidence interval.
-
     """
 
     if n == 0:
@@ -277,8 +405,7 @@ def wilson_score(p, n):
 
 
 def extract_label(label):
-    """
-    Get the layer number, name and shape from a string.
+    """Get the layer number, name and shape from a string.
 
     Parameters
     ----------

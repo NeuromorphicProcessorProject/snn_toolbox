@@ -21,10 +21,10 @@ from builtins import int, range
 
 import os
 import theano
+import keras
 from textwrap import dedent
-from keras.models import Sequential
 from snntoolbox import echo
-from snntoolbox.config import settings, initialize_simulator, spiking_layers
+from snntoolbox.config import settings, initialize_simulator
 
 standard_library.install_aliases()
 
@@ -32,26 +32,13 @@ if settings['online_normalization']:
     lidx = 0
 
 
-class SNN_compiled():
+class SNN():
     """
-    Class to hold the compiled spiking neural network.
-
-    Class to hold the compiled spiking neural network, ready for testing in a
-    spiking simulator.
-
-    Parameters
-    ----------
-
-    ann: dict
-        Parsed input model; result of applying ``model_lib.extract(in)`` to the
-        input model ``in``.
+    The compiled spiking neural network, ready for testing in a spiking
+    simulator.
 
     Attributes
     ----------
-
-    ann: dict
-        Parsed input model; result of applying ``model_lib.extract(in)`` to the
-        input model ``in``.
 
     sim: Simulator
         Module containing utility functions of spiking simulator. Result of
@@ -82,17 +69,15 @@ class SNN_compiled():
     end_sim:
         Clean up after simulation. Not needed in this simulator, so do a
         ``pass``.
-
     """
 
-    def __init__(self, ann):
+    def __init__(self):
         """Init function."""
-        self.ann = ann
         self.sim = initialize_simulator()
-        self.snn = Sequential()
+        self.snn = keras.models.Sequential()
         self.get_output = None
 
-    def build(self):
+    def build(self, parsed_model):
         """Compile a SNN to prepare for simulation with INI simulator.
 
         Convert an ANN to a spiking neural network, using layers derived from
@@ -103,68 +88,43 @@ class SNN_compiled():
 
         Sets the ``snn`` and ``get_output`` attributes of this class.
 
+        Parameters
+        ----------
+
+        parsed_model: Keras model
+            Parsed input model; result of applying
+            ``model_lib.extract(input_model)`` to the ``input model``.
         """
+
+        self.parsed_model = parsed_model
+
+        echo('\n' + "Compiling spiking network...\n")
+
+        # Pass time variable to first layer
+        input_time = theano.tensor.scalar('time')
+        kwargs = {'time_var': input_time}
+
         # Iterate over layers to create spiking neurons and connections.
-        if settings['verbose'] > 1:
-            echo("Iterating over ANN layers to add spiking layers...\n")
-        for (layer_num, layer) in enumerate(self.ann['layers']):
-            kwargs = {'name': layer['label'], 'trainable': False}
-            kwargs2 = {}
-            kwargs2.update({'layer_type': layer['layer_type']})
-            if 'activation' in layer:
-                # if layer['activation'] == 'softsign':
-                #    kwargs.update({'activation': K.sign})
-                kwargs.update({'activation': layer['activation']})
-            if layer_num == 0:
-                # For the input layer, pass extra keyword argument
-                # 'batch_input_shape' to layer constructor.
-                input_shape = list(self.ann['input_shape'])
-                input_shape[0] = settings['batch_size']
-                input_time = theano.tensor.scalar('time')
-                kwargs.update({'batch_input_shape': input_shape})
-                kwargs2.update({'time_var': input_time})
-            echo("Layer: {}\n".format(layer['label']))
-            if layer['layer_type'] == 'Convolution2D':
-                self.snn.add(self.sim.SpikeConv2DReLU(
-                    layer['nb_filter'], layer['nb_row'], layer['nb_col'],
-                    self.sim.floatX(layer['parameters']),
-                    border_mode=layer['border_mode'],
-                    subsample=layer['subsample'],
-                    filter_flip=layer['filter_flip'], **kwargs))
-            elif layer['layer_type'] == 'Dense':
-                self.snn.add(self.sim.SpikeDense(
-                    layer['output_shape'][1],
-                    self.sim.floatX(layer['parameters']), **kwargs))
-            elif layer['layer_type'] == 'Flatten':
-                self.snn.add(self.sim.SpikeFlatten(**kwargs))
-            elif layer['layer_type'] == 'MaxPooling2D':
-                self.snn.add(self.sim.MaxPool2DReLU(
-                    pool_size=layer['pool_size'], strides=layer['strides'],
-                    border_mode=layer['border_mode'], label=layer['label'],
-                    pool_type=settings["maxpool_type"]))
-            elif layer['layer_type'] == 'AveragePooling2D':
-                self.snn.add(self.sim.AvgPool2DReLU(
-                    pool_size=layer['pool_size'], strides=layer['strides'],
-                    border_mode=layer['border_mode'], label=layer['label']))
-            if layer['layer_type'] in spiking_layers:
-                self.sim.init_neurons(self.snn.layers[-1],
-                                      v_thresh=settings['v_thresh'],
-                                      tau_refrac=settings['tau_refrac'],
-                                      **kwargs2)
+        for layer in parsed_model.layers:
+            echo("Building layer: {}\n".format(layer.name))
+            spike_layer = getattr(self.sim, 'Spike' + layer.__class__.__name__)
+            self.snn.add(spike_layer(**layer.get_config()))
+            self.snn.layers[-1].set_weights(layer.get_weights())
+            self.sim.init_neurons(self.snn.layers[-1],
+                                  v_thresh=settings['v_thresh'],
+                                  tau_refrac=settings['tau_refrac'],
+                                  **kwargs)
+            kwargs = {}
+
         # Compile
         self.compile_snn(input_time)
 
     def compile_snn(self, input_time):
-        """Set the ``snn`` and ``get_output`` attributes of this class.
+        """Set the ``snn`` and ``get_output`` attributes of this class."""
 
-        Todo: Allow user to specify loss function here (optimizer is not
-        relevant as we do not train any more). Unfortunately, Keras does not
-        save these parameters. They can be obtained from the compiled model
-        by calling 'model.loss' and 'model.optimizer'.
-
-        """
-        print("Compiling spiking network...\n")
-        self.snn.compile(loss='categorical_crossentropy', optimizer='sgd',
+        # Optimizer and loss are required by the compiler but not needed at
+        # inference time, so we simply set it to the most common choice here.
+        self.snn.compile('sgd', 'categorical_crossentropy',
                          metrics=['accuracy'])
         output_spikes = self.snn.layers[-1].get_output()
         output_time = self.sim.get_time(self.snn.layers[-1])
@@ -183,9 +143,8 @@ class SNN_compiled():
                                               [output_spikes, output_time],
                                               updates=updates,
                                               allow_input_downcast=True)
-        print("Compilation finished.\n")
 
-    def run(self, snn_precomp, X_test, Y_test):
+    def run(self, X_test, Y_test):
         """Simulate a SNN with LIF and Poisson input.
 
         Simulate a spiking network with leaky integrate-and-fire units and
@@ -201,9 +160,6 @@ class SNN_compiled():
         Parameters
         ----------
 
-        snn_precomp: SNN
-            The converted spiking network, before compilation (i.e. independent
-            of simulator).
         X_test: float32 array
             The input samples to test.
             With data of the form (channels, num_rows, num_cols),
@@ -220,9 +176,10 @@ class SNN_compiled():
         total_acc: float
             Number of correctly classified samples divided by total number of
             test samples.
-
         """
+
         import numpy as np
+        from snntoolbox.core.util import get_activations_batch
         from snntoolbox.io_utils.plotting import output_graphs
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
         from snntoolbox.io_utils.plotting import plot_error_vs_time
@@ -230,22 +187,10 @@ class SNN_compiled():
         # Load neuron layers and connections if conversion was done during a
         # previous session.
         if self.get_output is None:
-            if settings['verbose'] > 1:
-                echo("Restoring layer connections...\n")
+            echo("Restoring layer connections...\n")
             self.load()
-            # Set parameters of original network to the normalized values so
-            # that the computed activations use the same parameters as the
-            # spiking layers.
-            j = 0
-            parameters = [layer.get_weights() for layer in self.snn.layers
-                          if layer.get_weights()]
-            for idx in range(len(self.ann['layers'])):
-                # Skip layer if not preceeded by a layer with parameters
-                if idx == 0 or 'parameters' not in self.ann['layers'][idx-1]:
-                    continue
-                # Update model with modified parameters
-                snn_precomp.set_layer_params(parameters[j], idx-1)
-                j += 1
+            self.parsed_model = keras.models.load_model(os.path.join(
+                settings['path'], settings['filename_parsed_model'] + '.h5'))
 
         si = settings['sample_indices_to_test']
         if not si == []:
@@ -371,7 +316,9 @@ class SNN_compiled():
                     plot_error_vs_time(err, settings['log_dir_of_current_run'])
                     plot_confusion_matrix(truth[:max_idx], guesses[:max_idx],
                                           settings['log_dir_of_current_run'])
-                    output_graphs(spiketrains_batch, snn_precomp, batch,
+                    activations_batch = get_activations_batch(
+                        self.parsed_model, batch)
+                    output_graphs(spiketrains_batch, activations_batch,
                                   settings['log_dir_of_current_run'])
                     # t=70.1% m=0.6GB
                     del spiketrains_batch
@@ -408,25 +355,17 @@ class SNN_compiled():
 
         filename: string, optional
             Name of file to write model to. Defaults to
-            ``settings['filename_snn_exported']``.
-
+            ``settings['filename_snn']``.
         """
-        from snntoolbox.io_utils.common import confirm_overwrite
 
         if path is None:
             path = settings['path']
         if filename is None:
-            filename = settings['filename_snn_exported']
+            filename = settings['filename_snn']
+        filepath = os.path.join(path, filename + '.h5')
 
-        echo("Saving model to {}\n".format(path))
-
-        filepath = os.path.join(path, filename + '.json')
-
-        if confirm_overwrite(filepath):
-            open(filepath, 'w').write(self.snn.to_json())
-        self.snn.save_weights(os.path.join(path, filename + '.h5'),
-                              overwrite=settings['overwrite'])
-        echo("Done.\n")
+        echo("Saving model to {}...\n".format(filepath))
+        self.snn.save(filepath, settings['overwrite'])
 
     def load(self, path=None, filename=None):
         """Load model architecture and parameters from disk.
@@ -442,22 +381,18 @@ class SNN_compiled():
 
         filename: string, optional
             Name of file to load model from. Defaults to
-            ``settings['filename_snn_exported']``.
-
+            ``settings['filename_snn']``.
         """
-        from keras import models
+
         from snntoolbox.core.inisim import custom_layers
 
         if path is None:
             path = settings['path']
         if filename is None:
-            filename = settings['filename_snn_exported']
+            filename = settings['filename_snn']
+        filepath = os.path.join(path, filename + '.h5')
 
-        filepath = os.path.join(path, filename + '.json')
-        self.snn = models.model_from_json(open(filepath).read(),
-                                          custom_objects=custom_layers)
-        self.snn.load_weights(os.path.join(path, filename + '.h5'))
-
+        self.snn = keras.models.load_model(filepath, custom_layers)
         self.assert_batch_size(self.snn.layers[0].batch_input_shape[0])
 
         # Allocate input variables
@@ -473,6 +408,7 @@ class SNN_compiled():
 
     def assert_batch_size(self, batch_size):
         """Check if batchsize is matched with configuration."""
+
         if batch_size != settings['batch_size']:
             msg = dedent("""\
                 You attempted to use the SNN with a batch_size different than
@@ -490,6 +426,6 @@ class SNN_compiled():
 
         Clean up after simulation. Not needed in this simulator, so do a
         ``pass``.
-
         """
+
         pass

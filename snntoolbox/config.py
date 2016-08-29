@@ -45,24 +45,30 @@ log_dir_of_current_run: string, optional
 filename: string
     Base name of all loaded and saved files during this run. The ANN model to
     be converted is expected to be named '<basename>'.
+filename_parsed_model: string, optional
+    Name given to parsed SNN models. If not specified by the user, the
+    toolbox sets it to '<basename>_parsed'.
 filename_snn: string, optional
-    Name given to converted SNN models. If not specified by the user, the
-    toolbox sets it to 'snn_<basename>'.
-filename_snn_exported: string, optional
     Name given to converted spiking nets when exported to test it in a specific
     simulator. If not specified by the user, the toolbox set it to
     ``snn_<basename>_<simulator>``.
 evaluateANN: boolean, optional
-    If enabled, test the ANN before conversion. If you also enabled
-    'normalization' (see parameter ``normalize`` below), then the network will
-    be evaluated again after normalization.
+    If enabled, test the input model before and after it is parsed, to ensure
+    we do not lose performance. (Parsing extracts all necessary information
+    from the input model and creates a new network with some simplifications in
+    preparation for conversion to SNN.)
+    If you also enabled 'normalization' (see parameter ``normalize`` below),
+    then the network will be evaluated again after normalization. This
+    operation should preserve accuracy as well.
 normalize: boolean, optional
     Only relevant when converting a network, not during simulation. If enabled,
     the parameters of the spiking network will be normalized by the highest
-    parameter or activation value.
+    activation value, or by the ``n``-th percentile (see parameter
+    ``percentile`` below).
 percentile: int, optional
     Use the activation value in the specified percentile for normalization.
-    Set to ``50`` for the median, ``100`` for the max.
+    Set to ``50`` for the median, ``100`` for the max. Typical values are
+    ``99, 99.9, 100``.
 convert: boolean, optional
     If enabled, load an ANN from ``<path>`` and convert it to spiking.
 simulate: boolean, optional
@@ -87,6 +93,7 @@ verbose: int, optional
 scaling_factor: int, optional
     Used by the MegaSim simulator to scale the neuron parameters and weights
     because MegaSim uses integers.
+
 Cell Parameters
 ***************
 
@@ -174,8 +181,9 @@ timestep_fraction: int, optional
 num_to_test: int, optional
     How many samples to test.
 maxpool_type : string
-    "fir_max": accmulated absolute firing rate based max pooling
-    "avg_max": moving average of firing rate based max pooling
+    Implementation variants of spiking MaxPooling layers, based on
+    fir_max: accmulated absolute firing rate
+    avg_max: moving average of firing rate
 
 Default values
 ..............
@@ -187,8 +195,8 @@ Default values
                     'path': '',
                     'log_dir_of_current_run': '',
                     'filename': '',
+                    'filename_parsed_model': '',
                     'filename_snn': 'snn_',
-                    'filename_snn_exported': 'snn_exported_',
                     'batch_size': 100,
                     'evaluateANN': True,
                     'normalize': True,
@@ -220,7 +228,6 @@ Default values
                  'diff_to_max_rate': 200,
                  'num_to_test': 10,
                  'diff_to_min_rate': 100}
-
 """
 
 import matplotlib as mpl
@@ -256,8 +263,8 @@ settings = {'dataset_path': '',
             'path': '',
             'log_dir_of_current_run': '',
             'filename': '',
+            'filename_parsed_model': '',
             'filename_snn': 'snn_',
-            'filename_snn_exported': 'snn_exported_',
             'batch_size': 100,
             'samples_to_test': '',
             'evaluateANN': True,
@@ -283,7 +290,7 @@ settings = {'dataset_path': '',
             'timestep_fraction': 10,
             'diff_to_min_rate': 100,
             'scaling_factor': 10000000,
-            'maxpool_type': "fir_max"}
+            'maxpool_type': 'fir_max'}
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,
@@ -340,7 +347,7 @@ def update_setup(s=None):
             " Choose from {}".format(simulators)
     else:
         # Fall back on default if none specified.
-        s.update({'simulator': 'INI'})
+        s['simulator'] = 'INI'
     # Warn user that it is not possible to use Brian2 simulator by loading a
     # pre-converted network from disk.
     if s['simulator'] == 'brian2' and 'convert' in s and not s['convert'] \
@@ -370,13 +377,13 @@ def update_setup(s=None):
                                                    'test')
 
     # Specify filenames for models at different stages of the conversion.
+    if s['filename_parsed_model'] == "":
+        s['filename_parsed_model'] = s['filename'] + '_parsed'
     if s['filename_snn'] == "":
-        s['filename_snn'] = 'snn_' + s['filename']
-    if s['filename_snn_exported'] == "":
-        s['filename_snn_exported'] = s['filename_snn'] + '_' + s['simulator']
+        s['filename_snn'] = 'snn_' + s['filename'] + '_' + s['simulator']
 
     if 'poisson_input' not in s:
-        s.update({'poisson_input': True})
+        s['poisson_input'] = True
 
     if s['simulator'] != 'INI' and not s['poisson_input']:
         s['poisson_input'] = True
@@ -385,7 +392,7 @@ def update_setup(s=None):
             only possible in INI simulator. Falling back on Poisson input."""))
 
     if 'maxpool_type' not in s or s['maxpool_type'] == "":
-        s.update({'maxpool_type': 'fir_max'})
+        s['maxpool_type'] = 'fir_max'
 
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)

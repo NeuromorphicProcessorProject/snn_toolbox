@@ -27,8 +27,8 @@ def absorb_bn(w, b, gamma, beta, mean, std, epsilon):
     """
     Absorb the parameters of a batch-normalization layer into the previous
     layer.
-
     """
+
     import numpy as np
 
     axis = 0 if w.ndim > 2 else 1
@@ -45,8 +45,7 @@ def absorb_bn(w, b, gamma, beta, mean, std, epsilon):
 
 
 def import_script(path=None, filename=None):
-    """
-    Import python script which builds the model.
+    """Import python script which builds the model.
 
     Used if the input model library does not provide loading functions to
     restore a model from a saved file. In that case, use the script with which
@@ -55,14 +54,12 @@ def import_script(path=None, filename=None):
     Parameters
     ----------
 
-        path: string, optional
-            Path to directory where to load model from. Defaults to
-            ``settings['path']``.
+    path: string, optional
+        Path to directory where to load model from. Defaults to
+        ``settings['path']``.
 
-        filename: string, optional
-            Name of file to load model from. Defaults to
-            ``settings['filename']``.
-
+    filename: string, optional
+        Name of file to load model from. Defaults to ``settings['filename']``.
     """
 
     import os

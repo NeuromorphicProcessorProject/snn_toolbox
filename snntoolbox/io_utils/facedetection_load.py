@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Helper functions to load, process, augment and save facedetection dataset.
+
 Created on Mon Jun  6 12:55:20 2016
 
 @author: rbodo
@@ -19,8 +21,7 @@ standard_library.install_aliases()
 
 
 def get_facedetection(sourcepath, imagepath, targetpath=None, filename=None):
-    """
-    Load facedetection dataset.
+    """Get facedetection dataset.
 
     Values are normalized and saved as ``float32`` type. Class vectors are
     converted to binary class matrices. Output can be flattened for use in
@@ -50,7 +51,6 @@ def get_facedetection(sourcepath, imagepath, targetpath=None, filename=None):
     With data of the form (channels, num_rows, num_cols), ``X_train`` and
     ``X_test`` have dimension (num_samples, channels, num_rows, num_cols).
     ``Y_train`` and ``Y_test`` have dimension (num_samples, num_classes).
-
     """
 
     nb_classes = 2

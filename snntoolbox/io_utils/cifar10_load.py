@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Helper functions to load, process, augment and save Cifar10 dataset.
+
 Created on Mon Jun  6 12:55:10 2016
 
 @author: rbodo
@@ -20,12 +22,12 @@ standard_library.install_aliases()
 
 
 def get_cifar10(path=None, filename=None, flat=False):
-    """
-    Load cifar10 classification dataset.
+    """Get cifar10 classification dataset.
 
     Values are normalized and saved as ``float32`` type. Class vectors are
     converted to binary class matrices. Output can be flattened for use in
-    fully-connected networks.
+    fully-connected networks. Can perform preprocessing using a Keras
+    ImageDataGenerator.
 
     Parameters
     ----------
