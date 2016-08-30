@@ -170,11 +170,14 @@ def get_imagenet(train_path, test_path, save_path, filename=None):
     np.savez_compressed(filepath + 'Y_test', Y_test.astype('float32'))
 
 if __name__ == '__main__':
-    # get_imagenet('/home/rbodo/.snntoolbox/datasets/caltech101/original/')
-    reorganize_validation(
-        "/home/duguyue100/data/ILSVRC2012_img_val",
-        "/home/duguyue100/data/ILSVRC2014_devkit/data/"
-        "ILSVRC2014_clsloc_validation_ground_truth.txt",
-        "/home/duguyue100/.keras/models/imagenet_class_index.json")
     # sample_imagenet("/home/duguyue100/imagenet/ILSVRC2015/Data/CLS-LOC/train/",
     #                 "/home/duguyue100/imagenet_train/", num_samples=50)
+    # reorganize_validation(
+    #     "/home/duguyue100/data/ILSVRC2012_img_val",
+    #     "/home/duguyue100/data/ILSVRC2014_devkit/data/"
+    #     "ILSVRC2014_clsloc_validation_ground_truth.txt",
+    #     "/home/duguyue100/.keras/models/imagenet_class_index.json")
+
+    get_imagenet('/home/duguyue100/imagenet_train',
+                 '/home/duguyue100/data/ILSVRC2012_img_val',
+                 '/home/duguyue100/data')
