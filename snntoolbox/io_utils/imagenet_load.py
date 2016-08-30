@@ -124,4 +124,4 @@ def get_imagenet(path, filename=None):
 if __name__ == '__main__':
     # get_imagenet('/home/rbodo/.snntoolbox/datasets/caltech101/original/')
     sample_imagenet("/home/duguyue100/imagenet/ILSVRC2015/Data/CLS-LOC/train/",
-                    "/home/duguyue100/imagenet_train/", num_samples=5)
+                    "/home/duguyue100/imagenet_train/", num_samples=50)
