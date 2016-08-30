@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
+"""ImageNet utilities.
+
 Created on Mon Jun  6 12:55:20 2016
 
 @author: rbodo
@@ -14,6 +14,7 @@ import os
 from os.path import join
 import shutil
 import random
+import json
 import numpy as np
 
 from keras.preprocessing.image import ImageDataGenerator
@@ -69,7 +70,44 @@ def sample_imagenet(origin_path, target_path, num_samples=50):
     print ("[MESSAGE] Images are sampled! Stored at %s" % (target_path))
 
 
-def get_imagenet(path, filename=None):
+def reorganize_validation(val_path, val_label_path, class_idx_path):
+    """Reorganize Validation dataset into folder.
+
+    Parameters
+    ----------
+    val_path : string
+        The path to validation data.
+    val_label_path : string
+        The label file for validation data.
+    class_idx_path : string
+        The json file for model index definition.
+    """
+    if not os.path.isdir(val_path):
+        raise ValueError("The Validation Path is not existed!")
+    if not os.path.isfile(val_label_path):
+        raise ValueError("The validation label file is not existed!")
+    if not os.path.isfile(class_idx_path):
+        raise ValueError("The class idx file is not existed!")
+    class_idx = json.load(open(class_idx_path, "r"))
+    label = np.loadtxt(val_label_path, dtype=int)
+
+    for idx in xrange(label.shape[0]):
+        img_fn = join(val_path, "ILSVRC2012_val_%08d.JPEG" % (idx+1))
+
+        img_label = label[idx]
+        img_label_name = class_idx[str(img_label-1)][0]
+
+        label_path = join(val_path, img_label_name)
+        if not os.path.isdir(label_path):
+            os.makedirs(label_path)
+
+        shutil.move(img_fn, label_path)
+        print ("[MESSAGE] Image %s is moved to %s" % (img_fn, label_path))
+
+    print ("[MESSAGE] The validation data is reorganized.")
+
+
+def get_imagenet(train_path, test_path, save_path, filename=None):
     """Load imagenet classification dataset.
 
     Values are normalized and saved as ``float32`` type. Class vectors are
@@ -79,7 +117,11 @@ def get_imagenet(path, filename=None):
     Parameters
     ----------
 
-    path: string, optional
+    train_path : string
+        The path of training data
+    test_path : string
+        The path of testing data (using validation data)
+    save_path : string
         If a ``path`` is given, the loaded and modified dataset is saved to
         ``path`` directory.
     filename: string, optional
@@ -97,31 +139,42 @@ def get_imagenet(path, filename=None):
 
     """
     datagen = ImageDataGenerator()
-    dataflow = datagen.flow_from_directory(path, target_size=(224, 224),
-                                           batch_size=1000)
-    X_test, Y_test = dataflow.next()
+    train_dataflow = datagen.flow_from_directory(train_path,
+                                                 target_size=(224, 224),
+                                                 batch_size=1000)
+    X_train, Y_train = train_dataflow.next()
 
-#    X_test[:, 0, :, :] -= 103.939
-#    X_test[:, 1, :, :] -= 116.779
-#    X_test[:, 2, :, :] -= 123.68
-#    # 'RGB'->'BGR'
-#    X_test = X_test[:, ::-1, :, :]
-#    X_test /= 255.
+    X_train[:, 0, :, :] -= 103.939
+    X_train[:, 1, :, :] -= 116.779
+    X_train[:, 2, :, :] -= 123.68
+    X_train = X_train[:, ::-1, :, :]
+    X_train /= 255.
 
-    y_shape = list(Y_test.shape)
-    y_shape[-1] = 1000
-    print(y_shape)
-    y_test = np.zeros(y_shape)
-    y_test[:, :102] = Y_test
+    test_dataflow = datagen.flow_from_directory(test_path,
+                                                target_size=(224, 224),
+                                                batch_size=1000)
+
+    X_test, Y_test = test_dataflow.next()
+
+    X_test[:, 0, :, :] -= 103.939
+    X_test[:, 1, :, :] -= 116.779
+    X_test[:, 2, :, :] -= 123.68
+    X_test = X_test[:, ::-1, :, :]
+    X_test /= 255.
 
     if filename is None:
         filename = ''
-    filepath = os.path.join(path, filename)
-#    np.savez_compressed(filepath + 'X_norm', X_test[::100].astype('float32'))
-#    np.savez_compressed(filepath + 'X_test', X_test.astype('float32'))
-    np.savez_compressed(filepath + 'Y_test', y_test)
+    filepath = os.path.join(save_path, filename)
+    np.savez_compressed(filepath + 'X_norm', X_train.astype('float32'))
+    np.savez_compressed(filepath + 'X_test', X_test.astype('float32'))
+    np.savez_compressed(filepath + 'Y_test', Y_test.astype('float32'))
 
 if __name__ == '__main__':
     # get_imagenet('/home/rbodo/.snntoolbox/datasets/caltech101/original/')
-    sample_imagenet("/home/duguyue100/imagenet/ILSVRC2015/Data/CLS-LOC/train/",
-                    "/home/duguyue100/imagenet_train/", num_samples=50)
+    reorganize_validation(
+        "/home/duguyue100/data/ILSVRC2012_img_val",
+        "/home/duguyue100/data/ILSVRC2014_devkit/data/"
+        "ILSVRC2014_clsloc_validation_ground_truth.txt",
+        "/home/duguyue100/.keras/models/imagenet_class_index.json")
+    # sample_imagenet("/home/duguyue100/imagenet/ILSVRC2015/Data/CLS-LOC/train/",
+    #                 "/home/duguyue100/imagenet_train/", num_samples=50)
