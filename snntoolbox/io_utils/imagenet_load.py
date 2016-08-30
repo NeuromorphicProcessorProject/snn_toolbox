@@ -107,7 +107,8 @@ def reorganize_validation(val_path, val_label_path, class_idx_path):
     print ("[MESSAGE] The validation data is reorganized.")
 
 
-def get_imagenet(train_path, test_path, save_path, filename=None):
+def get_imagenet(train_path, test_path, save_path, class_idx_path,
+                 filename=None):
     """Load imagenet classification dataset.
 
     Values are normalized and saved as ``float32`` type. Class vectors are
@@ -138,9 +139,25 @@ def get_imagenet(train_path, test_path, save_path, filename=None):
     ``Y_test`` has dimension (num_samples, num_classes).
 
     """
+    if not os.path.isdir(train_path):
+        raise ValueError("Training dataset is not found!")
+    if not os.path.isdir(test_path):
+        raise ValueError("Testing dataset is not found!")
+    if not os.path.isdir(save_path):
+        os.makedirs(save_path)
+    if not os.path.isfile(class_idx_path):
+        raise ValueError("The class idx file is not existed!")
+
+    class_idx = json.load(open(class_idx_path, "r"))
+
+    classes = []
+    for idx in xrange(len(class_idx)):
+        classes.append(class_idx[str(idx)][0])
+
     datagen = ImageDataGenerator()
     train_dataflow = datagen.flow_from_directory(train_path,
                                                  target_size=(224, 224),
+                                                 classes=classes,
                                                  batch_size=1000)
     X_train, Y_train = train_dataflow.next()
 
@@ -152,6 +169,7 @@ def get_imagenet(train_path, test_path, save_path, filename=None):
 
     test_dataflow = datagen.flow_from_directory(test_path,
                                                 target_size=(224, 224),
+                                                classes=classes,
                                                 batch_size=1000)
 
     X_test, Y_test = test_dataflow.next()
@@ -180,4 +198,5 @@ if __name__ == '__main__':
 
     get_imagenet('/home/duguyue100/imagenet_train',
                  '/home/duguyue100/data/ILSVRC2012_img_val',
-                 '/home/duguyue100/data')
+                 '/home/duguyue100/data',
+                 '/home/duguyue100/.keras/models/imagenet_class_index.json')
