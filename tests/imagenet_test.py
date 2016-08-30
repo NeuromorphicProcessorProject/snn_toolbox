@@ -25,19 +25,25 @@ def model_evaluation(model_name, data_path):
         the name of the model
     """
     model_json = os.path.join(config_path, model_name+".json")
-    model_data = os.path.joinjoin(config_path, model_name+".h5")
+    model_data = os.path.join(config_path, model_name+".h5")
 
-    data_path = os.path.join(data_dir, "imagenet", "X_norm.npz")
-    label_path = os.path.join(data_dir, "imagenet", "Y_norm.npz")
+    data_path = os.path.join(data_dir, data_path, "X_norm.npz")
+    label_path = os.path.join(data_dir, data_path, "Y_norm.npz")
 
+    print ("[MESSAGE] Loading data...")
     data = np.load(data_path)["arr_0"]
     label = np.load(label_path)["arr_0"]
+    print ("[MESSAGE] Data loaded.")
 
+    print ("[MESSAGE] Loading model...")
     json_file = open(model_json, 'r')
     model = model_from_json(json_file.read())
     model.load_weights(model_data)
+    print ("[MESSAGE] Model Loaded...")
 
+    print ("[MESSAGE] Evaluating model...")
     score = model.evaluate(data, label, batch_size=1000)
+    print ("[MESSAGE] Model evaluated...")
 
     print('Test score:', score[0])
     print('Test accuracy:', score[1])
@@ -50,7 +56,7 @@ if __name__ == "__main__":
                         default="imagenet",
                         help="The name of the model")
     parser.add_argument("-d", "--data-path", type=str,
-                        default="imagenet.npz",
+                        default="imagenet",
                         help="The dataset set.")
     args = parser.parse_args()
     model_evaluation(**vars(args))
