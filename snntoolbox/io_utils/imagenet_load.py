@@ -52,7 +52,7 @@ def sample_imagenet(origin_path, target_path, num_samples=50):
         if not os.path.isdir(join(target_path, folder_name)):
             os.makedirs(join(target_path, folder_name))
         file_list = [f for f in os.listdir(origin_path)
-                     if os.path.isfile(join(origin_path, f)) and ".JPEG" in f]
+                     if os.path.isfile(join(origin_path, f))]
 
         if num_samples > len(file_list):
             file_idx = range(len(file_list))
