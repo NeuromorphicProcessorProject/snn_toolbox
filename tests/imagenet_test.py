@@ -39,6 +39,8 @@ def model_evaluation(model_name, data_path, x_data_path, y_data_path):
     json_file = open(model_json, 'r')
     model = model_from_json(json_file.read())
     model.load_weights(model_data)
+    model.compile(loss='categorical_crossentropy', optimizer='adadelta',
+                  metrics=['accuracy'])
     print ("[MESSAGE] Model Loaded...")
 
     print ("[MESSAGE] Evaluating model...")
