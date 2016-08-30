@@ -184,6 +184,7 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
         filename = ''
     filepath = os.path.join(save_path, filename)
     np.savez_compressed(filepath + 'X_norm', X_train.astype('float32'))
+    np.savez_compressed(filepath + 'Y_norm', Y_train.astype('float32'))
     np.savez_compressed(filepath + 'X_test', X_test.astype('float32'))
     np.savez_compressed(filepath + 'Y_test', Y_test.astype('float32'))
 
