@@ -16,7 +16,7 @@ config_path = os.path.join(home_path, ".snntoolbox")
 data_dir = os.path.join(config_path, "datasets")
 
 
-def model_evaluation(model_name, data_path):
+def model_evaluation(model_name, data_path, x_data_path, y_data_path):
     """Evaluate ImageNet model.
 
     Parameters
@@ -27,12 +27,12 @@ def model_evaluation(model_name, data_path):
     model_json = os.path.join(config_path, model_name+".json")
     model_data = os.path.join(config_path, model_name+".h5")
 
-    X_path = os.path.join(data_dir, data_path)
-    Y_path = os.path.join(data_dir, data_path)
+    X_path = os.path.join(data_dir, data_path, x_data_path+".npz")
+    Y_path = os.path.join(data_dir, data_path, y_data_path+".npz")
 
     print ("[MESSAGE] Loading data...")
-    data = np.load(X_path+".npz")["arr_0"]
-    label = np.load(Y_path+".npz")["arr_0"]
+    data = np.load(X_path)["arr_0"]
+    label = np.load(Y_path)["arr_0"]
     print ("[MESSAGE] Data loaded.")
 
     print ("[MESSAGE] Loading model...")
@@ -56,7 +56,13 @@ if __name__ == "__main__":
                         default="imagenet",
                         help="The name of the model")
     parser.add_argument("-d", "--data-path", type=str,
-                        default="imagenet/X_norm",
+                        default="imagenet",
+                        help="The dataset set.")
+    parser.add_argument("-xd", "--x-data-path", type=str,
+                        default="X_norm",
+                        help="The dataset set.")
+    parser.add_argument("-yd", "--y-data-path", type=str,
+                        default="Y_norm",
                         help="The dataset set.")
     args = parser.parse_args()
     model_evaluation(**vars(args))
