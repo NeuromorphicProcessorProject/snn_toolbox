@@ -9,6 +9,7 @@ import os
 import argparse
 import numpy as np
 
+from keras.utils import np_utils
 from keras.models import model_from_json
 
 home_path = os.environ["HOME"]
@@ -33,13 +34,17 @@ def model_evaluation(model_name, data_path, x_data_path, y_data_path):
     print ("[MESSAGE] Loading data...")
     data = np.load(X_path)["arr_0"]
     label = np.load(Y_path)["arr_0"]
+    print ("[MESSAGE] X data shape ", data.shape)
+    print ("[MESSAGE] Y data shape ", label.shape)
+    label = np_utils.to_categorical(label, 1000)
+    print ("[MESSAGE] Y data shape to categorical ", label.shape)
     print ("[MESSAGE] Data loaded.")
 
     print ("[MESSAGE] Loading model...")
     json_file = open(model_json, 'r')
     model = model_from_json(json_file.read())
     model.load_weights(model_data)
-    model.compile(loss='categorical_crossentropy', optimizer='adadelta',
+    model.compile(loss='categorical_crossentropy', optimizer=None,
                   metrics=['accuracy'])
     print ("[MESSAGE] Model Loaded...")
 
