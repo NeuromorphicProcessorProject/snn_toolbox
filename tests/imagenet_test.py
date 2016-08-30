@@ -9,7 +9,6 @@ import os
 import argparse
 import numpy as np
 
-from keras.utils import np_utils
 from keras.models import model_from_json
 
 home_path = os.environ["HOME"]

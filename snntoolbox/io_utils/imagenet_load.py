@@ -165,7 +165,7 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
     X_train[:, 1, :, :] -= 116.779
     X_train[:, 2, :, :] -= 123.68
     X_train = X_train[:, ::-1, :, :]
-    X_train /= 255.
+    # X_train /= 255.
 
     test_dataflow = datagen.flow_from_directory(test_path,
                                                 target_size=(224, 224),
@@ -178,7 +178,7 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
     X_test[:, 1, :, :] -= 116.779
     X_test[:, 2, :, :] -= 123.68
     X_test = X_test[:, ::-1, :, :]
-    X_test /= 255.
+    # X_test /= 255.
 
     if filename is None:
         filename = ''
