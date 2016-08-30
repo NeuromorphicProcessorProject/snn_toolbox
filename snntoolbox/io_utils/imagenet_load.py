@@ -51,8 +51,9 @@ def sample_imagenet(origin_path, target_path, num_samples=50):
     for folder_name in folder_list:
         if not os.path.isdir(join(target_path, folder_name)):
             os.makedirs(join(target_path, folder_name))
+        folder_path = join(origin_path, folder_name)
         file_list = [f for f in os.listdir(origin_path)
-                     if os.path.isfile(join(origin_path, f))]
+                     if os.path.isfile(join(folder_path, f)) and ".JPEG" in f]
 
         if num_samples > len(file_list):
             file_idx = range(len(file_list))
@@ -60,7 +61,7 @@ def sample_imagenet(origin_path, target_path, num_samples=50):
             file_idx = random.sample(range(len(file_list)), num_samples)
 
         for idx in file_idx:
-            shutil.copy(join(origin_path, folder_name, file_list[idx]),
+            shutil.copy(join(folder_path, file_list[idx]),
                         join(target_path, folder_name))
             print ("[MESSAGE] Image %s is copied to %s" %
                    (file_list[idx], join(target_path, folder_name)))
