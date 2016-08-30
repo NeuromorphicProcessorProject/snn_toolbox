@@ -36,8 +36,6 @@ def model_evaluation(model_name, data_path, x_data_path, y_data_path):
     label = np.load(Y_path)["arr_0"]
     print ("[MESSAGE] X data shape ", data.shape)
     print ("[MESSAGE] Y data shape ", label.shape)
-    label = np_utils.to_categorical(label, 1000)
-    print ("[MESSAGE] Y data shape to categorical ", label.shape)
     print ("[MESSAGE] Data loaded.")
 
     print ("[MESSAGE] Loading model...")
@@ -49,7 +47,7 @@ def model_evaluation(model_name, data_path, x_data_path, y_data_path):
     print ("[MESSAGE] Model Loaded...")
 
     print ("[MESSAGE] Evaluating model...")
-    score = model.evaluate(data, label, batch_size=1000)
+    score = model.evaluate(data, label, batch_size=100)
     print ("[MESSAGE] Model evaluated...")
 
     print('Test score:', score[0])
