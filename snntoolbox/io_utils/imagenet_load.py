@@ -225,16 +225,16 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
 if __name__ == '__main__':
     # sample_imagenet("/home/duguyue100/imagenet/ILSVRC2015/Data/CLS-LOC/train/",
     #                 "/home/duguyue100/imagenet_train/", num_samples=50)
-    reorganize_validation(
-        "/home/duguyue100/data/ILSVRC2012_img_val",
-        "/home/duguyue100/data/ILSVRC2014_devkit/data/"
-        "ILSVRC2014_clsloc_validation_ground_truth.txt",
-        "/home/duguyue100/.keras/models/imagenet_class_map.json")
+    # reorganize_validation(
+    #     "/home/duguyue100/data/ILSVRC2012_img_val",
+    #     "/home/duguyue100/data/ILSVRC2014_devkit/data/"
+    #     "ILSVRC2014_clsloc_validation_ground_truth.txt",
+    #     "/home/duguyue100/.keras/models/imagenet_class_map.json")
 
-    # get_imagenet('/home/duguyue100/imagenet_train',
-    #              '/home/duguyue100/data/ILSVRC2012_img_val',
-    #              '/home/duguyue100/data',
-    #              '/home/duguyue100/.keras/models/imagenet_class_index.json')
+    get_imagenet('/home/duguyue100/imagenet_train',
+                 '/home/duguyue100/data/ILSVRC2012_img_val',
+                 '/home/duguyue100/data',
+                 '/home/duguyue100/.keras/models/imagenet_class_index.json')
 
     # generate_class_idx("/home/duguyue100/.keras/models/map_clsloc.txt",
     #                    "/home/duguyue100/.keras/models/", filename=None)
