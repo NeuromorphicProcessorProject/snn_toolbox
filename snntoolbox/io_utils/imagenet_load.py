@@ -70,6 +70,40 @@ def sample_imagenet(origin_path, target_path, num_samples=50):
     print ("[MESSAGE] Images are sampled! Stored at %s" % (target_path))
 
 
+def generate_class_idx(class_map_path, save_path, filename=None):
+    """Generate class index mapping.
+
+    Parameters
+    ----------
+    class_map_path : string
+        class mapping file
+    save_path : string
+        the destination of the mapping file in json.
+    filename : string
+        if it's None, then the filename is assigned as imagenet_class_map.json
+    """
+    if not os.path.isfile(class_map_path):
+        raise ValueError("The class mapping file is not available!")
+    if not os.path.isdir(save_path):
+        os.makedirs(save_path)
+        print ("[MESSAGE] WARNING! The target path is not existed, "
+               "The path is created automatically.")
+
+    if filename is None:
+        filename = "imagenet_class_map.json"
+
+    file_path = join(save_path, filename)
+    class_map_list = np.loadtxt(class_map_path, dtype=str)
+
+    cls_dict = {}
+    for cls_item in class_map_list:
+        cls_dict[cls_item[1]] = [cls_item[0], cls_item[2]]
+
+    out_f = open(file_path, mode="w")
+    json.dump(cls_dict, out_f)
+    print ("[MESSAGE] The class mapping file is dumped at %s." % (file_path))
+
+
 def reorganize_validation(val_path, val_label_path, class_idx_path):
     """Reorganize Validation dataset into folder.
 
@@ -191,13 +225,16 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
 if __name__ == '__main__':
     # sample_imagenet("/home/duguyue100/imagenet/ILSVRC2015/Data/CLS-LOC/train/",
     #                 "/home/duguyue100/imagenet_train/", num_samples=50)
-    # reorganize_validation(
-    #     "/home/duguyue100/data/ILSVRC2012_img_val",
-    #     "/home/duguyue100/data/ILSVRC2014_devkit/data/"
-    #     "ILSVRC2014_clsloc_validation_ground_truth.txt",
-    #     "/home/duguyue100/.keras/models/imagenet_class_index.json")
+    reorganize_validation(
+        "/home/duguyue100/data/ILSVRC2012_img_val",
+        "/home/duguyue100/data/ILSVRC2014_devkit/data/"
+        "ILSVRC2014_clsloc_validation_ground_truth.txt",
+        "/home/duguyue100/.keras/models/imagenet_class_map.json")
 
-    get_imagenet('/home/duguyue100/imagenet_train',
-                 '/home/duguyue100/data/ILSVRC2012_img_val',
-                 '/home/duguyue100/data',
-                 '/home/duguyue100/.keras/models/imagenet_class_index.json')
+    # get_imagenet('/home/duguyue100/imagenet_train',
+    #              '/home/duguyue100/data/ILSVRC2012_img_val',
+    #              '/home/duguyue100/data',
+    #              '/home/duguyue100/.keras/models/imagenet_class_map.json')
+
+    # generate_class_idx("/home/duguyue100/.keras/models/map_clsloc.txt",
+    #                    "/home/duguyue100/.keras/models/", filename=None)
