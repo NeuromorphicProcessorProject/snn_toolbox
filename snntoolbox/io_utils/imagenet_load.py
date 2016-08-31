@@ -192,7 +192,7 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
     train_dataflow = datagen.flow_from_directory(train_path,
                                                  target_size=(224, 224),
                                                  classes=classes,
-                                                 batch_size=1000)
+                                                 batch_size=50000)
     X_train, Y_train = train_dataflow.next()
 
     X_train[:, 0, :, :] -= 103.939
@@ -204,7 +204,7 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
     test_dataflow = datagen.flow_from_directory(test_path,
                                                 target_size=(224, 224),
                                                 classes=classes,
-                                                batch_size=1000)
+                                                batch_size=50000)
 
     X_test, Y_test = test_dataflow.next()
 
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     # get_imagenet('/home/duguyue100/imagenet_train',
     #              '/home/duguyue100/data/ILSVRC2012_img_val',
     #              '/home/duguyue100/data',
-    #              '/home/duguyue100/.keras/models/imagenet_class_map.json')
+    #              '/home/duguyue100/.keras/models/imagenet_class_index.json')
 
     # generate_class_idx("/home/duguyue100/.keras/models/map_clsloc.txt",
     #                    "/home/duguyue100/.keras/models/", filename=None)
