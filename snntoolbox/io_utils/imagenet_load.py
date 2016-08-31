@@ -97,7 +97,7 @@ def generate_class_idx(class_map_path, save_path, filename=None):
 
     cls_dict = {}
     for cls_item in class_map_list:
-        cls_dict[cls_item[1]] = [cls_item[0], cls_item[2]]
+        cls_dict[str(int(cls_item[1])-1)] = [cls_item[0], cls_item[2]]
 
     out_f = open(file_path, mode="w")
     json.dump(cls_dict, out_f)
