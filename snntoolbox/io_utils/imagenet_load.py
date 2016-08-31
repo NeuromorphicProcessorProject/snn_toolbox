@@ -192,7 +192,7 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
     train_dataflow = datagen.flow_from_directory(train_path,
                                                  target_size=(224, 224),
                                                  classes=classes,
-                                                 batch_size=50000)
+                                                 batch_size=10000)
     X_train, Y_train = train_dataflow.next()
 
     X_train[:, 0, :, :] -= 103.939
@@ -204,7 +204,7 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
     test_dataflow = datagen.flow_from_directory(test_path,
                                                 target_size=(224, 224),
                                                 classes=classes,
-                                                batch_size=50000)
+                                                batch_size=10000)
 
     X_test, Y_test = test_dataflow.next()
 
