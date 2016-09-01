@@ -96,7 +96,6 @@ def extract(model):
         - pool_size (list): Specifies the subsampling factor in each dimension.
         - strides (list): The stepsize in each dimension during pooling.
     """
-
     layers = []
     for (layer_num, layer) in enumerate(model.layers):
         layer_type = layer.__class__.__name__
@@ -188,7 +187,6 @@ def load_ann(path=None, filename=None):
         ``keras.Model.evaluate`` method.
 
     """
-
     from keras import models
 
     if path is None:
@@ -212,5 +210,4 @@ def load_ann(path=None, filename=None):
 
 def evaluate(val_fn, X_test, Y_test):
     """Evaluate the original ANN."""
-
     return val_fn(X_test, Y_test)

@@ -36,25 +36,21 @@ rng = RandomStreams()
 
 def floatX(X):
     """Return array in floatX settings of Theano."""
-
     return [np.asarray(x, dtype=theano.config.floatX) for x in X]
 
 
 def sharedX(X, dtype=theano.config.floatX, name=None):
     """Make array as shared array."""
-
     return theano.shared(np.asarray(X, dtype=dtype), name=name)
 
 
 def shared_zeros(shape, dtype=theano.config.floatX, name=None):
     """Make shared zeros array."""
-
     return sharedX(np.zeros(shape), dtype=dtype, name=name)
 
 
 def on_gpu():
     """Check if running on GPU board."""
-
     return theano.config.device[:3] == 'gpu'
 
 if on_gpu():
@@ -63,7 +59,6 @@ if on_gpu():
 
 def update_neurons(self, time, updates):
     """Update neurons according to activation function."""
-
     if 'activation' in self.get_config() and \
             self.get_config()['activation'] == 'softmax':
         output_spikes = softmax_activation(self, time, updates)
@@ -76,31 +71,29 @@ def update_neurons(self, time, updates):
         updates.append((self.max_spikerate,
                         T.max(self.spikecounts) / (time + settings['dt'])))
 
-    if self.layer_type in ["SpikeMaxPooling2D", "SpikeConvolution2D"]:
-        if settings["maxpool_type"] == "avg_max" and \
-                hasattr(self, 'avg_spikerate'):
-            updates.append(
-                (self.avg_spikerate,
-                 self.avg_spikerate +
-                 (output_spikes-self.avg_spikerate) /
-                 ((time+settings['dt'])/settings['dt'])))
+    if settings["maxpool_type"] == "avg_max" and \
+            hasattr(self, 'avg_spikerate'):
+        updates.append(
+            (self.avg_spikerate,
+             self.avg_spikerate +
+             (output_spikes-self.avg_spikerate) /
+             ((time+settings['dt'])/settings['dt'])))
 
-        elif settings["maxpool_type"] == "fir_max" and \
-                hasattr(self, 'fir_spikerate'):
-            updates.append((self.fir_spikerate,
-                            self.fir_spikerate + output_spikes /
-                            ((time+settings['dt'])/settings['dt'])))
-        elif settings["maxpool_type"] == "exp_max" and \
-                hasattr(self, 'exp_spikerate'):
-            updates.append((self.exp_spikerate,
-                            self.exp_spikerate + output_spikes /
-                            2.**((time+settings['dt'])/settings['dt'])))
+    elif settings["maxpool_type"] == "fir_max" and \
+            hasattr(self, 'fir_spikerate'):
+        updates.append((self.fir_spikerate,
+                        self.fir_spikerate + output_spikes /
+                        ((time+settings['dt'])/settings['dt'])))
+    elif settings["maxpool_type"] == "exp_max" and \
+            hasattr(self, 'exp_spikerate'):
+        updates.append((self.exp_spikerate,
+                        self.exp_spikerate + output_spikes /
+                        2.**((time+settings['dt'])/settings['dt'])))
     return output_spikes
 
 
 def update_payload(self, new_mem, spikes, time):
     """Update payloads."""
-
     idxs = spikes.nonzero()
     v_error = new_mem[idxs]
     payloads = T.set_subtensor(
@@ -112,7 +105,6 @@ def update_payload(self, new_mem, spikes, time):
 
 def linear_activation(self, time, updates):
     """Linear activation."""
-
     # Destroy impulse if in refractory period
     masked_imp = T.set_subtensor(
         self.impulse[(self.refrac_until > time).nonzero()], 0.)
@@ -146,7 +138,6 @@ def linear_activation(self, time, updates):
 
 def softmax_activation(self, time, updates):
     """Softmax activation."""
-
     # Destroy impulse if in refractory period
     masked_imp = T.set_subtensor(
         self.impulse[(self.refrac_until > time).nonzero()], 0.)
@@ -175,7 +166,6 @@ def softmax_activation(self, time, updates):
 
 def trigger_spike(new_mem):
     """Trigger spike."""
-
     activ = T.nnet.softmax(new_mem)
     max_activ = T.max(activ, axis=1, keepdims=True)
     output_spikes = T.eq(activ, max_activ).astype('float32')
@@ -184,13 +174,11 @@ def trigger_spike(new_mem):
 
 def skip_spike(new_mem):
     """Skip spike."""
-
     return T.zeros_like(new_mem), new_mem
 
 
 def reset(self):
     """Reset."""
-
     if self.inbound_nodes[0].inbound_layers:
         reset(self.inbound_nodes[0].inbound_layers[0])
     self.mem.set_value(floatX(np.zeros(self.output_shape)))
@@ -206,24 +194,19 @@ def reset(self):
         self.max_spikerate.set_value(0.0)
         self.v_thresh.set_value(settings['v_thresh'])
 
-    if self.layer_type in ["SpikeMaxPooling2D", "SpikeConvolution2D"]:
-        if settings["maxpool_type"] == "avg_max" and \
-                hasattr(self, 'avg_spikerate'):
-            self.avg_spikerate.set_value(
-                floatX(np.zeros(self.output_shape)))
-        elif settings["maxpool_type"] == "fir_max" and \
-                hasattr(self, 'fir_spikerate'):
-            self.fir_spikerate.set_value(
-                floatX(np.zeros(self.output_shape)))
-        elif settings["maxpool_type"] == "exp_max" and \
-                hasattr(self, 'exp_spikerate'):
-            self.exp_spikerate.set_value(
-                floatX(np.zeros(self.output_shape)))
+    if settings["maxpool_type"] == "avg_max" and \
+            hasattr(self, 'avg_spikerate'):
+        self.avg_spikerate.set_value(floatX(np.zeros(self.output_shape)))
+    elif settings["maxpool_type"] == "fir_max" and \
+            hasattr(self, 'fir_spikerate'):
+        self.fir_spikerate.set_value(floatX(np.zeros(self.output_shape)))
+    elif settings["maxpool_type"] == "exp_max" and \
+            hasattr(self, 'exp_spikerate'):
+        self.exp_spikerate.set_value(floatX(np.zeros(self.output_shape)))
 
 
 def get_input(self):
     """Get input."""
-
     if self.inbound_nodes[0].inbound_layers:
         if 'input' in self.inbound_nodes[0].inbound_layers[0].name:
             previous_output = self.input
@@ -237,7 +220,6 @@ def get_input(self):
 
 def get_time(self):
     """Get time."""
-
     if hasattr(self, 'time_var'):
         return self.time_var
     elif self.inbound_nodes[0].inbound_layers:
@@ -248,7 +230,6 @@ def get_time(self):
 
 def get_updates(self):
     """Get updates."""
-
     if self.inbound_nodes[0].inbound_layers:
         return self.inbound_nodes[0].inbound_layers[0].updates
     else:
@@ -257,7 +238,6 @@ def get_updates(self):
 
 def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
     """Init neurons."""
-
     # The neurons in the spiking layer cannot be initialized until the layer
     # has been initialized and connected to the network. Otherwise
     # 'output_shape' is not known (obtained from previous layer), and
@@ -271,7 +251,6 @@ def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
 
 def init_layer(self, layer, v_thresh, tau_refrac):
     """Init layer."""
-
     layer.v_thresh = theano.shared(
         np.asarray(v_thresh, dtype=theano.config.floatX), 'v_thresh')
     layer.tau_refrac = tau_refrac
@@ -304,7 +283,6 @@ def init_layer(self, layer, v_thresh, tau_refrac):
 
 def get_new_thresh(self, time):
     """Get new threshhold."""
-
     return theano.ifelse.ifelse(
         T.eq(time / settings['dt'] % settings['timestep_fraction'], 0) *
         T.gt(self.max_spikerate, settings['diff_to_min_rate'] / 1000) *
@@ -318,7 +296,6 @@ class SpikeFlatten(Flatten):
 
     def __init__(self, label=None, **kwargs):
         """Init function."""
-
         super().__init__(**kwargs)
         if label is not None:
             self.label = label
@@ -327,7 +304,6 @@ class SpikeFlatten(Flatten):
 
     def get_output(self, train=False):
         """Get output."""
-
         # Recurse
         inp, time, updates = get_input(self)
         reshaped_inp = T.reshape(inp, self.output_shape)
@@ -341,7 +317,6 @@ class SpikeFlatten(Flatten):
 
     def get_name(self):
         """Get class name."""
-
         return self.__class__.__name__
 
 
@@ -350,7 +325,6 @@ class SpikeDense(Dense):
 
     def __init__(self, output_dim, weights=None, label=None, **kwargs):
         """Init function."""
-
         super().__init__(output_dim, weights=weights, **kwargs)
         if label is not None:
             self.label = label
@@ -359,7 +333,6 @@ class SpikeDense(Dense):
 
     def get_output(self, train=False):
         """Get output."""
-
         # Recurse
         inp, time, updates = get_input(self)
         if settings['online_normalization']:
@@ -383,7 +356,6 @@ class SpikeDense(Dense):
 
     def get_name(self):
         """Get class name."""
-
         return self.__class__.__name__
 
 
@@ -412,7 +384,7 @@ def pool_same_size(data_in, patch_size, ignore_border=True,
         pad_w is the size of the left and right margins.
     """
     output = pool.Pool(ds=patch_size, ignore_border=ignore_border,
-                       st=st, padding=padding)(data_in)
+                       st=st, padding=padding, mode="max")(data_in)
     outs = pool.MaxPoolGrad(ds=patch_size, ignore_border=ignore_border,
                             st=st, padding=padding)(data_in, output,
                                                     output) > 0.
@@ -437,7 +409,6 @@ class SpikeConvolution2D(Convolution2D):
 
     def get_output(self, train=False):
         """Get output."""
-
         # Recurse
         inp, time, updates = get_input(self)
         if self.inbound_nodes[0].inbound_layers and settings['payloads']:
@@ -511,16 +482,15 @@ class SpikeConvolution2D(Convolution2D):
 
     def get_name(self):
         """Get class name."""
-
         return self.__class__.__name__
 
 
 class SpikeAveragePooling2D(AveragePooling2D):
+    """Average Pooling."""
 
     def __init__(self, pool_size=(2, 2), strides=None, border_mode='valid',
                  label=None, **kwargs):
         """Init average pooling."""
-
         super().__init__(pool_size=pool_size, strides=strides,
                          border_mode=border_mode)
         if label is not None:
@@ -531,7 +501,6 @@ class SpikeAveragePooling2D(AveragePooling2D):
 
     def get_output(self, train=False):
         """Get output."""
-
         # Recurse
         inp, time, updates = get_input(self)
 
@@ -557,7 +526,6 @@ class SpikeAveragePooling2D(AveragePooling2D):
 
     def get_name(self):
         """Get class name."""
-
         return self.__class__.__name__
 
 
@@ -588,7 +556,6 @@ class SpikeMaxPooling2D(MaxPooling2D):
 
     def get_output(self, train=False):
         """Get output."""
-
         # Recurse
         inp, time, updates = get_input(self)
 
@@ -624,7 +591,6 @@ class SpikeMaxPooling2D(MaxPooling2D):
 
     def get_name(self):
         """Get class name."""
-
         return self.__class__.__name__
 
 
