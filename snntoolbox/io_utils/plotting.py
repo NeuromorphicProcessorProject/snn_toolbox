@@ -406,7 +406,6 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
                 activations_batch[layer_num][0][sample].flatten())
             c.append(r)
         co.append(c)
-        print(c)
 
     # Average over batch
     corr = np.mean(co, axis=1)
