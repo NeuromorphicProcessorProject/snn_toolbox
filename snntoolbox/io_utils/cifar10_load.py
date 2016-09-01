@@ -61,25 +61,29 @@ def get_cifar10(path=None, filename=None, flat=False):
     (X_train, y_train), (X_test, y_test) = cifar10.load_data()
 
     # Convert class vectors to binary class matrices
-#    Y_train = to_categorical(y_train, nb_classes)
+    Y_train = to_categorical(y_train, nb_classes)
     Y_test = to_categorical(y_test, nb_classes)
 
     datagen = ImageDataGenerator(rescale=1./255, featurewise_center=gcn,
                                  featurewise_std_normalization=gcn,
                                  zca_whitening=zca)
     datagen.fit(X_test/255.)
-    dataflow = datagen.flow(X_test, Y_test, batch_size=len(X_test))
-    X_test, Y_test = dataflow.next()
+
+    testflow = datagen.flow(X_test, Y_test, batch_size=len(X_test))
+    X_test, Y_test = testflow.next()
+
+    normflow = datagen.flow(X_train, Y_train, batch_size=int(len(X_train)/3))
+    X_norm, Y_norm = normflow.next()
 
     if flat:
-        X_train = X_train.reshape(X_train.shape[0], np.prod(X_train.shape[1:]))
+        X_norm = X_norm.reshape(X_norm.shape[0], np.prod(X_norm.shape[1:]))
         X_test = X_test.reshape(X_test.shape[0], np.prod(X_test.shape[1:]))
 
     if path is not None:
         if filename is None:
             filename = ''
         filepath = os.path.join(path, filename)
-        np.savez_compressed(filepath+'X_norm', X_train[::3].astype('float32'))
+        np.savez_compressed(filepath+'X_norm', X_norm.astype('float32'))
         np.savez_compressed(filepath+'X_test', X_test.astype('float32'))
 #       np.savez_compressed(filepath+'Y_train', Y_train.astype('float32'))
         np.savez_compressed(filepath+'Y_test', Y_test.astype('float32'))
@@ -87,4 +91,4 @@ def get_cifar10(path=None, filename=None, flat=False):
 #    return (X_train, Y_train, X_test, Y_test)
 
 if __name__ == '__main__':
-    get_cifar10('/home/rbodo/.snntoolbox/datasets/cifar10/processed/')
+    get_cifar10('/home/rbodo/.snntoolbox/Datasets/cifar10/processed/')

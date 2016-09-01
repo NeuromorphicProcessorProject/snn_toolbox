@@ -282,10 +282,11 @@ class SNN():
                 if batch_idx == 0 and settings['verbose'] > 2:
                     j = 0
                     for i, layer in enumerate(self.snn.layers):
-                        if 'Flatten' not in self.snn.layers[i].name:
-                            spiketrains_batch[j][0][Ellipsis, t_idx] = \
-                                layer.spiketrain.get_value()  # t=1.8% m=0.6GB
-                            j += 1
+                        if 'Flatten' in self.snn.layers[i].name:
+                            continue
+                        spiketrains_batch[j][0][Ellipsis, t_idx] = \
+                            layer.spiketrain.get_value()  # t=1.8% m=0.6GB
+                        j += 1
                 t_idx += 1
                 # Count number of spikes in output layer during whole
                 # simulation.

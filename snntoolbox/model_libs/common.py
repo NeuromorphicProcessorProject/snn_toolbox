@@ -38,7 +38,7 @@ def absorb_bn(w, b, gamma, beta, mean, std, epsilon):
     std_broadcast = np.reshape(std, broadcast_shape)
     gamma_broadcast = np.reshape(gamma, broadcast_shape)
 
-    b_bn = beta + (b - mean) * gamma / (std + epsilon)
+    b_bn = beta + (b + mean) * gamma / (std + epsilon)
     w_bn = w * gamma_broadcast / (std_broadcast + epsilon)
 
     return w_bn, b_bn

@@ -87,8 +87,7 @@ model.add(Flatten())
 model.add(Activation('softmax'))
 
 optimizer = Adam(lr)  # SGD(lr=0.01, momentum=0.9, decay=1e-6, nesterov=True)
-model.compile(loss='categorical_crossentropy', optimizer=optimizer,
-              metrics=['accuracy'])
+model.compile(optimizer, 'categorical_crossentropy', metrics=['accuracy'])
 
 # Whether to apply global contrast normalization and ZCA whitening
 gcn = True
@@ -125,6 +124,4 @@ score = model.evaluate_generator(testflow, val_samples=len(X_test))
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 
-filename = '{:2.2f}'.format(score[1] * 100)
-open(filename + '.json', 'w').write(model.to_json())
-model.save_weights(filename + '.h5', overwrite=True)
+model.save('{:2.2f}.h5'.format(score[1]*100))

@@ -48,9 +48,22 @@ def get_caltech101(path, filename=None):
     ``Y_test`` has dimension (num_samples, num_classes).
     """
 
-    datagen = ImageDataGenerator(rescale=1./255)
-    dataflow = datagen.flow_from_directory(path, target_size=(180, 240),
-                                           batch_size=9144)
+    num_samples = 9144
+    target_size = (180, 240)
+
+    datagen = ImageDataGenerator(rescale=1./255,
+                                 featurewise_center=True,
+                                 featurewise_std_normalization=True)
+
+    # Compute quantities required for featurewise normalization
+    # (std, mean, and principal components if ZCA whitening is applied)
+    X = ImageDataGenerator(rescale=1./255).flow_from_directory(
+        path, target_size, batch_size=num_samples).next()[0]
+    datagen.fit(X)
+
+    dataflow = datagen.flow_from_directory(
+        path, target_size, batch_size=num_samples)
+
     X_test, Y_test = dataflow.next()
 
     if filename is None:
@@ -61,4 +74,4 @@ def get_caltech101(path, filename=None):
     np.savez_compressed(filepath + 'Y_test', Y_test)
 
 if __name__ == '__main__':
-    get_caltech101('/home/rbodo/.snntoolbox/datasets/caltech101/original/')
+    get_caltech101('/home/rbodo/.snntoolbox/Datasets/caltech101/original/')

@@ -382,17 +382,15 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
     batch_size = len(spikerates_batch[0][0])
 
     co = []
-    j = 0
     for layer_num in range(len(spikerates_batch)):
-        if 'Flatten' not in spikerates_batch[layer_num][1]:
-            c = []
-            for sample in range(batch_size):
-                (r, p) = pearsonr(
-                    spikerates_batch[layer_num][0][sample].flatten(),
-                    activations_batch[layer_num][0][sample].flatten())
-                c.append(r)
-            j += 1
-            co.append(c)
+        c = []
+        for sample in range(batch_size):
+            (r, p) = pearsonr(
+                spikerates_batch[layer_num][0][sample].flatten(),
+                activations_batch[layer_num][0][sample].flatten())
+            c.append(r)
+        co.append(c)
+        print(c)
 
     # Average over batch
     corr = np.mean(co, axis=1)

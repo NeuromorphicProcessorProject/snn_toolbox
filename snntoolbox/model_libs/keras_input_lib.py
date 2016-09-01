@@ -104,8 +104,9 @@ def extract(model):
         # Absorb BatchNormalization layer into parameters of previous layer
         if 'BatchNormalization' in layer_type:
             bn_parameters = layer.get_weights()  # gamma, beta, mean, std
+            print([p[0] for p in bn_parameters])
             for k in [layer_num - i for i in range(1, 3)]:
-                prev_layer = layers[k]
+                prev_layer = model.layers[k]
                 if prev_layer.weights != []:
                     break
             parameters = prev_layer.get_weights()  # W, b of next layer
@@ -204,7 +205,7 @@ def load_ann(path=None, filename=None):
         # at inference time, set them to the most common choice.
         model.compile('sgd', 'categorical_crossentropy', metrics=['accuracy'])
     else:
-        model = models.load_ann(filepath + '.h5')
+        model = models.load_model(filepath + '.h5')
 
     return {'model': model, 'val_fn': model.evaluate}
 
