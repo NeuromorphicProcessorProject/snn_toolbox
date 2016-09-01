@@ -91,19 +91,6 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
             print('\n' + "Test score: {:.2f}".format(score[0]))
             print("Test accuracy: {:.2%}\n".format(score[1]))
 
-#        from snntoolbox.core.util import get_activations_batch
-#        from snntoolbox.core.util import get_sample_activity_from_batch
-#        from snntoolbox.io_utils.plotting import plot_layer_activity
-#        activations_batch = get_activations_batch(input_model['model'], X_test)
-#        activations = get_sample_activity_from_batch(activations_batch, 0)
-#        for i in range(len(activations)):
-#            label = activations[i][1]
-#            print("Plotting layer {}".format(label))
-#            newpath = os.path.join(settings['log_dir_of_current_run'],
-#                                   'input_model_activations')
-#            j = str(i) if i > 9 else '0' + str(i)
-#            plot_layer_activity(activations[i], j+label, newpath)
-
         print("Parsing input model...")
         parsed_model = parse(input_model['model'])  # t=0.5% m=0.6GB
         print_description(parsed_model)

@@ -229,6 +229,22 @@ def plot_layer_activity(layer, title, path=None, limits=None):
     plt.close()
 
 
+def plot_activations(model, X_test):
+    from snntoolbox.core.util import get_activations_batch
+    from snntoolbox.core.util import get_sample_activity_from_batch
+    activations_batch = get_activations_batch(model, X_test)
+    activations = get_sample_activity_from_batch(activations_batch, 0)
+    for i in range(len(activations)):
+        label = activations[i][1]
+        print("Plotting layer {}".format(label))
+        newpath = os.path.join(settings['log_dir_of_current_run'],
+                               model.name+'_activations')
+        if not os.path.exists(newpath):
+            os.makedirs(newpath)
+        j = str(i) if i > 9 else '0' + str(i)
+        plot_layer_activity(activations[i], j+label, newpath)
+
+
 def plot_rates_minus_activations(rates, activations, label, path=None):
     """Plot spikerates minus activations for a specific layer.
 

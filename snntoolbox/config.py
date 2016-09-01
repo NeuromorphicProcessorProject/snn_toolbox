@@ -308,12 +308,7 @@ pyNN_settings = {'v_reset': 0,
 # Merge settings
 settings.update(pyNN_settings)
 
-# Layers for which we can compute activations
-activation_layers = {'Dense', 'Convolution2D', 'MaxPooling2D',
-                     'AveragePooling2D'}
-
-bn_layers = {'Dense', 'Convolution2D'}
-
+# Layers that can be implemented by our spiking neuron simulators
 spiking_layers = {'Dense', 'Convolution2D', 'MaxPooling2D', 'AveragePooling2D',
                   'Flatten'}
 

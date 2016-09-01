@@ -23,7 +23,7 @@ def border_mode_string(pad, pool_size):
     return border_mode
 
 
-def absorb_bn(w, b, gamma, beta, mean, std, epsilon):
+def absorb_bn(w, b, gamma, beta, mean, var, epsilon):
     """
     Absorb the parameters of a batch-normalization layer into the previous
     layer.
@@ -35,11 +35,11 @@ def absorb_bn(w, b, gamma, beta, mean, std, epsilon):
 
     broadcast_shape = [1] * w.ndim  # e.g. [1, 1, 1, 1] for ConvLayer
     broadcast_shape[axis] = w.shape[axis]  # [64, 1, 1, 1] for 64 features
-    std_broadcast = np.reshape(std, broadcast_shape)
+    var_broadcast = np.reshape(var, broadcast_shape)
     gamma_broadcast = np.reshape(gamma, broadcast_shape)
 
-    b_bn = beta + (b + mean) * gamma / (std + epsilon)
-    w_bn = w * gamma_broadcast / (std_broadcast + epsilon)
+    b_bn = beta + (b - mean) * gamma / np.sqrt(var + epsilon)
+    w_bn = w * gamma_broadcast / np.sqrt(var_broadcast + epsilon)
 
     return w_bn, b_bn
 
