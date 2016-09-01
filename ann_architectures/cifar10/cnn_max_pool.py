@@ -46,18 +46,16 @@ print(X_test.shape[0], 'test samples')
 model = Sequential()
 
 model.add(Convolution2D(32, 3, 3, border_mode='same',
-                        input_shape=(img_channels, img_rows, img_cols),
-                        bias=False))
+                        input_shape=(img_channels, img_rows, img_cols)))
 model.add(Activation('relu'))
-model.add(Convolution2D(32, 3, 3, border_mode='same',
-                        bias=False))
+model.add(Convolution2D(32, 3, 3, border_mode='same'))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.25))
 
-model.add(Convolution2D(32, 3, 3, bias=False))
+model.add(Convolution2D(64, 3, 3))
 model.add(Activation('relu'))
-model.add(Convolution2D(32, 3, 3, bias=False))
+model.add(Convolution2D(64, 3, 3))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.25))
@@ -114,6 +112,6 @@ score = model.evaluate(X_test, Y_test, batch_size=batch_size)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 
-filename = '{:2.2f}'.format(score[1] * 100)+".cifar.no.bias"
+filename = '{:2.2f}'.format(score[1] * 100)+".max.pool"
 open(filename + '.json', 'w').write(model.to_json())
 model.save_weights(filename + '.h5', overwrite=True)

@@ -11,15 +11,35 @@ import json
 
 import snntoolbox
 
+try:
+    from pushbullet import Pushbullet
+    NOTIFICATION = True
+    print ("[MESSAGE] Notification is turned on.")
+except ImportError:
+    NOTIFICATION = False
+    print ("[MESSAGE] Notification is turned off.")
+
 home_path = os.environ["HOME"]
 config_path = os.path.join(home_path, ".snntoolbox")
 pref_dir = os.path.join(config_path, "preferences")
-log_dir = os.path.join(home_path, "workspace", "snntoolbox-log", "pool-exps")
+log_dir = os.path.join(home_path, "workspace", "snntoolbox-log",
+                       "pool-exps-new")
 data_dir = os.path.join(config_path, "datasets")
+
+if NOTIFICATION is True:
+    notify_api_path = os.path.join(pref_dir, "api.txt")
+    try:
+        with open(notify_api_path, mode="r") as f:
+            api_key = f.read().replace("\n", "")
+        pb = Pushbullet(api_key)
+    except IOError:
+        NOTIFICATION = False
+        print ("[MESSAGE] No valid API file is found.")
 
 
 def maxpool_exp(exp_name, model_name, pref_name, dataset,
-                normalize, online_normalize, pool_type):
+                normalize, online_normalize, pool_type,
+                percentile):
     """Max-Pooling experiment routine.
 
     Parameters
@@ -38,9 +58,10 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
     online_normalization : string
         true : use online normalization
         false : otherwise
-    pool_type : string
+    pool_type : str
         the name of the max pooling type
         "avg_max" or "fir_max"
+    percentile : float
     """
     pref_path = os.path.join(pref_dir, pref_name)
     log_path = os.path.join(log_dir, exp_name)
@@ -60,10 +81,12 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
     settings["log_dir_of_current_run"] = log_path
     settings["runlabel"] = exp_name
     settings["dataset_path"] = data_path
-    settings["filename"] = model_name
-    settings["path"] = config_path
+    settings["filename_ann"] = model_name
+    settings["path_wd"] = config_path
+    if percentile != 0.0:
+        settings["percentile"] = percentile
     settings["filename_snn"] = "snn_"+model_name + \
-                               "_"+str(int(settings["percentile"]))
+                               "_"+str(settings["percentile"])
 
     if normalize == "false":
         settings["normalize"] = False
@@ -81,7 +104,11 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
 
     snntoolbox.test_full()
 
-    print ("[MESSAGE] The experiment result is saved at %s" % (log_path))
+    end_message = "[MESSAGE] The experiment result is saved at %s" % (log_path)
+
+    print (end_message)
+    if NOTIFICATION is True:
+        pb.push_note("Experiment %s Finished" % (exp_name), end_message)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Running Max-Pooling \
@@ -104,5 +131,8 @@ if __name__ == "__main__":
     parser.add_argument("-pt", "--pool-type", type=str,
                         default="avg_max",
                         help="The type of max-pooling")
+    parser.add_argument("-pc", "--percentile", type=float,
+                        default=0.0,
+                        help="The value of percentile.")
     args = parser.parse_args()
     maxpool_exp(**vars(args))
