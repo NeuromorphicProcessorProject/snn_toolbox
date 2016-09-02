@@ -15,9 +15,10 @@ from future import standard_library
 from importlib import import_module
 
 import os
+from keras.preprocessing.image import ImageDataGenerator
 from snntoolbox.io_utils.plotting import plot_param_sweep
-from snntoolbox.io_utils.common import load_dataset
 from snntoolbox.core.util import print_description, normalize_parameters, parse
+from snntoolbox.core.util import evaluate_keras
 from snntoolbox.config import settings
 
 standard_library.install_aliases()
@@ -69,8 +70,42 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
     """
 
     # ____________________________ LOAD DATASET _____________________________ #
-    X_test = load_dataset(settings['dataset_path'], 'X_test.npz')
-    Y_test = load_dataset(settings['dataset_path'], 'Y_test.npz')
+    if settings['dataset_format'] == 'npz':
+        from snntoolbox.io_utils.common import load_dataset
+        if settings['evaluateANN']:
+            evalset = {
+                'X_test': load_dataset(settings['dataset_path'], 'X_test.npz'),
+                'Y_test': load_dataset(settings['dataset_path'], 'Y_test.npz')}
+        if settings['normalize']:
+            normset = {}
+        if settings['simulate']:
+            testset = evalset
+    elif settings['dataset_format'] == 'jpg':
+        import ast
+        datagen_kwargs = ast.literal_eval(settings['datagen_kwargs'])
+        dataflow_kwargs = ast.literal_eval(settings['dataflow_kwargs'])
+        dataflow_kwargs['directory'] = settings['dataset_path']
+        dataflow_kwargs['batch_size'] = settings['num_to_test']
+        datagen = ImageDataGenerator(**datagen_kwargs)
+        # Compute quantities required for featurewise normalization
+        # (std, mean, and principal components if ZCA whitening is applied)
+        rs = datagen_kwargs['rescale'] if 'rescale' in datagen_kwargs else None
+        X_orig = ImageDataGenerator(rescale=rs).flow_from_directory(
+            **dataflow_kwargs).next()[0]
+        datagen.fit(X_orig)
+        if settings['evaluateANN']:
+            evalset = {'dataflow':
+                       datagen.flow_from_directory(**dataflow_kwargs)}
+        if settings['normalize']:
+            batchflow_kwargs = dataflow_kwargs.copy()
+            batchflow_kwargs['batch_size'] = settings['batch_size']
+            normset = {'dataflow':
+                       datagen.flow_from_directory(**batchflow_kwargs)}
+        if settings['simulate']:
+            batchflow_kwargs = dataflow_kwargs.copy()
+            batchflow_kwargs['batch_size'] = settings['batch_size']
+            testset = {'dataflow':
+                       datagen.flow_from_directory(**batchflow_kwargs)}
 
     # Instantiate an empty spiking network
     target_sim = import_module('snntoolbox.target_simulators.' +
@@ -87,9 +122,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
                                          settings['filename_ann'])
         if settings['evaluateANN']:
             print('\n' + "Evaluating input model...")
-            score = model_lib.evaluate(input_model['val_fn'], X_test, Y_test)
-            print('\n' + "Test score: {:.2f}".format(score[0]))
-            print("Test accuracy: {:.2%}\n".format(score[1]))
+            model_lib.evaluate(input_model['val_fn'], **evalset)
 
         print("Parsing input model...")
         parsed_model = parse(input_model['model'])  # t=0.5% m=0.6GB
@@ -101,21 +134,16 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
             # Evaluate ANN before normalization to ensure it doesn't affect
             # accuracy
             if settings['evaluateANN'] and not is_stop(queue):
-                print('\n' + "Evaluating parsed model before parameter " +
-                      "normalization...")
-                score = parsed_model.evaluate(X_test, Y_test)
-                print('\n' + "Test score: {:.2f}".format(score[0]))
-                print("Test accuracy: {:.2%}\n".format(score[1]))
+                print('\n' + "Evaluating parsed model before normalization...")
+                evaluate_keras(parsed_model, **evalset)
             # t=9.1 (t=90.8% without sim) m=0.2GB
-            normalize_parameters(parsed_model)
+            normalize_parameters(parsed_model, **normset)
 
         # ____________________________ EVALUATE _____________________________ #
         # (Re-) evaluate ANN
         if settings['evaluateANN'] and not is_stop(queue):
             print('\n' + "Evaluating parsed model...")
-            score = parsed_model.evaluate(X_test, Y_test)
-            print('\n' + "Test score: {:.2f}".format(score[0]))
-            print("Test accuracy: {:.2%}\n".format(score[1]))
+            evaluate_keras(parsed_model, **evalset)
 
         # _____________________________ EXPORT ______________________________ #
         # Write model to disk
@@ -155,7 +183,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
                 print("Current value of parameter to sweep: " +
                       "{} = {:.2f}\n".format(param_name, p))
             # Simulate network
-            total_acc = spiking_model.run(X_test, Y_test)  # t=90.1% m=2.3GB
+            total_acc = spiking_model.run(**testset)  # t=90.1% m=2.3GB
 
             # Write out results
             results.append(total_acc)
@@ -165,8 +193,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
     # _______________________________ OUTPUT _______________________________ #
     # Number of samples used in one run:
-    n = len(X_test) if settings['simulator'] == 'INI' \
-        else settings['num_to_test']
+    n = settings['num_to_test']
     # Plot and return results of parameter sweep.
     if results != []:
         plot_param_sweep(results, n, params, param_name, param_logscale)

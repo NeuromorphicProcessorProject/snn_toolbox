@@ -64,6 +64,8 @@ sgd = SGD(lr=0.005, decay=5e-4, momentum=0.9, nesterov=True)
 model.compile(sgd, 'categorical_crossentropy', metrics=['accuracy'])
 
 target_size = (img_rows, img_cols)
+flow_kwargs = {'directory': os.path.join(datapath, 'original'),
+               'target_size': target_size, 'batch_size': nb_samples}
 
 # Train using preprocessing and realtime data augmentation
 traingen = ImageDataGenerator(rescale=1./255,
@@ -79,20 +81,17 @@ traingen = ImageDataGenerator(rescale=1./255,
 # Compute quantities required for featurewise normalization
 # (std, mean, and principal components if ZCA whitening is applied)
 X_orig = ImageDataGenerator(rescale=1./255).flow_from_directory(
-    os.path.join(datapath, 'original'), target_size,
-    batch_size=nb_samples).next()[0]
+    **flow_kwargs).next()[0]
 traingen.fit(X_orig)
 
-trainflow = traingen.flow_from_directory(
-    os.path.join(datapath, 'original'), target_size, batch_size=batch_size)
+trainflow = traingen.flow_from_directory(**flow_kwargs)
 
 testgen = ImageDataGenerator(rescale=1./255,
                              featurewise_center=True,
                              featurewise_std_normalization=True)
 testgen.fit(X_orig)
 
-testflow = testgen.flow_from_directory(
-    os.path.join(datapath, 'original'), target_size, batch_size=batch_size)
+testflow = testgen.flow_from_directory(**flow_kwargs)
 
 history = model.fit_generator(
     trainflow, samples_per_epoch=nb_samples, verbose=2, nb_epoch=nb_epoch,

@@ -18,8 +18,42 @@ Global Parameters
 *****************
 
 dataset_path: string
-    Where to load the dataset from. Used for testing the network. Dataset needs
-    to be in npy format.
+    Select a directory where the toolbox will find the samples to test.
+    Two input formats are supported:
+        A) ``.npz``: Compressed numpy format.
+        B) ``.jpg``: Images in directories corresponding to their class.
+    A) Provide at least two compressed numpy files called ``X_test.npz``
+    and ``Y_test.npz`` containing the testset and groundtruth. In
+    addition, if the network should be normalized, put a file
+    ``X_norm.npz`` in the folder. This can be a the training set X_train,
+    or a subset of it. Take care of memory limitations: If numpy can
+    allocate a 4 GB float32 container for the activations to be
+    computed during normalization, X_norm should contain not more than
+    4*1e9*8bit/(fc*fx*fy*32bit) = 1/n samples, where (fc, fx, fy) is
+    the shape of the largest layer, and n = fc*fx*fy its total cell
+    count.
+    B) The images are stored in subdirectories of the selected
+    ``dataset_path``, where the names of the subdirectories represent
+    their class label. The toolbox will then use Keras
+    ``ImageDataGenerator`` to load and process the files batchwise.
+dataset_format: string
+    Two input formats are supported:
+
+    - ``.npz``: Compressed numpy format.
+    - ``.jpg``: Images in directories corresponding to their class.
+
+datagen_kwargs: string, optional
+    Specify keyword arguments for the data generator that will be used to load
+    image files from subdirectories in the ``dataset_path``. Need to be given
+    in form of a python dictionary.
+    See ``keras.preprocessing.image.ImageDataGenerator`` for possible values.
+dataflow_kwargs: string, optional
+
+    Specify keyword arguments for the data flow that will get the samples from
+    the ``ImageDataGenerator``. Need to be given in form of a python
+    dictionary.
+    See ``keras.preprocessing.image.ImageDataGenerator.flow_from_directory``
+    for possible values.
 
 model_lib: string
     The neural network library used to build the ANN, e.g.
@@ -191,6 +225,9 @@ Default values
 ::
 
     globalparams = {'dataset_path': '',
+                    'dataset_format': 'npz',
+                    'datagen_kwargs': {},
+                    'dataflow_kwargs': {},
                     'model_lib': 'keras',
                     'path_wd': '',
                     'log_dir_of_current_run': '',
@@ -226,7 +263,7 @@ Default values
                  'input_rate': 1000,
                  'timestep_fraction': 10,
                  'diff_to_max_rate': 200,
-                 'num_to_test': 10,
+                 'num_to_test': 1000,
                  'diff_to_min_rate': 100}
 """
 
@@ -259,6 +296,9 @@ simulators.update(simulators_other)
 
 # Default parameters:
 settings = {'dataset_path': '',
+            'dataset_format': 'npz',
+            'datagen_kwargs': '{}',
+            'dataflow_kwargs': '{}',
             'model_lib': 'keras',
             'path_wd': '',
             'log_dir_of_current_run': '',
@@ -280,6 +320,7 @@ settings = {'dataset_path': '',
             'simulator': 'INI',
             'duration': 200,
             'dt': 1,
+            'num_to_test': 1000,
             'poisson_input': False,
             'reset': 'Reset by subtraction',
             'input_rate': 1000,
@@ -302,8 +343,7 @@ pyNN_settings = {'v_reset': 0,
                  'tau_m': 1000,  # No leakage
                  'tau_syn_E': 0.01,  # Excitatory synaptic cond decays fast
                  'tau_syn_I': 0.01,  # Inhibitory synaptic cond decays fast
-                 'delay': 1,  # Constraint: delay >= dt
-                 'num_to_test': 10}
+                 'delay': 1}  # Constraint: delay >= dt
 
 # Merge settings
 settings.update(pyNN_settings)
@@ -390,6 +430,14 @@ def update_setup(s=None):
 
     if 'maxpool_type' not in s or s['maxpool_type'] == '':
         s['maxpool_type'] = 'fir_max'
+
+    if s['num_to_test'] < s['batch_size']:
+        print(dedent("""\
+            SNN toolbox Warning: 'num_to_test' set lower than 'batch_size'.
+            In simulators that test samples batch-wise (e.g. INIsim), this can
+            lead to undesired behavior. Setting 'num_to_test' equal to
+            'batch_size'."""))
+        s['num_to_test'] = s['batch_size']
 
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)

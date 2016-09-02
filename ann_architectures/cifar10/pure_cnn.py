@@ -28,7 +28,7 @@ from snntoolbox.io_utils.plotting import plot_history
 # Train for 350 epochs and reduce learning rate by factor 0.1 at epochs
 # [200, 250, 300]
 lr = 0.001
-nb_epoch = 200
+nb_epoch = 50
 batch_size = 128
 nb_classes = 10
 
@@ -86,7 +86,7 @@ model.add(AveragePooling2D(pool_size=(6, 6), strides=(1, 1)))
 model.add(Flatten())
 model.add(Activation('softmax'))
 
-optimizer = Adam(lr)  # SGD(lr=0.01, momentum=0.9, decay=1e-6, nesterov=True)
+optimizer = Adam(lr*0.1)  # SGD(lr=0.01, momentum=0.9, decay=1e-6, nesterov=True)
 model.compile(optimizer, 'categorical_crossentropy', metrics=['accuracy'])
 
 # Whether to apply global contrast normalization and ZCA whitening

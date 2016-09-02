@@ -144,7 +144,7 @@ class SNN():
                                               updates=updates,
                                               allow_input_downcast=True)
 
-    def run(self, X_test, Y_test):
+    def run(self, X_test=None, Y_test=None, dataflow=None):
         """Simulate a SNN with LIF and Poisson input.
 
         Simulate a spiking network with leaky integrate-and-fire units and
@@ -200,16 +200,18 @@ class SNN():
                 converted. Either change the number of samples to test to be
                 equal to the batch size, or convert the ANN again using the
                 corresponding batch size.""")
+            if X_test is None:
+                # Probably need to turn off shuffling in ImageDataGenerator
+                # for this to produce the desired samples.
+                X_test, Y_test = dataflow.next()
             X_test = np.array([X_test[i] for i in si])
             Y_test = np.array([Y_test[i] for i in si])
 
-        # Ground truth
-        truth = np.argmax(Y_test, axis=1)
-
         # Divide the test set into batches and run all samples in a batch in
         # parallel.
-        output = np.zeros(Y_test.shape).astype('int32')
-        num_batches = int(np.ceil(X_test.shape[0] / settings['batch_size']))
+        num_batches = int(np.floor(
+            settings['num_to_test'] / settings['batch_size']))
+
         if settings['verbose'] > 1:
             print("Starting new simulation...\n")
         # Allocate a list 'spiketrains_batch' with the following specification:
@@ -234,14 +236,17 @@ class SNN():
             # Allocate list for plotting the error vs simulation time
             err = []
 
-        count = np.zeros(Y_test.shape[1])
-        match = np.zeros(Y_test.shape[1])
+        truth = []
+        guesses = []
         for batch_idx in range(num_batches):  # m=2.3GB
-            # Determine batch indices.
-            max_idx = min((batch_idx + 1) * settings['batch_size'],
-                          Y_test.shape[0])
-            batch_idxs = range(batch_idx * settings['batch_size'], max_idx)
-            batch = X_test[batch_idxs, :]
+            # Get a batch of samples
+            if X_test is None:
+                X_batch, Y_batch = dataflow.next()
+            else:
+                batch_idxs = range(settings['batch_size'] * batch_idx,
+                                   settings['batch_size'] * (batch_idx + 1))
+                X_batch = X_test[batch_idxs, :]
+                Y_batch = Y_test[batch_idxs, :]
 
             # Either use Poisson spiketrains as inputs to the SNN, or take the
             # original data.
@@ -252,19 +257,21 @@ class SNN():
                 rescale_fac = 1000 / (settings['input_rate'] * settings['dt'])
             else:
                 # Simply use the analog values of the original data as input.
-                inp = batch
+                inp = X_batch
 
             # Reset network variables.
             self.sim.reset(self.snn.layers[-1])
 
             # Loop through simulation time.
+            output = np.zeros((settings['batch_size'], Y_batch.shape[1]),
+                              dtype='int32')
             t_idx = 0
             for t in np.arange(0, settings['duration'], settings['dt']):
                 if settings['poisson_input']:
                     # Create poisson input.
-                    spike_snapshot = np.random.random_sample(batch.shape) * \
+                    spike_snapshot = np.random.random_sample(X_batch.shape) * \
                         rescale_fac
-                    inp = (spike_snapshot <= batch).astype('float32')
+                    inp = (spike_snapshot <= X_batch).astype('float32')
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
                 if settings['online_normalization']:
@@ -290,14 +297,14 @@ class SNN():
                 t_idx += 1
                 # Count number of spikes in output layer during whole
                 # simulation.
-                output[batch_idxs, :] += out_spikes.astype('int32')
+                output += out_spikes.astype('int32')
                 if batch_idx == 0 and settings['verbose'] > 2:
                     # Get result by comparing the guessed class (i.e. the index
                     # of the neuron in the last layer which spiked most) to the
                     # ground truth.
-                    guesses = np.argmax(output, axis=1)
-                    err.append(
-                        np.sum(truth[:max_idx] != guesses[:max_idx]) / max_idx)
+                    truth_tmp = np.argmax(Y_batch, axis=1)
+                    guesses_tmp = np.argmax(output, axis=1)
+                    err.append(np.mean(truth_tmp != guesses_tmp))
                 if settings['verbose'] > 1:
                     echo('.')
 
@@ -305,8 +312,9 @@ class SNN():
                 echo('\n')
                 echo("Batch {} of {} completed ({:.1%})\n".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
-                guesses = np.argmax(output, axis=1)
-                avg = np.sum(truth[:max_idx] == guesses[:max_idx]) / max_idx
+                truth += list(np.argmax(Y_batch, axis=1))
+                guesses += list(np.argmax(output, axis=1))
+                avg = np.mean(np.array(truth) == np.array(guesses))
                 echo("Moving average accuracy: {:.2%}.\n".format(avg))
                 with open(os.path.join(settings['log_dir_of_current_run'],
                                        'accuracy.txt'), 'w') as f:
@@ -315,31 +323,29 @@ class SNN():
                                                          num_batches, avg))
                 if batch_idx == 0 and settings['verbose'] > 2:
                     plot_error_vs_time(err, settings['log_dir_of_current_run'])
-                    plot_confusion_matrix(truth[:max_idx], guesses[:max_idx],
+                    plot_confusion_matrix(truth, guesses,
                                           settings['log_dir_of_current_run'])
                     activations_batch = get_activations_batch(
-                        self.parsed_model, batch)
+                        self.parsed_model, X_batch)
                     output_graphs(spiketrains_batch, activations_batch,
                                   settings['log_dir_of_current_run'])
                     # t=70.1% m=0.6GB
                     del spiketrains_batch
 
-        guesses = np.argmax(output, axis=1)
+        count = np.zeros(Y_batch.shape[1])
+        match = np.zeros(Y_batch.shape[1])
         for gt, p in zip(truth, guesses):
             count[gt] += 1
             if gt == p:
                 match[gt] += 1
         avg_acc = np.mean(match / count)
-        total_acc = np.mean(truth == guesses)
+        total_acc = np.mean(np.array(truth) == np.array(guesses))
         if settings['verbose'] > 2:
             plot_confusion_matrix(truth, guesses,
                                   settings['log_dir_of_current_run'])
         echo("Simulation finished.\n\n")
-        echo("Total output spikes: {}\n".format(np.sum(output)))
-        echo("Average output spikes per sample: {:.2f}\n".format(
-             np.mean(np.sum(output, axis=1))))
         echo("Total accuracy: {:.2%} on {} test samples.\n\n".format(total_acc,
-             output.shape[0]))
+             len(guesses)))
         echo("Accuracy averaged over classes: {}".format(avg_acc))
 
         return total_acc

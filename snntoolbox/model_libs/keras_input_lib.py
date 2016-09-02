@@ -212,6 +212,20 @@ def load_ann(path=None, filename=None):
     return {'model': model, 'val_fn': model.evaluate}
 
 
-def evaluate(val_fn, X_test, Y_test):
-    """Evaluate the original ANN."""
-    return val_fn(X_test, Y_test)
+def evaluate(val_fn, X_test=None, Y_test=None, dataflow=None):
+    """Evaluate the original ANN.
+
+    Can use either numpy arrays ``X_test, Y_test`` containing the test samples,
+    or generate them with a dataflow
+    (``Keras.ImageDataGenerator.flow_from_directory`` object).
+    """
+
+    if X_test is None:
+        # Get samples from Keras ImageDataGenerator
+        X_test, Y_test = dataflow.next()
+        print("Using {} samples to evaluate input model".format(len(X_test)))
+
+    score = val_fn(X_test, Y_test)
+    print('\n' + "Test loss: {:.2f}".format(score[0]))
+    print("Test accuracy: {:.2%}\n".format(score[1]))
+    return score

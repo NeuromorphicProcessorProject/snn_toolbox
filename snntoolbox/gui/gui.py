@@ -121,6 +121,8 @@ class SNNToolboxGUI():
         # Dataset path
         dataset_frame = tk.Frame(self.globalparams_frame, bg='white')
         dataset_frame.pack(**self.kwargs)
+        tk.Label(dataset_frame, text="Dataset", bg='white').pack(
+            fill='both', expand=True)
         tk.Button(dataset_frame, text="Dataset path",
                   command=self.set_dataset_path,
                   font=self.header_font).pack(side='top')
@@ -132,20 +134,28 @@ class SNNToolboxGUI():
         self.dataset_entry.pack(fill='both', expand=True, side='left')
         scrollX = tk.Scrollbar(dataset_frame, orient=tk.HORIZONTAL,
                                command=self.__scrollHandler)
-        scrollX.pack(fill='x', expand=True, side='bottom')
+        scrollX.pack(fill='x', expand=True, side='right')
         self.dataset_entry['xscrollcommand'] = scrollX.set
         tip = dedent("""\
             Select a directory where the toolbox will find the samples to test.
-            Needs to contain at least two compressed numpy files called
-            'X_test.npz' and 'Y_test.npz' containing the testset and
-            groundtruth. In addition, if the network should be normalized, put
-            a file 'X_norm.npz' in the folder. This can be a the training set
-            X_train, or a subset of it. Take care of memory limitations: If
-            numpy can allocate a 4 GB float32 container for the activations to
-            be computed during normalization, X_norm should contain not more
-            than 4*1e9*8bit/(fc*fx*fy*32bit) = 1/n samples, where (fc, fx, fy)
-            is the shape of the largest layer, and n = fc*fx*fy its total cell
+            Two input formats are supported:
+                A) .npz: Compressed numpy format.
+                B) .jpg: Images in directories corresponding to their class.
+            A) Provide at least two compressed numpy files called 'X_test.npz'
+            and 'Y_test.npz' containing the testset and groundtruth. In
+            addition, if the network should be normalized, put a file
+            'X_norm.npz' in the folder. This can be a the training set X_train,
+            or a subset of it. Take care of memory limitations: If numpy can
+            allocate a 4 GB float32 container for the activations to be
+            computed during normalization, X_norm should contain not more than
+            4*1e9*8bit/(fc*fx*fy*32bit) = 1/n samples, where (fc, fx, fy) is
+            the shape of the largest layer, and n = fc*fx*fy its total cell
             count.
+            B) The images are stored in subdirectories of the selected
+            'dataset_path', where the names of the subdirectories represent
+            their class label. The toolbox will then use
+            Keras.ImageDataGenerator to load and process the files batchwise.
+
             With original data of the form (channels, num_rows, num_cols),
             X_norm and X_test have dimension
             (num_samples, channels*num_rows*num_cols) for a fully-connected
@@ -154,6 +164,24 @@ class SNNToolboxGUI():
             See snntoolbox.io_utils.datasets for examples how to prepare a
             dataset for use in the toolbox.""")
         ToolTip(dataset_frame, text=tip, wraplength=750)
+
+        # Dataset format
+        format_frame = tk.Frame(self.globalparams_frame, bg='white')
+        format_frame.pack(**self.kwargs)
+        tk.Radiobutton(format_frame, variable=self.settings['dataset_format'],
+                       text='.npz', value='npz', bg='white').pack(
+                       fill='both', side='left', expand=True)
+        tk.Radiobutton(format_frame, variable=self.settings['dataset_format'],
+                       text='.jpg',
+                       value='jpg', bg='white').pack(
+                       fill='both', side='right', expand=True)
+        tip = dedent("""\
+            Select a directory where the toolbox will find the samples to test.
+            Two input formats are supported:
+                A) .npz: Compressed numpy format.
+                B) .jpg: Images in directories corresponding to their class.
+            See dataset path tooltip for more details.""")
+        ToolTip(format_frame, text=tip, wraplength=750)
 
         # Model library
         model_lib_frame = tk.Frame(self.globalparams_frame, bg='white')
@@ -215,10 +243,10 @@ class SNNToolboxGUI():
             validate='focusout', bg='white',
             validatecommand=(path_frame.register(self.check_path), '%P'))
         self.path_entry.pack(fill='both', expand=True, side='left')
-        scrollX = tk.Scrollbar(path_frame, orient=tk.HORIZONTAL,
-                               command=self.__scrollHandler)
-        scrollX.pack(fill='x', expand=True, side='bottom')
-        self.path_entry['xscrollcommand'] = scrollX.set
+        scrollX2 = tk.Scrollbar(path_frame, orient=tk.HORIZONTAL,
+                                command=self.__scrollHandler)
+        scrollX2.pack(fill='x', expand=True, side='bottom')
+        self.path_entry['xscrollcommand'] = scrollX2.set
         tip = dedent("""\
               Specify the working directory. There, the toolbox will look for
               ANN models to convert or SNN models to test, load the parameters
@@ -844,6 +872,47 @@ class SNNToolboxGUI():
         tip = dedent("""Enable experimental settings.""")
         ToolTip(experimental_settings_cb, text=tip, wraplength=750)
 
+    def edit_dataset_settings(self):
+        dataset_settings_container = tk.Toplevel(bg='white')
+        dataset_settings_container.wm_title('Dataset settings')
+        dataset_settings_container.protocol(
+            'WM_DELETE_WINDOW', dataset_settings_container.destroy)
+
+        tk.Button(dataset_settings_container, text='Save and close',
+                  command=dataset_settings_container.destroy).pack()
+
+        datagen_frame = tk.Frame(dataset_settings_container, bg='white')
+        datagen_frame.pack(**self.kwargs)
+        tk.Label(datagen_frame, text="Datagen kwargs:", bg='white').pack(
+            fill='both', expand=True)
+        datagen_settings_entry = tk.Entry(
+            datagen_frame, bg='white', width=20,
+            textvariable=self.settings['datagen_kwargs'])
+        datagen_settings_entry.pack(expand=True, fill='x')
+        tip = dedent("""\
+            Specify keyword arguments for the data generator that will be used
+            to load image files from subdirectories in the 'dataset_path'.
+            Need to be given in form of a python dictionary. See Keras
+            'ImageDataGenerator' for possible values.""")
+        ToolTip(datagen_frame, text=tip, wraplength=750)
+
+        dataflow_frame = tk.Frame(dataset_settings_container, bg='white')
+        dataflow_frame.pack(**self.kwargs)
+        tk.Label(dataflow_frame, text="Dataflow kwargs:", bg='white').pack(
+            fill='both', expand=True)
+        dataflow_settings_entry = tk.Entry(
+            dataflow_frame, bg='white', width=20,
+            textvariable=self.settings['dataflow_kwargs'])
+        dataflow_settings_entry.pack(expand=True, fill='x')
+        tip = dedent("""\
+            Specify keyword arguments for the data flow that will get the
+            samples from the ImageDataGenerator.
+            Need to be given in form of a python dictionary. See
+            keras.preprocessing.image.ImageDataGenerator.flow_from_directory
+            for possible values. Note that the 'directory' argument needs not
+            be given because it is set to 'dataset_path' automatically.""")
+        ToolTip(dataflow_frame, text=tip, wraplength=750)
+
     def graph_widgets(self):
         """Create graph widgets."""
         # Create a container for buttons that display plots for individual
@@ -1018,6 +1087,8 @@ class SNNToolboxGUI():
                              command=self.edit_experimental_settings)
         editmenu.add_command(label='Normalization settings',
                              command=self.edit_normalization_settings)
+        editmenu.add_command(label='Dataset settings',
+                             command=self.edit_dataset_settings)
         menubar.add_cascade(label='Edit', menu=editmenu)
 
         helpmenu = tk.Menu(menubar, tearoff=0)
@@ -1053,6 +1124,9 @@ class SNNToolboxGUI():
         """Preferenece collection."""
         # These will be written to disk as preferences.
         self.settings = {'dataset_path': tk.StringVar(),
+                         'dataset_format': tk.StringVar(),
+                         'datagen_kwargs': tk.StringVar(),
+                         'dataflow_kwargs': tk.StringVar(),
                          'model_lib': tk.StringVar(),
                          'evaluateANN': tk.BooleanVar(),
                          'normalize': tk.BooleanVar(),
@@ -1279,14 +1353,16 @@ class SNNToolboxGUI():
                   "Specified directory does not exist."
             messagebox.showwarning(title="Warning", message=msg)
             result = False
-        elif self.settings['normalize'] and not \
+        elif self.settings['normalize'] and \
+                self.settings['dataset_format'] == 'npz' and not \
                 os.path.exists(os.path.join(P, 'X_norm.npz')):
             msg = "No data set file 'X_norm.npz' found.\n" + \
                   "Add it, or disable normalization."
             messagebox.showerror(title="Error", message=msg)
             result = False
-        elif not (os.path.exists(os.path.join(P, 'X_test.npz')) and
-                  os.path.exists(os.path.join(P, 'Y_test.npz'))):
+        elif self.settings['dataset_format'] == 'npz' and not \
+            (os.path.exists(os.path.join(P, 'X_test.npz')) and
+             os.path.exists(os.path.join(P, 'Y_test.npz'))):
             msg = "Data set file 'X_test.npz' or 'Y_test.npz' was not found."
             messagebox.showerror(title="Error", message=msg)
             result = False
@@ -1356,7 +1432,7 @@ class SNNToolboxGUI():
 
     def toggle_num_to_test_state(self, val):
         """Toggle number to test state."""
-        if val and not self.settings['state_pyNN'].get() == 'disabled':
+        if val:
             self.settings['state_num_to_test'].set('normal')
         else:
             self.settings['state_num_to_test'].set('disabled')

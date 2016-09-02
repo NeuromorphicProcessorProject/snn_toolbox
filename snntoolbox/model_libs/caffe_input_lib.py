@@ -287,12 +287,28 @@ def load_ann(path=None, filename=None):
     return {'model': (model, model_protobuf), 'val_fn': model.forward_all}
 
 
-def evaluate(val_fn, X_test, Y_test):
-    """Evaluate the original ANN."""
+def evaluate(val_fn, X_test=None, Y_test=None, dataflow=None):
+    """Evaluate the original ANN.
+
+    Can use either numpy arrays ``X_test, Y_test`` containing the test samples,
+    or generate them with a dataflow
+    (``Keras.ImageDataGenerator.flow_from_directory`` object).
+    """
+
+    if X_test is None:
+        # Get samples from Keras.ImageDataGenerator
+        batch_size = dataflow.batch_size
+        dataflow.batch_size = settings['num_to_test']
+        X_test, Y_test = dataflow.next()
+        dataflow.batch_size = batch_size
+        print("Using {} samples to evaluate input model".format(len(X_test)))
 
     guesses = np.argmax(val_fn(data=X_test)['prob'], axis=1)
     truth = np.argmax(Y_test, axis=1)
     accuracy = np.mean(guesses == truth)
     loss = -1
+
+    print('\n' + "Test loss: {:.2f}".format(loss))
+    print("Test accuracy: {:.2%}\n".format(accuracy))
 
     return [loss, accuracy]

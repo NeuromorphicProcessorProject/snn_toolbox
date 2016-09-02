@@ -77,6 +77,26 @@ def parse(input_model):
     return parsed_model
 
 
+def evaluate_keras(model, X_test=None, Y_test=None, dataflow=None):
+    """Evaluate parsed Keras model.
+
+    Can use either numpy arrays ``X_test, Y_test`` containing the test samples,
+    or generate them with a dataflow
+    (``Keras.ImageDataGenerator.flow_from_directory`` object).
+    """
+
+    if X_test is not None:
+        score = model.evaluate(X_test, Y_test)
+    elif dataflow:
+        batch_size = dataflow.batch_size
+        dataflow.batch_size = settings['num_to_test']
+        score = model.evaluate_generator(dataflow, settings['num_to_test'])
+        dataflow.batch_size = batch_size
+    print('\n' + "Test loss: {:.2f}".format(score[0]))
+    print("Test accuracy: {:.2%}\n".format(score[1]))
+    return score
+
+
 def get_range(start=0.0, stop=1.0, num=5, method='linear'):
     """Return a range of parameter values.
 
@@ -190,7 +210,7 @@ def get_sample_activity_from_batch(activity_batch, idx=0):
     return [(layer_act[0][idx], layer_act[1]) for layer_act in activity_batch]
 
 
-def normalize_parameters(model):
+def normalize_parameters(model, dataflow=None):
     """Normalize the parameters of a network.
 
     The parameters of each layer are normalized with respect to the maximum
@@ -202,10 +222,15 @@ def normalize_parameters(model):
     """
 
     from snntoolbox.io_utils.plotting import plot_hist
-    from snntoolbox.io_utils.common import load_dataset
 
-    print("Loading normalization data set.\n")
-    X_norm = load_dataset(settings['dataset_path'], 'X_norm.npz')  # t=0.2%
+    if dataflow is None:
+        from snntoolbox.io_utils.common import load_dataset
+        print("Loading normalization data set from '.npz' file.\n")
+        X_norm = load_dataset(settings['dataset_path'], 'X_norm.npz')  # t=0.2%
+    else:
+        print("Loading normalization data set from ImageDataGenerator.\n")
+        X_norm, Y = dataflow.next()
+
     print("Using {} samples for normalization.".format(len(X_norm)))
 
 #        import numpy as np
