@@ -190,7 +190,7 @@ class SNN():
             echo("Restoring layer connections...\n")
             self.load()
             self.parsed_model = keras.models.load_model(os.path.join(
-                settings['path'], settings['filename_parsed_model'] + '.h5'))
+                settings['path_wd'], settings['filename_parsed_model']+'.h5'))
 
         si = settings['sample_indices_to_test']
         if not si == []:
@@ -388,7 +388,7 @@ class SNN():
         from snntoolbox.core.inisim import custom_layers
 
         if path is None:
-            path = settings['path']
+            path = settings['path_wd']
         if filename is None:
             filename = settings['filename_snn']
         filepath = os.path.join(path, filename + '.h5')

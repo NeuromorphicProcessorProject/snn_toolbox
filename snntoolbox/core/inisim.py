@@ -36,21 +36,25 @@ rng = RandomStreams()
 
 def floatX(X):
     """Return array in floatX settings of Theano."""
+
     return [np.asarray(x, dtype=theano.config.floatX) for x in X]
 
 
 def sharedX(X, dtype=theano.config.floatX, name=None):
     """Make array as shared array."""
+
     return theano.shared(np.asarray(X, dtype=dtype), name=name)
 
 
 def shared_zeros(shape, dtype=theano.config.floatX, name=None):
     """Make shared zeros array."""
+
     return sharedX(np.zeros(shape), dtype=dtype, name=name)
 
 
 def on_gpu():
     """Check if running on GPU board."""
+
     return theano.config.device[:3] == 'gpu'
 
 if on_gpu():
@@ -59,6 +63,7 @@ if on_gpu():
 
 def update_neurons(self, time, updates):
     """Update neurons according to activation function."""
+
     if 'activation' in self.get_config() and \
             self.get_config()['activation'] == 'softmax':
         output_spikes = softmax_activation(self, time, updates)
@@ -92,12 +97,14 @@ def update_neurons(self, time, updates):
     return output_spikes
 
 
-def update_payload(self, new_mem, spikes, time):
-    """Update payloads."""
-    idxs = spikes.nonzero()
-    v_error = new_mem[idxs]
+def update_payload(self, residuals, idxs):
+    """Update payloads.
+
+    Uses the residual of the membrane potential after spike.
+    """
+
     payloads = T.set_subtensor(
-        self.payloads[idxs], v_error - self.payloads_sum[idxs])
+        self.payloads[idxs], residuals[idxs] - self.payloads_sum[idxs])
     payloads_sum = T.set_subtensor(
         self.payloads_sum[idxs], self.payloads_sum[idxs] + self.payloads[idxs])
     return payloads, payloads_sum
@@ -105,6 +112,7 @@ def update_payload(self, new_mem, spikes, time):
 
 def linear_activation(self, time, updates):
     """Linear activation."""
+
     # Destroy impulse if in refractory period
     masked_imp = T.set_subtensor(
         self.impulse[(self.refrac_until > time).nonzero()], 0.)
@@ -112,32 +120,40 @@ def linear_activation(self, time, updates):
     new_mem = self.mem + masked_imp
     # Store spiking
     output_spikes = T.ge(new_mem, self.v_thresh)
+
+    spike_idxs = output_spikes.nonzero()
+
     # At spike, reduce membrane potential by one instead of resetting to zero,
     # so that no information stored in membrane potential is lost. This reduces
     # the variance in the spikerate-activation correlation plot for activations
     # greater than 0.5.
     if settings['reset'] == 'Reset to zero':
-        new_and_reset_mem = T.set_subtensor(
-            new_mem[output_spikes.nonzero()], 0)
+        new_and_reset_mem = T.set_subtensor(new_mem[spike_idxs], 0.)
     elif settings['reset'] == 'Reset by subtraction':
-        new_and_reset_mem = T.inc_subtensor(
-            new_mem[output_spikes.nonzero()], -self.v_thresh)
-        if settings['payloads']:
-            payloads, payloads_sum = update_payload(self, new_and_reset_mem,
-                                                    output_spikes, time)
+        if settings['payloads'] and False:  # Experimental, turn off by default
+            new_and_reset_mem = T.set_subtensor(new_mem[spike_idxs], 0.)
+        else:
+            new_and_reset_mem = T.inc_subtensor(new_mem[spike_idxs],
+                                                -self.v_thresh)
+    updates.append((self.mem, new_and_reset_mem))
+
     # Store refractory
     new_refractory = T.set_subtensor(
-        self.refrac_until[output_spikes.nonzero()], time + self.tau_refrac)
+        self.refrac_until[spike_idxs], time + self.tau_refrac)
     updates.append((self.refrac_until, new_refractory))
-    updates.append((self.mem, new_and_reset_mem))
+
     if settings['payloads']:
+        residuals = T.inc_subtensor(new_mem[spike_idxs], -self.v_thresh)
+        payloads, payloads_sum = update_payload(self, residuals, spike_idxs)
         updates.append((self.payloads, payloads))
         updates.append((self.payloads_sum, payloads_sum))
+
     return output_spikes
 
 
 def softmax_activation(self, time, updates):
     """Softmax activation."""
+
     # Destroy impulse if in refractory period
     masked_imp = T.set_subtensor(
         self.impulse[(self.refrac_until > time).nonzero()], 0.)
@@ -146,26 +162,23 @@ def softmax_activation(self, time, updates):
     # Store spiking
     output_spikes, new_and_reset_mem = theano.ifelse.ifelse(
         T.le(rng.uniform(),
-             settings['softmax_clockrate'] * settings['dt'] / 1000),
+             settings['softmax_clockrate'] * settings['dt'] / 1000.),
         trigger_spike(new_mem), skip_spike(new_mem))  # Then and else condition
+    updates.append((self.mem, new_and_reset_mem))
+
     # Store refractory. In case of a spike we are resetting all neurons, even
     # the ones that didn't spike. However, in the refractory period we only
     # consider those that spiked. May have to change that...
     new_refractory = T.set_subtensor(
         self.refrac_until[output_spikes.nonzero()], time + self.tau_refrac)
-    if settings['payloads']:
-        payloads, payloads_sum = update_payload(self, new_and_reset_mem,
-                                                output_spikes, time)
-        updates.append((self.payloads, payloads))
-        updates.append((self.payloads_sum, payloads_sum))
-
     updates.append((self.refrac_until, new_refractory))
-    updates.append((self.mem, new_and_reset_mem))
+
     return output_spikes
 
 
 def trigger_spike(new_mem):
     """Trigger spike."""
+
     activ = T.nnet.softmax(new_mem)
     max_activ = T.max(activ, axis=1, keepdims=True)
     output_spikes = T.eq(activ, max_activ).astype('float32')
@@ -174,11 +187,13 @@ def trigger_spike(new_mem):
 
 def skip_spike(new_mem):
     """Skip spike."""
+
     return T.zeros_like(new_mem), new_mem
 
 
 def reset(self):
     """Reset."""
+
     if self.inbound_nodes[0].inbound_layers:
         reset(self.inbound_nodes[0].inbound_layers[0])
     self.mem.set_value(floatX(np.zeros(self.output_shape)))
@@ -207,6 +222,7 @@ def reset(self):
 
 def get_input(self):
     """Get input."""
+
     if self.inbound_nodes[0].inbound_layers:
         if 'input' in self.inbound_nodes[0].inbound_layers[0].name:
             previous_output = self.input
@@ -220,6 +236,7 @@ def get_input(self):
 
 def get_time(self):
     """Get time."""
+
     if hasattr(self, 'time_var'):
         return self.time_var
     elif self.inbound_nodes[0].inbound_layers:
@@ -230,6 +247,7 @@ def get_time(self):
 
 def get_updates(self):
     """Get updates."""
+
     if self.inbound_nodes[0].inbound_layers:
         return self.inbound_nodes[0].inbound_layers[0].updates
     else:
@@ -238,6 +256,7 @@ def get_updates(self):
 
 def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
     """Init neurons."""
+
     # The neurons in the spiking layer cannot be initialized until the layer
     # has been initialized and connected to the network. Otherwise
     # 'output_shape' is not known (obtained from previous layer), and
@@ -251,6 +270,7 @@ def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
 
 def init_layer(self, layer, v_thresh, tau_refrac):
     """Init layer."""
+
     layer.v_thresh = theano.shared(
         np.asarray(v_thresh, dtype=theano.config.floatX), 'v_thresh')
     layer.tau_refrac = tau_refrac
@@ -283,6 +303,7 @@ def init_layer(self, layer, v_thresh, tau_refrac):
 
 def get_new_thresh(self, time):
     """Get new threshhold."""
+
     return theano.ifelse.ifelse(
         T.eq(time / settings['dt'] % settings['timestep_fraction'], 0) *
         T.gt(self.max_spikerate, settings['diff_to_min_rate'] / 1000) *
@@ -294,13 +315,9 @@ def get_new_thresh(self, time):
 class SpikeFlatten(Flatten):
     """Spike flatten layer."""
 
-    def __init__(self, label=None, **kwargs):
+    def __init__(self, **kwargs):
         """Init function."""
         super().__init__(**kwargs)
-        if label is not None:
-            self.label = label
-        else:
-            self.label = self.name
 
     def get_output(self, train=False):
         """Get output."""
@@ -323,33 +340,24 @@ class SpikeFlatten(Flatten):
 class SpikeDense(Dense):
     """Spike Dense layer."""
 
-    def __init__(self, output_dim, weights=None, label=None, **kwargs):
+    def __init__(self, output_dim, weights=None, **kwargs):
         """Init function."""
         super().__init__(output_dim, weights=weights, **kwargs)
-        if label is not None:
-            self.label = label
-        else:
-            self.label = self.name
 
     def get_output(self, train=False):
         """Get output."""
+
         # Recurse
         inp, time, updates = get_input(self)
         if settings['online_normalization']:
             # Modify threshold if firing rate of layer too low
             updates.append((self.v_thresh, get_new_thresh(self, time)))
-        if self.inbound_nodes[0].inbound_layers and settings['payloads']:
-            prev_layer_error = self.inbound_nodes[0].inbound_layers[0].payloads
-            prev_shape = self.inbound_nodes[0].inbound_layers[0].output_shape
-            error = shared_zeros(prev_shape)
-            idxs = (inp > 0).nonzero()
-            error = T.set_subtensor(error[idxs], prev_layer_error[idxs])
-            # Get impulse
-            self.impulse = T.add(T.dot(inp, self.W), self.b, T.dot(error,
-                                                                   self.W))
-        else:
-            self.impulse = T.add(T.dot(inp, self.W), self.b)
-        # Update payload
+        if settings['payloads']:
+            # Add payload from previous layer
+            prev_layer = self.inbound_nodes[0].inbound_layers[0]
+            inp = add_payloads(prev_layer, inp)
+
+        self.impulse = T.add(T.dot(inp, self.W), self.b)
         output_spikes = update_neurons(self, time, updates)
         self.updates = updates
         return T.cast(output_spikes, 'float32')
@@ -359,68 +367,27 @@ class SpikeDense(Dense):
         return self.__class__.__name__
 
 
-def pool_same_size(data_in, patch_size, ignore_border=True,
-                   st=None, padding=(0, 0)):
-    """Max-pooling in same size.
-
-    The indices of maximum values are 1s, else are 0s.
-
-    Parameters
-    ----------
-    data_in : 4-D tensor.
-        input images. Max-pooling will be done over the 2 last dimensions.
-    patch_size : tuple
-        with length 2 (patch height, patch width)
-    ignore_border : bool
-        When True, (5,5) input with ds=(2,2) will generate a (2,2) output.
-        (3,3) otherwise.
-    st : tuple
-        Stride size, which is the number of shifts over rows/cols to get the
-        next pool region. If st is None, it is considered equal to ds
-        (no overlap on pooling regions).
-    padding : tuple
-        (pad_h, pad_w) pad zeros to extend beyond four borders of the
-        images, pad_h is the size of the top and bottom margins, and
-        pad_w is the size of the left and right margins.
-    """
-    output = pool.Pool(ds=patch_size, ignore_border=ignore_border,
-                       st=st, padding=padding, mode="max")(data_in)
-    outs = pool.MaxPoolGrad(ds=patch_size, ignore_border=ignore_border,
-                            st=st, padding=padding)(data_in, output,
-                                                    output) > 0.
-    return T.cast(outs, 'float32')
-
-
 class SpikeConvolution2D(Convolution2D):
     """Spike 2D Convolution."""
 
     def __init__(self, nb_filter, nb_row, nb_col, weights=None,
-                 border_mode='valid', subsample=(1, 1), label=None,
-                 filter_flip=True, **kwargs):
+                 border_mode='valid', subsample=(1, 1), filter_flip=True,
+                 **kwargs):
         """Init function."""
         super().__init__(nb_filter, nb_row, nb_col, weights=weights,
                          border_mode=border_mode, subsample=subsample,
                          **kwargs)
         self.filter_flip = filter_flip
-        if label is not None:
-            self.label = label
-        else:
-            self.label = self.name
 
     def get_output(self, train=False):
         """Get output."""
+
         # Recurse
         inp, time, updates = get_input(self)
-        if self.inbound_nodes[0].inbound_layers and settings['payloads']:
-            # Add error from previous layer
-            prev_layer_error = self.inbound_nodes[0].inbound_layers[0].payloads
-            print(self.inbound_nodes[0].inbound_layers[0].name)
-            print("error to layer conv", prev_layer_error)
-
-            prev_shape = self.inbound_nodes[0].inbound_layers[0].output_shape
-            error = shared_zeros(prev_shape)
-            idxs = (inp > 0).nonzero()
-            error = T.set_subtensor(error[idxs], prev_layer_error[idxs])
+        if settings['payloads']:
+            # Add payload from previous layer
+            prev_layer = self.inbound_nodes[0].inbound_layers[0]
+            inp = add_payloads(prev_layer, inp)
 
         if settings['online_normalization']:
             # Modify threshold if firing rate of layer too low
@@ -437,51 +404,30 @@ class SpikeConvolution2D(Convolution2D):
                 conv_out = dnn.dnn_conv(img=inp, kerns=self.W,
                                         border_mode=(pad_x, pad_y),
                                         conv_mode=conv_mode)
-                if self.inbound_nodes[0].inbound_layers \
-                        and settings['payloads']:
-                    error_conv = dnn.dnn_conv(img=error, kerns=self.W,
-                                              border_mode=(pad_x, pad_y),
-                                              conv_mode=conv_mode)
             else:
                 conv_out = dnn.dnn_conv(img=inp, kerns=self.W,
                                         border_mode=border_mode,
                                         subsample=self.subsample,
                                         conv_mode=conv_mode)
-                if self.inbound_nodes[0].inbound_layers \
-                        and settings['payloads']:
-                    error_conv = dnn.dnn_conv(img=error, kerns=self.W,
-                                              border_mode=border_mode,
-                                              subsample=self.subsample,
-                                              conv_mode=conv_mode)
         else:
             if border_mode == 'same':
                 border_mode = 'full'
             conv_out = T.nnet.conv2d(inp, self.W, border_mode=border_mode,
                                      subsample=self.subsample,
                                      filter_flip=self.filter_flip)
-            if self.inbound_nodes[0].inbound_layers and settings['payloads']:
-                error_conv = dnn.dnn_conv(error, kerns=self.W,
-                                          border_mode=(pad_x, pad_y),
-                                          conv_mode=conv_mode)
             if self.border_mode == 'same':
                 shift_x = (self.nb_row - 1) // 2
                 shift_y = (self.nb_col - 1) // 2
                 conv_out = conv_out[:, :, shift_x:inp.shape[2] + shift_x,
                                     shift_y:inp.shape[3] + shift_y]
-        if self.inbound_nodes[0].inbound_layers and settings['payloads']:
-            self.impulse = conv_out + error_conv + K.reshape(
-                                                 self.b,
-                                                 (1, self.nb_filter, 1, 1)
-                                                 )
-        else:
-            self.impulse = conv_out + K.reshape(self.b,
-                                                (1, self.nb_filter, 1, 1))
+        self.impulse = conv_out + K.reshape(self.b, (1, self.nb_filter, 1, 1))
         output_spikes = update_neurons(self, time, updates)
         self.updates = updates
         return T.cast(output_spikes, 'float32')
 
     def get_name(self):
         """Get class name."""
+
         return self.__class__.__name__
 
 
@@ -489,36 +435,25 @@ class SpikeAveragePooling2D(AveragePooling2D):
     """Average Pooling."""
 
     def __init__(self, pool_size=(2, 2), strides=None, border_mode='valid',
-                 label=None, **kwargs):
+                 **kwargs):
         """Init average pooling."""
+
         super().__init__(pool_size=pool_size, strides=strides,
                          border_mode=border_mode)
-        if label is not None:
-            self.label = label
-            self.name = label
-        else:
-            self.label = self.name
 
     def get_output(self, train=False):
         """Get output."""
+
         # Recurse
         inp, time, updates = get_input(self)
 
-        if self.inbound_nodes[0].inbound_layers and settings['payloads']:
-            prev_layer_error = self.inbound_nodes[0].inbound_layers[0].payloads
-            prev_shape = self.inbound_nodes[0].inbound_layers[0].output_shape
-            error = shared_zeros(prev_shape)
-            idxs = (inp > 0).nonzero()
-            error = T.set_subtensor(error[idxs], prev_layer_error[idxs])
-            impulse = K.pool2d(inp, self.pool_size, self.strides,
-                               self.border_mode, pool_mode='avg')
+        if settings['payloads']:
+            # Add payload from previous layer
+            prev_layer = self.inbound_nodes[0].inbound_layers[0]
+            inp = add_payloads(prev_layer, inp)
 
-            error_pool = K.pool2d(error, self.pool_size, self.strides,
-                                  self.border_mode, pool_mode='avg')
-            self.impulse = impulse + error_pool
-        else:
-            self.impulse = K.pool2d(inp, self.pool_size, self.strides,
-                                    self.border_mode, pool_mode='avg')
+        self.impulse = K.pool2d(inp, self.pool_size, self.strides,
+                                self.border_mode, pool_mode='avg')
 
         output_spikes = update_neurons(self, time, updates)
         self.updates = updates
@@ -526,6 +461,7 @@ class SpikeAveragePooling2D(AveragePooling2D):
 
     def get_name(self):
         """Get class name."""
+
         return self.__class__.__name__
 
 
@@ -533,31 +469,34 @@ class SpikeMaxPooling2D(MaxPooling2D):
     """Max Pooling."""
 
     def __init__(self, pool_size=(2, 2), strides=None, border_mode='valid',
-                 label=None, pool_type="fir_max", **kwargs):
+                 pool_type="fir_max", **kwargs):
         """Init function.
 
         Parameters
         ----------
-        pool_type : string
-            avg_max : max depending on moving average spike rate.
-            fir_max : max depending on accumulated absolute spike rate.
-            exp_max : max depending on first arrived spike.
+
+        pool_type: string
+            avg_max: max depending on moving average spike rate.
+            fir_max: max depending on accumulated absolute spike rate.
+            exp_max: max depending on first arrived spike.
         """
+
         self.ignore_border = True if border_mode == "valid" else False
 
         super().__init__(pool_size=pool_size, strides=strides,
                          border_mode=border_mode)
-        if label is not None:
-            self.label = label
-            self.name = label
-        else:
-            self.label = self.name
         self.pool_type = pool_type
 
     def get_output(self, train=False):
         """Get output."""
+
         # Recurse
         inp, time, updates = get_input(self)
+
+        if settings['payloads']:
+            # Add payload from previous layer
+            prev_layer = self.inbound_nodes[0].inbound_layers[0]
+            inp = add_payloads(prev_layer, inp)
 
         if self.pool_type == "avg_max":
             spikerate = self.inbound_nodes[0].inbound_layers[0].avg_spikerate \
@@ -591,7 +530,52 @@ class SpikeMaxPooling2D(MaxPooling2D):
 
     def get_name(self):
         """Get class name."""
+
         return self.__class__.__name__
+
+
+def pool_same_size(data_in, patch_size, ignore_border=True, st=None,
+                   padding=(0, 0)):
+    """Max-pooling in same size.
+
+    The indices of maximum values are 1s, else are 0s.
+
+    Parameters
+    ----------
+
+    data_in: 4-D tensor.
+        input images. Max-pooling will be done over the 2 last dimensions.
+    patch_size: tuple
+        with length 2 (patch height, patch width)
+    ignore_border: bool
+        When True, (5,5) input with ds=(2,2) will generate a (2,2) output.
+        (3,3) otherwise.
+    st: tuple
+        Stride size, which is the number of shifts over rows/cols to get the
+        next pool region. If st is None, it is considered equal to ds
+        (no overlap on pooling regions).
+    padding: tuple
+        (pad_h, pad_w) pad zeros to extend beyond four borders of the
+        images, pad_h is the size of the top and bottom margins, and
+        pad_w is the size of the left and right margins.
+    """
+
+    output = pool.Pool(ds=patch_size, ignore_border=ignore_border,
+                       st=st, padding=padding, mode="max")(data_in)
+    outs = pool.MaxPoolGrad(ds=patch_size, ignore_border=ignore_border,
+                            st=st, padding=padding)(data_in, output,
+                                                    output) > 0.
+    return T.cast(outs, 'float32')
+
+
+def add_payloads(prev_layer, input_spikes):
+    """Get payloads from previous layer."""
+
+    # Get only payloads of those presynaptic neurons that spiked
+    payloads = T.set_subtensor(
+        prev_layer.payloads[T.nonzero(T.eq(input_spikes, 0.))], 0.)
+    print("Using spikes with payloads from layer {}".format(prev_layer.name))
+    return T.add(input_spikes, payloads)
 
 
 custom_layers = {'SpikeFlatten': SpikeFlatten,

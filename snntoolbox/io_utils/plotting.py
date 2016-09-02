@@ -300,7 +300,9 @@ def plot_layer_correlation(rates, activations, title, path=None):
 
     plt.figure()
     plt.plot(activations, rates, '.')
-    plt.text(1, 0.5, "{:.2%} units saturated.".format(p))
+    plt.annotate("{:.2%} units saturated.".format(p), xy=(1, 1),
+                 xycoords='axes fraction', xytext=(-200, -20),
+                 textcoords='offset points')
     plt.title(title, fontsize=20)
     plt.locator_params(nbins=4)
     plt.xlim([None, max(activations) * 1.1])
@@ -699,6 +701,7 @@ def plot_error_vs_time(err, path=None):
     # Compute confidence intervals of the experiments
     ci = [wilson_score(q, n) for q in err]
     plt.errorbar(time, err, yerr=ci, fmt='.', errorevery=3)
+    plt.ylim(0, 1)
     plt.ylabel('Error [%]')
     plt.xlabel('Timestep')
     if path is not None:

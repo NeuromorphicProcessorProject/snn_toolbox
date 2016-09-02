@@ -31,7 +31,7 @@ from snntoolbox.io_utils.plotting import plot_history
 
 batch_size = 128
 nb_classes = 10
-nb_epoch = 40
+nb_epoch = 20
 
 # Input image dimensions
 img_rows, img_cols = 32, 32
@@ -89,7 +89,7 @@ model.add(AveragePooling2D(pool_size=(8, 8), strides=(1, 1)))
 model.add(Flatten())
 model.add(Activation('softmax'))
 
-sgd = SGD(lr=0.01, momentum=0.9, decay=1e-6, nesterov=True)
+sgd = SGD(lr=0.01*0.1, momentum=0.9, decay=1e-6, nesterov=True)
 model.compile(sgd, 'categorical_crossentropy', metrics=['accuracy'])
 
 # Whether to apply global contrast normalization and ZCA whitening

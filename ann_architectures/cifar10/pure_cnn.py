@@ -20,7 +20,7 @@ from keras.models import Sequential
 from keras.layers.core import Dropout, Activation, Flatten
 from keras.layers.convolutional import Convolution2D, AveragePooling2D
 from keras.utils import np_utils
-# from keras.regularizers import l2
+from keras.regularizers import l2
 from keras.optimizers import Adam  # SGD
 
 from snntoolbox.io_utils.plotting import plot_history
@@ -28,7 +28,7 @@ from snntoolbox.io_utils.plotting import plot_history
 # Train for 350 epochs and reduce learning rate by factor 0.1 at epochs
 # [200, 250, 300]
 lr = 0.001
-nb_epoch = 1
+nb_epoch = 200
 batch_size = 128
 nb_classes = 10
 
@@ -37,7 +37,7 @@ img_rows, img_cols = 32, 32
 img_channels = 3
 
 init = 'he_uniform'
-reg = None  # l2(0.001)
+reg = l2(0.001)
 border_mode = 'same'
 
 # Data set

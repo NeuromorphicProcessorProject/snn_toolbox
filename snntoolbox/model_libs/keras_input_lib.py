@@ -115,16 +115,21 @@ def extract(model):
                 bn_parameters[1], bn_parameters[2], bn_parameters[3],
                 layer.epsilon)
 
+        # Pass on batch_input_shape (also in case the first layer is skipped)
+        if layer_num == 0:
+            batch_input_shape = list(layer.batch_input_shape)
+            batch_input_shape[0] = settings['batch_size']
+            if layer_type in spiking_layers:
+                layer.batch_input_shape = tuple(batch_input_shape)
+            else:
+                model.layers[layer_num+1].batch_input_shape = \
+                    tuple(batch_input_shape)
+
         if layer_type not in spiking_layers:
             print("Skipping layer {}".format(layer_type))
             continue
 
         print("Parsing layer {}".format(layer_type))
-
-        if layer_num == 0:
-            batch_input_shape = list(layer.batch_input_shape)
-            batch_input_shape[0] = settings['batch_size']
-            layer.batch_input_shape = tuple(batch_input_shape)
 
         attributes = layer.get_config()
         attributes['layer_type'] = layer.__class__.__name__
