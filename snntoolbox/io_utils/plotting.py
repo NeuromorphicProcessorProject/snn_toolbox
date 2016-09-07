@@ -18,8 +18,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from snntoolbox.config import settings
+from snntoolbox.core.util import extract_label
 
 standard_library.install_aliases()
+
+use_simple_labels = True
 
 
 def output_graphs(spiketrains_batch, activations_batch, path=None, idx=0):
@@ -60,8 +63,12 @@ def output_graphs(spiketrains_batch, activations_batch, path=None, idx=0):
 
     plot_layer_summaries(spikerates, activations, spiketrains, path)
     plot_pearson_coefficients(spikerates_batch, activations_batch, path)
-    plot_hist_combined({'Spikerates': spikerates_batch,
-                        'Activations': activations_batch}, path)
+    s = []
+    a = []
+    for ss, aa in zip(spikerates_batch, activations_batch):
+        s += list(ss[0].flatten()/1000.)
+        a += list(aa[0].flatten())
+    plot_hist({'Spikerates': s, 'Activations': a}, path=path)
     print("Done.\n")
 
 
@@ -106,6 +113,7 @@ def plot_layer_summaries(spikerates, activations, spiketrains=None, path=None):
     # Loop over layers
     for i in range(len(spikerates)):
         label = spikerates[i][1]
+        name = extract_label(label)[1] if use_simple_labels else label
         print("Plotting layer {}".format(label))
         newpath = os.path.join(path, label)
         if not os.path.exists(newpath):
@@ -114,14 +122,14 @@ def plot_layer_summaries(spikerates, activations, spiketrains=None, path=None):
             plot_spiketrains(spiketrains[i], newpath)  # t=75.5%
         plot_layer_activity(spikerates[i], 'Spikerates', newpath)  # t=7.8%
         plot_layer_activity(activations[i], 'Activations', newpath)  # t=6.5%
-        plot_rates_minus_activations(spikerates[i][0], activations[i][0],
-                                     label, newpath)  # t=6.7%
+        plot_activations_minus_rates(spikerates[i][0], activations[i][0],
+                                     name, newpath)  # t=6.7%
         plot_layer_correlation(spikerates[i][0].flatten(),
                                activations[i][0].flatten(),
-                               'ANN-SNN correlations\n of layer ' + label,
+                               'ANN-SNN correlations\n of layer ' + name,
                                newpath)  # t=0.8%
         plot_hist({'Spikerates': spikerates[i][0].flatten()}, 'Spikerates',
-                  label, newpath)  # t=2.7%
+                  name, newpath)  # t=2.7%
 
 
 def plot_layer_activity(layer, title, path=None, limits=None):
@@ -245,7 +253,7 @@ def plot_activations(model, X_test):
         plot_layer_activity(activations[i], j+label, newpath)
 
 
-def plot_rates_minus_activations(rates, activations, label, path=None):
+def plot_activations_minus_rates(activations, rates, label, path=None):
     """Plot spikerates minus activations for a specific layer.
 
     Spikerates and activations are each normalized before subtraction.
@@ -257,11 +265,11 @@ def plot_rates_minus_activations(rates, activations, label, path=None):
     Parameters
     ----------
 
-    rates: array
-        The spikerates of a layer. The shape is that of the original layer,
-        e.g. (32, 28, 28) for 32 feature maps of size 28x28.
     activations: array
         The activations of a layer. The shape is that of the original layer,
+        e.g. (32, 28, 28) for 32 feature maps of size 28x28.
+    rates: array
+        The spikerates of a layer. The shape is that of the original layer,
         e.g. (32, 28, 28) for 32 feature maps of size 28x28.
     label: string
         Layer label.
@@ -270,10 +278,10 @@ def plot_rates_minus_activations(rates, activations, label, path=None):
         display plots without saving.
     """
 
-    rates_norm = rates / np.max(rates) if np.max(rates) != 0 else rates
     activations_norm = activations / np.max(activations)
-    plot_layer_activity((rates_norm - activations_norm, label),
-                        'Spikerates_minus_Activations', path, limits=(-1, 1))
+    rates_norm = rates / np.max(rates) if np.max(rates) != 0 else rates
+    plot_layer_activity((activations_norm - rates_norm, label),
+                        'Activations_minus_Spikerates', path, limits=(-1, 1))
 
 
 def plot_layer_correlation(rates, activations, title, path=None):
@@ -403,9 +411,21 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
     for layer_num in range(len(spikerates_batch)):
         c = []
         for sample in range(batch_size):
-            (r, p) = pearsonr(
-                spikerates_batch[layer_num][0][sample].flatten(),
-                activations_batch[layer_num][0][sample].flatten())
+            s = spikerates_batch[layer_num][0][sample].flatten()
+            a = activations_batch[layer_num][0][sample].flatten()
+            if layer_num < len(spikerates_batch) - 1:
+                # Remove points at origin and saturated units, except for
+                # output layer (has too few units and gets activation of 1
+                # because of softmax).
+                ss = []
+                aa = []
+                for sss, aaa in zip(s, a):
+                    if (sss > 0 or aaa > 0) and aaa < 1./settings['dt']:
+                        ss.append(sss)
+                        aa.append(aaa)
+                    s = ss
+                    a = aa
+            (r, p) = pearsonr(s, a)
             c.append(r)
         co.append(c)
 
@@ -413,7 +433,9 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
     corr = np.mean(co, axis=1)
     std = np.std(co, axis=1)
 
-    labels = [sp[1] for sp in spikerates_batch if 'Flatten' not in sp[1]]
+    labels = [sp[1] for sp in spikerates_batch]
+    if use_simple_labels:
+        labels = [extract_label(label)[1] for label in labels]
 
     plt.figure()
     plt.bar([i + 0.1 for i in range(len(corr))], corr, width=0.8, yerr=std,
@@ -456,6 +478,9 @@ def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None):
 
     keys = sorted(h.keys())
     plt.hist([h[key] for key in keys], label=keys, log=True, bottom=1)
+    if scale_fac:
+        plt.axvline(scale_fac, color='red', linestyle='dashed', linewidth=2,
+                    label='scale factor')
     plt.legend()
     if title and layer_label:
         if 'Spikerates' in title:
@@ -499,7 +524,7 @@ def plot_hist_combined(data, path=None):
             l += list(a[0].flatten())
         h.update({key: l})
 
-    keys = list(h.keys())
+    keys = sorted(h.keys())
     fig, ax = plt.subplots()
     ax.tick_params(axis='x', which='both')
     ax.get_xaxis().set_visible(False)

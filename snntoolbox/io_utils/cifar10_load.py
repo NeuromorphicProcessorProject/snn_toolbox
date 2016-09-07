@@ -54,8 +54,8 @@ def get_cifar10(path=None, filename=None, flat=False):
     """
 
     # Whether to apply global contrast normalization and ZCA whitening
-    gcn = True
-    zca = True
+    gcn = False
+    zca = False
     nb_classes = 10
 
     (X_train, y_train), (X_test, y_test) = cifar10.load_data()
@@ -91,4 +91,4 @@ def get_cifar10(path=None, filename=None, flat=False):
 #    return (X_train, Y_train, X_test, Y_test)
 
 if __name__ == '__main__':
-    get_cifar10('/home/rbodo/.snntoolbox/Datasets/cifar10/processed/')
+    get_cifar10('/home/rbodo/.snntoolbox/Datasets/cifar10/')

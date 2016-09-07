@@ -72,7 +72,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
     # ____________________________ LOAD DATASET _____________________________ #
     if settings['dataset_format'] == 'npz':
         from snntoolbox.io_utils.common import load_dataset
-        if settings['evaluateANN']:
+        if settings['evaluateANN'] or settings['simulate']:
             evalset = {
                 'X_test': load_dataset(settings['dataset_path'], 'X_test.npz'),
                 'Y_test': load_dataset(settings['dataset_path'], 'Y_test.npz')}

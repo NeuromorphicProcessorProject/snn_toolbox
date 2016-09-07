@@ -22,6 +22,8 @@ from snntoolbox.config import settings
 
 standard_library.install_aliases()
 
+use_simple_label = True
+
 
 def parse(input_model):
     """Create a Keras model suitable for conversion to SNN.
@@ -271,21 +273,24 @@ def normalize_parameters(model, dataflow=None):
         layer.set_weights(parameters_norm)
         if settings['verbose'] < 3:
             continue
+        label = str(idx) + layer.__class__.__name__ if use_simple_label \
+            else layer.name
         weight_dict = {
             'weights': parameters[0].flatten(),
             'weights_norm': parameters_norm[0].flatten()}
         # t=2.8%
-        plot_hist(weight_dict, 'Weight', layer.name, newpath)
+        plot_hist(weight_dict, 'Weight', label, newpath)
 
-        if True:  # Too costly
+        if False:  # Too costly
             continue
         # Compute activations with modified parameters
         # t=4.8%
         activations_norm = get_activations_layer(get_activ, X_norm)
-        activation_dict = {'Activations': activations.flatten(),
-                           'Activations_norm': activations_norm.flatten()}
-        plot_hist(activation_dict, 'Activation', layer.name, newpath,
-                  scale_fac)  # t=83.1%
+        activation_dict = {'Activations': activations[np.nonzero(activations)],
+                           'Activations_norm':
+                           activations_norm[np.nonzero(activations)]}
+        plot_hist(activation_dict, 'Activation', label, newpath, scale_fac)
+        # t=83.1%
 
 
 def get_scale_fac(activations, idx=0):
@@ -309,9 +314,14 @@ def get_scale_fac(activations, idx=0):
         Parameters of the respective layer are scaled by this value.
     """
 
-    scale_fac = np.percentile(activations, settings['percentile']-idx/10)
+    # Remove zeros, because they bias the distribution too much
+    a = activations[np.nonzero(activations)]
+
+    scale_fac = np.percentile(a, settings['percentile']-idx/10,
+                              overwrite_input=True)
     if settings['verbose'] > 1:
         print("Scale factor: {:.2f}.".format(scale_fac))
+
     return scale_fac
 
 
