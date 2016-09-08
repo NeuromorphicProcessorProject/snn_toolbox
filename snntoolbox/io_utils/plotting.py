@@ -745,6 +745,24 @@ def plot_error_vs_time(err, ANN_err=None, path=None):
     plt.close()
 
 
+def plot_spikecount_vs_time(spikecounts, path=None):
+
+    plt.figure()
+    plt.title('SNN Operations')
+    time = np.arange(len(spikecounts))
+    plt.errorbar(time, np.mean(spikecounts, axis=1),
+                 yerr=np.std(spikecounts, axis=1), fmt='.', errorevery=3)
+    plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
+    plt.ylabel('Total spike count')
+    plt.xlabel('Timestep')
+    if path is not None:
+        filename = 'Total_spike_count'
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
 def plot_input_image(X, label, path=None):
     plt.figure
     plt.title('Input image (class: {})'.format(label))

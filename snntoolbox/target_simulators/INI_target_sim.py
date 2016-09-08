@@ -128,6 +128,9 @@ class SNN():
                          metrics=['accuracy'])
         output_spikes = self.snn.layers[-1].get_output()
         output_time = self.sim.get_time(self.snn.layers[-1])
+        total_spike_count = self.snn.layers[0].total_spike_count
+        for layer in self.snn.layers[1:]:
+            total_spike_count += layer.total_spike_count
         updates = self.sim.get_updates(self.snn.layers[-1])
         if settings['online_normalization']:
             thresh = self.snn.layers[lidx].v_thresh
@@ -135,12 +138,14 @@ class SNN():
             spiketrain = self.snn.layers[lidx].spiketrain
             self.get_output = theano.function([self.snn.input, input_time],
                                               [output_spikes, output_time,
+                                               total_spike_count,
                                                thresh, max_spikerate,
                                                spiketrain], updates=updates,
                                               allow_input_downcast=True)
         else:
             self.get_output = theano.function([self.snn.input, input_time],
-                                              [output_spikes, output_time],
+                                              [output_spikes, output_time,
+                                               total_spike_count],
                                               updates=updates,
                                               allow_input_downcast=True)
 
@@ -184,6 +189,7 @@ class SNN():
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
         from snntoolbox.io_utils.plotting import plot_error_vs_time
         from snntoolbox.io_utils.plotting import plot_input_image
+        from snntoolbox.io_utils.plotting import plot_spikecount_vs_time
 
         # Load neuron layers and connections if conversion was done during a
         # previous session.
@@ -266,6 +272,10 @@ class SNN():
             # Loop through simulation time.
             output = np.zeros((settings['batch_size'], Y_batch.shape[1]),
                               dtype='int32')
+            num_timesteps = int(settings['duration'] / settings['dt'])
+            if settings['verbose'] > 2:
+                total_spike_count_over_time = np.zeros(
+                    (num_timesteps, settings['batch_size']))
             t_idx = 0
             for t in np.arange(0, settings['duration'], settings['dt']):
                 if settings['poisson_input']:
@@ -276,15 +286,19 @@ class SNN():
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
                 if settings['online_normalization']:
-                    out_spikes, ts, thresh, max_spikerate, spiketrain = \
-                        self.get_output(inp, float(t))
+                    out_spikes, ts, total_spike_count, thresh, max_spikerate, \
+                        spiketrain = self.get_output(inp, float(t))
                     print('Time: {:.2f}, thresh: {:.2f},'
                           ' max_spikerate: {:.2f}'.format(
                             float(np.array(ts)),
                             float(np.array(thresh)),
                             float(np.array(max_spikerate))))
-                else:
-                    out_spikes, ts = self.get_output(inp, float(t))  # t=27.6%
+                else:  # t=27.6%
+                    out_spikes, ts, total_spike_count = \
+                        self.get_output(inp, float(t))
+                # Count number of spikes in output layer during whole
+                # simulation.
+                output += out_spikes.astype('int32')
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
                 if batch_idx == 0 and settings['verbose'] > 2:
@@ -295,17 +309,15 @@ class SNN():
                         spiketrains_batch[j][0][Ellipsis, t_idx] = \
                             layer.spiketrain.get_value()  # t=1.8% m=0.6GB
                         j += 1
-                t_idx += 1
-                # Count number of spikes in output layer during whole
-                # simulation.
-                output += out_spikes.astype('int32')
-                if batch_idx == 0 and settings['verbose'] > 2:
+                    total_spike_count_over_time[t_idx] = \
+                        np.array(total_spike_count)
                     # Get result by comparing the guessed class (i.e. the index
                     # of the neuron in the last layer which spiked most) to the
                     # ground truth.
                     truth_tmp = np.argmax(Y_batch, axis=1)
                     guesses_tmp = np.argmax(output, axis=1)
                     err.append(np.mean(truth_tmp != guesses_tmp))
+                t_idx += 1
                 if settings['verbose'] > 1:
                     echo('.')
 
@@ -328,6 +340,8 @@ class SNN():
                     ANNerr = self.ANN_err if hasattr(self, 'ANN_err') else None
                     plot_error_vs_time(err, ANN_err=ANNerr,
                                        path=settings['log_dir_of_current_run'])
+                    plot_spikecount_vs_time(total_spike_count_over_time,
+                                            settings['log_dir_of_current_run'])
                     plot_confusion_matrix(truth, guesses,
                                           settings['log_dir_of_current_run'])
                     activations_batch = get_activations_batch(

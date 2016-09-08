@@ -70,9 +70,14 @@ def update_neurons(self, time, updates):
     else:
         output_spikes = linear_activation(self, time, updates)
     updates.append((self.spiketrain, output_spikes * time))
+    updates.append((self.spikecounts, self.spikecounts + output_spikes))
+
+    axes = np.arange(len(self.output_shape))
+    reduction_axes = tuple(axes[1:])
+    updates.append((self.total_spike_count, T.sum(self.spikecounts,
+                                                  reduction_axes)))
 
     if settings['online_normalization']:
-        updates.append((self.spikecounts, self.spikecounts + output_spikes))
         updates.append((self.max_spikerate,
                         T.max(self.spikecounts) / (time + settings['dt'])))
 
@@ -199,13 +204,14 @@ def reset(self):
     self.mem.set_value(floatX(np.zeros(self.output_shape)))
     self.refrac_until.set_value(floatX(np.zeros(self.output_shape)))
     self.spiketrain.set_value(floatX(np.zeros(self.output_shape)))
+    self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
+    self.total_spike_count.set_value(floatX(np.zeros(settings['batch_size'])))
 
     if settings['payloads']:
         self.payloads.set_value(floatX(np.zeros(self.output_shape)))
         self.payloads_sum.set_value(floatX(np.zeros(self.output_shape)))
 
     if settings['online_normalization']:
-        self.spikecounts.set_value(floatX(np.zeros(self.output_shape)))
         self.max_spikerate.set_value(0.0)
         self.v_thresh.set_value(settings['v_thresh'])
 
@@ -277,6 +283,8 @@ def init_layer(self, layer, v_thresh, tau_refrac):
     layer.refrac_until = shared_zeros(self.output_shape)
     layer.mem = shared_zeros(self.output_shape)
     layer.spiketrain = shared_zeros(self.output_shape)
+    layer.spikecounts = shared_zeros(self.output_shape)
+    layer.total_spike_count = shared_zeros(settings['batch_size'])
     if settings['payloads']:
         layer.payloads = shared_zeros(self.output_shape)
         layer.payloads_sum = shared_zeros(self.output_shape)
@@ -284,7 +292,6 @@ def init_layer(self, layer, v_thresh, tau_refrac):
     layer.layer_type = layer.__class__.__name__
 
     if settings['online_normalization']:
-        layer.spikecounts = shared_zeros(self.output_shape)
         layer.max_spikerate = theano.shared(np.asarray(0.0, 'float32'))
 
     if layer.layer_type == "SpikeMaxPooling2D":
