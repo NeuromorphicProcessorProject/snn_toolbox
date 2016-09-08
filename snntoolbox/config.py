@@ -284,7 +284,8 @@ plotproperties = {'font.size': 13,
                   'ytick.major.size': 7,
                   'ytick.minor.size': 5,
                   'legend.fontsize': 'x-large',
-                  'figure.figsize': (7, 6)}
+                  'figure.figsize': (7, 6),
+                  'savefig.format': 'pdf'}
 mpl.rcParams.update(plotproperties)
 
 # List supported model libraries, simulators, etc.

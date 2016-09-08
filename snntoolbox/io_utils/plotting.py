@@ -62,6 +62,9 @@ def output_graphs(spiketrains_batch, activations_batch, path=None, idx=0):
     spiketrains = None  # Too costly
 
     plot_layer_summaries(spikerates, activations, spiketrains, path)
+
+    print("Plotting Pearson Coefficients and spikerate/activation "
+          "distributions")
     plot_pearson_coefficients(spikerates_batch, activations_batch, path)
     s = []
     a = []
@@ -715,7 +718,7 @@ def plot_confusion_matrix(Y_test, Y_pred, path=None, class_labels=None):
     plt.close()
 
 
-def plot_error_vs_time(err, path=None):
+def plot_error_vs_time(err, ANN_err=None, path=None):
 
     from snntoolbox.core.util import wilson_score
 
@@ -724,13 +727,30 @@ def plot_error_vs_time(err, path=None):
     time = np.arange(len(err))
     n = settings['batch_size']
     # Compute confidence intervals of the experiments
-    ci = [wilson_score(q, n) for q in err]
-    plt.errorbar(time, err, yerr=ci, fmt='.', errorevery=3)
-    plt.ylim(0, 1)
+    ci = [wilson_score(q, n)*100 for q in err]
+    plt.errorbar(time, [e*100 for e in err], yerr=ci, fmt='.', errorevery=3,
+                 label='SNN')
+    if ANN_err:
+        plt.hlines(ANN_err*100, 0, time[-1], label='ANN',
+                   linestyle='dashed')
+    plt.legend()
+    plt.ylim(0, 100)
     plt.ylabel('Error [%]')
     plt.xlabel('Timestep')
     if path is not None:
         filename = 'Error_vs_time'
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
+def plot_input_image(X, label, path=None):
+    plt.figure
+    plt.title('Input image (class: {})'.format(label))
+    plt.imshow(X.transpose(1, 2, 0))
+    if path is not None:
+        filename = 'input_image'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
     else:
         plt.show()

@@ -112,8 +112,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
                                settings['simulator'] + '_target_sim')
     spiking_model = target_sim.SNN()  # t=0.1%
 
-    if settings['convert'] and not is_stop(queue):
-
+    if (settings['evaluateANN'] or settings['convert']) and not is_stop(queue):
         # ___________________________ LOAD MODEL ____________________________ #
         # Extract architecture and parameters from input model.
         model_lib = import_module('snntoolbox.model_libs.' +
@@ -122,7 +121,10 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
                                          settings['filename_ann'])
         if settings['evaluateANN']:
             print('\n' + "Evaluating input model...")
-            model_lib.evaluate(input_model['val_fn'], **evalset)
+            score = model_lib.evaluate(input_model['val_fn'], **evalset)
+            spiking_model.ANN_err = 1-score[1]
+
+    if settings['convert'] and not is_stop(queue):
 
         print("Parsing input model...")
         parsed_model = parse(input_model['model'])  # t=0.5% m=0.6GB

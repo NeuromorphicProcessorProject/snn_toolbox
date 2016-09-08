@@ -183,6 +183,7 @@ class SNN():
         from snntoolbox.io_utils.plotting import output_graphs
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
         from snntoolbox.io_utils.plotting import plot_error_vs_time
+        from snntoolbox.io_utils.plotting import plot_input_image
 
         # Load neuron layers and connections if conversion was done during a
         # previous session.
@@ -322,7 +323,11 @@ class SNN():
                             "{} of {}: {:.2%}.\n".format(batch_idx + 1,
                                                          num_batches, avg))
                 if batch_idx == 0 and settings['verbose'] > 2:
-                    plot_error_vs_time(err, settings['log_dir_of_current_run'])
+                    plot_input_image(X_batch[0], np.argmax(Y_batch[0]),
+                                     settings['log_dir_of_current_run'])
+                    ANNerr = self.ANN_err if hasattr(self, 'ANN_err') else None
+                    plot_error_vs_time(err, ANN_err=ANNerr,
+                                       path=settings['log_dir_of_current_run'])
                     plot_confusion_matrix(truth, guesses,
                                           settings['log_dir_of_current_run'])
                     activations_batch = get_activations_batch(
