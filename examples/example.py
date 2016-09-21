@@ -73,7 +73,7 @@ def main():
                 'input_rate': 1000,
                 'normalization_schedule': False,
                 'online_normalization': False,
-                'payloads': True,          
+                'payloads': False,          
                 'diff_to_max_rate': 200,
                 'timestep_fraction': 10,
                 'diff_to_min_rate': 100,
@@ -99,29 +99,21 @@ def main():
     # If set True, the converted model is simulated for three different values
     # of v_thresh. Otherwise use parameters as specified above,
     # for a single run.
-    do_param_sweep = True
-    params = [1, 5, 10, 15, 20, 25, 35, 50, 75, 100]
-    network_runs = 5
-    results = np.zeros((network_runs, len(params)))
+    do_param_sweep = False
     if do_param_sweep:
+        network_runs = 5
+        param_name = 'v_thresh'       
+        params = snntoolbox.get_range(0.1, 1.5, 3, method='linear')
+        results = np.zeros((network_runs, len(params)))    
         for n in range(network_runs):
-            param_name = 'duration'
-            #params = snntoolbox.get_range(1, 101, 21, method='linear')
-            #param_name = 'v_thresh'
-            #params = snntoolbox.get_range(0.1, 1.5, 3, method='linear')
             results[n, :] = snntoolbox.test_full(params=params,
                                  param_name=param_name,
-                                 param_logscale=False)
-            if settings["payloads"]:
-                np.savetxt("results_with_payloads", results)
-            else:
-                np.savetxt("results_without_payloads", results)
-                                 
+                                 param_logscale=False)                                
                                  
     else:
         snntoolbox.test_full()
 
 if __name__ == '__main__':
-    import pdb
-    #pdb.set_trace()
+#    import pdb
+#    pdb.set_trace()
     main()

@@ -432,13 +432,14 @@ def update_setup(s=None):
     if 'maxpool_type' not in s or s['maxpool_type'] == '':
         s['maxpool_type'] = 'fir_max'
 
-    if s['num_to_test'] < s['batch_size']:
-        print(dedent("""\
-            SNN toolbox Warning: 'num_to_test' set lower than 'batch_size'.
-            In simulators that test samples batch-wise (e.g. INIsim), this can
-            lead to undesired behavior. Setting 'num_to_test' equal to
-            'batch_size'."""))
-        s['num_to_test'] = s['batch_size']
+    if 'num_to_test' in s:
+        if s['num_to_test'] < s['batch_size']:
+            print(dedent("""\
+                SNN toolbox Warning: 'num_to_test' set lower than 'batch_size'.
+                In simulators that test samples batch-wise (e.g. INIsim), this can
+                lead to undesired behavior. Setting 'num_to_test' equal to
+                'batch_size'."""))
+            s['num_to_test'] = s['batch_size']
 
     # If there are any parameters specified, merge with default parameters.
     settings.update(s)
