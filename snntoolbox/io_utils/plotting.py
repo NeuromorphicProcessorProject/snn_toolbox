@@ -480,11 +480,22 @@ def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None):
     """
 
     keys = sorted(h.keys())
-    plt.hist([h[key] for key in keys], label=keys, log=True, bottom=1)
+    plt.hist([h[key] for key in keys], label=keys, log=True, bottom=1,
+             bins=100)
+#    plt.hist([h[key] for key in keys], label=keys, bins=1000,
+#             edgecolor='blue', histtype='stepfilled')
+#    plt.xlabel('Maximum ANN activations')
+#    plt.ylabel('Sample count')
+#    plt.hist([h[key] for key in keys], label=keys, bins=1000,
+#             edgecolor='blue', histtype='stepfilled', log=True, bottom=1)
+#    plt.xlabel('ANN activations')
+#    plt.ylabel('Count')
     if scale_fac:
         plt.axvline(scale_fac, color='red', linestyle='dashed', linewidth=2,
                     label='scale factor')
     plt.legend()
+    plt.xlim(xmin=0)
+    plt.locator_params(axis='x', nbins=10)
     if title and layer_label:
         if 'Spikerates' in title:
             filename = '4' + title + '_distribution'
@@ -723,16 +734,16 @@ def plot_error_vs_time(err, ANN_err=None, path=None):
     from snntoolbox.core.util import wilson_score
 
     plt.figure()
-    plt.title('Error vs simulation time')
+#    plt.title('Error vs simulation time')
     time = np.arange(len(err))
     n = settings['batch_size']
     # Compute confidence intervals of the experiments
-    ci = [wilson_score(q, n)*100 for q in err]
-    plt.errorbar(time, [e*100 for e in err], yerr=ci, fmt='.', errorevery=3,
-                 label='SNN')
+    ci = np.array([wilson_score(q, n)*100 for q in err])
+    y = np.array([e*100 for e in err])
+    plt.plot(time, y, 'k', color='blue')
+    plt.fill_between(time, y-ci, y+ci, label='SNN', alpha=0.1, color='blue')
     if ANN_err:
-        plt.hlines(ANN_err*100, 0, time[-1], label='ANN',
-                   linestyle='dashed')
+        plt.hlines(ANN_err*100, 0, time[-1], label='ANN', linestyle='dashed')
     plt.legend()
     plt.ylim(0, 100)
     plt.ylabel('Error [%]')

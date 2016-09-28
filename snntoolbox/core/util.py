@@ -19,7 +19,6 @@ import numpy as np
 from keras import backend as K
 from importlib import import_module
 from snntoolbox.config import settings
-import matplotlib.pyplot as plt
 standard_library.install_aliases()
 
 use_simple_label = True
@@ -270,18 +269,6 @@ def normalize_parameters(model, dataflow=None):
                            parameters[1] / scale_fac]
         scale_fac_prev_layer = scale_fac
 
-        plt.hist(np.max(activations,
-                        axis=tuple(np.arange(activations.ndim)[1:])),
-                 bins=1000)
-        plt.axvline(scale_fac, color='red', linestyle='dashed', linewidth=2,
-                    label='scale factor')
-        plt.xlabel('maximum activation')
-        plt.ylabel('sample count')
-        plt.savefig(os.path.join(settings['log_dir_of_current_run'],
-                                 'normalization',
-                                 layer.name + '_Maxactiv_distribution'),
-                    bbox_inches='tight')
-
         # Update model with modified parameters
         layer.set_weights(parameters_norm)
         if settings['verbose'] < 3:
@@ -303,6 +290,11 @@ def normalize_parameters(model, dataflow=None):
                            'Activations_norm':
                            activations_norm[np.nonzero(activations)]}
         plot_hist(activation_dict, 'Activation', label, newpath, scale_fac)
+#        plot_hist({'Activations': activations[np.nonzero(activations)]},
+#                  'Activation', label, newpath, scale_fac)
+#        plot_hist({'Activations_max': np.max(activations, axis=tuple(
+#            np.arange(activations.ndim)[1:]))}, 'Activation', label, newpath,
+#            scale_fac)
         # t=83.1%
 
 
