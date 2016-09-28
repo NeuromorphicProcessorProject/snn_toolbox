@@ -436,8 +436,8 @@ def update_setup(s=None):
         if s['num_to_test'] < s['batch_size']:
             print(dedent("""\
                 SNN toolbox Warning: 'num_to_test' set lower than 'batch_size'.
-                In simulators that test samples batch-wise (e.g. INIsim), this can
-                lead to undesired behavior. Setting 'num_to_test' equal to
+                In simulators that test samples batch-wise (e.g. INIsim), this
+                can lead to undesired behavior. Setting 'num_to_test' equal to
                 'batch_size'."""))
             s['num_to_test'] = s['batch_size']
 
