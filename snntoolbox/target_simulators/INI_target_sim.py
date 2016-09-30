@@ -243,9 +243,12 @@ class SNN():
             # Allocate list for plotting the error vs simulation time
             err = []
 
+#        err = []#Remove when done
+
         truth = []
         guesses = []
         for batch_idx in range(num_batches):  # m=2.3GB
+#            batch_idx += 10#Remove when done
             # Get a batch of samples
             if X_test is None:
                 X_batch, Y_batch = dataflow.next()
@@ -254,6 +257,7 @@ class SNN():
                                    settings['batch_size'] * (batch_idx + 1))
                 X_batch = X_test[batch_idxs, :]
                 Y_batch = Y_test[batch_idxs, :]
+#            batch_idx -= 10#Remove when done
 
             # Either use Poisson spiketrains as inputs to the SNN, or take the
             # original data.
@@ -311,6 +315,8 @@ class SNN():
                         j += 1
                     total_spike_count_over_time[t_idx] = \
                         np.array(total_spike_count)
+#Remove next line when done
+#                if batch_idx == 0 and settings['verbose'] > 1:
                     # Get result by comparing the guessed class (i.e. the index
                     # of the neuron in the last layer which spiked most) to the
                     # ground truth.
@@ -334,12 +340,24 @@ class SNN():
                     f.write("Moving average accuracy after batch " +
                             "{} of {}: {:.2%}.\n".format(batch_idx + 1,
                                                          num_batches, avg))
+
+##Remove when done
+#                ANNerr = self.ANN_err if hasattr(self, 'ANN_err') else None
+#                plot_error_vs_time(err, ANN_err=ANNerr,
+#                                   path=settings['log_dir_of_current_run'])
+#                with open(os.path.join(settings['log_dir_of_current_run'],
+#                                       'err_vs_time.txt'), 'w') as f:
+#                    f.write(str(err))
+##
                 if batch_idx == 0 and settings['verbose'] > 2:
                     plot_input_image(X_batch[0], np.argmax(Y_batch[0]),
                                      settings['log_dir_of_current_run'])
                     ANNerr = self.ANN_err if hasattr(self, 'ANN_err') else None
                     plot_error_vs_time(err, ANN_err=ANNerr,
                                        path=settings['log_dir_of_current_run'])
+                    with open(os.path.join(settings['log_dir_of_current_run'],
+                                           'err_vs_time.txt'), 'w') as f:
+                        f.write(str(err))
                     plot_spikecount_vs_time(total_spike_count_over_time,
                                             settings['log_dir_of_current_run'])
                     plot_confusion_matrix(truth, guesses,

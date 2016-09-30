@@ -222,7 +222,9 @@ def normalize_parameters(model, dataflow=None):
     time- and memory-consuming for larger networks.
     """
 
+    import json
     from snntoolbox.io_utils.plotting import plot_hist
+    from snntoolbox.io_utils.common import confirm_overwrite
 
     if dataflow is None:
         from snntoolbox.io_utils.common import load_dataset
@@ -246,31 +248,57 @@ def normalize_parameters(model, dataflow=None):
     newpath = os.path.join(settings['log_dir_of_current_run'], 'normalization')
     if not os.path.exists(newpath):
         os.makedirs(newpath)
+    filepath = os.path.join(newpath, str(settings['percentile']) + '.json')
+    if os.path.isfile(filepath) and \
+            os.path.basename(filepath) == str(settings['percentile'])+'.json':
+        print("Loading scale factors from disk instead of recalculating.")
+        facs_from_disk = True
+        i = 0
+        with open(filepath) as f:
+            scale_facs = json.load(f)
+    else:
+        facs_from_disk = False
+        scale_facs = []
+
     # Loop through all layers, looking for layers with parameters
     scale_fac_prev_layer = 1
     for idx, layer in enumerate(model.layers):
         # Skip layer if not preceeded by a layer with parameters
         if layer.get_weights() == []:
             continue
-        if settings['verbose'] > 1:
-            print("Calculating activation of layer {} with shape {}...".format(
-                  layer.name, layer.output_shape))
         parameters = layer.get_weights()
-        # Undo previous scaling before calculating activations:
-        layer.set_weights([parameters[0]*scale_fac_prev_layer, parameters[1]])
-        # t=4.9%
-        get_activ = get_activ_fn_for_layer(model, idx)
-        activations = get_activations_layer(get_activ, X_norm)
-        if settings['normalization_schedule']:
-            scale_fac = get_scale_fac(activations, idx)
+
+        if facs_from_disk:
+            scale_fac_prev_layer = scale_facs[i-1] if i > 0 else 1
+            scale_fac = scale_facs[i]
+            i += 1
         else:
-            scale_fac = get_scale_fac(activations)  # t=3.7%
+            if settings['verbose'] > 1:
+                print("Calculating activation of layer {} ...".format(
+                      layer.name, layer.output_shape))
+            # Undo previous scaling before calculating activations:
+            layer.set_weights([parameters[0]*scale_fac_prev_layer,
+                               parameters[1]])
+            # t=4.9%
+            get_activ = get_activ_fn_for_layer(model, idx)
+            activations = get_activations_layer(get_activ, X_norm)
+            if settings['normalization_schedule']:
+                scale_fac = get_scale_fac(activations, idx)
+            else:
+                scale_fac = get_scale_fac(activations)  # t=3.7%
+            scale_facs.append(scale_fac)
+
+        # Scale parameters
         parameters_norm = [parameters[0] * scale_fac_prev_layer / scale_fac,
                            parameters[1] / scale_fac]
         scale_fac_prev_layer = scale_fac
 
         # Update model with modified parameters
         layer.set_weights(parameters_norm)
+
+        # Plot distributions of weights and activations before and after norm.
+        if facs_from_disk:
+            continue  # Assume plots are already there.
         if settings['verbose'] < 3:
             continue
         label = str(idx) + layer.__class__.__name__ if use_simple_label \
@@ -281,8 +309,6 @@ def normalize_parameters(model, dataflow=None):
         # t=2.8%
         plot_hist(weight_dict, 'Weight', label, newpath)
 
-        if False:  # Too costly
-            continue
         # Compute activations with modified parameters
         # t=4.8%
         activations_norm = get_activations_layer(get_activ, X_norm)
@@ -296,6 +322,10 @@ def normalize_parameters(model, dataflow=None):
 #            np.arange(activations.ndim)[1:]))}, 'Activation', label, newpath,
 #            scale_fac)
         # t=83.1%
+    # Write scale factors to disk
+    if not facs_from_disk and confirm_overwrite(filepath):
+        with open(filepath, 'w') as f:
+            json.dump(scale_facs, f)
 
 
 def get_scale_fac(activations, idx=0):

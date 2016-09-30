@@ -79,7 +79,8 @@ def update_neurons(self, time, updates):
 
     if settings['online_normalization']:
         updates.append((self.max_spikerate,
-                        T.max(self.spikecounts) / (time + settings['dt'])))
+                        T.max(self.spikecounts + output_spikes) *
+                        settings['dt'] / (time + settings['dt'])))
 
     if settings["maxpool_type"] == "avg_max" and \
             hasattr(self, 'avg_spikerate'):
@@ -88,12 +89,14 @@ def update_neurons(self, time, updates):
              self.avg_spikerate +
              (output_spikes-self.avg_spikerate) /
              ((time+settings['dt'])/settings['dt'])))
-
     elif settings["maxpool_type"] == "fir_max" and \
             hasattr(self, 'fir_spikerate'):
         updates.append((self.fir_spikerate,
                         self.fir_spikerate + output_spikes /
                         ((time+settings['dt'])/settings['dt'])))
+#        updates.append((self.fir_spikerate,
+#                        (self.spikecounts + output_spikes) * settings['dt'] /
+#                        (time + settings['dt'])))
     elif settings["maxpool_type"] == "exp_max" and \
             hasattr(self, 'exp_spikerate'):
         updates.append((self.exp_spikerate,
@@ -527,7 +530,7 @@ class SpikeMaxPooling2D(MaxPooling2D):
                                     self.border_mode, pool_mode='max')
         else:
             print("Wrong max pooling type, "
-                  "choose Average Pooling automatically")
+                  "falling back on Average Pooling instead.")
             self.impulse = K.pool2d(inp, self.pool_size, self.strides,
                                     self.border_mode, pool_mode='avg')
 

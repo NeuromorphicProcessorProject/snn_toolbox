@@ -189,8 +189,8 @@ def load_ann(path=None, filename=None):
         For instance, if the input model was written using Keras, the 'model'-
         value would be an instance of ``keras.Model``, and 'val_fn' the
         ``keras.Model.evaluate`` method.
-
     """
+
     from keras import models
 
     if path is None:
