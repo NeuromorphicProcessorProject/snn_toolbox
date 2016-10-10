@@ -314,6 +314,7 @@ if __name__ == "__main__":
     print("Loading CIFAR-10 dataset...")
 
     path = '${PYLEARN2_DATA_PATH}/cifar10/pylearn2_gcn_whitened/'
+    path = '/home/rbodo/.snntoolbox/Datasets/cifar10/pylearn2_gcn_whitened/'
     preprocessor = serial.load(path+'preprocessor.pkl')
     train_set = ZCA_Dataset(preprocessed_dataset=serial.load(path+'train.pkl'),
                             preprocessor=preprocessor, start=0,

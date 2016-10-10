@@ -103,14 +103,14 @@ def extract(model):
         # Absorb BatchNormalization layer into parameters of previous layer
         if 'BatchNormalization' in layer_type:
             bn_parameters = layer.get_weights()  # gamma, beta, mean, var
-            for k in [layer_num - i for i in range(1, 3)]:
-                prev_layer = model.layers[k]
-                if prev_layer.weights != []:
+            for k in range(1, 3):
+                prev_layer = layers[-k]
+                if 'parameters' in prev_layer:
                     break
-            parameters = prev_layer.get_weights()  # W, b of next layer
+            parameters = prev_layer['parameters']  # W, b of next layer
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of layer {}, {}.".format(k, prev_layer.name))
-            layers[-1]['parameters'] = absorb_bn(
+                  "parameters of previous {}.".format(prev_layer['name']))
+            prev_layer['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[0],
                 bn_parameters[1], bn_parameters[2], bn_parameters[3],
                 layer.epsilon)

@@ -65,7 +65,7 @@ model.compile(sgd, 'categorical_crossentropy', metrics=['accuracy'])
 
 target_size = (img_rows, img_cols)
 flow_kwargs = {'directory': os.path.join(datapath, 'original'),
-               'target_size': target_size, 'batch_size': nb_samples}
+               'target_size': target_size, 'batch_size': batch_size}
 
 # Train using preprocessing and realtime data augmentation
 traingen = ImageDataGenerator(rescale=1./255,
@@ -80,8 +80,10 @@ traingen = ImageDataGenerator(rescale=1./255,
 
 # Compute quantities required for featurewise normalization
 # (std, mean, and principal components if ZCA whitening is applied)
+kwargs = flow_kwargs.copy()
+kwargs['batch_size'] = nb_samples
 X_orig = ImageDataGenerator(rescale=1./255).flow_from_directory(
-    **flow_kwargs).next()[0]
+    **kwargs).next()[0]
 traingen.fit(X_orig)
 
 trainflow = traingen.flow_from_directory(**flow_kwargs)

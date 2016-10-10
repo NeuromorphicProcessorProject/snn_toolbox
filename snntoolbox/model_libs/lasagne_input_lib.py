@@ -19,14 +19,14 @@ Created on Thu Jun  9 08:11:09 2016
 """
 
 import os
+import theano
 import lasagne
 from snntoolbox.config import settings, spiking_layers
 from snntoolbox.io_utils.common import load_parameters
 import numpy as np
 
-from snntoolbox.model_libs.common import absorb_bn, import_script
+from snntoolbox.model_libs.common import import_script
 from snntoolbox.model_libs.common import border_mode_string
-
 
 layer_dict = {'DenseLayer': 'Dense',
               'Conv2DLayer': 'Convolution2D',
@@ -137,16 +137,16 @@ def extract(model):
 
         if layer_type == 'BatchNormalization':
             bn_parameters = all_parameters[parameters_idx: parameters_idx + 4]
-            for k in [layer_num - i for i in range(1, 3)]:
-                prev_layer = lasagne_layers[k]
-                if prev_layer.get_params() != []:
+            for k in range(1, 3):
+                prev_layer = layers[-k]
+                if 'parameters' in prev_layer:
                     break
-            parameters = all_parameters[parameters_idx - 2: parameters_idx]
+            parameters = prev_layer['parameters']
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of layer {}, {}.".format(k, prev_layer.name))
-            layers[-1]['parameters'] = absorb_bn(
+                  "parameters of previous {}.".format(prev_layer['name']))
+            prev_layer['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[1],
-                bn_parameters[0], bn_parameters[2], 1 / bn_parameters[3],
+                bn_parameters[0], bn_parameters[2], bn_parameters[3],
                 layer.epsilon)
             parameters_idx += 4
 
@@ -186,6 +186,10 @@ def extract(model):
         if layer_type in {'Dense', 'Convolution2D'}:
             attributes['parameters'] = all_parameters[parameters_idx:
                                                       parameters_idx + 2]
+            if False:  # binarization
+                attributes['parameters'] = \
+                    (binarize(attributes['parameters'][0]),
+                     attributes['parameters'][1])
             parameters_idx += 2  # For weights and biases
             # Get type of nonlinearity if the activation is directly in the
             # Dense / Conv layer:
@@ -199,16 +203,17 @@ def extract(model):
                     break
             attributes['activation'] = activation
             print("Detected activation {}".format(activation))
-
-        if layer_type == 'Convolution2D':
-            border_mode = border_mode_string(layer.pad, layer.filter_size)
-            attributes.update({'input_shape': layer.input_shape,
-                               'nb_filter': layer.num_filters,
-                               'nb_col': layer.filter_size[1],
-                               'nb_row': layer.filter_size[0],
-                               'border_mode': border_mode,
-                               'subsample': layer.stride,
-                               'filter_flip': layer.flip_filters})
+            if layer_type == 'Convolution2D':
+                border_mode = border_mode_string(layer.pad, layer.filter_size)
+                attributes.update({'input_shape': layer.input_shape,
+                                   'nb_filter': layer.num_filters,
+                                   'nb_col': layer.filter_size[1],
+                                   'nb_row': layer.filter_size[0],
+                                   'border_mode': border_mode,
+                                   'subsample': layer.stride,
+                                   'filter_flip': layer.flip_filters})
+            else:
+                attributes['output_dim'] = layer.num_units
 
         if layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
             border_mode = border_mode_string(layer.pad, layer.pool_size)
@@ -221,6 +226,39 @@ def extract(model):
         idx += 1
 
     return layers
+
+
+def hard_sigmoid(x):
+    return np.clip((x + 1.) / 2., 0, 1)
+
+
+def binarize(W, H=1.):
+    Wb = hard_sigmoid(W / H)
+    Wb = np.random.binomial(n=1, p=Wb, size=Wb.shape)
+    Wb[Wb.nonzero()] = H
+    Wb[Wb == 0] = -H
+    return np.asarray(Wb, theano.config.floatX)
+
+
+def absorb_bn(w, b, gamma, beta, mean, var_squ_eps_inv, epsilon):
+    """
+    Absorb the parameters of a batch-normalization layer into the previous
+    layer.
+    """
+
+    import numpy as np
+
+    axis = 0 if w.ndim > 2 else 1
+
+    broadcast_shape = [1] * w.ndim  # e.g. [1, 1, 1, 1] for ConvLayer
+    broadcast_shape[axis] = w.shape[axis]  # [64, 1, 1, 1] for 64 features
+    var_squ_eps_inv_broadcast = np.reshape(var_squ_eps_inv, broadcast_shape)
+    gamma_broadcast = np.reshape(gamma, broadcast_shape)
+
+    b_bn = beta + (b - mean) * gamma * var_squ_eps_inv
+    w_bn = w * gamma_broadcast * var_squ_eps_inv_broadcast
+
+    return w_bn, b_bn
 
 
 def load_ann(path=None, filename=None):

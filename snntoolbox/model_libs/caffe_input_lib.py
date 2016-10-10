@@ -138,15 +138,14 @@ def extract(model):
         if layer_type == 'BatchNormalization':
             bn_parameters = [layer.blobs[0].data,
                              layer.blobs[1].data]
-            for k in [layer_num - i for i in range(1, 3)]:
-                prev_layer = caffe_model.layers[k]
-                if prev_layer.blobs != []:
+            for k in range(1, 3):
+                prev_layer = layers[-k]
+                if 'parameters' in prev_layer:
                     break
-            parameters = [caffe_model.params[layer.name][0].data,
-                          caffe_model.params[layer.name][1].data]
+            parameters = prev_layer['parameters']
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of layer {}, {}.".format(k, prev_layer.name))
-            layers[-1]['parameters'] = absorb_bn(
+                  "parameters of previous {}.".format(prev_layer['name']))
+            prev_layer['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[1],
                 bn_parameters[0], bn_parameters[2], 1 / bn_parameters[3],
                 layer.epsilon)
