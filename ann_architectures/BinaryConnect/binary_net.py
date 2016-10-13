@@ -62,7 +62,7 @@ def binarization(W,H,binary=True,deterministic=False,stochastic=False,srng=None)
 
     # (deterministic == True) <-> test-time <-> inference-time
     if not binary or (deterministic and stochastic):
-        # print("not binary")
+        print("not binary")
         Wb = W
 
     else:
@@ -74,12 +74,12 @@ def binarization(W,H,binary=True,deterministic=False,stochastic=False,srng=None)
         # Stochastic BinaryConnect
         if stochastic:
 
-            # print("stoch")
+            print("stoch")
             Wb = T.cast(srng.binomial(n=1, p=Wb, size=T.shape(Wb)), theano.config.floatX)
 
         # Deterministic BinaryConnect (round to nearest)
         else:
-            # print("det")
+            print("det")
             Wb = T.round(Wb)
 
         # 0 or 1 -> -1 or 1

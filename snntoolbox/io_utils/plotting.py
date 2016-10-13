@@ -740,8 +740,8 @@ def plot_error_vs_time(err, ANN_err=None, path=None):
     # Compute confidence intervals of the experiments
     ci = np.array([wilson_score(q, n)*100 for q in err])
     y = np.array([e*100 for e in err])
-    plt.plot(time, y, 'k', color='blue')
-    plt.fill_between(time, y-ci, y+ci, label='SNN', alpha=0.1, color='blue')
+    plt.plot(time, y, 'k', color='blue', label='SNN')
+    plt.fill_between(time, y-ci, y+ci, alpha=0.1, color='blue')
     if ANN_err:
         plt.hlines(ANN_err*100, 0, time[-1], label='ANN', linestyle='dashed')
     plt.legend()

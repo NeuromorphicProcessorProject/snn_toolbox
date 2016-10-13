@@ -24,6 +24,15 @@ standard_library.install_aliases()
 use_simple_label = True
 
 
+def binary_tanh(x):
+    return K.sign(x)
+
+
+def binary_sigmoid(x):
+    x = K.clip((x+1.)/2., 0, 1)
+    return K.round(x)
+
+
 def parse(input_model):
     """Create a Keras model suitable for conversion to SNN.
 
@@ -66,6 +75,11 @@ def parse(input_model):
         # Remove keys that are not understood by Keras layer constructor
         layer_type = layer.pop('layer_type')
         filter_flip = layer.pop('filter_flip', None)
+        if 'activation' in layer:
+            if layer['activation'] == 'binary_sigmoid':
+                layer['activation'] = binary_sigmoid
+            elif layer['activation'] == 'binary_tanh':
+                layer['activation'] = binary_tanh
         # Add layer
         parsed_layer = getattr(keras.layers, layer_type)
         parsed_model.add(parsed_layer(**layer))
@@ -190,8 +204,10 @@ def spiketrains_to_rates(spiketrains_batch):
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
                     spikerates_batch[i][0][ii, jj] = (
-                        len(np.nonzero(sp[0][ii][jj])[0]) * 1000 /
-                        settings['duration'])
+                        len(np.nonzero(sp[0][ii][jj])[0]) * 1000 *
+                        settings['dt'] / settings['duration'])
+                    spikerates_batch[i][0][ii, jj] *= np.sign(
+                        np.sum(sp[0][ii, jj]))  # For negative spikes
         elif len(shape) == 4:
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
@@ -199,7 +215,9 @@ def spiketrains_to_rates(spiketrains_batch):
                         for ll in range(len(sp[0][ii, jj, kk])):
                             spikerates_batch[i][0][ii, jj, kk, ll] = (
                                 len(np.nonzero(sp[0][ii, jj, kk, ll])[0]) *
-                                1000 / settings['duration'])
+                                1000 * settings['dt'] / settings['duration'])
+                            spikerates_batch[i][0][ii, jj, kk, ll] *= np.sign(
+                                np.sum(sp[0][ii, jj, kk, ll]))
 
     return spikerates_batch
 

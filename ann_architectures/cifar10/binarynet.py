@@ -64,6 +64,11 @@ def build_network():
     cnn = lasagne.layers.InputLayer(shape=(None, 3, 32, 32),
                                     input_var=input_var)
 
+    #Experimental: Train on binarized input!
+    cnn = lasagne.layers.NonlinearityLayer(
+            cnn,
+            nonlinearity=activation)
+
     # 128C3-128C3-P2
     cnn = binary_net.Conv2DLayer(
             cnn,
@@ -290,8 +295,9 @@ def build_network():
 if __name__ == "__main__":
 
     from pylearn2.datasets.cifar10 import CIFAR10
-    from snntoolbox.model_libs.lasagne_input_lib import save_parameters
     import numpy as np
+    from snntoolbox.io_utils.common import save_parameters
+    from snntoolbox.model_libs.lasagne_input_lib import load_parameters
     np.random.seed(1234)  # for reproducibility?
 
     # Training parameters
@@ -349,6 +355,10 @@ if __name__ == "__main__":
 
     cnn, train_fn, val_fn = build_network()
 
+    # Experimental: Initialize with pretrained weights, refine with binarized input.
+    params = load_parameters('/home/rbodo/.snntoolbox/data/cifar10/88.63/INI/88.63.h5')
+    lasagne.layers.set_all_param_values(cnn, params)
+
     print('Training...')
 
     binary_net.train(train_fn, val_fn, cnn, batch_size, LR_start, LR_decay,
@@ -363,6 +373,6 @@ if __name__ == "__main__":
     plt.title("Weight distribution of first hidden convolution layer")
 
     # Dump the network weights to a file
-    filepath = 'binarynet.h5'
+    filepath = '70.14.h5'
     params = lasagne.layers.get_all_param_values(cnn)
     save_parameters(params, filepath)

@@ -16,17 +16,14 @@ from future import standard_library
 import os
 import numpy as np
 import json
+import h5py
 from snntoolbox.config import settings
-
-standard_library.install_aliases()
 
 standard_library.install_aliases()
 
 
 def load_parameters(filepath):
     """Load all layer parameters from an HDF5 file."""
-
-    import h5py
 
     f = h5py.File(filepath, mode='r')
 
@@ -37,6 +34,15 @@ def load_parameters(filepath):
     f.close()
 
     return params
+
+
+def save_parameters(params, filepath):
+    """Save all layer parameters to an HDF5 file."""
+
+    with h5py.File(filepath, mode='w') as f:
+        for i, p in enumerate(params):
+            j = '0' + str(i) if i < 10 else str(i)
+            f.create_dataset('param_'+j, data=p)
 
 
 def to_categorical(y, nb_classes):

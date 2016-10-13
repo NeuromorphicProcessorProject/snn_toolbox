@@ -243,12 +243,12 @@ class SNN():
             # Allocate list for plotting the error vs simulation time
             err = []
 
-#        err = []#Remove when done
+#        err = [] #Remove when done
 
         truth = []
         guesses = []
         for batch_idx in range(num_batches):  # m=2.3GB
-#            batch_idx += 10#Remove when done
+#            batch_idx += 12 #Remove when done
             # Get a batch of samples
             if X_test is None:
                 X_batch, Y_batch = dataflow.next()
@@ -257,7 +257,7 @@ class SNN():
                                    settings['batch_size'] * (batch_idx + 1))
                 X_batch = X_test[batch_idxs, :]
                 Y_batch = Y_test[batch_idxs, :]
-#            batch_idx -= 10#Remove when done
+#            batch_idx -= 12 #Remove when done
 
             # Either use Poisson spiketrains as inputs to the SNN, or take the
             # original data.
@@ -284,8 +284,8 @@ class SNN():
             for t in np.arange(0, settings['duration'], settings['dt']):
                 if settings['poisson_input']:
                     # Create poisson input.
-                    spike_snapshot = np.random.random_sample(X_batch.shape) * \
-                        rescale_fac
+                    spike_snapshot = \
+                        np.random.random_sample(X_batch.shape)*rescale_fac
                     inp = (spike_snapshot <= X_batch).astype('float32')
                 # Main step: Propagate poisson input through network and record
                 # output spikes.

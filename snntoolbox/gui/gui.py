@@ -33,7 +33,7 @@ import matplotlib.gridspec as gridspec
 
 import snntoolbox
 from snntoolbox.config import settings, pyNN_settings, update_setup
-from snntoolbox.config import model_libs
+from snntoolbox.config import model_libs, maxpool_types
 from snntoolbox.config import simulators, simulators_pyNN
 from snntoolbox.gui.tooltip import ToolTip
 from snntoolbox.core.pipeline import test_full
@@ -547,6 +547,25 @@ class SNNToolboxGUI():
               in INI simulator.""")
         ToolTip(poisson_input_cb, text=tip, wraplength=750)
 
+        # Maximum input firing rate
+        input_rate_frame = tk.Frame(self.simparams_frame, bg='white')
+        input_rate_frame.pack(**self.kwargs)
+        self.input_rate_label = tk.Label(input_rate_frame, text="input_rate",
+                                         bg='white')
+        self.input_rate_label.pack(fill='both', expand=True)
+        self.input_rate_sb = tk.Spinbox(
+            input_rate_frame, textvariable=self.settings['input_rate'],
+            from_=1, to_=10000, increment=1, width=10,
+            disabledbackground='#eee')
+        self.input_rate_sb.pack(fill='y', expand=True, ipady=3)
+        tip = dedent("""\
+            Poisson spike rate in Hz for a fully-on pixel of input image. Only
+            relevant when 'Poisson input' checkbutton enabled. Note that the
+            input_rate is limited by the maximum firing rate supported by the
+            simulator (given by the inverse time resolution 1000 * 1 / dt Hz).
+            """)
+        ToolTip(input_rate_frame, text=tip, wraplength=750)
+
         # Reset mechanism
         reset_frame = tk.Frame(self.simparams_frame, bg='white')
         reset_frame.pack(**self.kwargs)
@@ -568,24 +587,31 @@ class SNNToolboxGUI():
                   equal to the threshold.""")
         ToolTip(reset_frame, text=tip, wraplength=750)
 
-        # Maximum input firing rate
-        input_rate_frame = tk.Frame(self.simparams_frame, bg='white')
-        input_rate_frame.pack(**self.kwargs)
-        self.input_rate_label = tk.Label(input_rate_frame, text="input_rate",
-                                         bg='white')
-        self.input_rate_label.pack(fill='both', expand=True)
-        self.input_rate_sb = tk.Spinbox(
-            input_rate_frame, textvariable=self.settings['input_rate'],
-            from_=1, to_=10000, increment=1, width=10,
-            disabledbackground='#eee')
-        self.input_rate_sb.pack(fill='y', expand=True, ipady=3)
+        # Binarize weights
+        binarize_weights_cb = tk.Checkbutton(
+            self.simparams_frame, text="Binarize weights", bg='white',
+            variable=self.settings['binarize_weights'], height=2, width=20)
+        binarize_weights_cb.pack(**self.kwargs)
         tip = dedent("""\
-            Poisson spike rate in Hz for a fully-on pixel of input image. Only
-            relevant when 'Poisson input' checkbutton enabled. Note that the
-            input_rate is limited by the maximum firing rate supported by the
-            simulator (given by the inverse time resolution 1000 * 1 / dt Hz).
-            """)
-        ToolTip(input_rate_frame, text=tip, wraplength=750)
+              If enabled, the weights are binarized.""")
+        ToolTip(binarize_weights_cb, text=tip, wraplength=750)
+
+        # MaxPool
+        maxpool_frame = tk.Frame(self.simparams_frame, bg='white')
+        maxpool_frame.pack(**self.kwargs)
+        tip = dedent("""\
+            Implementation variants of spiking MaxPooling layers.
+                fir_max: accumulated absolute firing rate
+                exp_max: exponentially decaying average of firing rate
+                avg_max: moving average of firing rate
+                binary_tanh: Sign function, used in BinaryNet.
+                binary_sigmoid: Step function, used in BinaryNet.""")
+        ToolTip(maxpool_frame, text=tip, wraplength=750)
+        tk.Label(maxpool_frame, text="MaxPool type", bg='white').pack(
+            fill='both', expand=True)
+        maxpool_om = tk.OptionMenu(
+            maxpool_frame, self.settings['maxpool_type'], *list(maxpool_types))
+        maxpool_om.pack(fill='both', expand=True)
 
         # Delay
         delay_frame = tk.Frame(self.simparams_frame, bg='white')
@@ -1174,7 +1200,8 @@ class SNNToolboxGUI():
                          'normalization_schedule': tk.BooleanVar(),
                          'scaling_factor': tk.IntVar(),
                          'maxpool_type': tk.StringVar(),
-                         'payloads': tk.BooleanVar()}
+                         'payloads': tk.BooleanVar(),
+                         'binarize_weights': tk.BooleanVar()}
 
         # These will not be written to disk as preferences.
         self.is_plot_container_destroyed = True

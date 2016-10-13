@@ -64,12 +64,24 @@ if on_gpu():
 def update_neurons(self, time, updates):
     """Update neurons according to activation function."""
 
-    if 'activation' in self.get_config() and \
-            self.get_config()['activation'] == 'softmax':
-        output_spikes = softmax_activation(self, time, updates)
+    if hasattr(self, 'activation_str'):
+        if self.activation_str == 'softmax':
+            output_spikes = softmax_activation(self, time, updates)
+        elif self.activation_str == 'binary_sigmoid':
+            output_spikes = binary_sigmoid_activation(self, time, updates)
+        elif self.activation_str == 'binary_tanh':
+            output_spikes = binary_tanh_activation(self, time, updates)
+        else:
+            output_spikes = linear_activation(self, time, updates)
     else:
         output_spikes = linear_activation(self, time, updates)
-    updates.append((self.spiketrain, output_spikes * time))
+
+    # Store refractory
+    new_refractory = T.set_subtensor(
+        self.refrac_until[output_spikes.nonzero()], time + self.tau_refrac)
+    updates.append((self.refrac_until, new_refractory))
+
+    updates.append((self.spiketrain, output_spikes * (time + settings['dt'])))
     updates.append((self.spikecounts, self.spikecounts + output_spikes))
 
     axes = np.arange(len(self.output_shape))
@@ -118,14 +130,64 @@ def update_payload(self, residuals, idxs):
     return payloads, payloads_sum
 
 
+def binary_sigmoid_activation(self, time, updates):
+    """Binary sigmoid activation."""
+
+    # Destroy impulse if in refractory period
+    masked_imp = T.set_subtensor(
+        self.impulse[(self.refrac_until > time).nonzero()], 0.)
+
+    # Add impulse
+    new_mem = self.mem + masked_imp
+
+    # Store spiking
+    output_spikes = T.gt(new_mem, 0)
+
+    spike_idxs = output_spikes.nonzero()
+
+    # Reset neurons
+    new_and_reset_mem = T.set_subtensor(new_mem[spike_idxs], 0.)
+
+    updates.append((self.mem, new_and_reset_mem))
+
+    return output_spikes
+
+
+def binary_tanh_activation(self, time, updates):
+    """Binary tanh activation."""
+
+    # Destroy impulse if in refractory period
+    masked_imp = T.set_subtensor(
+        self.impulse[(self.refrac_until > time).nonzero()], 0.)
+
+    # Add impulse
+    new_mem = self.mem + masked_imp
+
+    # Store spiking
+    signed_spikes = T.set_subtensor(
+        new_mem[T.nonzero(T.gt(new_mem, 0))], self.v_thresh)
+    signed_spikes = T.set_subtensor(
+        signed_spikes[T.nonzero(T.lt(signed_spikes, 0))], -self.v_thresh)
+    output_spikes = T.set_subtensor(new_mem[T.nonzero(new_mem)], self.v_thresh)
+
+    # Reset neurons
+    new_and_reset_mem = T.set_subtensor(new_mem[output_spikes.nonzero()], 0.)
+
+    updates.append((self.mem, new_and_reset_mem))
+
+    return signed_spikes
+
+
 def linear_activation(self, time, updates):
     """Linear activation."""
 
     # Destroy impulse if in refractory period
     masked_imp = T.set_subtensor(
         self.impulse[(self.refrac_until > time).nonzero()], 0.)
+
     # Add impulse
     new_mem = self.mem + masked_imp
+
     # Store spiking
     output_spikes = T.ge(new_mem, self.v_thresh)
 
@@ -145,11 +207,6 @@ def linear_activation(self, time, updates):
                                                 -self.v_thresh)
     updates.append((self.mem, new_and_reset_mem))
 
-    # Store refractory
-    new_refractory = T.set_subtensor(
-        self.refrac_until[spike_idxs], time + self.tau_refrac)
-    updates.append((self.refrac_until, new_refractory))
-
     if settings['payloads']:
         residuals = T.inc_subtensor(new_mem[spike_idxs], -self.v_thresh)
         payloads, payloads_sum = update_payload(self, residuals, spike_idxs)
@@ -168,35 +225,18 @@ def softmax_activation(self, time, updates):
     # Add impulse
     new_mem = self.mem + masked_imp
     # Store spiking
-    output_spikes, new_and_reset_mem = theano.ifelse.ifelse(
-        T.le(rng.uniform(),
-             settings['softmax_clockrate'] * settings['dt'] / 1000.),
-        trigger_spike(new_mem), skip_spike(new_mem))  # Then and else condition
-    updates.append((self.mem, new_and_reset_mem))
-
-    # Store refractory. In case of a spike we are resetting all neurons, even
-    # the ones that didn't spike. However, in the refractory period we only
-    # consider those that spiked. May have to change that...
-    new_refractory = T.set_subtensor(
-        self.refrac_until[output_spikes.nonzero()], time + self.tau_refrac)
-    updates.append((self.refrac_until, new_refractory))
-
-    return output_spikes
-
-
-def trigger_spike(new_mem):
-    """Trigger spike."""
-
+    spiking_samples = T.le(rng.uniform([settings['batch_size'], 1]),
+                           settings['softmax_clockrate']*settings['dt']/1000.)
+    spiking_neurons = T.repeat(spiking_samples, 10, axis=1)
     activ = T.nnet.softmax(new_mem)
     max_activ = T.max(activ, axis=1, keepdims=True)
     output_spikes = T.eq(activ, max_activ).astype('float32')
-    return output_spikes, T.zeros_like(new_mem)
+    output_spikes = T.set_subtensor(
+        output_spikes[T.eq(spiking_neurons, 0).nonzero()], 0.)
+    new_and_reset_mem = T.set_subtensor(new_mem[spiking_neurons.nonzero()], 0.)
+    updates.append((self.mem, new_and_reset_mem))
 
-
-def skip_spike(new_mem):
-    """Skip spike."""
-
-    return T.zeros_like(new_mem), new_mem
+    return output_spikes
 
 
 def reset(self):
@@ -352,6 +392,10 @@ class SpikeDense(Dense):
 
     def __init__(self, output_dim, weights=None, **kwargs):
         """Init function."""
+        # Remove activation from kwargs before initializing superclass, in case
+        # we are using a custom activation function that Keras doesn't
+        # understand.
+        self.activation_str = str(kwargs.pop('activation'))
         super().__init__(output_dim, weights=weights, **kwargs)
 
     def get_output(self, train=False):
@@ -384,6 +428,7 @@ class SpikeConvolution2D(Convolution2D):
                  border_mode='valid', subsample=(1, 1), filter_flip=True,
                  **kwargs):
         """Init function."""
+        self.activation_str = str(kwargs.pop('activation'))
         super().__init__(nb_filter, nb_row, nb_col, weights=weights,
                          border_mode=border_mode, subsample=subsample,
                          **kwargs)
@@ -479,23 +524,14 @@ class SpikeMaxPooling2D(MaxPooling2D):
     """Max Pooling."""
 
     def __init__(self, pool_size=(2, 2), strides=None, border_mode='valid',
-                 pool_type="fir_max", **kwargs):
-        """Init function.
+                 **kwargs):
+        """Init function."""
 
-        Parameters
-        ----------
-
-        pool_type: string
-            avg_max: max depending on moving average spike rate.
-            fir_max: max depending on accumulated absolute spike rate.
-            exp_max: max depending on first arrived spike.
-        """
-
-        self.ignore_border = True if border_mode == "valid" else False
-
+        self.ignore_border = True if border_mode == 'valid' else False
+        if 'binary' in settings['maxpool_type']:
+            self.activation_str = settings['maxpool_type']
         super().__init__(pool_size=pool_size, strides=strides,
                          border_mode=border_mode)
-        self.pool_type = pool_type
 
     def get_output(self, train=False):
         """Get output."""
@@ -508,26 +544,31 @@ class SpikeMaxPooling2D(MaxPooling2D):
             prev_layer = self.inbound_nodes[0].inbound_layers[0]
             inp = add_payloads(prev_layer, inp)
 
-        if self.pool_type == "avg_max":
+        if settings['maxpool_type'] == "avg_max":
             spikerate = self.inbound_nodes[0].inbound_layers[0].avg_spikerate \
                         if self.inbound_nodes[0].inbound_layers \
                         else K.placeholder(shape=self.input_shape)
-        elif self.pool_type == "fir_max":
+        elif settings['maxpool_type'] == "fir_max":
             spikerate = self.inbound_nodes[0].inbound_layers[0].fir_spikerate \
                         if self.inbound_nodes[0].inbound_layers \
                         else K.placeholder(shape=self.input_shape)
-        elif self.pool_type == "exp_max":
+        elif settings['maxpool_type'] == "exp_max":
             spikerate = self.inbound_nodes[0].inbound_layers[0].exp_spikerate \
                         if self.inbound_nodes[0].inbound_layers \
                         else K.placeholder(shape=self.input_shape)
+        elif 'binary' in settings['maxpool_type']:
+            self.impulse = K.pool2d(inp, self.pool_size, self.strides,
+                                    self.border_mode, pool_mode='max')
 
-        if self.pool_type in ["avg_max", "fir_max", "exp_max"]:
+        if settings['maxpool_type'] in ["avg_max", "fir_max", "exp_max"]:
             max_idx = pool_same_size(spikerate,
                                      patch_size=self.pool_size,
                                      ignore_border=self.ignore_border,
                                      st=self.strides)
             self.impulse = K.pool2d(inp*max_idx, self.pool_size, self.strides,
                                     self.border_mode, pool_mode='max')
+        elif 'binary' in settings['maxpool_type']:
+            pass
         else:
             print("Wrong max pooling type, "
                   "falling back on Average Pooling instead.")

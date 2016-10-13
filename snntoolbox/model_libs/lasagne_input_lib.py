@@ -41,7 +41,8 @@ layer_dict = {'DenseLayer': 'Dense',
 
 activation_dict = {'rectify': 'relu',
                    'softmax': 'softmax',
-                   'binary_tanh_unit': 'softsign',
+                   'binary_tanh_unit': 'binary_tanh',
+                   'binary_sigmoid_unit': 'binary_sigmoid',
                    'linear': 'linear'}
 
 
@@ -186,7 +187,8 @@ def extract(model):
         if layer_type in {'Dense', 'Convolution2D'}:
             attributes['parameters'] = all_parameters[parameters_idx:
                                                       parameters_idx + 2]
-            if False:  # binarization
+            if settings['binarize_weights']:
+                print("Binarizing weights...")
                 attributes['parameters'] = \
                     (binarize(attributes['parameters'][0]),
                      attributes['parameters'][1])
@@ -232,9 +234,9 @@ def hard_sigmoid(x):
     return np.clip((x + 1.) / 2., 0, 1)
 
 
-def binarize(W, H=1.):
+def binarize(W, H=1., deterministic=True):
     Wb = hard_sigmoid(W / H)
-    Wb = np.random.binomial(n=1, p=Wb, size=Wb.shape)
+    Wb = np.round(Wb) if deterministic else np.random.binomial(1, Wb, Wb.shape)
     Wb[Wb.nonzero()] = H
     Wb[Wb == 0] = -H
     return np.asarray(Wb, theano.config.floatX)

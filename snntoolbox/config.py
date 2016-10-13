@@ -214,10 +214,12 @@ timestep_fraction: int, optional
     'online_normalization' will be performed at every 10th timestep.
 num_to_test: int, optional
     How many samples to test.
-maxpool_type : string
+maxpool_type: string
     Implementation variants of spiking MaxPooling layers, based on
-    fir_max: accmulated absolute firing rate
+    fir_max: accumulated absolute firing rate
     avg_max: moving average of firing rate
+binarize_weights: boolean, optional
+    If ``True``, the weights are binarized.
 
 Default values
 ..............
@@ -264,7 +266,8 @@ Default values
                  'timestep_fraction': 10,
                  'diff_to_max_rate': 200,
                  'num_to_test': 1000,
-                 'diff_to_min_rate': 100}
+                 'diff_to_min_rate': 100,
+                 'binarize_weights': False}
 """
 
 import matplotlib as mpl
@@ -290,6 +293,8 @@ mpl.rcParams.update(plotproperties)
 
 # List supported model libraries, simulators, etc.
 model_libs = {'keras', 'lasagne', 'caffe'}
+maxpool_types = {'fir_max', 'exp_max', 'avg_max', 'binary_tanh',
+                 'binary_sigmoid'}
 simulators_pyNN = {'nest', 'brian', 'Neuron'}
 simulators_other = {'INI', 'brian2', 'MegaSim'}
 simulators = simulators_pyNN.copy()
@@ -332,7 +337,8 @@ settings = {'dataset_path': '',
             'timestep_fraction': 10,
             'diff_to_min_rate': 100,
             'scaling_factor': 10000000,
-            'maxpool_type': 'fir_max'}
+            'maxpool_type': 'fir_max',
+            'binarize_weights': False}
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,

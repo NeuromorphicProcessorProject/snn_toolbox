@@ -15,6 +15,7 @@ from future import standard_library
 from importlib import import_module
 
 import os
+import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 from snntoolbox.io_utils.plotting import plot_param_sweep
 from snntoolbox.core.util import print_description, normalize_parameters, parse
@@ -76,6 +77,11 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
             evalset = {
                 'X_test': load_dataset(settings['dataset_path'], 'X_test.npz'),
                 'Y_test': load_dataset(settings['dataset_path'], 'Y_test.npz')}
+            if settings['maxpool_type'] == 'binary_tanh':  # Hack: Should be independent of maxpool type
+                evalset['X_test'] = np.sign(evalset['X_test'])
+            elif settings['maxpool_type'] == 'binary_sigmoid':  # Hack: Should be independent of maxpool type
+                np.clip((evalset['X_test']+1.)/2., 0, 1, evalset['X_test'])
+                np.round(evalset['X_test'], out=evalset['X_test'])
         if settings['normalize']:
             normset = {}
         if settings['simulate']:
