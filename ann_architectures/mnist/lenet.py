@@ -6,7 +6,7 @@ from __future__ import print_function
 from keras.datasets import mnist as dataset
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers.convolutional import AveragePooling2D, MaxPooling2D
+from keras.layers.convolutional import MaxPooling2D
 from keras.layers.convolutional import Convolution2D
 from keras.utils import np_utils
 from keras.callbacks import EarlyStopping

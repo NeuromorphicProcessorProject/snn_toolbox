@@ -22,7 +22,7 @@ from snntoolbox.core.util import extract_label
 
 standard_library.install_aliases()
 
-use_simple_labels = True
+use_simple_labels = False
 
 
 def output_graphs(spiketrains_batch, activations_batch, path=None, idx=0):

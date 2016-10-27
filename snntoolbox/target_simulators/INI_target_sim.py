@@ -184,6 +184,7 @@ class SNN():
         """
 
         import numpy as np
+        from ann_architectures.imagenet.utils import preprocess_input
         from snntoolbox.core.util import get_activations_batch
         from snntoolbox.io_utils.plotting import output_graphs
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
@@ -243,21 +244,24 @@ class SNN():
             # Allocate list for plotting the error vs simulation time
             err = []
 
-#        err = [] #Remove when done
+        record_error_vs_time = False
+        if record_error_vs_time:
+            err = []
 
         truth = []
         guesses = []
         for batch_idx in range(num_batches):  # m=2.3GB
-#            batch_idx += 12 #Remove when done
             # Get a batch of samples
             if X_test is None:
                 X_batch, Y_batch = dataflow.next()
+                imagenet = False
+                if imagenet:  # Only for imagenet!
+                    X_batch = preprocess_input(X_batch)
             else:
                 batch_idxs = range(settings['batch_size'] * batch_idx,
                                    settings['batch_size'] * (batch_idx + 1))
                 X_batch = X_test[batch_idxs, :]
                 Y_batch = Y_test[batch_idxs, :]
-#            batch_idx -= 12 #Remove when done
 
             # Either use Poisson spiketrains as inputs to the SNN, or take the
             # original data.
@@ -265,7 +269,8 @@ class SNN():
                 # This factor determines the probability threshold for cells in
                 # the input layer to fire a spike. Increasing ``input_rate``
                 # increases the firing rate of the input and subsequent layers.
-                rescale_fac = 1000 / (settings['input_rate'] * settings['dt'])
+                rescale_fac = np.max(X_batch) * 1000 / (
+                    settings['input_rate'] * settings['dt'])
             else:
                 # Simply use the analog values of the original data as input.
                 inp = X_batch
@@ -280,13 +285,19 @@ class SNN():
             if settings['verbose'] > 2:
                 total_spike_count_over_time = np.zeros(
                     (num_timesteps, settings['batch_size']))
+
             t_idx = 0
             for t in np.arange(0, settings['duration'], settings['dt']):
                 if settings['poisson_input']:
                     # Create poisson input.
                     spike_snapshot = \
-                        np.random.random_sample(X_batch.shape)*rescale_fac
-                    inp = (spike_snapshot <= X_batch).astype('float32')
+                        np.random.random_sample(X_batch.shape) * rescale_fac
+                    inp = (spike_snapshot <= np.abs(X_batch)).astype('float32')
+                    # For BinaryNets, with input that is not normalized and not
+                    # all positive, we stimulate with spikes of the same size
+                    # as the maximum activation, and the same sign as the
+                    # corresponding activation. Is there a better solution?
+                    # inp *= np.max(X_batch) * np.sign(X_batch)
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
                 if settings['online_normalization']:
@@ -305,7 +316,8 @@ class SNN():
                 output += out_spikes.astype('int32')
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
-                if batch_idx == 0 and settings['verbose'] > 2:
+                verb = 1 if record_error_vs_time else 2
+                if batch_idx == 0 and settings['verbose'] > verb:
                     j = 0
                     for i, layer in enumerate(self.snn.layers):
                         if 'Flatten' in self.snn.layers[i].name:
@@ -315,8 +327,6 @@ class SNN():
                         j += 1
                     total_spike_count_over_time[t_idx] = \
                         np.array(total_spike_count)
-#Remove next line when done
-#                if batch_idx == 0 and settings['verbose'] > 1:
                     # Get result by comparing the guessed class (i.e. the index
                     # of the neuron in the last layer which spiked most) to the
                     # ground truth.
@@ -341,14 +351,14 @@ class SNN():
                             "{} of {}: {:.2%}.\n".format(batch_idx + 1,
                                                          num_batches, avg))
 
-##Remove when done
-#                ANNerr = self.ANN_err if hasattr(self, 'ANN_err') else None
-#                plot_error_vs_time(err, ANN_err=ANNerr,
-#                                   path=settings['log_dir_of_current_run'])
-#                with open(os.path.join(settings['log_dir_of_current_run'],
-#                                       'err_vs_time.txt'), 'w') as f:
-#                    f.write(str(err))
-##
+                if record_error_vs_time:
+                    ANNerr = self.ANN_err if hasattr(self, 'ANN_err') else None
+                    plot_error_vs_time(err, ANN_err=ANNerr,
+                                       path=settings['log_dir_of_current_run'])
+                    with open(os.path.join(settings['log_dir_of_current_run'],
+                                           'err_vs_time.txt'), 'w') as f:
+                        f.write(str(err))
+
                 if batch_idx == 0 and settings['verbose'] > 2:
                     plot_input_image(X_batch[0], np.argmax(Y_batch[0]),
                                      settings['log_dir_of_current_run'])
@@ -368,6 +378,19 @@ class SNN():
                                   settings['log_dir_of_current_run'])
                     # t=70.1% m=0.6GB
                     del spiketrains_batch
+
+                save_activations = True
+                if save_activations:
+                    print("Saving activations")
+                    activations_batch = get_activations_batch(
+                        self.parsed_model, X_batch)
+                    path = os.path.join(settings['log_dir_of_current_run'],
+                                        'activations')
+                    if not os.path.isdir(path):
+                        os.makedirs(path)
+                    np.savez_compressed(os.path.join(path, str(batch_idx)),
+                                        activations=activations_batch,
+                                        spiketrains=spiketrains_batch)
 
         count = np.zeros(Y_batch.shape[1])
         match = np.zeros(Y_batch.shape[1])

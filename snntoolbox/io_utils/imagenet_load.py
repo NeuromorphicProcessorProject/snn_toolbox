@@ -185,14 +185,14 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
     class_idx = json.load(open(class_idx_path, "r"))
 
     classes = []
-    for idx in xrange(len(class_idx)):
+    for idx in range(len(class_idx)):
         classes.append(class_idx[str(idx)][0])
 
     datagen = ImageDataGenerator()
     train_dataflow = datagen.flow_from_directory(train_path,
                                                  target_size=(224, 224),
                                                  classes=classes,
-                                                 batch_size=10000)
+                                                 batch_size=10)
     X_train, Y_train = train_dataflow.next()
 
     X_train[:, 0, :, :] -= 103.939

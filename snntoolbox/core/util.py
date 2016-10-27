@@ -370,7 +370,7 @@ def get_scale_fac(activations, idx=0):
     # Remove zeros, because they bias the distribution too much
     a = activations[np.nonzero(activations)]
 
-    scale_fac = np.percentile(a, settings['percentile']-idx/10,
+    scale_fac = np.percentile(a, settings['percentile']-idx**2/200,
                               overwrite_input=True)
     if settings['verbose'] > 1:
         print("Scale factor: {:.2f}.".format(scale_fac))

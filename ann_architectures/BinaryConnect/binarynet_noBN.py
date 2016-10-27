@@ -29,13 +29,6 @@ def build_network():
     import theano.tensor as T
     from collections import OrderedDict
 
-    # BN parameters
-    # alpha is the exponential moving average factor
-    alpha = .1
-    print("alpha = "+str(alpha))
-    epsilon = 1e-4
-    print("epsilon = "+str(epsilon))
-
     # BinaryOut
     activation = binary_net.binary_tanh_unit
     print("activation = binary_net.binary_tanh_unit")
@@ -64,14 +57,10 @@ def build_network():
     cnn = lasagne.layers.InputLayer(shape=(None, 3, 32, 32),
                                     input_var=input_var)
 
-#    #Experimental: Train on binarized input!
-#    cnn = lasagne.layers.NonlinearityLayer(
-#            cnn,
-#            nonlinearity=activation)
-
     # 128C3-128C3-P2
     cnn = binary_net.Conv2DLayer(
             cnn,
+#            b=None,
             binary=binary,
             stochastic=stochastic,
             H=H,
@@ -81,17 +70,13 @@ def build_network():
             pad=1,
             nonlinearity=lasagne.nonlinearities.identity)
 
-    cnn = lasagne.layers.BatchNormLayer(
-            cnn,
-            epsilon=epsilon,
-            alpha=alpha)
-
     cnn = lasagne.layers.NonlinearityLayer(
             cnn,
             nonlinearity=activation)
 
     cnn = binary_net.Conv2DLayer(
             cnn,
+#            b=None,
             binary=binary,
             stochastic=stochastic,
             H=H,
@@ -102,11 +87,6 @@ def build_network():
             nonlinearity=lasagne.nonlinearities.identity)
 
     cnn = lasagne.layers.MaxPool2DLayer(cnn, pool_size=(2, 2))
-
-    cnn = lasagne.layers.BatchNormLayer(
-            cnn,
-            epsilon=epsilon,
-            alpha=alpha)
 
     cnn = lasagne.layers.NonlinearityLayer(
             cnn,
@@ -115,6 +95,7 @@ def build_network():
     # 256C3-256C3-P2
     cnn = binary_net.Conv2DLayer(
             cnn,
+#            b=None,
             binary=binary,
             stochastic=stochastic,
             H=H,
@@ -124,17 +105,13 @@ def build_network():
             pad=1,
             nonlinearity=lasagne.nonlinearities.identity)
 
-    cnn = lasagne.layers.BatchNormLayer(
-            cnn,
-            epsilon=epsilon,
-            alpha=alpha)
-
     cnn = lasagne.layers.NonlinearityLayer(
             cnn,
             nonlinearity=activation)
 
     cnn = binary_net.Conv2DLayer(
             cnn,
+#            b=None,
             binary=binary,
             stochastic=stochastic,
             H=H,
@@ -145,11 +122,6 @@ def build_network():
             nonlinearity=lasagne.nonlinearities.identity)
 
     cnn = lasagne.layers.MaxPool2DLayer(cnn, pool_size=(2, 2))
-
-    cnn = lasagne.layers.BatchNormLayer(
-            cnn,
-            epsilon=epsilon,
-            alpha=alpha)
 
     cnn = lasagne.layers.NonlinearityLayer(
             cnn,
@@ -158,6 +130,7 @@ def build_network():
     # 512C3-512C3-P2
     cnn = binary_net.Conv2DLayer(
             cnn,
+#            b=None,
             binary=binary,
             stochastic=stochastic,
             H=H,
@@ -167,17 +140,13 @@ def build_network():
             pad=1,
             nonlinearity=lasagne.nonlinearities.identity)
 
-    cnn = lasagne.layers.BatchNormLayer(
-            cnn,
-            epsilon=epsilon,
-            alpha=alpha)
-
     cnn = lasagne.layers.NonlinearityLayer(
             cnn,
             nonlinearity=activation)
 
     cnn = binary_net.Conv2DLayer(
             cnn,
+#            b=None,
             binary=binary,
             stochastic=stochastic,
             H=H,
@@ -188,11 +157,6 @@ def build_network():
             nonlinearity=lasagne.nonlinearities.identity)
 
     cnn = lasagne.layers.MaxPool2DLayer(cnn, pool_size=(2, 2))
-
-    cnn = lasagne.layers.BatchNormLayer(
-            cnn,
-            epsilon=epsilon,
-            alpha=alpha)
 
     cnn = lasagne.layers.NonlinearityLayer(
             cnn,
@@ -203,6 +167,7 @@ def build_network():
     # 1024FP-1024FP-10FP
     cnn = binary_net.DenseLayer(
                 cnn,
+#                b=None,
                 binary=binary,
                 stochastic=stochastic,
                 H=H,
@@ -210,17 +175,13 @@ def build_network():
                 nonlinearity=lasagne.nonlinearities.identity,
                 num_units=1024)
 
-    cnn = lasagne.layers.BatchNormLayer(
-            cnn,
-            epsilon=epsilon,
-            alpha=alpha)
-
     cnn = lasagne.layers.NonlinearityLayer(
             cnn,
             nonlinearity=activation)
 
     cnn = binary_net.DenseLayer(
                 cnn,
+#                b=None,
                 binary=binary,
                 stochastic=stochastic,
                 H=H,
@@ -228,28 +189,19 @@ def build_network():
                 nonlinearity=lasagne.nonlinearities.identity,
                 num_units=1024)
 
-    cnn = lasagne.layers.BatchNormLayer(
-            cnn,
-            epsilon=epsilon,
-            alpha=alpha)
-
     cnn = lasagne.layers.NonlinearityLayer(
             cnn,
             nonlinearity=activation)
 
     cnn = binary_net.DenseLayer(
                 cnn,
+#                b=None,
                 binary=binary,
                 stochastic=stochastic,
                 H=H,
                 W_LR_scale=W_LR_scale,
                 nonlinearity=lasagne.nonlinearities.identity,
                 num_units=10)
-
-    cnn = lasagne.layers.BatchNormLayer(
-            cnn,
-            epsilon=epsilon,
-            alpha=alpha)
 
     train_output = lasagne.layers.get_output(cnn, deterministic=False)
 
@@ -297,7 +249,6 @@ if __name__ == "__main__":
     from pylearn2.datasets.cifar10 import CIFAR10
     import numpy as np
     from snntoolbox.io_utils.common import save_parameters
-    from snntoolbox.model_libs.lasagne_input_lib import load_parameters
     np.random.seed(1234)  # for reproducibility?
 
     # Training parameters
@@ -354,10 +305,6 @@ if __name__ == "__main__":
     print('Building the CNN...')
 
     cnn, train_fn, val_fn = build_network()
-
-#    # Experimental: Initialize with pretrained weights, refine with binarized input.
-#    params = load_parameters('/home/rbodo/.snntoolbox/data/cifar10/88.63/INI/88.63.h5')
-#    lasagne.layers.set_all_param_values(cnn, params)
 
     print('Training...')
 

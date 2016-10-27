@@ -77,11 +77,12 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
             evalset = {
                 'X_test': load_dataset(settings['dataset_path'], 'X_test.npz'),
                 'Y_test': load_dataset(settings['dataset_path'], 'Y_test.npz')}
-            if settings['maxpool_type'] == 'binary_tanh':  # Hack: Should be independent of maxpool type
-                evalset['X_test'] = np.sign(evalset['X_test'])
-            elif settings['maxpool_type'] == 'binary_sigmoid':  # Hack: Should be independent of maxpool type
-                np.clip((evalset['X_test']+1.)/2., 0, 1, evalset['X_test'])
-                np.round(evalset['X_test'], out=evalset['X_test'])
+#            # Binarize the input. Hack: Should be independent of maxpool type
+#            if settings['maxpool_type'] == 'binary_tanh':
+#                evalset['X_test'] = np.sign(evalset['X_test'])
+#            elif settings['maxpool_type'] == 'binary_sigmoid':
+#                np.clip((evalset['X_test']+1.)/2., 0, 1, evalset['X_test'])
+#                np.round(evalset['X_test'], out=evalset['X_test'])
         if settings['normalize']:
             normset = {}
         if settings['simulate']:
@@ -135,6 +136,26 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
         print("Parsing input model...")
         parsed_model = parse(input_model['model'])  # t=0.5% m=0.6GB
         print_description(parsed_model)
+
+        save_activations = False
+        if save_activations:
+            from snntoolbox.core.util import get_activations_batch
+            print("Saving activations")
+            path = os.path.join(settings['log_dir_of_current_run'],
+                                'activations')
+            if not os.path.isdir(path):
+                os.makedirs(path)
+            num_batches = int(np.floor(
+                settings['num_to_test'] / settings['batch_size']))
+            for batch_idx in range(num_batches):
+                batch_idxs = range(settings['batch_size'] * batch_idx,
+                                   settings['batch_size'] * (batch_idx + 1))
+                X_batch = evalset['X_test'][batch_idxs, :]
+                activations_batch = get_activations_batch(parsed_model,
+                                                          X_batch)
+                np.savez_compressed(os.path.join(path, str(batch_idx)),
+                                    activations=activations_batch,
+                                    spiketrains=None)
 
         # ____________________________ NORMALIZE ____________________________ #
         # Normalize model

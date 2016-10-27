@@ -73,8 +73,6 @@ def get_mnist(path=None, filename=None, flat=False):
                                                             encoding='bytes')
     f.close()
 
-    X_train = X_train.astype('float32')
-    X_test = X_test.astype('float32')
     X_train /= 255
     X_test /= 255
 
@@ -97,9 +95,9 @@ def get_mnist(path=None, filename=None, flat=False):
         if filename is None:
             filename = ''
         filepath = os.path.join(path, filename)
-        np.savez_compressed(filepath+'X_norm', X_train)
-        np.savez_compressed(filepath+'X_test', X_test)
-#       np.savez_compressed(filepath+'Y_train', Y_train)
-        np.savez_compressed(filepath+'Y_test', Y_test)
+        np.savez_compressed(filepath+'X_norm', X_train.astype('float32'))
+        np.savez_compressed(filepath+'X_test', X_test.astype('float32'))
+#       np.savez_compressed(filepath+'Y_train', Y_train.astype('float32'))
+        np.savez_compressed(filepath+'Y_test', Y_test.astype('float32'))
 
     return (X_train, Y_train, X_test, Y_test)

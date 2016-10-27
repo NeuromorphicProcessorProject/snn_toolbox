@@ -18,8 +18,8 @@ from keras.layers import Convolution2D, MaxPooling2D
 from keras.preprocessing import image
 from keras.utils.layer_utils import convert_all_kernels_in_model
 from keras import backend as K
-from snntoolbox.models.imagenet.utils import decode_predictions
-from snntoolbox.models.imagenet.utils import preprocess_input
+from ann_architectures.imagenet.utils import decode_predictions
+from ann_architectures.imagenet.utils import preprocess_input
 
 home_path = os.environ["HOME"]
 data_path = os.path.join(home_path, ".snntoolbox")
@@ -169,7 +169,7 @@ def VGG16(include_top=True, weights='imagenet',
 if __name__ == '__main__':
     model = VGG16(include_top=True, weights='imagenet')
 
-    img_path = './snntoolbox/models/imagenet/elephant.jpg'
+    img_path = 'elephant.jpg'
     img = image.load_img(img_path, target_size=(224, 224))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
