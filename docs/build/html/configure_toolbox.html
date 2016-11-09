@@ -94,6 +94,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="todo.html">Todo</a></li>
 </ul>
 
             
@@ -162,8 +163,50 @@ time resolution of the simulation run.</li>
 <h3>Global Parameters<a class="headerlink" href="#global-parameters" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt>dataset_path: string</dt>
-<dd>Where to load the dataset from. Used for testing the network. Dataset needs
-to be in npy format.</dd>
+<dd><p class="first">Select a directory where the toolbox will find the samples to test.
+Two input formats are supported:</p>
+<blockquote>
+<div><ol class="upperalpha simple">
+<li><code class="docutils literal"><span class="pre">.npz</span></code>: Compressed numpy format.</li>
+<li><code class="docutils literal"><span class="pre">.jpg</span></code>: Images in directories corresponding to their class.</li>
+</ol>
+</div></blockquote>
+<p>A) Provide at least two compressed numpy files called <code class="docutils literal"><span class="pre">X_test.npz</span></code>
+and <code class="docutils literal"><span class="pre">Y_test.npz</span></code> containing the testset and groundtruth. In
+addition, if the network should be normalized, put a file
+<code class="docutils literal"><span class="pre">X_norm.npz</span></code> in the folder. This can be a the training set X_train,
+or a subset of it. Take care of memory limitations: If numpy can
+allocate a 4 GB float32 container for the activations to be
+computed during normalization, X_norm should contain not more than
+4*1e9*8bit/(fc*fx*fy*32bit) = 1/n samples, where (fc, fx, fy) is
+the shape of the largest layer, and n = fc*fx*fy its total cell
+count.</p>
+<p class="last">B) The images are stored in subdirectories of the selected
+<code class="docutils literal"><span class="pre">dataset_path</span></code>, where the names of the subdirectories represent
+their class label. The toolbox will then use Keras
+<code class="docutils literal"><span class="pre">ImageDataGenerator</span></code> to load and process the files batchwise.</p>
+</dd>
+<dt>dataset_format: string</dt>
+<dd><p class="first">Two input formats are supported:</p>
+<ul class="last simple">
+<li><code class="docutils literal"><span class="pre">.npz</span></code>: Compressed numpy format.</li>
+<li><code class="docutils literal"><span class="pre">.jpg</span></code>: Images in directories corresponding to their class.</li>
+</ul>
+</dd>
+<dt>datagen_kwargs: string, optional</dt>
+<dd>Specify keyword arguments for the data generator that will be used to load
+image files from subdirectories in the <code class="docutils literal"><span class="pre">dataset_path</span></code>. Need to be given
+in form of a python dictionary.
+See <code class="docutils literal"><span class="pre">keras.preprocessing.image.ImageDataGenerator</span></code> for possible values.</dd>
+</dl>
+<p>dataflow_kwargs: string, optional</p>
+<blockquote>
+<div>Specify keyword arguments for the data flow that will get the samples from
+the <code class="docutils literal"><span class="pre">ImageDataGenerator</span></code>. Need to be given in form of a python
+dictionary.
+See <code class="docutils literal"><span class="pre">keras.preprocessing.image.ImageDataGenerator.flow_from_directory</span></code>
+for possible values.</div></blockquote>
+<dl class="docutils">
 <dt>model_lib: string</dt>
 <dd><p class="first">The neural network library used to build the ANN, e.g.</p>
 <ul class="last simple">
@@ -326,22 +369,27 @@ some time to integrate up a sufficiently high membrane potential.</dd>
 &#8216;online_normalization&#8217; will be performed at every 10th timestep.</dd>
 <dt>num_to_test: int, optional</dt>
 <dd>How many samples to test.</dd>
-<dt>maxpool_type</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">string</span><dd>Implementation variants of spiking MaxPooling layers, based on
-fir_max: accmulated absolute firing rate
+<dt>maxpool_type: string</dt>
+<dd>Implementation variants of spiking MaxPooling layers, based on
+fir_max: accumulated absolute firing rate
 avg_max: moving average of firing rate</dd>
+<dt>binarize_weights: boolean, optional</dt>
+<dd>If <code class="docutils literal"><span class="pre">True</span></code>, the weights are binarized.</dd>
 </dl>
 </div>
 </div>
 <div class="section" id="default-values">
 <h2>Default values<a class="headerlink" href="#default-values" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">globalparams</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;dataset_format&#39;</span><span class="p">:</span> <span class="s1">&#39;npz&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;datagen_kwargs&#39;</span><span class="p">:</span> <span class="p">{},</span>
+                <span class="s1">&#39;dataflow_kwargs&#39;</span><span class="p">:</span> <span class="p">{},</span>
                 <span class="s1">&#39;model_lib&#39;</span><span class="p">:</span> <span class="s1">&#39;keras&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;path_wd&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;filename_ann&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;filename_parsed_model&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
-                <span class="s1">&#39;filename_snn&#39;</span><span class="p">:</span> <span class="s1">&#39;snn_&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;filename_snn&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;batch_size&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
                 <span class="s1">&#39;evaluateANN&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="s1">&#39;normalize&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
@@ -371,8 +419,9 @@ avg_max: moving average of firing rate</dd>
              <span class="s1">&#39;input_rate&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
              <span class="s1">&#39;timestep_fraction&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
              <span class="s1">&#39;diff_to_max_rate&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
-             <span class="s1">&#39;num_to_test&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-             <span class="s1">&#39;diff_to_min_rate&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">}</span>
+             <span class="s1">&#39;num_to_test&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+             <span class="s1">&#39;diff_to_min_rate&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+             <span class="s1">&#39;binarize_weights&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
 </pre></div>
 </div>
 <dl class="function">
@@ -413,7 +462,7 @@ values. Default values are filled in where user did not give any.</p>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 29, 2016.
+      Last updated on Nov 09, 2016.
 
     </p>
   </div>

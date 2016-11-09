@@ -1,7 +1,10 @@
-.. SNN toolbox documentation master file, created by
-   sphinx-quickstart on Sun Mar 13 07:59:47 2016.
+.. -*- coding=utf-8 -*-
+
+.. SNN toolbox documentation master file,
+   created by sphinx-quickstart on Sun Mar 13 07:59:47 2016.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
+
 
 Welcome to the SNN toolbox documentation!
 =========================================
@@ -14,9 +17,9 @@ Citation
 
 ::
 
-	Diehl, P.U. and Neil, D. and Binas, J. and Cook, M. and Liu, S.C. and Pfeiffer, M.
-	Fast-Classifying, High-Accuracy Spiking Deep Networks Through Weight and Threshold Balancing,
-	IEEE International Joint Conference on Neural Networks (IJCNN), 2015
+    Diehl, P.U. and Neil, D. and Binas, J. and Cook, M. and Liu, S.C. and Pfeiffer, M.
+    Fast-Classifying, High-Accuracy Spiking Deep Networks Through Weight and Threshold Balancing,
+    IEEE International Joint Conference on Neural Networks (IJCNN), 2015
 
 .. figure:: workflow.png
    :scale: 50 %
@@ -79,6 +82,7 @@ Features
    getting_started
    configure_toolbox
    modules
+   todo
 
 Indices and tables
 ==================

@@ -50,15 +50,15 @@ def test_full(queue=None, params=None, param_name='v_thresh',
     Parameters
     ----------
 
-    queue: Queue, optional
+    queue: Optional[Queue.Queue]
         Results are added to the queue to be displayed in the GUI.
-    params: ndarray, optional
+    params: Optional[list[int]]
         Contains the parameter values for which the simulation will be
         repeated.
-    param_name: string, optional
+    param_name: string
         Label indicating the parameter to sweep, e.g. ``'v_thresh'``.
         Must be identical to the parameter's label in ``globalparams``.
-    param_logscale: boolean, optional
+    param_logscale: bool
         If ``True``, plot test accuracy vs ``params`` in log scale.
         Defaults to ``False``.
 
@@ -79,14 +79,14 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         from snntoolbox.io_utils.common import load_dataset
         if settings['evaluateANN'] or settings['simulate']:
             evalset = {
-                'X_test': load_dataset(settings['dataset_path'], 'X_test.npz'),
-                'Y_test': load_dataset(settings['dataset_path'], 'Y_test.npz')}
+                'x_test': load_dataset(settings['dataset_path'], 'x_test.npz'),
+                'y_test': load_dataset(settings['dataset_path'], 'y_test.npz')}
 #            # Binarize the input. Hack: Should be independent of maxpool type
 #            if settings['maxpool_type'] == 'binary_tanh':
-#                evalset['X_test'] = np.sign(evalset['X_test'])
+#                evalset['x_test'] = np.sign(evalset['x_test'])
 #            elif settings['maxpool_type'] == 'binary_sigmoid':
-#                np.clip((evalset['X_test']+1.)/2., 0, 1, evalset['X_test'])
-#                np.round(evalset['X_test'], out=evalset['X_test'])
+#                np.clip((evalset['x_test']+1.)/2., 0, 1, evalset['x_test'])
+#                np.round(evalset['x_test'], out=evalset['x_test'])
         if settings['normalize']:
             normset = {}
         if settings['simulate']:
@@ -155,7 +155,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
             for batch_idx in range(num_batches):
                 batch_idxs = range(settings['batch_size'] * batch_idx,
                                    settings['batch_size'] * (batch_idx + 1))
-                x_batch = evalset['X_test'][batch_idxs, :]
+                x_batch = evalset['x_test'][batch_idxs, :]
                 activations_batch = get_activations_batch(parsed_model,
                                                           x_batch)
                 np.savez_compressed(os.path.join(path, str(batch_idx)),
@@ -239,6 +239,12 @@ def test_full(queue=None, params=None, param_name='v_thresh',
 
 
 def is_stop(queue):
+    """Determine if the user pressed 'stop' in the GUI.
+
+    :param queue: Event queue.
+    :return: ``True`` if user pressed 'stop' in GUI, ``False`` otherwise.
+    """
+
     if not queue:
         return False
     if queue.empty():

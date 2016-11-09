@@ -17,7 +17,6 @@ Created on Thu May 19 14:59:30 2016
 from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
 from future import standard_library
-from builtins import int, range
 
 import os
 import theano
@@ -32,7 +31,7 @@ if settings['online_normalization']:
     lidx = 0
 
 
-class SNN():
+class SNN:
     """
     The compiled spiking neural network, ready for testing in a spiking
     simulator.
@@ -76,6 +75,7 @@ class SNN():
         self.sim = initialize_simulator()
         self.snn = keras.models.Sequential()
         self.get_output = None
+        self.parsed_model = None
 
     def build(self, parsed_model):
         """Compile a SNN to prepare for simulation with INI simulator.
@@ -149,7 +149,7 @@ class SNN():
                                               updates=updates,
                                               allow_input_downcast=True)
 
-    def run(self, X_test=None, Y_test=None, dataflow=None):
+    def run(self, x_test=None, y_test=None, dataflow=None):
         """Simulate a SNN with LIF and Poisson input.
 
         Simulate a spiking network with leaky integrate-and-fire units and
@@ -157,7 +157,7 @@ class SNN():
 
         If ``settings['verbose'] > 1``, the toolbox plots the spiketrains
         and spikerates of each neuron in each layer, for the first sample of
-        the first batch of ``X_test``.
+        the first batch of ``x_test``.
 
         This is somewhat costly in terms of memory and time, but can be useful
         for debugging the network's general functioning.
@@ -165,14 +165,15 @@ class SNN():
         Parameters
         ----------
 
-        X_test: float32 array
+        dataflow : keras.DataFlowGenerator
+        x_test: float32 array
             The input samples to test.
             With data of the form (channels, num_rows, num_cols),
-            X_test has dimension (num_samples, channels*num_rows*num_cols)
+            x_test has dimension (num_samples, channels*num_rows*num_cols)
             for a multi-layer perceptron, and
             (num_samples, channels, num_rows, num_cols) for a convolutional
             net.
-        Y_test: float32 array
+        y_test: float32 array
             Ground truth of test data. Has dimension (num_samples, num_classes)
 
         Returns
@@ -208,12 +209,12 @@ class SNN():
                 converted. Either change the number of samples to test to be
                 equal to the batch size, or convert the ANN again using the
                 corresponding batch size.""")
-            if X_test is None:
+            if x_test is None:
                 # Probably need to turn off shuffling in ImageDataGenerator
                 # for this to produce the desired samples.
-                X_test, Y_test = dataflow.next()
-            X_test = np.array([X_test[i] for i in si])
-            Y_test = np.array([Y_test[i] for i in si])
+                x_test, y_test = dataflow.next()
+            x_test = np.array([x_test[i] for i in si])
+            y_test = np.array([y_test[i] for i in si])
 
         # Divide the test set into batches and run all samples in a batch in
         # parallel.
@@ -250,18 +251,21 @@ class SNN():
 
         truth = []
         guesses = []
+        rescale_fac = 1
+        num_classes = 0
         for batch_idx in range(num_batches):  # m=2.3GB
             # Get a batch of samples
-            if X_test is None:
-                X_batch, Y_batch = dataflow.next()
+            if x_test is None:
+                x_batch, y_batch = dataflow.next()
                 imagenet = False
                 if imagenet:  # Only for imagenet!
-                    X_batch = preprocess_input(X_batch)
+                    x_batch = preprocess_input(x_batch)
             else:
                 batch_idxs = range(settings['batch_size'] * batch_idx,
                                    settings['batch_size'] * (batch_idx + 1))
-                X_batch = X_test[batch_idxs, :]
-                Y_batch = Y_test[batch_idxs, :]
+                x_batch = x_test[batch_idxs, :]
+                y_batch = y_test[batch_idxs, :]
+            num_classes = y_batch.shape[1]
 
             # Either use Poisson spiketrains as inputs to the SNN, or take the
             # original data.
@@ -269,17 +273,17 @@ class SNN():
                 # This factor determines the probability threshold for cells in
                 # the input layer to fire a spike. Increasing ``input_rate``
                 # increases the firing rate of the input and subsequent layers.
-                rescale_fac = np.max(X_batch) * 1000 / (
+                rescale_fac = np.max(x_batch) * 1000 / (
                     settings['input_rate'] * settings['dt'])
             else:
                 # Simply use the analog values of the original data as input.
-                inp = X_batch
+                inp = x_batch
 
             # Reset network variables.
             self.sim.reset(self.snn.layers[-1])
 
             # Loop through simulation time.
-            output = np.zeros((settings['batch_size'], Y_batch.shape[1]),
+            output = np.zeros((settings['batch_size'], y_batch.shape[1]),
                               dtype='int32')
             num_timesteps = int(settings['duration'] / settings['dt'])
             if settings['verbose'] > 2:
@@ -291,13 +295,13 @@ class SNN():
                 if settings['poisson_input']:
                     # Create poisson input.
                     spike_snapshot = \
-                        np.random.random_sample(X_batch.shape) * rescale_fac
-                    inp = (spike_snapshot <= np.abs(X_batch)).astype('float32')
+                        np.random.random_sample(x_batch.shape) * rescale_fac
+                    inp = (spike_snapshot <= np.abs(x_batch)).astype('float32')
                     # For BinaryNets, with input that is not normalized and not
                     # all positive, we stimulate with spikes of the same size
                     # as the maximum activation, and the same sign as the
                     # corresponding activation. Is there a better solution?
-                    # inp *= np.max(X_batch) * np.sign(X_batch)
+                    # inp *= np.max(x_batch) * np.sign(x_batch)
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
                 if settings['online_normalization']:
@@ -330,7 +334,7 @@ class SNN():
                     # Get result by comparing the guessed class (i.e. the index
                     # of the neuron in the last layer which spiked most) to the
                     # ground truth.
-                    truth_tmp = np.argmax(Y_batch, axis=1)
+                    truth_tmp = np.argmax(y_batch, axis=1)
                     guesses_tmp = np.argmax(output, axis=1)
                     err.append(np.mean(truth_tmp != guesses_tmp))
                 t_idx += 1
@@ -341,7 +345,7 @@ class SNN():
                 echo('\n')
                 echo("Batch {} of {} completed ({:.1%})\n".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
-                truth += list(np.argmax(Y_batch, axis=1))
+                truth += list(np.argmax(y_batch, axis=1))
                 guesses += list(np.argmax(output, axis=1))
                 avg = np.mean(np.array(truth) == np.array(guesses))
                 echo("Moving average accuracy: {:.2%}.\n".format(avg))
@@ -352,18 +356,18 @@ class SNN():
                                                          num_batches, avg))
 
                 if record_error_vs_time:
-                    ANNerr = self.ANN_err if hasattr(self, 'ANN_err') else None
-                    plot_error_vs_time(err, ANN_err=ANNerr,
+                    ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
+                    plot_error_vs_time(err, ANN_err=ann_err,
                                        path=settings['log_dir_of_current_run'])
                     with open(os.path.join(settings['log_dir_of_current_run'],
                                            'err_vs_time.txt'), 'w') as f:
                         f.write(str(err))
 
                 if batch_idx == 0 and settings['verbose'] > 2:
-                    plot_input_image(X_batch[0], np.argmax(Y_batch[0]),
+                    plot_input_image(x_batch[0], np.argmax(y_batch[0]),
                                      settings['log_dir_of_current_run'])
-                    ANNerr = self.ANN_err if hasattr(self, 'ANN_err') else None
-                    plot_error_vs_time(err, ANN_err=ANNerr,
+                    ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
+                    plot_error_vs_time(err, ANN_err=ann_err,
                                        path=settings['log_dir_of_current_run'])
                     with open(os.path.join(settings['log_dir_of_current_run'],
                                            'err_vs_time.txt'), 'w') as f:
@@ -373,7 +377,7 @@ class SNN():
                     plot_confusion_matrix(truth, guesses,
                                           settings['log_dir_of_current_run'])
                     activations_batch = get_activations_batch(
-                        self.parsed_model, X_batch)
+                        self.parsed_model, x_batch)
                     output_graphs(spiketrains_batch, activations_batch,
                                   settings['log_dir_of_current_run'])
                     # t=70.1% m=0.6GB
@@ -383,7 +387,7 @@ class SNN():
                 if save_activations:
                     print("Saving activations")
                     activations_batch = get_activations_batch(
-                        self.parsed_model, X_batch)
+                        self.parsed_model, x_batch)
                     path = os.path.join(settings['log_dir_of_current_run'],
                                         'activations')
                     if not os.path.isdir(path):
@@ -392,8 +396,8 @@ class SNN():
                                         activations=activations_batch,
                                         spiketrains=spiketrains_batch)
 
-        count = np.zeros(Y_batch.shape[1])
-        match = np.zeros(Y_batch.shape[1])
+        count = np.zeros(num_classes)
+        match = np.zeros(num_classes)
         for gt, p in zip(truth, guesses):
             count[gt] += 1
             if gt == p:
@@ -473,7 +477,8 @@ class SNN():
         # Compile model
         self.compile_snn(input_time)
 
-    def assert_batch_size(self, batch_size):
+    @staticmethod
+    def assert_batch_size(batch_size):
         """Check if batchsize is matched with configuration."""
 
         if batch_size != settings['batch_size']:
@@ -488,7 +493,8 @@ class SNN():
             print(msg)
             settings['batch_size'] = batch_size
 
-    def end_sim(self):
+    @staticmethod
+    def end_sim():
         """Clean up after simulation.
 
         Clean up after simulation. Not needed in this simulator, so do a

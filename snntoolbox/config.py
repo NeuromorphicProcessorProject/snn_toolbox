@@ -20,8 +20,10 @@ Global Parameters
 dataset_path: string
     Select a directory where the toolbox will find the samples to test.
     Two input formats are supported:
+
         A) ``.npz``: Compressed numpy format.
         B) ``.jpg``: Images in directories corresponding to their class.
+
     A) Provide at least two compressed numpy files called ``X_test.npz``
     and ``Y_test.npz`` containing the testset and groundtruth. In
     addition, if the network should be normalized, put a file
@@ -32,10 +34,12 @@ dataset_path: string
     4*1e9*8bit/(fc*fx*fy*32bit) = 1/n samples, where (fc, fx, fy) is
     the shape of the largest layer, and n = fc*fx*fy its total cell
     count.
+
     B) The images are stored in subdirectories of the selected
     ``dataset_path``, where the names of the subdirectories represent
     their class label. The toolbox will then use Keras
     ``ImageDataGenerator`` to load and process the files batchwise.
+
 dataset_format: string
     Two input formats are supported:
 
@@ -47,6 +51,7 @@ datagen_kwargs: string, optional
     image files from subdirectories in the ``dataset_path``. Need to be given
     in form of a python dictionary.
     See ``keras.preprocessing.image.ImageDataGenerator`` for possible values.
+
 dataflow_kwargs: string, optional
 
     Specify keyword arguments for the data flow that will get the samples from

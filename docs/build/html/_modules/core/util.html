@@ -84,6 +84,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../configure_toolbox.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../modules.html">Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../todo.html">Todo</a></li>
 </ul>
 
             
@@ -140,18 +141,43 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="c1"># For compatibility with python2</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">absolute_import</span>
-<span class="kn">from</span> <span class="nn">future</span> <span class="kn">import</span> <span class="n">standard_library</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 
 <span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">theano</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">keras</span> <span class="kn">import</span> <span class="n">backend</span> <span class="k">as</span> <span class="n">K</span>
 <span class="kn">from</span> <span class="nn">importlib</span> <span class="kn">import</span> <span class="n">import_module</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">theano</span>
+<span class="kn">from</span> <span class="nn">future</span> <span class="kn">import</span> <span class="n">standard_library</span>
+<span class="kn">from</span> <span class="nn">keras</span> <span class="kn">import</span> <span class="n">backend</span> <span class="k">as</span> <span class="n">k</span>
 <span class="kn">from</span> <span class="nn">snntoolbox.config</span> <span class="kn">import</span> <span class="n">settings</span>
 
 <span class="n">standard_library</span><span class="o">.</span><span class="n">install_aliases</span><span class="p">()</span>
+
+<span class="n">use_simple_label</span> <span class="o">=</span> <span class="bp">True</span>
+
+
+<div class="viewcode-block" id="binary_tanh"><a class="viewcode-back" href="../../core.html#core.util.binary_tanh">[docs]</a><span class="k">def</span> <span class="nf">binary_tanh</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Round a float to -1 or 1.</span>
+
+<span class="sd">    :param x: Float</span>
+<span class="sd">    :return: Integer in {-1, 1}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">k</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="binary_sigmoid"><a class="viewcode-back" href="../../core.html#core.util.binary_sigmoid">[docs]</a><span class="k">def</span> <span class="nf">binary_sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Round a float to 0 or 1.</span>
+
+<span class="sd">    :param x: Float</span>
+<span class="sd">    :return: Integer in {0, 1}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">clip</span><span class="p">((</span><span class="n">x</span> <span class="o">+</span> <span class="mf">1.</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">k</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="parse"><a class="viewcode-back" href="../../core.html#core.util.parse">[docs]</a><span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="n">input_model</span><span class="p">):</span>
@@ -196,6 +222,11 @@
         <span class="c1"># Remove keys that are not understood by Keras layer constructor</span>
         <span class="n">layer_type</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;layer_type&#39;</span><span class="p">)</span>
         <span class="n">filter_flip</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;filter_flip&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;activation&#39;</span> <span class="ow">in</span> <span class="n">layer</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">layer</span><span class="p">[</span><span class="s1">&#39;activation&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;binary_sigmoid&#39;</span><span class="p">:</span>
+                <span class="n">layer</span><span class="p">[</span><span class="s1">&#39;activation&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">binary_sigmoid</span>
+            <span class="k">elif</span> <span class="n">layer</span><span class="p">[</span><span class="s1">&#39;activation&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;binary_tanh&#39;</span><span class="p">:</span>
+                <span class="n">layer</span><span class="p">[</span><span class="s1">&#39;activation&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">binary_tanh</span>
         <span class="c1"># Add layer</span>
         <span class="n">parsed_layer</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="p">,</span> <span class="n">layer_type</span><span class="p">)</span>
         <span class="n">parsed_model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">parsed_layer</span><span class="p">(</span><span class="o">**</span><span class="n">layer</span><span class="p">))</span>
@@ -206,6 +237,28 @@
     <span class="n">parsed_model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">&#39;sgd&#39;</span><span class="p">,</span> <span class="s1">&#39;categorical_crossentropy&#39;</span><span class="p">,</span>
                          <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;accuracy&#39;</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">parsed_model</span></div>
+
+
+<div class="viewcode-block" id="evaluate_keras"><a class="viewcode-back" href="../../core.html#core.util.evaluate_keras">[docs]</a><span class="k">def</span> <span class="nf">evaluate_keras</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x_test</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">y_test</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dataflow</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Evaluate parsed Keras model.</span>
+
+<span class="sd">    Can use either numpy arrays ``x_test, y_test`` containing the test samples,</span>
+<span class="sd">    or generate them with a dataflow</span>
+<span class="sd">    (``Keras.ImageDataGenerator.flow_from_directory`` object).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">assert</span> <span class="p">(</span><span class="n">x_test</span> <span class="ow">and</span> <span class="n">y_test</span> <span class="ow">or</span> <span class="n">dataflow</span><span class="p">),</span> <span class="s2">&quot;No testsamples provided.&quot;</span>
+
+    <span class="k">if</span> <span class="n">dataflow</span><span class="p">:</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">dataflow</span><span class="o">.</span><span class="n">batch_size</span>
+        <span class="n">dataflow</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;num_to_test&#39;</span><span class="p">]</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">evaluate_generator</span><span class="p">(</span><span class="n">dataflow</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;num_to_test&#39;</span><span class="p">])</span>
+        <span class="n">dataflow</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s2">&quot;Test loss: {:.2f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">score</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Test accuracy: {:.2%}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">score</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">score</span></div>
 
 
 <div class="viewcode-block" id="get_range"><a class="viewcode-back" href="../../core.html#core.util.get_range">[docs]</a><span class="k">def</span> <span class="nf">get_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">):</span>
@@ -284,6 +337,11 @@
 <span class="sd">    The output will have the same shape as the input except for the last</span>
 <span class="sd">    dimension, which is removed by replacing a sequence of spiketimes by a</span>
 <span class="sd">    single rate value.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    spiketrains_batch: List</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">spikerates_batch</span> <span class="o">=</span> <span class="p">[]</span>
@@ -300,8 +358,10 @@
             <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
                 <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">])):</span>
                     <span class="n">spikerates_batch</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">][</span><span class="n">jj</span><span class="p">])[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">/</span>
-                        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">][</span><span class="n">jj</span><span class="p">])[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">*</span>
+                        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
+                    <span class="n">spikerates_batch</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]))</span>  <span class="c1"># For negative spikes</span>
         <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
                 <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">])):</span>
@@ -309,7 +369,9 @@
                         <span class="k">for</span> <span class="n">ll</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">])):</span>
                             <span class="n">spikerates_batch</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">ll</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
                                 <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">ll</span><span class="p">])[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span>
-                                <span class="mi">1000</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
+                                <span class="mi">1000</span> <span class="o">*</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
+                            <span class="n">spikerates_batch</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">ll</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span>
+                                <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">ll</span><span class="p">]))</span>
 
     <span class="k">return</span> <span class="n">spikerates_batch</span></div>
 
@@ -321,7 +383,7 @@
     <span class="k">return</span> <span class="p">[(</span><span class="n">layer_act</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">idx</span><span class="p">],</span> <span class="n">layer_act</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">layer_act</span> <span class="ow">in</span> <span class="n">activity_batch</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="normalize_parameters"><a class="viewcode-back" href="../../core.html#core.util.normalize_parameters">[docs]</a><span class="k">def</span> <span class="nf">normalize_parameters</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+<div class="viewcode-block" id="normalize_parameters"><a class="viewcode-back" href="../../core.html#core.util.normalize_parameters">[docs]</a><span class="k">def</span> <span class="nf">normalize_parameters</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">dataflow</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Normalize the parameters of a network.</span>
 
 <span class="sd">    The parameters of each layer are normalized with respect to the maximum</span>
@@ -332,15 +394,22 @@
 <span class="sd">    time- and memory-consuming for larger networks.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="kn">import</span> <span class="nn">json</span>
     <span class="kn">from</span> <span class="nn">snntoolbox.io_utils.plotting</span> <span class="kn">import</span> <span class="n">plot_hist</span>
-    <span class="kn">from</span> <span class="nn">snntoolbox.io_utils.common</span> <span class="kn">import</span> <span class="n">load_dataset</span>
+    <span class="kn">from</span> <span class="nn">snntoolbox.io_utils.common</span> <span class="kn">import</span> <span class="n">confirm_overwrite</span>
 
-    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Loading normalization data set.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">X_norm</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">],</span> <span class="s1">&#39;X_norm.npz&#39;</span><span class="p">)</span>  <span class="c1"># t=0.2%</span>
-    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Using {} samples for normalization.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_norm</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="n">dataflow</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">snntoolbox.io_utils.common</span> <span class="kn">import</span> <span class="n">load_dataset</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Loading normalization data set from &#39;.npz&#39; file.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">x_norm</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">],</span> <span class="s1">&#39;x_norm.npz&#39;</span><span class="p">)</span>  <span class="c1"># t=0.2%</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Loading normalization data set from ImageDataGenerator.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">x_norm</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">dataflow</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Using {} samples for normalization.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x_norm</span><span class="p">)))</span>
 
 <span class="c1">#        import numpy as np</span>
-<span class="c1">#        sizes = [len(X_norm) * np.array(layer[&#39;output_shape&#39;][1:]).prod() *</span>
+<span class="c1">#        sizes = [len(x_norm) * np.array(layer[&#39;output_shape&#39;][1:]).prod() *</span>
 <span class="c1">#                 32 / (8 * 1e9) for idx, layer in enumerate(self.layers)</span>
 <span class="c1">#                 if idx != 0 and &#39;parameters&#39; in self.layers[idx-1]]</span>
 <span class="c1">#        size_str = [&#39;{:.2f}&#39;.format(s) for s in sizes]</span>
@@ -351,47 +420,84 @@
     <span class="n">newpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">],</span> <span class="s1">&#39;normalization&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">newpath</span><span class="p">):</span>
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">newpath</span><span class="p">)</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">newpath</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">])</span><span class="o">+</span><span class="s1">&#39;.json&#39;</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Loading scale factors from disk instead of recalculating.&quot;</span><span class="p">)</span>
+        <span class="n">facs_from_disk</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">scale_facs</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">facs_from_disk</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">scale_facs</span> <span class="o">=</span> <span class="p">[]</span>
+
     <span class="c1"># Loop through all layers, looking for layers with parameters</span>
     <span class="n">scale_fac_prev_layer</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">):</span>
         <span class="c1"># Skip layer if not preceeded by a layer with parameters</span>
-        <span class="k">if</span> <span class="n">layer</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()</span> <span class="o">==</span> <span class="p">[]:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">get_weights</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">continue</span>
-        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;verbose&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Calculating activation of layer {} with shape {}...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                  <span class="n">layer</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">layer</span><span class="o">.</span><span class="n">output_shape</span><span class="p">))</span>
         <span class="n">parameters</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()</span>
-        <span class="c1"># Undo previous scaling before calculating activations:</span>
-        <span class="n">layer</span><span class="o">.</span><span class="n">set_weights</span><span class="p">([</span><span class="n">parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">scale_fac_prev_layer</span><span class="p">,</span> <span class="n">parameters</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
-        <span class="c1"># t=4.9%</span>
-        <span class="n">get_activ</span> <span class="o">=</span> <span class="n">get_activ_fn_for_layer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
-        <span class="n">activations</span> <span class="o">=</span> <span class="n">get_activations_layer</span><span class="p">(</span><span class="n">get_activ</span><span class="p">,</span> <span class="n">X_norm</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;normalization_schedule&#39;</span><span class="p">]:</span>
-            <span class="n">scale_fac</span> <span class="o">=</span> <span class="n">get_scale_fac</span><span class="p">(</span><span class="n">activations</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">facs_from_disk</span><span class="p">:</span>
+            <span class="n">scale_fac_prev_layer</span> <span class="o">=</span> <span class="n">scale_facs</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1</span>
+            <span class="n">scale_fac</span> <span class="o">=</span> <span class="n">scale_facs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">scale_fac</span> <span class="o">=</span> <span class="n">get_scale_fac</span><span class="p">(</span><span class="n">activations</span><span class="p">)</span>  <span class="c1"># t=3.7%</span>
+            <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;verbose&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Calculating activation of layer {} ...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                      <span class="n">layer</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">layer</span><span class="o">.</span><span class="n">output_shape</span><span class="p">))</span>
+            <span class="c1"># Undo previous scaling before calculating activations:</span>
+            <span class="n">layer</span><span class="o">.</span><span class="n">set_weights</span><span class="p">([</span><span class="n">parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">scale_fac_prev_layer</span><span class="p">,</span>
+                               <span class="n">parameters</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+            <span class="c1"># t=4.9%</span>
+            <span class="n">get_activ</span> <span class="o">=</span> <span class="n">get_activ_fn_for_layer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+            <span class="n">activations</span> <span class="o">=</span> <span class="n">get_activations_layer</span><span class="p">(</span><span class="n">get_activ</span><span class="p">,</span> <span class="n">x_norm</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;normalization_schedule&#39;</span><span class="p">]:</span>
+                <span class="n">scale_fac</span> <span class="o">=</span> <span class="n">get_scale_fac</span><span class="p">(</span><span class="n">activations</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">scale_fac</span> <span class="o">=</span> <span class="n">get_scale_fac</span><span class="p">(</span><span class="n">activations</span><span class="p">)</span>  <span class="c1"># t=3.7%</span>
+            <span class="n">scale_facs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scale_fac</span><span class="p">)</span>
+
+        <span class="c1"># Scale parameters</span>
         <span class="n">parameters_norm</span> <span class="o">=</span> <span class="p">[</span><span class="n">parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale_fac_prev_layer</span> <span class="o">/</span> <span class="n">scale_fac</span><span class="p">,</span>
                            <span class="n">parameters</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">scale_fac</span><span class="p">]</span>
         <span class="n">scale_fac_prev_layer</span> <span class="o">=</span> <span class="n">scale_fac</span>
+
         <span class="c1"># Update model with modified parameters</span>
         <span class="n">layer</span><span class="o">.</span><span class="n">set_weights</span><span class="p">(</span><span class="n">parameters_norm</span><span class="p">)</span>
+
+        <span class="c1"># Plot distributions of weights and activations before and after norm.</span>
+        <span class="k">if</span> <span class="n">facs_from_disk</span><span class="p">:</span>
+            <span class="k">continue</span>  <span class="c1"># Assume plots are already there.</span>
         <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;verbose&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
             <span class="k">continue</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">+</span> <span class="n">layer</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span> <span class="k">if</span> <span class="n">use_simple_label</span> \
+            <span class="k">else</span> <span class="n">layer</span><span class="o">.</span><span class="n">name</span>
         <span class="n">weight_dict</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s1">&#39;weights&#39;</span><span class="p">:</span> <span class="n">parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
             <span class="s1">&#39;weights_norm&#39;</span><span class="p">:</span> <span class="n">parameters_norm</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()}</span>
         <span class="c1"># t=2.8%</span>
-        <span class="n">plot_hist</span><span class="p">(</span><span class="n">weight_dict</span><span class="p">,</span> <span class="s1">&#39;Weight&#39;</span><span class="p">,</span> <span class="n">layer</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span>
+        <span class="n">plot_hist</span><span class="p">(</span><span class="n">weight_dict</span><span class="p">,</span> <span class="s1">&#39;Weight&#39;</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">True</span><span class="p">:</span>  <span class="c1"># Too costly</span>
-            <span class="k">continue</span>
         <span class="c1"># Compute activations with modified parameters</span>
         <span class="c1"># t=4.8%</span>
-        <span class="n">activations_norm</span> <span class="o">=</span> <span class="n">get_activations_layer</span><span class="p">(</span><span class="n">get_activ</span><span class="p">,</span> <span class="n">X_norm</span><span class="p">)</span>
-        <span class="n">activation_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Activations&#39;</span><span class="p">:</span> <span class="n">activations</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-                           <span class="s1">&#39;Activations_norm&#39;</span><span class="p">:</span> <span class="n">activations_norm</span><span class="o">.</span><span class="n">flatten</span><span class="p">()}</span>
-        <span class="n">plot_hist</span><span class="p">(</span><span class="n">activation_dict</span><span class="p">,</span> <span class="s1">&#39;Activation&#39;</span><span class="p">,</span> <span class="n">layer</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">newpath</span><span class="p">,</span>
-                  <span class="n">scale_fac</span><span class="p">)</span>  <span class="c1"># t=83.1%</span></div>
+        <span class="n">activations_norm</span> <span class="o">=</span> <span class="n">get_activations_layer</span><span class="p">(</span><span class="n">get_activ</span><span class="p">,</span> <span class="n">x_norm</span><span class="p">)</span>
+        <span class="n">activation_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Activations&#39;</span><span class="p">:</span> <span class="n">activations</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">activations</span><span class="p">)],</span>
+                           <span class="s1">&#39;Activations_norm&#39;</span><span class="p">:</span>
+                           <span class="n">activations_norm</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">activations</span><span class="p">)]}</span>
+        <span class="n">plot_hist</span><span class="p">(</span><span class="n">activation_dict</span><span class="p">,</span> <span class="s1">&#39;Activation&#39;</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">newpath</span><span class="p">,</span> <span class="n">scale_fac</span><span class="p">)</span>
+<span class="c1">#        plot_hist({&#39;Activations&#39;: activations[np.nonzero(activations)]},</span>
+<span class="c1">#                  &#39;Activation&#39;, label, newpath, scale_fac)</span>
+<span class="c1">#        plot_hist({&#39;Activations_max&#39;: np.max(activations, axis=tuple(</span>
+<span class="c1">#            np.arange(activations.ndim)[1:]))}, &#39;Activation&#39;, label, newpath,</span>
+<span class="c1">#            scale_fac)</span>
+        <span class="c1"># t=83.1%</span>
+    <span class="c1"># Write scale factors to disk</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">facs_from_disk</span> <span class="ow">and</span> <span class="n">confirm_overwrite</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">scale_facs</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="get_scale_fac"><a class="viewcode-back" href="../../core.html#core.util.get_scale_fac">[docs]</a><span class="k">def</span> <span class="nf">get_scale_fac</span><span class="p">(</span><span class="n">activations</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
@@ -400,7 +506,7 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 
-<span class="sd">    activations: array</span>
+<span class="sd">    activations: np.array</span>
 <span class="sd">        The activations of cells in a specific layer, flattened to 1-d.</span>
 
 <span class="sd">    idx: int, optional</span>
@@ -415,13 +521,18 @@
 <span class="sd">        Parameters of the respective layer are scaled by this value.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">scale_fac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">activations</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">idx</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span>
+    <span class="c1"># Remove zeros, because they bias the distribution too much</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">activations</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">activations</span><span class="p">)]</span>
+
+    <span class="n">scale_fac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">idx</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="mi">200</span><span class="p">,</span>
+                              <span class="n">overwrite_input</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;verbose&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Scale factor: {:.2f}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scale_fac</span><span class="p">))</span>
+
     <span class="k">return</span> <span class="n">scale_fac</span></div>
 
 
-<div class="viewcode-block" id="get_activations_layer"><a class="viewcode-back" href="../../core.html#core.util.get_activations_layer">[docs]</a><span class="k">def</span> <span class="nf">get_activations_layer</span><span class="p">(</span><span class="n">get_activ</span><span class="p">,</span> <span class="n">X_train</span><span class="p">):</span>
+<div class="viewcode-block" id="get_activations_layer"><a class="viewcode-back" href="../../core.html#core.util.get_activations_layer">[docs]</a><span class="k">def</span> <span class="nf">get_activations_layer</span><span class="p">(</span><span class="n">get_activ</span><span class="p">,</span> <span class="n">x_train</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get activations of a specific layer, iterating batch-wise over the complete</span>
 <span class="sd">    data set.</span>
@@ -432,39 +543,39 @@
 <span class="sd">    get_activ: Theano function</span>
 <span class="sd">        A Theano function computing the activations of a layer.</span>
 
-<span class="sd">    X_train: float32 array</span>
+<span class="sd">    x_train: float32 array</span>
 <span class="sd">        The samples to compute activations for. With data of the form</span>
-<span class="sd">        (channels, num_rows, num_cols), X_train has dimension</span>
+<span class="sd">        (channels, num_rows, num_cols), x_train has dimension</span>
 <span class="sd">        (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,</span>
 <span class="sd">        and (batch_size, channels, num_rows, num_cols) for a convolutional net.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 
-<span class="sd">    activations: array</span>
+<span class="sd">    activations: np.array</span>
 <span class="sd">        The activations of cells in a specific layer. Has the same shape as the</span>
 <span class="sd">        layer.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">get_activ</span><span class="p">(</span><span class="n">X_train</span><span class="p">[:</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]])</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-    <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">get_activ</span><span class="p">(</span><span class="n">x_train</span><span class="p">[:</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]])</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">activations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
-    <span class="n">num_batches</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">X_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]))</span>
+    <span class="n">num_batches</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">x_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]))</span>
     <span class="k">for</span> <span class="n">batch_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_batches</span><span class="p">):</span>
         <span class="c1"># Determine batch indices.</span>
         <span class="n">max_idx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">((</span><span class="n">batch_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">],</span>
-                      <span class="n">X_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                      <span class="n">x_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="n">batch_idxs</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_idx</span> <span class="o">*</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">],</span> <span class="n">max_idx</span><span class="p">)</span>
-        <span class="n">batch</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[</span><span class="n">batch_idxs</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="n">x_train</span><span class="p">[</span><span class="n">batch_idxs</span><span class="p">,</span> <span class="p">:]</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch_idxs</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]:</span>
-            <span class="n">batch</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">X_train</span><span class="p">[:</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">batch</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">x_train</span><span class="p">[:</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
             <span class="n">activations</span><span class="p">[</span><span class="n">batch_idxs</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_activ</span><span class="p">(</span><span class="n">batch</span><span class="p">)[:</span><span class="nb">len</span><span class="p">(</span><span class="n">batch_idxs</span><span class="p">)]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">activations</span><span class="p">[</span><span class="n">batch_idxs</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_activ</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">activations</span></div>
 
 
-<div class="viewcode-block" id="get_activations_batch"><a class="viewcode-back" href="../../core.html#core.util.get_activations_batch">[docs]</a><span class="k">def</span> <span class="nf">get_activations_batch</span><span class="p">(</span><span class="n">ann</span><span class="p">,</span> <span class="n">X_batch</span><span class="p">):</span>
+<div class="viewcode-block" id="get_activations_batch"><a class="viewcode-back" href="../../core.html#core.util.get_activations_batch">[docs]</a><span class="k">def</span> <span class="nf">get_activations_batch</span><span class="p">(</span><span class="n">ann</span><span class="p">,</span> <span class="n">x_batch</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Compute layer activations of an ANN.</span>
 
 <span class="sd">    Parameters</span>
@@ -473,7 +584,7 @@
 <span class="sd">    ann: Keras model</span>
 <span class="sd">        Needed to compute activations.</span>
 
-<span class="sd">    X_batch: float32 array</span>
+<span class="sd">    x_batch: float32 array</span>
 <span class="sd">        The input samples to use for determining the layer activations. With</span>
 <span class="sd">        data of the form (channels, num_rows, num_cols), X has dimension</span>
 <span class="sd">        (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,</span>
@@ -496,13 +607,20 @@
         <span class="k">if</span> <span class="s1">&#39;Flatten&#39;</span> <span class="ow">in</span> <span class="n">layer</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
             <span class="k">continue</span>
         <span class="n">get_activ</span> <span class="o">=</span> <span class="n">get_activ_fn_for_layer</span><span class="p">(</span><span class="n">ann</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
-        <span class="n">activations_batch</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">get_activ</span><span class="p">(</span><span class="n">X_batch</span><span class="p">),</span> <span class="n">layer</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="n">activations_batch</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">get_activ</span><span class="p">(</span><span class="n">x_batch</span><span class="p">),</span> <span class="n">layer</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">activations_batch</span></div>
 
 
 <div class="viewcode-block" id="get_activ_fn_for_layer"><a class="viewcode-back" href="../../core.html#core.util.get_activ_fn_for_layer">[docs]</a><span class="k">def</span> <span class="nf">get_activ_fn_for_layer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get a function that computes the activations of a layer.</span>
+
+<span class="sd">    :param model: The network.</span>
+<span class="sd">    :param i: The layer index.</span>
+<span class="sd">    :return: A theano function that computes the activations of layer ``i``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">f</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span>
-        <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">input</span><span class="p">,</span> <span class="n">theano</span><span class="o">.</span><span class="n">In</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">learning_phase</span><span class="p">(),</span> <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">)],</span>
+        <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">input</span><span class="p">,</span> <span class="n">theano</span><span class="o">.</span><span class="n">In</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">learning_phase</span><span class="p">(),</span> <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">)],</span>
         <span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">allow_input_downcast</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
         <span class="n">on_unused_input</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
     <span class="k">return</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float16&#39;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span></div>
@@ -570,7 +688,7 @@
         <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">l</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">)])</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">shape</span> <span class="o">=</span> <span class="p">()</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">layer_num</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">layer_num</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">shape</span></div>
 </pre></div>
 
            </div>
@@ -583,7 +701,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 29, 2016.
+      Last updated on Nov 09, 2016.
 
     </p>
   </div>

@@ -152,11 +152,22 @@
 <dl class="function">
 <dt id="core.pipeline.is_stop">
 <code class="descclassname">core.pipeline.</code><code class="descname">is_stop</code><span class="sig-paren">(</span><em>queue</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/pipeline.html#is_stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.pipeline.is_stop" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Determine if the user pressed &#8216;stop&#8217; in the GUI.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>queue</strong> &#8211; Event queue.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><code class="docutils literal"><span class="pre">True</span></code> if user pressed &#8216;stop&#8217; in GUI, <code class="docutils literal"><span class="pre">False</span></code> otherwise.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="core.pipeline.test_full">
-<code class="descclassname">core.pipeline.</code><code class="descname">test_full</code><span class="sig-paren">(</span><em>queue=None, params=[1], param_name='v_thresh', param_logscale=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/pipeline.html#test_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.pipeline.test_full" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">core.pipeline.</code><code class="descname">test_full</code><span class="sig-paren">(</span><em>queue=None</em>, <em>params=None</em>, <em>param_name='v_thresh'</em>, <em>param_logscale=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/pipeline.html#test_full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.pipeline.test_full" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert an snn to a spiking neural network and simulate it.</p>
 <dl class="docutils">
 <dt>Complete pipeline of</dt>
@@ -219,8 +230,9 @@ MegaSim, ...)</p>
 <p>&#64;author: rbodo</p>
 <dl class="class">
 <dt id="core.inisim.SpikeAveragePooling2D">
-<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeAveragePooling2D</code><span class="sig-paren">(</span><em>pool_size=(2</em>, <em>2)</em>, <em>strides=None</em>, <em>border_mode='valid'</em>, <em>label=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeAveragePooling2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeAveragePooling2D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeAveragePooling2D</code><span class="sig-paren">(</span><em>pool_size=(2</em>, <em>2)</em>, <em>strides=None</em>, <em>border_mode='valid'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeAveragePooling2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeAveragePooling2D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">keras.layers.pooling.AveragePooling2D</span></code></p>
+<p>Average Pooling.</p>
 <dl class="method">
 <dt id="core.inisim.SpikeAveragePooling2D.get_name">
 <code class="descname">get_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeAveragePooling2D.get_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeAveragePooling2D.get_name" title="Permalink to this definition">¶</a></dt>
@@ -229,7 +241,7 @@ MegaSim, ...)</p>
 
 <dl class="method">
 <dt id="core.inisim.SpikeAveragePooling2D.get_output">
-<code class="descname">get_output</code><span class="sig-paren">(</span><em>train=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeAveragePooling2D.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeAveragePooling2D.get_output" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeAveragePooling2D.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeAveragePooling2D.get_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get output.</p>
 </dd></dl>
 
@@ -237,7 +249,7 @@ MegaSim, ...)</p>
 
 <dl class="class">
 <dt id="core.inisim.SpikeConvolution2D">
-<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeConvolution2D</code><span class="sig-paren">(</span><em>nb_filter</em>, <em>nb_row</em>, <em>nb_col</em>, <em>weights=None</em>, <em>border_mode='valid'</em>, <em>subsample=(1</em>, <em>1)</em>, <em>label=None</em>, <em>filter_flip=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeConvolution2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeConvolution2D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeConvolution2D</code><span class="sig-paren">(</span><em>nb_filter</em>, <em>nb_row</em>, <em>nb_col</em>, <em>weights=None</em>, <em>border_mode='valid'</em>, <em>subsample=(1</em>, <em>1)</em>, <em>filter_flip=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeConvolution2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeConvolution2D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">keras.layers.convolutional.Convolution2D</span></code></p>
 <p>Spike 2D Convolution.</p>
 <dl class="method">
@@ -248,7 +260,7 @@ MegaSim, ...)</p>
 
 <dl class="method">
 <dt id="core.inisim.SpikeConvolution2D.get_output">
-<code class="descname">get_output</code><span class="sig-paren">(</span><em>train=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeConvolution2D.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeConvolution2D.get_output" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeConvolution2D.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeConvolution2D.get_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get output.</p>
 </dd></dl>
 
@@ -256,7 +268,7 @@ MegaSim, ...)</p>
 
 <dl class="class">
 <dt id="core.inisim.SpikeDense">
-<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeDense</code><span class="sig-paren">(</span><em>output_dim</em>, <em>weights=None</em>, <em>label=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeDense"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeDense" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeDense</code><span class="sig-paren">(</span><em>output_dim</em>, <em>weights=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeDense"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeDense" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">keras.layers.core.Dense</span></code></p>
 <p>Spike Dense layer.</p>
 <dl class="method">
@@ -267,7 +279,7 @@ MegaSim, ...)</p>
 
 <dl class="method">
 <dt id="core.inisim.SpikeDense.get_output">
-<code class="descname">get_output</code><span class="sig-paren">(</span><em>train=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeDense.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeDense.get_output" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeDense.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeDense.get_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get output.</p>
 </dd></dl>
 
@@ -275,7 +287,7 @@ MegaSim, ...)</p>
 
 <dl class="class">
 <dt id="core.inisim.SpikeFlatten">
-<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeFlatten</code><span class="sig-paren">(</span><em>label=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeFlatten"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeFlatten" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeFlatten</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeFlatten"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeFlatten" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">keras.layers.core.Flatten</span></code></p>
 <p>Spike flatten layer.</p>
 <dl class="method">
@@ -286,7 +298,7 @@ MegaSim, ...)</p>
 
 <dl class="method">
 <dt id="core.inisim.SpikeFlatten.get_output">
-<code class="descname">get_output</code><span class="sig-paren">(</span><em>train=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeFlatten.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeFlatten.get_output" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeFlatten.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeFlatten.get_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get output.</p>
 </dd></dl>
 
@@ -294,7 +306,7 @@ MegaSim, ...)</p>
 
 <dl class="class">
 <dt id="core.inisim.SpikeMaxPooling2D">
-<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeMaxPooling2D</code><span class="sig-paren">(</span><em>pool_size=(2</em>, <em>2)</em>, <em>strides=None</em>, <em>border_mode='valid'</em>, <em>label=None</em>, <em>pool_type='fir_max'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeMaxPooling2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeMaxPooling2D" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">core.inisim.</code><code class="descname">SpikeMaxPooling2D</code><span class="sig-paren">(</span><em>pool_size=(2</em>, <em>2)</em>, <em>strides=None</em>, <em>border_mode='valid'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeMaxPooling2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeMaxPooling2D" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">keras.layers.pooling.MaxPooling2D</span></code></p>
 <p>Max Pooling.</p>
 <dl class="method">
@@ -305,15 +317,33 @@ MegaSim, ...)</p>
 
 <dl class="method">
 <dt id="core.inisim.SpikeMaxPooling2D.get_output">
-<code class="descname">get_output</code><span class="sig-paren">(</span><em>train=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeMaxPooling2D.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeMaxPooling2D.get_output" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#SpikeMaxPooling2D.get_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.SpikeMaxPooling2D.get_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get output.</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="function">
-<dt id="core.inisim.floatX">
-<code class="descclassname">core.inisim.</code><code class="descname">floatX</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#floatX"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.floatX" title="Permalink to this definition">¶</a></dt>
+<dt id="core.inisim.add_payloads">
+<code class="descclassname">core.inisim.</code><code class="descname">add_payloads</code><span class="sig-paren">(</span><em>prev_layer</em>, <em>input_spikes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#add_payloads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.add_payloads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get payloads from previous layer.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.binary_sigmoid_activation">
+<code class="descclassname">core.inisim.</code><code class="descname">binary_sigmoid_activation</code><span class="sig-paren">(</span><em>self</em>, <em>time</em>, <em>updates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#binary_sigmoid_activation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.binary_sigmoid_activation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Binary sigmoid activation.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.binary_tanh_activation">
+<code class="descclassname">core.inisim.</code><code class="descname">binary_tanh_activation</code><span class="sig-paren">(</span><em>self</em>, <em>time</em>, <em>updates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#binary_tanh_activation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.binary_tanh_activation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Binary tanh activation.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.inisim.float_x">
+<code class="descclassname">core.inisim.</code><code class="descname">float_x</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#float_x"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.float_x" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return array in floatX settings of Theano.</p>
 </dd></dl>
 
@@ -399,8 +429,8 @@ pad_w is the size of the left and right margins.</li>
 </dd></dl>
 
 <dl class="function">
-<dt id="core.inisim.sharedX">
-<code class="descclassname">core.inisim.</code><code class="descname">sharedX</code><span class="sig-paren">(</span><em>X</em>, <em>dtype='float32'</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#sharedX"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.sharedX" title="Permalink to this definition">¶</a></dt>
+<dt id="core.inisim.shared_x">
+<code class="descclassname">core.inisim.</code><code class="descname">shared_x</code><span class="sig-paren">(</span><em>x</em>, <em>dtype='float32'</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#shared_x"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.shared_x" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make array as shared array.</p>
 </dd></dl>
 
@@ -411,21 +441,9 @@ pad_w is the size of the left and right margins.</li>
 </dd></dl>
 
 <dl class="function">
-<dt id="core.inisim.skip_spike">
-<code class="descclassname">core.inisim.</code><code class="descname">skip_spike</code><span class="sig-paren">(</span><em>new_mem</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#skip_spike"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.skip_spike" title="Permalink to this definition">¶</a></dt>
-<dd><p>Skip spike.</p>
-</dd></dl>
-
-<dl class="function">
 <dt id="core.inisim.softmax_activation">
 <code class="descclassname">core.inisim.</code><code class="descname">softmax_activation</code><span class="sig-paren">(</span><em>self</em>, <em>time</em>, <em>updates</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#softmax_activation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.softmax_activation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Softmax activation.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="core.inisim.trigger_spike">
-<code class="descclassname">core.inisim.</code><code class="descname">trigger_spike</code><span class="sig-paren">(</span><em>new_mem</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#trigger_spike"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.trigger_spike" title="Permalink to this definition">¶</a></dt>
-<dd><p>Trigger spike.</p>
 </dd></dl>
 
 <dl class="function">
@@ -436,8 +454,9 @@ pad_w is the size of the left and right margins.</li>
 
 <dl class="function">
 <dt id="core.inisim.update_payload">
-<code class="descclassname">core.inisim.</code><code class="descname">update_payload</code><span class="sig-paren">(</span><em>self</em>, <em>new_mem</em>, <em>spikes</em>, <em>time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#update_payload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.update_payload" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">core.inisim.</code><code class="descname">update_payload</code><span class="sig-paren">(</span><em>self</em>, <em>residuals</em>, <em>idxs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/inisim.html#update_payload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.inisim.update_payload" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update payloads.</p>
+<p>Uses the residual of the membrane potential after spike.</p>
 </dd></dl>
 
 </div>
@@ -461,6 +480,47 @@ pad_w is the size of the left and right margins.</li>
 conversion and simulation of an SNN.</p>
 <p>Created on Wed Mar  9 16:18:33 2016</p>
 <p>&#64;author: rbodo</p>
+<dl class="function">
+<dt id="core.util.binary_sigmoid">
+<code class="descclassname">core.util.</code><code class="descname">binary_sigmoid</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#binary_sigmoid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.binary_sigmoid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Round a float to 0 or 1.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> &#8211; Float</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Integer in {0, 1}</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.util.binary_tanh">
+<code class="descclassname">core.util.</code><code class="descname">binary_tanh</code><span class="sig-paren">(</span><em>x: float</em><span class="sig-paren">)</span> &rarr; int<a class="reference internal" href="_modules/core/util.html#binary_tanh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.binary_tanh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Round a float to -1 or 1.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> &#8211; Float</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Integer in {-1, 1}</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="core.util.evaluate_keras">
+<code class="descclassname">core.util.</code><code class="descname">evaluate_keras</code><span class="sig-paren">(</span><em>model</em>, <em>x_test=None</em>, <em>y_test=None</em>, <em>dataflow=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#evaluate_keras"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.evaluate_keras" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate parsed Keras model.</p>
+<p>Can use either numpy arrays <code class="docutils literal"><span class="pre">x_test,</span> <span class="pre">y_test</span></code> containing the test samples,
+or generate them with a dataflow
+(<code class="docutils literal"><span class="pre">Keras.ImageDataGenerator.flow_from_directory</span></code> object).</p>
+</dd></dl>
+
 <dl class="function">
 <dt id="core.util.extract_label">
 <code class="descclassname">core.util.</code><code class="descname">extract_label</code><span class="sig-paren">(</span><em>label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#extract_label"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.extract_label" title="Permalink to this definition">¶</a></dt>
@@ -486,11 +546,27 @@ conversion and simulation of an SNN.</p>
 <dl class="function">
 <dt id="core.util.get_activ_fn_for_layer">
 <code class="descclassname">core.util.</code><code class="descname">get_activ_fn_for_layer</code><span class="sig-paren">(</span><em>model</em>, <em>i</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#get_activ_fn_for_layer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.get_activ_fn_for_layer" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Get a function that computes the activations of a layer.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>model</strong> &#8211; The network.</li>
+<li><strong>i</strong> &#8211; The layer index.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A theano function that computes the activations of layer <code class="docutils literal"><span class="pre">i</span></code>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="core.util.get_activations_batch">
-<code class="descclassname">core.util.</code><code class="descname">get_activations_batch</code><span class="sig-paren">(</span><em>ann</em>, <em>X_batch</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#get_activations_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.get_activations_batch" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">core.util.</code><code class="descname">get_activations_batch</code><span class="sig-paren">(</span><em>ann</em>, <em>x_batch</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#get_activations_batch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.get_activations_batch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute layer activations of an ANN.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -498,7 +574,7 @@ conversion and simulation of an SNN.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>ann</strong> (<em>Keras model</em>) &#8211; Needed to compute activations.</li>
-<li><strong>X_batch</strong> (<em>float32 array</em>) &#8211; The input samples to use for determining the layer activations. With
+<li><strong>x_batch</strong> (<em>float32 array</em>) &#8211; The input samples to use for determining the layer activations. With
 data of the form (channels, num_rows, num_cols), X has dimension
 (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
 and (batch_size, channels, num_rows, num_cols) for a convolutional net.</li>
@@ -522,7 +598,7 @@ shape as the original layer, e.g.
 
 <dl class="function">
 <dt id="core.util.get_activations_layer">
-<code class="descclassname">core.util.</code><code class="descname">get_activations_layer</code><span class="sig-paren">(</span><em>get_activ</em>, <em>X_train</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#get_activations_layer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.get_activations_layer" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">core.util.</code><code class="descname">get_activations_layer</code><span class="sig-paren">(</span><em>get_activ</em>, <em>x_train</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#get_activations_layer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.get_activations_layer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get activations of a specific layer, iterating batch-wise over the complete
 data set.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -531,8 +607,8 @@ data set.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>get_activ</strong> (<em>Theano function</em>) &#8211; A Theano function computing the activations of a layer.</li>
-<li><strong>X_train</strong> (<em>float32 array</em>) &#8211; The samples to compute activations for. With data of the form
-(channels, num_rows, num_cols), X_train has dimension
+<li><strong>x_train</strong> (<em>float32 array</em>) &#8211; The samples to compute activations for. With data of the form
+(channels, num_rows, num_cols), x_train has dimension
 (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
 and (batch_size, channels, num_rows, num_cols) for a convolutional net.</li>
 </ul>
@@ -542,7 +618,7 @@ and (batch_size, channels, num_rows, num_cols) for a convolutional net.</li>
 layer.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/library/array.html#module-array" title="(in Python v2.7)">array</a></p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">np.array</p>
 </td>
 </tr>
 </tbody>
@@ -593,7 +669,7 @@ grid.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>activations</strong> (<a class="reference external" href="https://docs.python.org/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) &#8211; The activations of cells in a specific layer, flattened to 1-d.</li>
+<li><strong>activations</strong> (<em>np.array</em>) &#8211; The activations of cells in a specific layer, flattened to 1-d.</li>
 <li><strong>idx</strong> (<em>int, optional</em>) &#8211; The index of the layer. May be used to decrease the scale factor in
 higher layers, to maintain high spike rates.</li>
 </ul>
@@ -612,7 +688,7 @@ Parameters of the respective layer are scaled by this value.</p>
 
 <dl class="function">
 <dt id="core.util.normalize_parameters">
-<code class="descclassname">core.util.</code><code class="descname">normalize_parameters</code><span class="sig-paren">(</span><em>model</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#normalize_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.normalize_parameters" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">core.util.</code><code class="descname">normalize_parameters</code><span class="sig-paren">(</span><em>model</em>, <em>dataflow=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#normalize_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.normalize_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Normalize the parameters of a network.</p>
 <p>The parameters of each layer are normalized with respect to the maximum
 activation, or the <code class="docutils literal"><span class="pre">n</span></code>-th percentile of activations.</p>
@@ -663,6 +739,14 @@ the output is written as <code class="docutils literal"><span class="pre">settin
 <p>The output will have the same shape as the input except for the last
 dimension, which is removed by replacing a sequence of spiketimes by a
 single rate value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>spiketrains_batch</strong> (<em>List</em>) &#8211; </td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -713,7 +797,7 @@ single rate value.</p>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 29, 2016.
+      Last updated on Nov 09, 2016.
 
     </p>
   </div>

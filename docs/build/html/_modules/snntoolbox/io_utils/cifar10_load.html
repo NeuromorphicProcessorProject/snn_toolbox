@@ -84,6 +84,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../configure_toolbox.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../modules.html">Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../todo.html">Todo</a></li>
 </ul>
 
             
@@ -185,32 +186,36 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># Whether to apply global contrast normalization and ZCA whitening</span>
-    <span class="n">gcn</span> <span class="o">=</span> <span class="bp">True</span>
-    <span class="n">zca</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">gcn</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">zca</span> <span class="o">=</span> <span class="bp">False</span>
     <span class="n">nb_classes</span> <span class="o">=</span> <span class="mi">10</span>
 
     <span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">),</span> <span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span> <span class="o">=</span> <span class="n">cifar10</span><span class="o">.</span><span class="n">load_data</span><span class="p">()</span>
 
     <span class="c1"># Convert class vectors to binary class matrices</span>
-<span class="c1">#    Y_train = to_categorical(y_train, nb_classes)</span>
+    <span class="n">Y_train</span> <span class="o">=</span> <span class="n">to_categorical</span><span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">nb_classes</span><span class="p">)</span>
     <span class="n">Y_test</span> <span class="o">=</span> <span class="n">to_categorical</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">nb_classes</span><span class="p">)</span>
 
     <span class="n">datagen</span> <span class="o">=</span> <span class="n">ImageDataGenerator</span><span class="p">(</span><span class="n">rescale</span><span class="o">=</span><span class="mf">1.</span><span class="o">/</span><span class="mi">255</span><span class="p">,</span> <span class="n">featurewise_center</span><span class="o">=</span><span class="n">gcn</span><span class="p">,</span>
                                  <span class="n">featurewise_std_normalization</span><span class="o">=</span><span class="n">gcn</span><span class="p">,</span>
                                  <span class="n">zca_whitening</span><span class="o">=</span><span class="n">zca</span><span class="p">)</span>
     <span class="n">datagen</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_test</span><span class="o">/</span><span class="mf">255.</span><span class="p">)</span>
-    <span class="n">dataflow</span> <span class="o">=</span> <span class="n">datagen</span><span class="o">.</span><span class="n">flow</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">X_test</span><span class="p">))</span>
-    <span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span> <span class="o">=</span> <span class="n">dataflow</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+
+    <span class="n">testflow</span> <span class="o">=</span> <span class="n">datagen</span><span class="o">.</span><span class="n">flow</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">X_test</span><span class="p">))</span>
+    <span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span> <span class="o">=</span> <span class="n">testflow</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+
+    <span class="n">normflow</span> <span class="o">=</span> <span class="n">datagen</span><span class="o">.</span><span class="n">flow</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span><span class="o">/</span><span class="mi">3</span><span class="p">))</span>
+    <span class="n">X_norm</span><span class="p">,</span> <span class="n">Y_norm</span> <span class="o">=</span> <span class="n">normflow</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">flat</span><span class="p">:</span>
-        <span class="n">X_train</span> <span class="o">=</span> <span class="n">X_train</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">X_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">X_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+        <span class="n">X_norm</span> <span class="o">=</span> <span class="n">X_norm</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">X_norm</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">X_norm</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
         <span class="n">X_test</span> <span class="o">=</span> <span class="n">X_test</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">X_test</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">X_test</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
 
     <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
         <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">savez_compressed</span><span class="p">(</span><span class="n">filepath</span><span class="o">+</span><span class="s1">&#39;X_norm&#39;</span><span class="p">,</span> <span class="n">X_train</span><span class="p">[::</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">))</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">savez_compressed</span><span class="p">(</span><span class="n">filepath</span><span class="o">+</span><span class="s1">&#39;X_norm&#39;</span><span class="p">,</span> <span class="n">X_norm</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">))</span>
         <span class="n">np</span><span class="o">.</span><span class="n">savez_compressed</span><span class="p">(</span><span class="n">filepath</span><span class="o">+</span><span class="s1">&#39;X_test&#39;</span><span class="p">,</span> <span class="n">X_test</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">))</span>
 <span class="c1">#       np.savez_compressed(filepath+&#39;Y_train&#39;, Y_train.astype(&#39;float32&#39;))</span>
         <span class="n">np</span><span class="o">.</span><span class="n">savez_compressed</span><span class="p">(</span><span class="n">filepath</span><span class="o">+</span><span class="s1">&#39;Y_test&#39;</span><span class="p">,</span> <span class="n">Y_test</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">))</span></div>
@@ -218,7 +223,7 @@
 <span class="c1">#    return (X_train, Y_train, X_test, Y_test)</span>
 
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="n">get_cifar10</span><span class="p">(</span><span class="s1">&#39;/home/rbodo/.snntoolbox/datasets/cifar10/processed/&#39;</span><span class="p">)</span>
+    <span class="n">get_cifar10</span><span class="p">(</span><span class="s1">&#39;/home/rbodo/.snntoolbox/Datasets/cifar10/original/&#39;</span><span class="p">)</span>
 </pre></div>
 
            </div>
@@ -231,7 +236,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 29, 2016.
+      Last updated on Nov 09, 2016.
 
     </p>
   </div>

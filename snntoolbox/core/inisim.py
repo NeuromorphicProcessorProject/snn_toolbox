@@ -16,8 +16,6 @@ Created on Tue Dec  8 10:41:10 2015
 from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
-from builtins import super
-
 import numpy as np
 import theano
 import theano.tensor as t
@@ -350,7 +348,7 @@ class SpikeFlatten(Flatten):
 
     def __init__(self, **kwargs):
         """Init function."""
-        super().__init__(**kwargs)
+        super(SpikeFlatten, self).__init__(**kwargs)
         self.updates = None
         if settings['payloads']:
             self.payloads = None
@@ -383,10 +381,11 @@ class SpikeDense(Dense):
         # we are using a custom activation function that Keras doesn't
         # understand.
         self.activation_str = str(kwargs.pop('activation'))
-        super().__init__(output_dim, weights=weights, **kwargs)
+        super(SpikeDense, self).__init__(output_dim=output_dim, weights=weights,
+                                    **kwargs)
         self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
         self.impulse = self.spikecounts = self.total_spike_count = None
-        self.updates = None
+        self.updates = self.refrac_until = self.max_spikerate = None
 
     def get_output(self):
         """Get output."""
@@ -419,11 +418,13 @@ class SpikeConvolution2D(Convolution2D):
                  **kwargs):
         """Init function."""
         self.activation_str = str(kwargs.pop('activation'))
-        super().__init__(nb_filter, nb_row, nb_col, weights=weights,
-                         border_mode=border_mode, subsample=subsample,
-                         **kwargs)
+        super(SpikeConvolution2D, self).__init__(
+            nb_filter=nb_filter, nb_row=nb_row, nb_col=nb_col, weights=weights,
+            border_mode=border_mode, subsample=subsample, **kwargs)
         self.filter_flip = filter_flip
-        self.v_thresh = self.impulse = self.updates = None
+        self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
+        self.impulse = self.spikecounts = self.total_spike_count = None
+        self.updates = self.refrac_until = self.max_spikerate = None
 
     def get_output(self):
         """Get output."""
@@ -484,9 +485,12 @@ class SpikeAveragePooling2D(AveragePooling2D):
                  **kwargs):
         """Init average pooling."""
 
-        super().__init__(pool_size=pool_size, strides=strides,
-                         border_mode=border_mode, **kwargs)
-        self.impulse = self.updates = None
+        super(SpikeAveragePooling2D, self).__init__(
+            pool_size=pool_size, strides=strides, border_mode=border_mode,
+            **kwargs)
+        self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
+        self.impulse = self.spikecounts = self.total_spike_count = None
+        self.updates = self.refrac_until = None
 
     def get_output(self):
         """Get output."""
@@ -522,9 +526,11 @@ class SpikeMaxPooling2D(MaxPooling2D):
         self.ignore_border = True if border_mode == 'valid' else False
         if 'binary' in settings['maxpool_type']:
             self.activation_str = settings['maxpool_type']
-        super().__init__(pool_size=pool_size, strides=strides,
-                         border_mode=border_mode, **kwargs)
-        self.impulse = self.updates = None
+        super(SpikeMaxPooling2D, self).__init__(pool_size=pool_size, strides=strides,
+                                           border_mode=border_mode, **kwargs)
+        self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
+        self.impulse = self.spikecounts = self.total_spike_count = None
+        self.updates = self.refrac_until = None
 
     def get_output(self):
         """Get output."""

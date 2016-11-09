@@ -356,6 +356,38 @@ display plots without saving.</li>
 </dd></dl>
 
 <dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_activations">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_activations</code><span class="sig-paren">(</span><em>model</em>, <em>X_test</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_activations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_activations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_activations_minus_rates">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_activations_minus_rates</code><span class="sig-paren">(</span><em>activations</em>, <em>rates</em>, <em>label</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_activations_minus_rates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_activations_minus_rates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot spikerates minus activations for a specific layer.</p>
+<p>Spikerates and activations are each normalized before subtraction.
+The neurons in the layer are arranged in a line or on a 2D grid, depending
+on layer type.</p>
+<p>Activity is encoded by color.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>activations</strong> (<a class="reference external" href="https://docs.python.org/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) &#8211; The activations of a layer. The shape is that of the original layer,
+e.g. (32, 28, 28) for 32 feature maps of size 28x28.</li>
+<li><strong>rates</strong> (<a class="reference external" href="https://docs.python.org/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) &#8211; The spikerates of a layer. The shape is that of the original layer,
+e.g. (32, 28, 28) for 32 feature maps of size 28x28.</li>
+<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Layer label.</li>
+<li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+display plots without saving.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_confusion_matrix">
 <code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_confusion_matrix</code><span class="sig-paren">(</span><em>Y_test</em>, <em>Y_pred</em>, <em>path=None</em>, <em>class_labels=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_confusion_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_confusion_matrix" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -392,7 +424,7 @@ layer, containing the activations of Dense or Convolution layers.</p>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_error_vs_time">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_error_vs_time</code><span class="sig-paren">(</span><em>err</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_error_vs_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_error_vs_time" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_error_vs_time</code><span class="sig-paren">(</span><em>err</em>, <em>ANN_err=None</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_error_vs_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_error_vs_time" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
@@ -452,6 +484,11 @@ during training.</td>
 </tbody>
 </table>
 </dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.plotting.plot_input_image">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_input_image</code><span class="sig-paren">(</span><em>X</em>, <em>label</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_input_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_input_image" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_layer_activity">
@@ -622,31 +659,9 @@ display plots without saving.</li>
 </dd></dl>
 
 <dl class="function">
-<dt id="snntoolbox.io_utils.plotting.plot_rates_minus_activations">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_rates_minus_activations</code><span class="sig-paren">(</span><em>rates</em>, <em>activations</em>, <em>label</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_rates_minus_activations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_rates_minus_activations" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot spikerates minus activations for a specific layer.</p>
-<p>Spikerates and activations are each normalized before subtraction.
-The neurons in the layer are arranged in a line or on a 2D grid, depending
-on layer type.</p>
-<p>Activity is encoded by color.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>rates</strong> (<a class="reference external" href="https://docs.python.org/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) &#8211; The spikerates of a layer. The shape is that of the original layer,
-e.g. (32, 28, 28) for 32 feature maps of size 28x28.</li>
-<li><strong>activations</strong> (<a class="reference external" href="https://docs.python.org/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) &#8211; The activations of a layer. The shape is that of the original layer,
-e.g. (32, 28, 28) for 32 feature maps of size 28x28.</li>
-<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Layer label.</li>
-<li><strong>path</strong> (<em>string, optional</em>) &#8211; If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
-display plots without saving.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
+<dt id="snntoolbox.io_utils.plotting.plot_spikecount_vs_time">
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_spikecount_vs_time</code><span class="sig-paren">(</span><em>spikecounts</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_spikecount_vs_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_spikecount_vs_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_spiketrains">
@@ -750,6 +765,12 @@ otherwise in <code class="docutils literal"><span class="pre">/tmp/.snntoolbox/d
 </dd></dl>
 
 <dl class="function">
+<dt id="snntoolbox.io_utils.common.save_parameters">
+<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">save_parameters</code><span class="sig-paren">(</span><em>params</em>, <em>filepath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#save_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.save_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save all layer parameters to an HDF5 file.</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="snntoolbox.io_utils.common.to_categorical">
 <code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">to_categorical</code><span class="sig-paren">(</span><em>y</em>, <em>nb_classes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#to_categorical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.to_categorical" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert class vector to binary class matrix.</p>
@@ -785,7 +806,7 @@ to <code class="docutils literal"><span class="pre">nb_classes</span></code>, th
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 29, 2016.
+      Last updated on Nov 09, 2016.
 
     </p>
   </div>

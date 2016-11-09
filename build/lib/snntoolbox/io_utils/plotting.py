@@ -28,7 +28,7 @@ def output_graphs(spiketrains_batch, activations_batch, path=None, idx=0):
     Parameters
     ----------
 
-    spiketrains_batch: list
+    spiketrains_batch: list[tuple[np.array, str]]
         Each entry in ``spiketrains_batch`` contains a tuple
         ``(spiketimes, label)`` for each layer of the network (for the first
         batch only, and excluding ``Flatten`` layers).

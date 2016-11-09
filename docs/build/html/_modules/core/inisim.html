@@ -84,6 +84,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../configure_toolbox.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../modules.html">Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../todo.html">Todo</a></li>
 </ul>
 
             
@@ -144,49 +145,48 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="c1"># For compatibility with python2</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">absolute_import</span>
-<span class="kn">from</span> <span class="nn">future</span> <span class="kn">import</span> <span class="n">standard_library</span>
-<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">super</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">theano</span>
-<span class="kn">import</span> <span class="nn">theano.tensor</span> <span class="kn">as</span> <span class="nn">T</span>
-<span class="kn">from</span> <span class="nn">theano.tensor.signal</span> <span class="kn">import</span> <span class="n">pool</span>
-<span class="kn">from</span> <span class="nn">theano.tensor.shared_randomstreams</span> <span class="kn">import</span> <span class="n">RandomStreams</span>
-<span class="kn">from</span> <span class="nn">keras.layers.core</span> <span class="kn">import</span> <span class="n">Dense</span><span class="p">,</span> <span class="n">Flatten</span>
-<span class="kn">from</span> <span class="nn">keras.layers.convolutional</span> <span class="kn">import</span> <span class="n">AveragePooling2D</span><span class="p">,</span> <span class="n">MaxPooling2D</span>
-<span class="kn">from</span> <span class="nn">keras.layers.convolutional</span> <span class="kn">import</span> <span class="n">Convolution2D</span>
-<span class="kn">from</span> <span class="nn">keras</span> <span class="kn">import</span> <span class="n">backend</span> <span class="k">as</span> <span class="n">K</span>
+<span class="kn">import</span> <span class="nn">theano.tensor</span> <span class="kn">as</span> <span class="nn">t</span>
+<span class="kn">from</span> <span class="nn">future</span> <span class="kn">import</span> <span class="n">standard_library</span>
+<span class="kn">from</span> <span class="nn">keras</span> <span class="kn">import</span> <span class="n">backend</span> <span class="k">as</span> <span class="n">k</span>
+<span class="kn">from</span> <span class="nn">keras.layers</span> <span class="kn">import</span> <span class="n">Convolution2D</span>
+<span class="kn">from</span> <span class="nn">keras.layers</span> <span class="kn">import</span> <span class="n">Dense</span><span class="p">,</span> <span class="n">Flatten</span><span class="p">,</span> <span class="n">AveragePooling2D</span><span class="p">,</span> <span class="n">MaxPooling2D</span>
 <span class="kn">from</span> <span class="nn">snntoolbox.config</span> <span class="kn">import</span> <span class="n">settings</span>
+<span class="kn">from</span> <span class="nn">theano.tensor.shared_randomstreams</span> <span class="kn">import</span> <span class="n">RandomStreams</span>
+<span class="kn">from</span> <span class="nn">theano.tensor.signal</span> <span class="kn">import</span> <span class="n">pool</span>
 
 <span class="n">standard_library</span><span class="o">.</span><span class="n">install_aliases</span><span class="p">()</span>
 
 <span class="n">rng</span> <span class="o">=</span> <span class="n">RandomStreams</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="floatX"><a class="viewcode-back" href="../../core.html#core.inisim.floatX">[docs]</a><span class="k">def</span> <span class="nf">floatX</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
+<div class="viewcode-block" id="float_x"><a class="viewcode-back" href="../../core.html#core.inisim.float_x">[docs]</a><span class="k">def</span> <span class="nf">float_x</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return array in floatX settings of Theano.&quot;&quot;&quot;</span>
 
-    <span class="k">return</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">X</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="sharedX"><a class="viewcode-back" href="../../core.html#core.inisim.sharedX">[docs]</a><span class="k">def</span> <span class="nf">sharedX</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="shared_x"><a class="viewcode-back" href="../../core.html#core.inisim.shared_x">[docs]</a><span class="k">def</span> <span class="nf">shared_x</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Make array as shared array.&quot;&quot;&quot;</span>
 
-    <span class="k">return</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="shared_zeros"><a class="viewcode-back" href="../../core.html#core.inisim.shared_zeros">[docs]</a><span class="k">def</span> <span class="nf">shared_zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Make shared zeros array.&quot;&quot;&quot;</span>
 
-    <span class="k">return</span> <span class="n">sharedX</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">shared_x</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="on_gpu"><a class="viewcode-back" href="../../core.html#core.inisim.on_gpu">[docs]</a><span class="k">def</span> <span class="nf">on_gpu</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Check if running on GPU board.&quot;&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">device</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;gpu&#39;</span></div>
+
 
 <span class="k">if</span> <span class="n">on_gpu</span><span class="p">():</span>
     <span class="kn">from</span> <span class="nn">theano.sandbox.cuda</span> <span class="kn">import</span> <span class="n">dnn</span>
@@ -195,83 +195,148 @@
 <div class="viewcode-block" id="update_neurons"><a class="viewcode-back" href="../../core.html#core.inisim.update_neurons">[docs]</a><span class="k">def</span> <span class="nf">update_neurons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Update neurons according to activation function.&quot;&quot;&quot;</span>
 
-    <span class="k">if</span> <span class="s1">&#39;activation&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span> <span class="ow">and</span> \
-            <span class="bp">self</span><span class="o">.</span><span class="n">get_config</span><span class="p">()[</span><span class="s1">&#39;activation&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;softmax&#39;</span><span class="p">:</span>
-        <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">softmax_activation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;activation_str&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation_str</span> <span class="o">==</span> <span class="s1">&#39;softmax&#39;</span><span class="p">:</span>
+            <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">softmax_activation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation_str</span> <span class="o">==</span> <span class="s1">&#39;binary_sigmoid&#39;</span><span class="p">:</span>
+            <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">binary_sigmoid_activation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation_str</span> <span class="o">==</span> <span class="s1">&#39;binary_tanh&#39;</span><span class="p">:</span>
+            <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">binary_tanh_activation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">linear_activation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">linear_activation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
-    <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">spiketrain</span><span class="p">,</span> <span class="n">output_spikes</span> <span class="o">*</span> <span class="n">time</span><span class="p">))</span>
+
+    <span class="c1"># Store refractory</span>
+    <span class="n">new_refractory</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span><span class="p">[</span><span class="n">output_spikes</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()],</span> <span class="n">time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_refrac</span><span class="p">)</span>
+    <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span><span class="p">,</span> <span class="n">new_refractory</span><span class="p">))</span>
+
+    <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">spiketrain</span><span class="p">,</span> <span class="n">output_spikes</span> <span class="o">*</span> <span class="p">(</span><span class="n">time</span> <span class="o">+</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])))</span>
+    <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span> <span class="o">+</span> <span class="n">output_spikes</span><span class="p">))</span>
+
+    <span class="n">axes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">))</span>
+    <span class="n">reduction_axes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">total_spike_count</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span><span class="p">,</span>
+                                                  <span class="n">reduction_axes</span><span class="p">)))</span>
 
     <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;online_normalization&#39;</span><span class="p">]:</span>
-        <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span> <span class="o">+</span> <span class="n">output_spikes</span><span class="p">))</span>
         <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">max_spikerate</span><span class="p">,</span>
-                        <span class="n">T</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">time</span> <span class="o">+</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])))</span>
+                        <span class="n">t</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span> <span class="o">+</span> <span class="n">output_spikes</span><span class="p">)</span> <span class="o">*</span>
+                        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">time</span> <span class="o">+</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])))</span>
 
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;SpikeMaxPooling2D&quot;</span><span class="p">,</span> <span class="s2">&quot;SpikeConvolution2D&quot;</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;maxpool_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;avg_max&quot;</span> <span class="ow">and</span> \
-                <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;avg_spikerate&#39;</span><span class="p">):</span>
-            <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">avg_spikerate</span><span class="p">,</span>
-                 <span class="bp">self</span><span class="o">.</span><span class="n">avg_spikerate</span> <span class="o">+</span>
-                 <span class="p">(</span><span class="n">output_spikes</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">avg_spikerate</span><span class="p">)</span> <span class="o">/</span>
-                 <span class="p">((</span><span class="n">time</span><span class="o">+</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])</span><span class="o">/</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])))</span>
-
-        <span class="k">elif</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;maxpool_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;fir_max&quot;</span> <span class="ow">and</span> \
-                <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;fir_spikerate&#39;</span><span class="p">):</span>
-            <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">fir_spikerate</span><span class="p">,</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">fir_spikerate</span> <span class="o">+</span> <span class="n">output_spikes</span> <span class="o">/</span>
-                            <span class="p">((</span><span class="n">time</span><span class="o">+</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])</span><span class="o">/</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])))</span>
-        <span class="k">elif</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;maxpool_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;exp_max&quot;</span> <span class="ow">and</span> \
-                <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;exp_spikerate&#39;</span><span class="p">):</span>
-            <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">exp_spikerate</span><span class="p">,</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">exp_spikerate</span> <span class="o">+</span> <span class="n">output_spikes</span> <span class="o">/</span>
-                            <span class="mf">2.</span><span class="o">**</span><span class="p">((</span><span class="n">time</span><span class="o">+</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])</span><span class="o">/</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])))</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;spikerate&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;maxpool_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;fir_max&#39;</span><span class="p">:</span>
+            <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">spikerate</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">spikerate</span> <span class="o">+</span> <span class="p">(</span><span class="n">output_spikes</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikerate</span><span class="p">)</span> <span class="o">/</span>
+                            <span class="p">((</span><span class="n">time</span> <span class="o">+</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])))</span>
+        <span class="k">elif</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;maxpool_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;fir_max&#39;</span><span class="p">:</span>
+            <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">spikerate</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">spikerate</span> <span class="o">+</span> <span class="n">output_spikes</span> <span class="o">/</span>
+                            <span class="p">((</span><span class="n">time</span> <span class="o">+</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])))</span>
+        <span class="c1">#    updates.append((self.spikerate,</span>
+        <span class="c1">#                    (self.spikecounts+output_spikes) *</span>
+        <span class="c1">#                    settings[&#39;dt&#39;] / (time + settings[&#39;dt&#39;])))</span>
+        <span class="k">elif</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;maxpool_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;exp_max&#39;</span><span class="p">:</span>
+            <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">spikerate</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">spikerate</span> <span class="o">+</span> <span class="n">output_spikes</span> <span class="o">/</span>
+                            <span class="mf">2.</span> <span class="o">**</span> <span class="p">((</span><span class="n">time</span> <span class="o">+</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])))</span>
     <span class="k">return</span> <span class="n">output_spikes</span></div>
 
 
-<div class="viewcode-block" id="update_payload"><a class="viewcode-back" href="../../core.html#core.inisim.update_payload">[docs]</a><span class="k">def</span> <span class="nf">update_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_mem</span><span class="p">,</span> <span class="n">spikes</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Update payloads.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="update_payload"><a class="viewcode-back" href="../../core.html#core.inisim.update_payload">[docs]</a><span class="k">def</span> <span class="nf">update_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">residuals</span><span class="p">,</span> <span class="n">idxs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Update payloads.</span>
 
-    <span class="n">idxs</span> <span class="o">=</span> <span class="n">spikes</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
-    <span class="n">v_error</span> <span class="o">=</span> <span class="n">new_mem</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span>
-    <span class="n">payloads</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">payloads</span><span class="p">[</span><span class="n">idxs</span><span class="p">],</span> <span class="n">v_error</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">payloads_sum</span><span class="p">[</span><span class="n">idxs</span><span class="p">])</span>
-    <span class="n">payloads_sum</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
+<span class="sd">    Uses the residual of the membrane potential after spike.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">payloads</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">payloads</span><span class="p">[</span><span class="n">idxs</span><span class="p">],</span> <span class="n">residuals</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">payloads_sum</span><span class="p">[</span><span class="n">idxs</span><span class="p">])</span>
+    <span class="n">payloads_sum</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">payloads_sum</span><span class="p">[</span><span class="n">idxs</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">payloads_sum</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">payloads</span><span class="p">[</span><span class="n">idxs</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">payloads</span><span class="p">,</span> <span class="n">payloads_sum</span></div>
+
+
+<div class="viewcode-block" id="binary_sigmoid_activation"><a class="viewcode-back" href="../../core.html#core.inisim.binary_sigmoid_activation">[docs]</a><span class="k">def</span> <span class="nf">binary_sigmoid_activation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Binary sigmoid activation.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Destroy impulse if in refractory period</span>
+    <span class="n">masked_imp</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span> <span class="o">&gt;</span> <span class="n">time</span><span class="p">)],</span> <span class="mf">0.</span><span class="p">)</span>
+
+    <span class="c1"># Add impulse</span>
+    <span class="n">new_mem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">+</span> <span class="n">masked_imp</span>
+
+    <span class="c1"># Store spiking</span>
+    <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">gt</span><span class="p">(</span><span class="n">new_mem</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">spike_idxs</span> <span class="o">=</span> <span class="n">output_spikes</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+
+    <span class="c1"># Reset neurons</span>
+    <span class="n">new_and_reset_mem</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span><span class="n">new_mem</span><span class="p">[</span><span class="n">spike_idxs</span><span class="p">],</span> <span class="mf">0.</span><span class="p">)</span>
+
+    <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">mem</span><span class="p">,</span> <span class="n">new_and_reset_mem</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">output_spikes</span></div>
+
+
+<div class="viewcode-block" id="binary_tanh_activation"><a class="viewcode-back" href="../../core.html#core.inisim.binary_tanh_activation">[docs]</a><span class="k">def</span> <span class="nf">binary_tanh_activation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Binary tanh activation.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Destroy impulse if in refractory period</span>
+    <span class="n">masked_imp</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span> <span class="o">&gt;</span> <span class="n">time</span><span class="p">)],</span> <span class="mf">0.</span><span class="p">)</span>
+
+    <span class="c1"># Add impulse</span>
+    <span class="n">new_mem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">+</span> <span class="n">masked_imp</span>
+
+    <span class="c1"># Store spiking</span>
+    <span class="n">signed_spikes</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
+        <span class="n">new_mem</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">gt</span><span class="p">(</span><span class="n">new_mem</span><span class="p">,</span> <span class="mi">0</span><span class="p">))],</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span><span class="p">)</span>
+    <span class="n">signed_spikes</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
+        <span class="n">signed_spikes</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">lt</span><span class="p">(</span><span class="n">signed_spikes</span><span class="p">,</span> <span class="mi">0</span><span class="p">))],</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span><span class="p">)</span>
+    <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span><span class="n">new_mem</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">new_mem</span><span class="p">)],</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span><span class="p">)</span>
+
+    <span class="c1"># Reset neurons</span>
+    <span class="n">new_and_reset_mem</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span><span class="n">new_mem</span><span class="p">[</span><span class="n">output_spikes</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()],</span> <span class="mf">0.</span><span class="p">)</span>
+
+    <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">mem</span><span class="p">,</span> <span class="n">new_and_reset_mem</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">signed_spikes</span></div>
 
 
 <div class="viewcode-block" id="linear_activation"><a class="viewcode-back" href="../../core.html#core.inisim.linear_activation">[docs]</a><span class="k">def</span> <span class="nf">linear_activation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Linear activation.&quot;&quot;&quot;</span>
 
     <span class="c1"># Destroy impulse if in refractory period</span>
-    <span class="n">masked_imp</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span> <span class="o">&gt;</span> <span class="n">time</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()],</span> <span class="mf">0.</span><span class="p">)</span>
+    <span class="n">masked_imp</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span> <span class="o">&gt;</span> <span class="n">time</span><span class="p">)],</span> <span class="mf">0.</span><span class="p">)</span>
+
     <span class="c1"># Add impulse</span>
     <span class="n">new_mem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">+</span> <span class="n">masked_imp</span>
+
     <span class="c1"># Store spiking</span>
-    <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">ge</span><span class="p">(</span><span class="n">new_mem</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span><span class="p">)</span>
-    <span class="c1"># At spike, reduce membrane potential by one instead of resetting to zero,</span>
-    <span class="c1"># so that no information stored in membrane potential is lost. This reduces</span>
-    <span class="c1"># the variance in the spikerate-activation correlation plot for activations</span>
-    <span class="c1"># greater than 0.5.</span>
-    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;reset&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Reset to zero&#39;</span><span class="p">:</span>
-        <span class="n">new_and_reset_mem</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
-            <span class="n">new_mem</span><span class="p">[</span><span class="n">output_spikes</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()],</span> <span class="mi">0</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;reset&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Reset by subtraction&#39;</span><span class="p">:</span>
-        <span class="n">new_and_reset_mem</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">inc_subtensor</span><span class="p">(</span>
-            <span class="n">new_mem</span><span class="p">[</span><span class="n">output_spikes</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()],</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
-            <span class="n">payloads</span><span class="p">,</span> <span class="n">payloads_sum</span> <span class="o">=</span> <span class="n">update_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_and_reset_mem</span><span class="p">,</span>
-                                                    <span class="n">output_spikes</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
-    <span class="c1"># Store refractory</span>
-    <span class="n">new_refractory</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span><span class="p">[</span><span class="n">output_spikes</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()],</span> <span class="n">time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_refrac</span><span class="p">)</span>
-    <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span><span class="p">,</span> <span class="n">new_refractory</span><span class="p">))</span>
+    <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">ge</span><span class="p">(</span><span class="n">new_mem</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span><span class="p">)</span>
+
+    <span class="n">spike_idxs</span> <span class="o">=</span> <span class="n">output_spikes</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;reset&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Reset by subtraction&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="bp">False</span><span class="p">:</span>  <span class="c1"># Experimental, turn off by default</span>
+            <span class="n">new_and_reset_mem</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span><span class="n">new_mem</span><span class="p">[</span><span class="n">spike_idxs</span><span class="p">],</span> <span class="mf">0.</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_and_reset_mem</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">inc_subtensor</span><span class="p">(</span><span class="n">new_mem</span><span class="p">[</span><span class="n">spike_idxs</span><span class="p">],</span>
+                                                <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># settings[&#39;reset&#39;] == &#39;Reset to zero&#39;:</span>
+        <span class="n">new_and_reset_mem</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span><span class="n">new_mem</span><span class="p">[</span><span class="n">spike_idxs</span><span class="p">],</span> <span class="mf">0.</span><span class="p">)</span>
+
     <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">mem</span><span class="p">,</span> <span class="n">new_and_reset_mem</span><span class="p">))</span>
+
     <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
+        <span class="n">residuals</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">inc_subtensor</span><span class="p">(</span><span class="n">new_mem</span><span class="p">[</span><span class="n">spike_idxs</span><span class="p">],</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span><span class="p">)</span>
+        <span class="n">payloads</span><span class="p">,</span> <span class="n">payloads_sum</span> <span class="o">=</span> <span class="n">update_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">residuals</span><span class="p">,</span> <span class="n">spike_idxs</span><span class="p">)</span>
         <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">payloads</span><span class="p">,</span> <span class="n">payloads</span><span class="p">))</span>
         <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">payloads_sum</span><span class="p">,</span> <span class="n">payloads_sum</span><span class="p">))</span>
+
     <span class="k">return</span> <span class="n">output_spikes</span></div>
 
 
@@ -279,44 +344,24 @@
     <span class="sd">&quot;&quot;&quot;Softmax activation.&quot;&quot;&quot;</span>
 
     <span class="c1"># Destroy impulse if in refractory period</span>
-    <span class="n">masked_imp</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span> <span class="o">&gt;</span> <span class="n">time</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()],</span> <span class="mf">0.</span><span class="p">)</span>
+    <span class="n">masked_imp</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span> <span class="o">&gt;</span> <span class="n">time</span><span class="p">)],</span> <span class="mf">0.</span><span class="p">)</span>
     <span class="c1"># Add impulse</span>
     <span class="n">new_mem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">+</span> <span class="n">masked_imp</span>
     <span class="c1"># Store spiking</span>
-    <span class="n">output_spikes</span><span class="p">,</span> <span class="n">new_and_reset_mem</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">ifelse</span><span class="o">.</span><span class="n">ifelse</span><span class="p">(</span>
-        <span class="n">T</span><span class="o">.</span><span class="n">le</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(),</span>
-             <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;softmax_clockrate&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">),</span>
-        <span class="n">trigger_spike</span><span class="p">(</span><span class="n">new_mem</span><span class="p">),</span> <span class="n">skip_spike</span><span class="p">(</span><span class="n">new_mem</span><span class="p">))</span>  <span class="c1"># Then and else condition</span>
-    <span class="c1"># Store refractory. In case of a spike we are resetting all neurons, even</span>
-    <span class="c1"># the ones that didn&#39;t spike. However, in the refractory period we only</span>
-    <span class="c1"># consider those that spiked. May have to change that...</span>
-    <span class="n">new_refractory</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span><span class="p">[</span><span class="n">output_spikes</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()],</span> <span class="n">time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_refrac</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
-        <span class="n">payloads</span><span class="p">,</span> <span class="n">payloads_sum</span> <span class="o">=</span> <span class="n">update_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_and_reset_mem</span><span class="p">,</span>
-                                                <span class="n">output_spikes</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
-        <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">payloads</span><span class="p">,</span> <span class="n">payloads</span><span class="p">))</span>
-        <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">payloads_sum</span><span class="p">,</span> <span class="n">payloads_sum</span><span class="p">))</span>
-
-    <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span><span class="p">,</span> <span class="n">new_refractory</span><span class="p">))</span>
+    <span class="n">spiking_samples</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">le</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">([</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">],</span> <span class="mi">1</span><span class="p">]),</span>
+                           <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;softmax_clockrate&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">settings</span><span class="p">[</span>
+                               <span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000.</span><span class="p">)</span>
+    <span class="n">spiking_neurons</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">spiking_samples</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">activ</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">new_mem</span><span class="p">)</span>
+    <span class="n">max_activ</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">activ</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="n">activ</span><span class="p">,</span> <span class="n">max_activ</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
+    <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
+        <span class="n">output_spikes</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="n">spiking_neurons</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()],</span> <span class="mf">0.</span><span class="p">)</span>
+    <span class="n">new_and_reset_mem</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span><span class="n">new_mem</span><span class="p">[</span><span class="n">spiking_neurons</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()],</span> <span class="mf">0.</span><span class="p">)</span>
     <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">mem</span><span class="p">,</span> <span class="n">new_and_reset_mem</span><span class="p">))</span>
+
     <span class="k">return</span> <span class="n">output_spikes</span></div>
-
-
-<div class="viewcode-block" id="trigger_spike"><a class="viewcode-back" href="../../core.html#core.inisim.trigger_spike">[docs]</a><span class="k">def</span> <span class="nf">trigger_spike</span><span class="p">(</span><span class="n">new_mem</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Trigger spike.&quot;&quot;&quot;</span>
-
-    <span class="n">activ</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">new_mem</span><span class="p">)</span>
-    <span class="n">max_activ</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">activ</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-    <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="n">activ</span><span class="p">,</span> <span class="n">max_activ</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">output_spikes</span><span class="p">,</span> <span class="n">T</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">new_mem</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="skip_spike"><a class="viewcode-back" href="../../core.html#core.inisim.skip_spike">[docs]</a><span class="k">def</span> <span class="nf">skip_spike</span><span class="p">(</span><span class="n">new_mem</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Skip spike.&quot;&quot;&quot;</span>
-
-    <span class="k">return</span> <span class="n">T</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">new_mem</span><span class="p">),</span> <span class="n">new_mem</span></div>
 
 
 <div class="viewcode-block" id="reset"><a class="viewcode-back" href="../../core.html#core.inisim.reset">[docs]</a><span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -324,32 +369,22 @@
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">:</span>
         <span class="n">reset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">mem</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">floatX</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">floatX</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">spiketrain</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">floatX</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">mem</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">float_x</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">float_x</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">spiketrain</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">float_x</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">float_x</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">total_spike_count</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">float_x</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">])))</span>
 
     <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">payloads</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">floatX</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">payloads_sum</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">floatX</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">payloads</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">float_x</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">payloads_sum</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">float_x</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
 
     <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;online_normalization&#39;</span><span class="p">]:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">floatX</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_spikerate</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;v_thresh&#39;</span><span class="p">])</span>
 
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;SpikeMaxPooling2D&quot;</span><span class="p">,</span> <span class="s2">&quot;SpikeConvolution2D&quot;</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;maxpool_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;avg_max&quot;</span> <span class="ow">and</span> \
-                <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;avg_spikerate&#39;</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">avg_spikerate</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
-                <span class="n">floatX</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
-        <span class="k">elif</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;maxpool_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;fir_max&quot;</span> <span class="ow">and</span> \
-                <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;fir_spikerate&#39;</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">fir_spikerate</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
-                <span class="n">floatX</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span>
-        <span class="k">elif</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;maxpool_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;exp_max&quot;</span> <span class="ow">and</span> \
-                <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;exp_spikerate&#39;</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">exp_spikerate</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
-                <span class="n">floatX</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span></div>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;spikerate&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spikerate</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">float_x</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)))</span></div>
 
 
 <div class="viewcode-block" id="get_input"><a class="viewcode-back" href="../../core.html#core.inisim.get_input">[docs]</a><span class="k">def</span> <span class="nf">get_input</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -362,7 +397,7 @@
             <span class="n">previous_output</span> <span class="o">=</span> \
                 <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">previous_output</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_shape</span><span class="p">)</span>
+        <span class="n">previous_output</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_shape</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">previous_output</span><span class="p">,</span> <span class="n">get_time</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">get_updates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
 
 
@@ -409,6 +444,8 @@
     <span class="n">layer</span><span class="o">.</span><span class="n">refrac_until</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
     <span class="n">layer</span><span class="o">.</span><span class="n">mem</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
     <span class="n">layer</span><span class="o">.</span><span class="n">spiketrain</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
+    <span class="n">layer</span><span class="o">.</span><span class="n">spikecounts</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
+    <span class="n">layer</span><span class="o">.</span><span class="n">total_spike_count</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">])</span>
     <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
         <span class="n">layer</span><span class="o">.</span><span class="n">payloads</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
         <span class="n">layer</span><span class="o">.</span><span class="n">payloads_sum</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
@@ -416,30 +453,24 @@
     <span class="n">layer</span><span class="o">.</span><span class="n">layer_type</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span>
 
     <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;online_normalization&#39;</span><span class="p">]:</span>
-        <span class="n">layer</span><span class="o">.</span><span class="n">spikecounts</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
-        <span class="n">layer</span><span class="o">.</span><span class="n">max_spikerate</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;float32&#39;</span><span class="p">))</span>
+        <span class="n">layer</span><span class="o">.</span><span class="n">max_spikerate</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">0.0</span><span class="p">],</span> <span class="s1">&#39;float32&#39;</span><span class="p">))</span>
 
     <span class="k">if</span> <span class="n">layer</span><span class="o">.</span><span class="n">layer_type</span> <span class="o">==</span> <span class="s2">&quot;SpikeMaxPooling2D&quot;</span><span class="p">:</span>
         <span class="n">prev_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;maxpool_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;avg_max&quot;</span><span class="p">:</span>
-            <span class="n">prev_layer</span><span class="o">.</span><span class="n">avg_spikerate</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;maxpool_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;fir_max&quot;</span><span class="p">:</span>
-            <span class="n">prev_layer</span><span class="o">.</span><span class="n">fir_spikerate</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;maxpool_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;exp_max&quot;</span><span class="p">:</span>
-            <span class="n">prev_layer</span><span class="o">.</span><span class="n">exp_spikerate</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
+        <span class="n">prev_layer</span><span class="o">.</span><span class="n">spikerate</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">get_weights</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">layer</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">layer</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span></div>
+        <span class="n">layer</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">layer</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span></div>
 
 
 <div class="viewcode-block" id="get_new_thresh"><a class="viewcode-back" href="../../core.html#core.inisim.get_new_thresh">[docs]</a><span class="k">def</span> <span class="nf">get_new_thresh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Get new threshhold.&quot;&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">theano</span><span class="o">.</span><span class="n">ifelse</span><span class="o">.</span><span class="n">ifelse</span><span class="p">(</span>
-        <span class="n">T</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="n">time</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">%</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;timestep_fraction&#39;</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span> <span class="o">*</span>
-        <span class="n">T</span><span class="o">.</span><span class="n">gt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_spikerate</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;diff_to_min_rate&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span> <span class="o">*</span>
-        <span class="n">T</span><span class="o">.</span><span class="n">gt</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_spikerate</span><span class="p">,</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="n">time</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">%</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;timestep_fraction&#39;</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span> <span class="o">*</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">gt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_spikerate</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;diff_to_min_rate&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span> <span class="o">*</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">gt</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_spikerate</span><span class="p">,</span>
              <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;diff_to_max_rate&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">),</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_spikerate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span><span class="p">)</span></div>
 
@@ -447,24 +478,22 @@
 <div class="viewcode-block" id="SpikeFlatten"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeFlatten">[docs]</a><span class="k">class</span> <span class="nc">SpikeFlatten</span><span class="p">(</span><span class="n">Flatten</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Spike flatten layer.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Init function.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Flatten</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updates</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">payloads</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">payloads_sum</span> <span class="o">=</span> <span class="bp">None</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
-
-<div class="viewcode-block" id="SpikeFlatten.get_output"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeFlatten.get_output">[docs]</a>    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="SpikeFlatten.get_output"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeFlatten.get_output">[docs]</a>    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get output.&quot;&quot;&quot;</span>
-
         <span class="c1"># Recurse</span>
         <span class="n">inp</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span> <span class="o">=</span> <span class="n">get_input</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="n">reshaped_inp</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
+        <span class="n">reshaped_inp</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
-            <span class="n">payloads</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">payloads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
-            <span class="n">payloads_sum</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">payloads_sum</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
+            <span class="n">payloads</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">payloads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
+            <span class="n">payloads_sum</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">payloads_sum</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_shape</span><span class="p">)</span>
             <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">payloads</span><span class="p">,</span> <span class="n">payloads</span><span class="p">))</span>
             <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">payloads_sum</span><span class="p">,</span> <span class="n">payloads_sum</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span>
@@ -472,23 +501,25 @@
 
 <div class="viewcode-block" id="SpikeFlatten.get_name"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeFlatten.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get class name.&quot;&quot;&quot;</span>
-
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span></div></div>
 
 
 <div class="viewcode-block" id="SpikeDense"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeDense">[docs]</a><span class="k">class</span> <span class="nc">SpikeDense</span><span class="p">(</span><span class="n">Dense</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Spike Dense layer.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Init function.&quot;&quot;&quot;</span>
+        <span class="c1"># Remove activation from kwargs before initializing superclass, in case</span>
+        <span class="c1"># we are using a custom activation function that Keras doesn&#39;t</span>
+        <span class="c1"># understand.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;activation&#39;</span><span class="p">))</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Dense</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">output_dim</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span>
+                                    <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_refrac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spiketrain</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_spike_count</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_spikerate</span> <span class="o">=</span> <span class="bp">None</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">output_dim</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
-
-<div class="viewcode-block" id="SpikeDense.get_output"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeDense.get_output">[docs]</a>    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="SpikeDense.get_output"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeDense.get_output">[docs]</a>    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get output.&quot;&quot;&quot;</span>
 
         <span class="c1"># Recurse</span>
@@ -496,91 +527,46 @@
         <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;online_normalization&#39;</span><span class="p">]:</span>
             <span class="c1"># Modify threshold if firing rate of layer too low</span>
             <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span><span class="p">,</span> <span class="n">get_new_thresh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">)))</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span> <span class="ow">and</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
-            <span class="n">prev_layer_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">payloads</span>
-            <span class="n">prev_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">output_shape</span>
-            <span class="n">error</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="n">prev_shape</span><span class="p">)</span>
-            <span class="n">idxs</span> <span class="o">=</span> <span class="p">(</span><span class="n">inp</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
-            <span class="n">error</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span><span class="n">error</span><span class="p">[</span><span class="n">idxs</span><span class="p">],</span> <span class="n">prev_layer_error</span><span class="p">[</span><span class="n">idxs</span><span class="p">])</span>
-            <span class="c1"># Get impulse</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">error</span><span class="p">,</span>
-                                                                   <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
-        <span class="c1"># Update payload</span>
+        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
+            <span class="c1"># Add payload from previous layer</span>
+            <span class="n">prev_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">inp</span> <span class="o">=</span> <span class="n">add_payloads</span><span class="p">(</span><span class="n">prev_layer</span><span class="p">,</span> <span class="n">inp</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
         <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">update_neurons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span>
-        <span class="k">return</span> <span class="n">T</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">output_spikes</span><span class="p">,</span> <span class="s1">&#39;float32&#39;</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">output_spikes</span><span class="p">,</span> <span class="s1">&#39;float32&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SpikeDense.get_name"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeDense.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get class name.&quot;&quot;&quot;</span>
-
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span></div></div>
-
-
-<div class="viewcode-block" id="pool_same_size"><a class="viewcode-back" href="../../core.html#core.inisim.pool_same_size">[docs]</a><span class="k">def</span> <span class="nf">pool_same_size</span><span class="p">(</span><span class="n">data_in</span><span class="p">,</span> <span class="n">patch_size</span><span class="p">,</span> <span class="n">ignore_border</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                   <span class="n">st</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)):</span>
-    <span class="sd">&quot;&quot;&quot;Max-pooling in same size.</span>
-
-<span class="sd">    The indices of maximum values are 1s, else are 0s.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    data_in : 4-D tensor.</span>
-<span class="sd">        input images. Max-pooling will be done over the 2 last dimensions.</span>
-<span class="sd">    patch_size : tuple</span>
-<span class="sd">        with length 2 (patch height, patch width)</span>
-<span class="sd">    ignore_border : bool</span>
-<span class="sd">        When True, (5,5) input with ds=(2,2) will generate a (2,2) output.</span>
-<span class="sd">        (3,3) otherwise.</span>
-<span class="sd">    st : tuple</span>
-<span class="sd">        Stride size, which is the number of shifts over rows/cols to get the</span>
-<span class="sd">        next pool region. If st is None, it is considered equal to ds</span>
-<span class="sd">        (no overlap on pooling regions).</span>
-<span class="sd">    padding : tuple</span>
-<span class="sd">        (pad_h, pad_w) pad zeros to extend beyond four borders of the</span>
-<span class="sd">        images, pad_h is the size of the top and bottom margins, and</span>
-<span class="sd">        pad_w is the size of the left and right margins.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">output</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">patch_size</span><span class="p">,</span> <span class="n">ignore_border</span><span class="o">=</span><span class="n">ignore_border</span><span class="p">,</span>
-                       <span class="n">st</span><span class="o">=</span><span class="n">st</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="n">padding</span><span class="p">)(</span><span class="n">data_in</span><span class="p">)</span>
-    <span class="n">outs</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">MaxPoolGrad</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">patch_size</span><span class="p">,</span> <span class="n">ignore_border</span><span class="o">=</span><span class="n">ignore_border</span><span class="p">,</span>
-                            <span class="n">st</span><span class="o">=</span><span class="n">st</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="n">padding</span><span class="p">)(</span><span class="n">data_in</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span>
-                                                    <span class="n">output</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.</span>
-    <span class="k">return</span> <span class="n">T</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">outs</span><span class="p">,</span> <span class="s1">&#39;float32&#39;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="SpikeConvolution2D"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeConvolution2D">[docs]</a><span class="k">class</span> <span class="nc">SpikeConvolution2D</span><span class="p">(</span><span class="n">Convolution2D</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Spike 2D Convolution.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nb_filter</span><span class="p">,</span> <span class="n">nb_row</span><span class="p">,</span> <span class="n">nb_col</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                 <span class="n">border_mode</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">,</span> <span class="n">subsample</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                 <span class="n">filter_flip</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                 <span class="n">border_mode</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">,</span> <span class="n">subsample</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">filter_flip</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Init function.&quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">nb_filter</span><span class="p">,</span> <span class="n">nb_row</span><span class="p">,</span> <span class="n">nb_col</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span>
-                         <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">,</span> <span class="n">subsample</span><span class="o">=</span><span class="n">subsample</span><span class="p">,</span>
-                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;activation&#39;</span><span class="p">))</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Convolution2D</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
+            <span class="n">nb_filter</span><span class="o">=</span><span class="n">nb_filter</span><span class="p">,</span> <span class="n">nb_row</span><span class="o">=</span><span class="n">nb_row</span><span class="p">,</span> <span class="n">nb_col</span><span class="o">=</span><span class="n">nb_col</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span>
+            <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">,</span> <span class="n">subsample</span><span class="o">=</span><span class="n">subsample</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_flip</span> <span class="o">=</span> <span class="n">filter_flip</span>
-        <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_refrac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spiketrain</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_spike_count</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_spikerate</span> <span class="o">=</span> <span class="bp">None</span>
 
-<div class="viewcode-block" id="SpikeConvolution2D.get_output"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeConvolution2D.get_output">[docs]</a>    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="SpikeConvolution2D.get_output"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeConvolution2D.get_output">[docs]</a>    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get output.&quot;&quot;&quot;</span>
 
         <span class="c1"># Recurse</span>
         <span class="n">inp</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span> <span class="o">=</span> <span class="n">get_input</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span> <span class="ow">and</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
-            <span class="c1"># Add error from previous layer</span>
-            <span class="n">prev_layer_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">payloads</span>
-            <span class="k">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;error to layer conv&quot;</span><span class="p">,</span> <span class="n">prev_layer_error</span><span class="p">)</span>
-
-            <span class="n">prev_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">output_shape</span>
-            <span class="n">error</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="n">prev_shape</span><span class="p">)</span>
-            <span class="n">idxs</span> <span class="o">=</span> <span class="p">(</span><span class="n">inp</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
-            <span class="n">error</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span><span class="n">error</span><span class="p">[</span><span class="n">idxs</span><span class="p">],</span> <span class="n">prev_layer_error</span><span class="p">[</span><span class="n">idxs</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
+            <span class="c1"># Add payload from previous layer</span>
+            <span class="n">prev_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">inp</span> <span class="o">=</span> <span class="n">add_payloads</span><span class="p">(</span><span class="n">prev_layer</span><span class="p">,</span> <span class="n">inp</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;online_normalization&#39;</span><span class="p">]:</span>
             <span class="c1"># Modify threshold if firing rate of layer too low</span>
@@ -591,54 +577,32 @@
         <span class="k">if</span> <span class="n">on_gpu</span><span class="p">()</span> <span class="ow">and</span> <span class="n">dnn</span><span class="o">.</span><span class="n">dnn_available</span><span class="p">():</span>
             <span class="n">conv_mode</span> <span class="o">=</span> <span class="s1">&#39;conv&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_flip</span> <span class="k">else</span> <span class="s1">&#39;cross&#39;</span>
             <span class="k">if</span> <span class="n">border_mode</span> <span class="o">==</span> <span class="s1">&#39;same&#39;</span><span class="p">:</span>
-                <span class="k">assert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subsample</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="k">assert</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subsample</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
                 <span class="n">pad_x</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_row</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsample</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">//</span> <span class="mi">2</span>
                 <span class="n">pad_y</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_col</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsample</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">//</span> <span class="mi">2</span>
                 <span class="n">conv_out</span> <span class="o">=</span> <span class="n">dnn</span><span class="o">.</span><span class="n">dnn_conv</span><span class="p">(</span><span class="n">img</span><span class="o">=</span><span class="n">inp</span><span class="p">,</span> <span class="n">kerns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span>
                                         <span class="n">border_mode</span><span class="o">=</span><span class="p">(</span><span class="n">pad_x</span><span class="p">,</span> <span class="n">pad_y</span><span class="p">),</span>
                                         <span class="n">conv_mode</span><span class="o">=</span><span class="n">conv_mode</span><span class="p">)</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span> \
-                        <span class="ow">and</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
-                    <span class="n">error_conv</span> <span class="o">=</span> <span class="n">dnn</span><span class="o">.</span><span class="n">dnn_conv</span><span class="p">(</span><span class="n">img</span><span class="o">=</span><span class="n">error</span><span class="p">,</span> <span class="n">kerns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span>
-                                              <span class="n">border_mode</span><span class="o">=</span><span class="p">(</span><span class="n">pad_x</span><span class="p">,</span> <span class="n">pad_y</span><span class="p">),</span>
-                                              <span class="n">conv_mode</span><span class="o">=</span><span class="n">conv_mode</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">conv_out</span> <span class="o">=</span> <span class="n">dnn</span><span class="o">.</span><span class="n">dnn_conv</span><span class="p">(</span><span class="n">img</span><span class="o">=</span><span class="n">inp</span><span class="p">,</span> <span class="n">kerns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span>
                                         <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">,</span>
                                         <span class="n">subsample</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">subsample</span><span class="p">,</span>
                                         <span class="n">conv_mode</span><span class="o">=</span><span class="n">conv_mode</span><span class="p">)</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span> \
-                        <span class="ow">and</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
-                    <span class="n">error_conv</span> <span class="o">=</span> <span class="n">dnn</span><span class="o">.</span><span class="n">dnn_conv</span><span class="p">(</span><span class="n">img</span><span class="o">=</span><span class="n">error</span><span class="p">,</span> <span class="n">kerns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span>
-                                              <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">,</span>
-                                              <span class="n">subsample</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">subsample</span><span class="p">,</span>
-                                              <span class="n">conv_mode</span><span class="o">=</span><span class="n">conv_mode</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">border_mode</span> <span class="o">==</span> <span class="s1">&#39;same&#39;</span><span class="p">:</span>
                 <span class="n">border_mode</span> <span class="o">=</span> <span class="s1">&#39;full&#39;</span>
-            <span class="n">conv_out</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">conv2d</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">,</span>
+            <span class="n">conv_out</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">conv2d</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">,</span>
                                      <span class="n">subsample</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">subsample</span><span class="p">,</span>
                                      <span class="n">filter_flip</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_flip</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span> <span class="ow">and</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
-                <span class="n">error_conv</span> <span class="o">=</span> <span class="n">dnn</span><span class="o">.</span><span class="n">dnn_conv</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">kerns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span>
-                                          <span class="n">border_mode</span><span class="o">=</span><span class="p">(</span><span class="n">pad_x</span><span class="p">,</span> <span class="n">pad_y</span><span class="p">),</span>
-                                          <span class="n">conv_mode</span><span class="o">=</span><span class="n">conv_mode</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">border_mode</span> <span class="o">==</span> <span class="s1">&#39;same&#39;</span><span class="p">:</span>
                 <span class="n">shift_x</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_row</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
                 <span class="n">shift_y</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_col</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
                 <span class="n">conv_out</span> <span class="o">=</span> <span class="n">conv_out</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">shift_x</span><span class="p">:</span><span class="n">inp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">shift_x</span><span class="p">,</span>
                                     <span class="n">shift_y</span><span class="p">:</span><span class="n">inp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="n">shift_y</span><span class="p">]</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span> <span class="ow">and</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">conv_out</span> <span class="o">+</span> <span class="n">error_conv</span> <span class="o">+</span> <span class="n">K</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
-                                                 <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span>
-                                                 <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_filter</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-                                                 <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">conv_out</span> <span class="o">+</span> <span class="n">K</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span>
-                                                <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_filter</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">conv_out</span> <span class="o">+</span> <span class="n">k</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_filter</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
         <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">update_neurons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span>
-        <span class="k">return</span> <span class="n">T</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">output_spikes</span><span class="p">,</span> <span class="s1">&#39;float32&#39;</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">output_spikes</span><span class="p">,</span> <span class="s1">&#39;float32&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SpikeConvolution2D.get_name"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeConvolution2D.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get class name.&quot;&quot;&quot;</span>
@@ -647,44 +611,36 @@
 
 
 <div class="viewcode-block" id="SpikeAveragePooling2D"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeAveragePooling2D">[docs]</a><span class="k">class</span> <span class="nc">SpikeAveragePooling2D</span><span class="p">(</span><span class="n">AveragePooling2D</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Average Pooling.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pool_size</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">strides</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">border_mode</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">,</span>
-                 <span class="n">label</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Init average pooling.&quot;&quot;&quot;</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">pool_size</span><span class="o">=</span><span class="n">pool_size</span><span class="p">,</span> <span class="n">strides</span><span class="o">=</span><span class="n">strides</span><span class="p">,</span>
-                         <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">label</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AveragePooling2D</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
+            <span class="n">pool_size</span><span class="o">=</span><span class="n">pool_size</span><span class="p">,</span> <span class="n">strides</span><span class="o">=</span><span class="n">strides</span><span class="p">,</span> <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_refrac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spiketrain</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_spike_count</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span> <span class="o">=</span> <span class="bp">None</span>
 
-<div class="viewcode-block" id="SpikeAveragePooling2D.get_output"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeAveragePooling2D.get_output">[docs]</a>    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="SpikeAveragePooling2D.get_output"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeAveragePooling2D.get_output">[docs]</a>    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get output.&quot;&quot;&quot;</span>
 
         <span class="c1"># Recurse</span>
         <span class="n">inp</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span> <span class="o">=</span> <span class="n">get_input</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span> <span class="ow">and</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
-            <span class="n">prev_layer_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">payloads</span>
-            <span class="n">prev_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">output_shape</span>
-            <span class="n">error</span> <span class="o">=</span> <span class="n">shared_zeros</span><span class="p">(</span><span class="n">prev_shape</span><span class="p">)</span>
-            <span class="n">idxs</span> <span class="o">=</span> <span class="p">(</span><span class="n">inp</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
-            <span class="n">error</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span><span class="n">error</span><span class="p">[</span><span class="n">idxs</span><span class="p">],</span> <span class="n">prev_layer_error</span><span class="p">[</span><span class="n">idxs</span><span class="p">])</span>
-            <span class="n">impulse</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">pool2d</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">strides</span><span class="p">,</span>
-                               <span class="bp">self</span><span class="o">.</span><span class="n">border_mode</span><span class="p">,</span> <span class="n">pool_mode</span><span class="o">=</span><span class="s1">&#39;avg&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
+            <span class="c1"># Add payload from previous layer</span>
+            <span class="n">prev_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">inp</span> <span class="o">=</span> <span class="n">add_payloads</span><span class="p">(</span><span class="n">prev_layer</span><span class="p">,</span> <span class="n">inp</span><span class="p">)</span>
 
-            <span class="n">error_pool</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">pool2d</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">strides</span><span class="p">,</span>
-                                  <span class="bp">self</span><span class="o">.</span><span class="n">border_mode</span><span class="p">,</span> <span class="n">pool_mode</span><span class="o">=</span><span class="s1">&#39;avg&#39;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">impulse</span> <span class="o">+</span> <span class="n">error_pool</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">pool2d</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">strides</span><span class="p">,</span>
-                                    <span class="bp">self</span><span class="o">.</span><span class="n">border_mode</span><span class="p">,</span> <span class="n">pool_mode</span><span class="o">=</span><span class="s1">&#39;avg&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">pool2d</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">strides</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">border_mode</span><span class="p">,</span> <span class="n">pool_mode</span><span class="o">=</span><span class="s1">&#39;avg&#39;</span><span class="p">)</span>
 
         <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">update_neurons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span>
-        <span class="k">return</span> <span class="n">T</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">output_spikes</span><span class="p">,</span> <span class="s1">&#39;float32&#39;</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">output_spikes</span><span class="p">,</span> <span class="s1">&#39;float32&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SpikeAveragePooling2D.get_name"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeAveragePooling2D.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get class name.&quot;&quot;&quot;</span>
@@ -696,67 +652,99 @@
     <span class="sd">&quot;&quot;&quot;Max Pooling.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pool_size</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">strides</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">border_mode</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">,</span>
-                 <span class="n">label</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">pool_type</span><span class="o">=</span><span class="s2">&quot;fir_max&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Init function.</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Init function.&quot;&quot;&quot;</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        pool_type : string</span>
-<span class="sd">            avg_max : max depending on moving average spike rate.</span>
-<span class="sd">            fir_max : max depending on accumulated absolute spike rate.</span>
-<span class="sd">            exp_max : max depending on first arrived spike.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_border</span> <span class="o">=</span> <span class="bp">True</span> <span class="k">if</span> <span class="n">border_mode</span> <span class="o">==</span> <span class="s2">&quot;valid&quot;</span> <span class="k">else</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_border</span> <span class="o">=</span> <span class="bp">True</span> <span class="k">if</span> <span class="n">border_mode</span> <span class="o">==</span> <span class="s1">&#39;valid&#39;</span> <span class="k">else</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="s1">&#39;binary&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;maxpool_type&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">activation_str</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;maxpool_type&#39;</span><span class="p">]</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MaxPooling2D</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">pool_size</span><span class="o">=</span><span class="n">pool_size</span><span class="p">,</span> <span class="n">strides</span><span class="o">=</span><span class="n">strides</span><span class="p">,</span>
+                                           <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_refrac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spiketrain</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_spike_count</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">refrac_until</span> <span class="o">=</span> <span class="bp">None</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">pool_size</span><span class="o">=</span><span class="n">pool_size</span><span class="p">,</span> <span class="n">strides</span><span class="o">=</span><span class="n">strides</span><span class="p">,</span>
-                         <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">label</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pool_type</span> <span class="o">=</span> <span class="n">pool_type</span>
-
-<div class="viewcode-block" id="SpikeMaxPooling2D.get_output"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeMaxPooling2D.get_output">[docs]</a>    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="SpikeMaxPooling2D.get_output"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeMaxPooling2D.get_output">[docs]</a>    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get output.&quot;&quot;&quot;</span>
 
         <span class="c1"># Recurse</span>
         <span class="n">inp</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span> <span class="o">=</span> <span class="n">get_input</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_type</span> <span class="o">==</span> <span class="s2">&quot;avg_max&quot;</span><span class="p">:</span>
-            <span class="n">spikerate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">avg_spikerate</span> \
-                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span> \
-                        <span class="k">else</span> <span class="n">K</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_shape</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_type</span> <span class="o">==</span> <span class="s2">&quot;fir_max&quot;</span><span class="p">:</span>
-            <span class="n">spikerate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">fir_spikerate</span> \
-                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span> \
-                        <span class="k">else</span> <span class="n">K</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_shape</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_type</span> <span class="o">==</span> <span class="s2">&quot;exp_max&quot;</span><span class="p">:</span>
-            <span class="n">spikerate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">exp_spikerate</span> \
-                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span> \
-                        <span class="k">else</span> <span class="n">K</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
+            <span class="c1"># Add payload from previous layer</span>
+            <span class="n">prev_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">inp</span> <span class="o">=</span> <span class="n">add_payloads</span><span class="p">(</span><span class="n">prev_layer</span><span class="p">,</span> <span class="n">inp</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;avg_max&quot;</span><span class="p">,</span> <span class="s2">&quot;fir_max&quot;</span><span class="p">,</span> <span class="s2">&quot;exp_max&quot;</span><span class="p">]:</span>
-            <span class="n">max_idx</span> <span class="o">=</span> <span class="n">pool_same_size</span><span class="p">(</span><span class="n">spikerate</span><span class="p">,</span>
-                                     <span class="n">patch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">,</span>
+        <span class="k">if</span> <span class="s1">&#39;binary&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;maxpool_type&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">pool2d</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">strides</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">border_mode</span><span class="p">,</span> <span class="n">pool_mode</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;maxpool_type&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;avg_max&quot;</span><span class="p">,</span> <span class="s2">&quot;fir_max&quot;</span><span class="p">,</span> <span class="s2">&quot;exp_max&quot;</span><span class="p">]:</span>
+            <span class="n">spikerate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">spikerate</span> \
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inbound_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inbound_layers</span> \
+                <span class="k">else</span> <span class="n">k</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_shape</span><span class="p">)</span>
+            <span class="n">max_idx</span> <span class="o">=</span> <span class="n">pool_same_size</span><span class="p">(</span><span class="n">spikerate</span><span class="p">,</span> <span class="n">patch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">,</span>
                                      <span class="n">ignore_border</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_border</span><span class="p">,</span>
                                      <span class="n">st</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">strides</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">pool2d</span><span class="p">(</span><span class="n">inp</span><span class="o">*</span><span class="n">max_idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">strides</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">pool2d</span><span class="p">(</span><span class="n">inp</span> <span class="o">*</span> <span class="n">max_idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">strides</span><span class="p">,</span>
                                     <span class="bp">self</span><span class="o">.</span><span class="n">border_mode</span><span class="p">,</span> <span class="n">pool_mode</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Wrong max pooling type, &quot;</span>
-                  <span class="s2">&quot;choose Average Pooling automatically&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">pool2d</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">strides</span><span class="p">,</span>
+                  <span class="s2">&quot;falling back on Average Pooling instead.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">pool2d</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">strides</span><span class="p">,</span>
                                     <span class="bp">self</span><span class="o">.</span><span class="n">border_mode</span><span class="p">,</span> <span class="n">pool_mode</span><span class="o">=</span><span class="s1">&#39;avg&#39;</span><span class="p">)</span>
 
         <span class="n">output_spikes</span> <span class="o">=</span> <span class="n">update_neurons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span>
-        <span class="k">return</span> <span class="n">T</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">output_spikes</span><span class="p">,</span> <span class="s1">&#39;float32&#39;</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">output_spikes</span><span class="p">,</span> <span class="s1">&#39;float32&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SpikeMaxPooling2D.get_name"><a class="viewcode-back" href="../../core.html#core.inisim.SpikeMaxPooling2D.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get class name.&quot;&quot;&quot;</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span></div></div>
+
+
+<div class="viewcode-block" id="pool_same_size"><a class="viewcode-back" href="../../core.html#core.inisim.pool_same_size">[docs]</a><span class="k">def</span> <span class="nf">pool_same_size</span><span class="p">(</span><span class="n">data_in</span><span class="p">,</span> <span class="n">patch_size</span><span class="p">,</span> <span class="n">ignore_border</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">st</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                   <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)):</span>
+    <span class="sd">&quot;&quot;&quot;Max-pooling in same size.</span>
+
+<span class="sd">    The indices of maximum values are 1s, else are 0s.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    data_in: 4-D tensor.</span>
+<span class="sd">        input images. Max-pooling will be done over the 2 last dimensions.</span>
+<span class="sd">    patch_size: tuple</span>
+<span class="sd">        with length 2 (patch height, patch width)</span>
+<span class="sd">    ignore_border: bool</span>
+<span class="sd">        When True, (5,5) input with ds=(2,2) will generate a (2,2) output.</span>
+<span class="sd">        (3,3) otherwise.</span>
+<span class="sd">    st: tuple</span>
+<span class="sd">        Stride size, which is the number of shifts over rows/cols to get the</span>
+<span class="sd">        next pool region. If st is None, it is considered equal to ds</span>
+<span class="sd">        (no overlap on pooling regions).</span>
+<span class="sd">    padding: tuple</span>
+<span class="sd">        (pad_h, pad_w) pad zeros to extend beyond four borders of the</span>
+<span class="sd">        images, pad_h is the size of the top and bottom margins, and</span>
+<span class="sd">        pad_w is the size of the left and right margins.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">output</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">patch_size</span><span class="p">,</span> <span class="n">ignore_border</span><span class="o">=</span><span class="n">ignore_border</span><span class="p">,</span>
+                       <span class="n">st</span><span class="o">=</span><span class="n">st</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="n">padding</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;max&quot;</span><span class="p">)(</span><span class="n">data_in</span><span class="p">)</span>
+    <span class="n">outs</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">MaxPoolGrad</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">patch_size</span><span class="p">,</span> <span class="n">ignore_border</span><span class="o">=</span><span class="n">ignore_border</span><span class="p">,</span>
+                            <span class="n">st</span><span class="o">=</span><span class="n">st</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="n">padding</span><span class="p">)(</span><span class="n">data_in</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span>
+                                                    <span class="n">output</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.</span>
+    <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">outs</span><span class="p">,</span> <span class="s1">&#39;float32&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="add_payloads"><a class="viewcode-back" href="../../core.html#core.inisim.add_payloads">[docs]</a><span class="k">def</span> <span class="nf">add_payloads</span><span class="p">(</span><span class="n">prev_layer</span><span class="p">,</span> <span class="n">input_spikes</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get payloads from previous layer.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Get only payloads of those pre-synaptic neurons that spiked</span>
+    <span class="n">payloads</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span>
+        <span class="n">prev_layer</span><span class="o">.</span><span class="n">payloads</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="n">input_spikes</span><span class="p">,</span> <span class="mf">0.</span><span class="p">))],</span> <span class="mf">0.</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Using spikes with payloads from layer {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prev_layer</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">input_spikes</span><span class="p">,</span> <span class="n">payloads</span><span class="p">)</span></div>
 
 
 <span class="n">custom_layers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;SpikeFlatten&#39;</span><span class="p">:</span> <span class="n">SpikeFlatten</span><span class="p">,</span>
@@ -776,7 +764,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 29, 2016.
+      Last updated on Nov 09, 2016.
 
     </p>
   </div>

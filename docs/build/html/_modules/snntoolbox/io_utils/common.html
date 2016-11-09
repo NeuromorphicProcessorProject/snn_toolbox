@@ -84,6 +84,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../configure_toolbox.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../modules.html">Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../todo.html">Todo</a></li>
 </ul>
 
             
@@ -147,17 +148,14 @@
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
 <span class="kn">from</span> <span class="nn">snntoolbox.config</span> <span class="kn">import</span> <span class="n">settings</span>
-
-<span class="n">standard_library</span><span class="o">.</span><span class="n">install_aliases</span><span class="p">()</span>
 
 <span class="n">standard_library</span><span class="o">.</span><span class="n">install_aliases</span><span class="p">()</span>
 
 
 <div class="viewcode-block" id="load_parameters"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.common.load_parameters">[docs]</a><span class="k">def</span> <span class="nf">load_parameters</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Load all layer parameters from an HDF5 file.&quot;&quot;&quot;</span>
-
-    <span class="kn">import</span> <span class="nn">h5py</span>
 
     <span class="n">f</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
 
@@ -168,6 +166,15 @@
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">params</span></div>
+
+
+<div class="viewcode-block" id="save_parameters"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.common.save_parameters">[docs]</a><span class="k">def</span> <span class="nf">save_parameters</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">filepath</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Save all layer parameters to an HDF5 file.&quot;&quot;&quot;</span>
+
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="s1">&#39;0&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;param_&#39;</span><span class="o">+</span><span class="n">j</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">p</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="to_categorical"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.common.to_categorical">[docs]</a><span class="k">def</span> <span class="nf">to_categorical</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">nb_classes</span><span class="p">):</span>
@@ -336,7 +343,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Aug 29, 2016.
+      Last updated on Nov 09, 2016.
 
     </p>
   </div>
