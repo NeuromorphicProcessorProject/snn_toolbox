@@ -19,24 +19,24 @@ Created on Mon Apr 11 10:25:53 2016
 
 from __future__ import with_statement
 
+import json
 import os
 import sys
-import webbrowser
-import json
 import threading
+import webbrowser
 from textwrap import dedent
+
+import matplotlib.gridspec as gridspec
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+import snntoolbox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-import matplotlib.gridspec as gridspec
-
-import snntoolbox
-from snntoolbox.config import settings, pyNN_settings, update_setup
 from snntoolbox.config import model_libs, maxpool_types
+from snntoolbox.config import settings, pyNN_settings, update_setup
 from snntoolbox.config import simulators, simulators_pyNN
-from snntoolbox.gui.tooltip import ToolTip
 from snntoolbox.core.pipeline import test_full
+from snntoolbox.gui.tooltip import ToolTip
 
 if sys.version_info[0] < 3:
     import Tkinter as tk
@@ -50,14 +50,14 @@ else:
     from queue import Queue
 
 
-class SNNToolboxGUI():
+class SNNToolboxGUI:
     """Main Class of SNN Toolbox."""
 
     def __init__(self, root):
         """Init method of SNNToolboxGUI."""
         self.initialized = False
         self.root = root
-        self.default_path_to_pref = os.path.join(snntoolbox._dir,
+        self.default_path_to_pref = os.path.join(snntoolbox.dir,
                                                  'preferences')
         self.define_style()
         self.declare_parameter_vars()
@@ -70,7 +70,7 @@ class SNNToolboxGUI():
         self.tools_widgets()
         self.graph_widgets()
         self.top_level_menu()
-        self.toggle_state_pyNN(self.settings['simulator'].get())
+        self.toggle_state_pynn(self.settings['simulator'].get())
         self.toggle_poisson_input_state()
         self.initialized = True
 
@@ -78,12 +78,12 @@ class SNNToolboxGUI():
         """Define apperance style."""
         self.padx = 10
         self.pady = 5
-        fontFamily = 'clearlyu devagari'
-        self.header_font = (fontFamily, '11', 'bold')
-        font.nametofont('TkDefaultFont').configure(family=fontFamily, size=11)
-        font.nametofont('TkMenuFont').configure(family=fontFamily, size=11,
+        font_family = 'clearlyu devagari'
+        self.header_font = (font_family, '11', 'bold')
+        font.nametofont('TkDefaultFont').configure(family=font_family, size=11)
+        font.nametofont('TkMenuFont').configure(family=font_family, size=11,
                                                 weight=font.BOLD)
-        font.nametofont('TkTextFont').configure(family=fontFamily, size=11)
+        font.nametofont('TkTextFont').configure(family=font_family, size=11)
         self.kwargs = {'fill': 'both', 'expand': True,
                        'padx': self.padx, 'pady': self.pady}
 
@@ -118,7 +118,7 @@ class SNNToolboxGUI():
               include in your experiment.""")
         ToolTip(self.globalparams_frame, text=tip, wraplength=750, delay=1499)
 
-        # Dataset path
+        # Data-set path
         dataset_frame = tk.Frame(self.globalparams_frame, bg='white')
         dataset_frame.pack(**self.kwargs)
         tk.Label(dataset_frame, text="Dataset", bg='white').pack(
@@ -132,10 +132,10 @@ class SNNToolboxGUI():
             validatecommand=(dataset_frame.register(self.check_dataset_path),
                              '%P'))
         self.dataset_entry.pack(fill='both', expand=True, side='left')
-        scrollX = tk.Scrollbar(dataset_frame, orient=tk.HORIZONTAL,
-                               command=self.__scrollHandler)
-        scrollX.pack(fill='x', expand=True, side='right')
-        self.dataset_entry['xscrollcommand'] = scrollX.set
+        scroll_x = tk.Scrollbar(dataset_frame, orient=tk.HORIZONTAL,
+                                command=self.__scroll_handler)
+        scroll_x.pack(fill='x', expand=True, side='right')
+        self.dataset_entry['xscrollcommand'] = scroll_x.set
         tip = dedent("""\
             Select a directory where the toolbox will find the samples to test.
             Two input formats are supported:
@@ -165,16 +165,16 @@ class SNNToolboxGUI():
             dataset for use in the toolbox.""")
         ToolTip(dataset_frame, text=tip, wraplength=750)
 
-        # Dataset format
+        # Data-set format
         format_frame = tk.Frame(self.globalparams_frame, bg='white')
         format_frame.pack(**self.kwargs)
         tk.Radiobutton(format_frame, variable=self.settings['dataset_format'],
                        text='.npz', value='npz', bg='white').pack(
-                       fill='both', side='left', expand=True)
+            fill='both', side='left', expand=True)
         tk.Radiobutton(format_frame, variable=self.settings['dataset_format'],
                        text='.jpg',
                        value='jpg', bg='white').pack(
-                       fill='both', side='right', expand=True)
+            fill='both', side='right', expand=True)
         tip = dedent("""\
             Select a directory where the toolbox will find the samples to test.
             Two input formats are supported:
@@ -243,10 +243,10 @@ class SNNToolboxGUI():
             validate='focusout', bg='white',
             validatecommand=(path_frame.register(self.check_path), '%P'))
         self.path_entry.pack(fill='both', expand=True, side='left')
-        scrollX2 = tk.Scrollbar(path_frame, orient=tk.HORIZONTAL,
-                                command=self.__scrollHandler)
-        scrollX2.pack(fill='x', expand=True, side='bottom')
-        self.path_entry['xscrollcommand'] = scrollX2.set
+        scroll_x2 = tk.Scrollbar(path_frame, orient=tk.HORIZONTAL,
+                                 command=self.__scroll_handler)
+        scroll_x2.pack(fill='x', expand=True, side='bottom')
+        self.path_entry['xscrollcommand'] = scroll_x2.set
         tip = dedent("""\
               Specify the working directory. There, the toolbox will look for
               ANN models to convert or SNN models to test, load the parameters
@@ -341,38 +341,38 @@ class SNNToolboxGUI():
         ToolTip(v_rest_frame, text=tip, wraplength=750)
 
         # e_rev_E
-        e_rev_E_frame = tk.Frame(self.cellparams_frame, bg='white')
-        e_rev_E_frame.pack(**self.kwargs)
-        self.e_rev_E_label = tk.Label(e_rev_E_frame, text="e_rev_E",
+        e_rev_exc_frame = tk.Frame(self.cellparams_frame, bg='white')
+        e_rev_exc_frame.pack(**self.kwargs)
+        self.e_rev_E_label = tk.Label(e_rev_exc_frame, text="e_rev_E",
                                       state=self.settings['state_pyNN'].get(),
                                       bg='white')
         self.e_rev_E_label.pack(fill='both', expand=True)
         self.e_rev_E_sb = tk.Spinbox(
-            e_rev_E_frame, disabledbackground='#eee', width=10,
+            e_rev_exc_frame, disabledbackground='#eee', width=10,
             textvariable=self.settings['e_rev_E'], from_=-1e-3, to_=1e3,
             increment=0.1, state=self.settings['state_pyNN'].get())
         self.e_rev_E_sb.pack(fill='y', expand=True, ipady=3)
         tip = dedent("""\
               Reversal potential for excitatory input in mV.
               Only relevant in pyNN-simulators.""")
-        ToolTip(e_rev_E_frame, text=tip, wraplength=750)
+        ToolTip(e_rev_exc_frame, text=tip, wraplength=750)
 
         # e_rev_I
-        e_rev_I_frame = tk.Frame(self.cellparams_frame, bg='white')
-        e_rev_I_frame.pack(**self.kwargs)
-        self.e_rev_I_label = tk.Label(e_rev_I_frame, text="e_rev_I",
+        e_rev_inh_frame = tk.Frame(self.cellparams_frame, bg='white')
+        e_rev_inh_frame.pack(**self.kwargs)
+        self.e_rev_I_label = tk.Label(e_rev_inh_frame, text="e_rev_I",
                                       state=self.settings['state_pyNN'].get(),
                                       bg='white')
         self.e_rev_I_label.pack(fill='both', expand=True)
         self.e_rev_I_sb = tk.Spinbox(
-            e_rev_I_frame, disabledbackground='#eee', width=10,
+            e_rev_inh_frame, disabledbackground='#eee', width=10,
             textvariable=self.settings['e_rev_I'], from_=-1e3, to_=1e3,
             increment=0.1, state=self.settings['state_pyNN'].get())
         self.e_rev_I_sb.pack(fill='y', expand=True, ipady=3)
         tip = dedent("""\
               Reversal potential for inhibitory input in mV.
               Only relevant in pyNN-simulators.""")
-        ToolTip(e_rev_I_frame, text=tip, wraplength=750)
+        ToolTip(e_rev_inh_frame, text=tip, wraplength=750)
 
         # i_offset
         i_offset_frame = tk.Frame(self.cellparams_frame, bg='white')
@@ -396,7 +396,7 @@ class SNNToolboxGUI():
         cm_frame = tk.Frame(self.cellparams_frame, bg='white')
         cm_frame.pack(**self.kwargs)
         self.cm_label = tk.Label(cm_frame, text="C_mem", bg='white',
-                                 state=self.settings['state_pyNN'].get(),)
+                                 state=self.settings['state_pyNN'].get(), )
         self.cm_label.pack(fill='both', expand=True)
         self.cm_sb = tk.Spinbox(cm_frame, textvariable=self.settings['cm'],
                                 from_=1e-3, to_=1e3, increment=1e-3, width=10,
@@ -425,13 +425,13 @@ class SNNToolboxGUI():
         ToolTip(tau_m_frame, text=tip, wraplength=750)
 
         # tau_syn_E
-        tau_syn_E_frame = tk.Frame(self.cellparams_frame, bg='white')
-        tau_syn_E_frame.pack(**self.kwargs)
+        tau_syn_exc_frame = tk.Frame(self.cellparams_frame, bg='white')
+        tau_syn_exc_frame.pack(**self.kwargs)
         self.tau_syn_E_label = tk.Label(
-            tau_syn_E_frame, text="tau_syn_E", bg='white',
+            tau_syn_exc_frame, text="tau_syn_E", bg='white',
             state=self.settings['state_pyNN'].get())
         self.tau_syn_E_label.pack(fill='both', expand=True)
-        self.tau_syn_E_sb = tk.Spinbox(tau_syn_E_frame, width=10,
+        self.tau_syn_E_sb = tk.Spinbox(tau_syn_exc_frame, width=10,
                                        textvariable=self.settings['tau_syn_E'],
                                        from_=1e-3, to_=1e3, increment=1e-3,
                                        state=self.settings['state_pyNN'].get(),
@@ -441,16 +441,16 @@ class SNNToolboxGUI():
               Decay time of the excitatory synaptic conductance in
               milliseconds.
               Only relevant in pyNN-simulators.""")
-        ToolTip(tau_syn_E_frame, text=tip, wraplength=750)
+        ToolTip(tau_syn_exc_frame, text=tip, wraplength=750)
 
         # tau_syn_I
-        tau_syn_I_frame = tk.Frame(self.cellparams_frame, bg='white')
-        tau_syn_I_frame.pack(**self.kwargs)
+        tau_syn_inh_frame = tk.Frame(self.cellparams_frame, bg='white')
+        tau_syn_inh_frame.pack(**self.kwargs)
         self.tau_syn_I_label = tk.Label(
-            tau_syn_I_frame, text="tau_syn_I", bg='white',
+            tau_syn_inh_frame, text="tau_syn_I", bg='white',
             state=self.settings['state_pyNN'].get())
         self.tau_syn_I_label.pack(fill='both', expand=True)
-        self.tau_syn_I_sb = tk.Spinbox(tau_syn_I_frame, width=10,
+        self.tau_syn_I_sb = tk.Spinbox(tau_syn_inh_frame, width=10,
                                        textvariable=self.settings['tau_syn_I'],
                                        from_=1e-3, to_=1e3, increment=1e-3,
                                        state=self.settings['state_pyNN'].get(),
@@ -460,9 +460,9 @@ class SNNToolboxGUI():
               Decay time of the inhibitory synaptic conductance in
               milliseconds.
               Only relevant in pyNN-simulators.""")
-        ToolTip(tau_syn_I_frame, text=tip, wraplength=750)
+        ToolTip(tau_syn_inh_frame, text=tip, wraplength=750)
 
-        # Softmax clockrate
+        # Softmax clock-rate
         softmax_clockrate_frame = tk.Frame(self.cellparams_frame, bg='white')
         softmax_clockrate_frame.pack(**self.kwargs)
         self.softmax_clockrate_label = tk.Label(
@@ -505,7 +505,7 @@ class SNNToolboxGUI():
         simulator_om = tk.OptionMenu(simulator_frame,
                                      self.settings['simulator'],
                                      *list(simulators),
-                                     command=self.toggle_state_pyNN)
+                                     command=self.toggle_state_pynn)
         simulator_om.pack(fill='both', expand=True)
 
         # Time resolution
@@ -577,7 +577,7 @@ class SNNToolboxGUI():
         tk.Radiobutton(reset_frame, variable=self.settings['reset'],
                        text='Reset by subtraction',
                        value='Reset by subtraction', bg='white').pack(
-                       fill='both', side='bottom', expand=True)
+            fill='both', side='bottom', expand=True)
         tip = dedent("""\
               Reset to zero:
                   After spike, the membrane potential is set to the resting
@@ -675,6 +675,7 @@ class SNNToolboxGUI():
         tip = dedent("""\
             Give your simulation run a name. If verbosity is high, the
             resulting plots will be saved in <cwd>/log/gui/<runlabel>.""")
+        ToolTip(runlabel_frame, text=tip, wraplength=750)
 
     def tools_widgets(self):
         """Create tools widgets."""
@@ -862,7 +863,7 @@ class SNNToolboxGUI():
             sufficiently high membrane potential.""")
         ToolTip(diff_to_min_rate_frame, text=tip, wraplength=750)
 
-        # Timestep fraction
+        # Time-step fraction
         timestep_fraction_frame = tk.Frame(
             self.normalization_settings_container, bg='white')
         timestep_fraction_frame.pack(**self.kwargs)
@@ -971,7 +972,7 @@ class SNNToolboxGUI():
             [tk.Radiobutton(self.plot_dir_frame, bg='white', text=name,
                             value=name, command=self.select_layer_rb,
                             variable=self.selected_plots_dir).pack(
-                            fill='both', side='bottom', expand=True)
+                fill='both', side='bottom', expand=True)
              for name in plot_dirs]
         open_new_cb = tk.Checkbutton(self.graph_frame, bg='white', height=2,
                                      width=20, text='open in new window',
@@ -1001,7 +1002,7 @@ class SNNToolboxGUI():
             [tk.Radiobutton(self.layer_frame, bg='white', text=name,
                             value=name, command=self.display_graphs,
                             variable=self.layer_to_plot).pack(
-                            fill='both', side='bottom', expand=True)
+                fill='both', side='bottom', expand=True)
              for name in layer_dirs]
 
     def draw_canvas(self):
@@ -1074,7 +1075,7 @@ class SNNToolboxGUI():
         for i in range(len(normalization_plots)):
             if int(normalization_plots[i][:2]) == layer_idx:
                 activation_distr = normalization_plots[i]
-                weight_distr = normalization_plots[i+1]
+                weight_distr = normalization_plots[i + 1]
                 break
         if activation_distr and weight_distr:
             self.a[3].imshow(mpimg.imread(os.path.join(self.plots_dir,
@@ -1091,6 +1092,7 @@ class SNNToolboxGUI():
 
         self.canvas.draw()
         self.toolbar.update()
+        # noinspection PyProtectedMember
         self.canvas._tkcanvas.pack(side='left', fill='both', expand=True)
 
     def top_level_menu(self):
@@ -1122,12 +1124,14 @@ class SNNToolboxGUI():
         helpmenu.add_command(label="Documentation", command=self.documentation)
         menubar.add_cascade(label="Help", menu=helpmenu)
 
-    def documentation(self):
+    @staticmethod
+    def documentation():
         """Open documentation."""
         webbrowser.open(os.path.join(sys.exec_prefix, 'docs',
                                      'Documentation.html'))
 
-    def about(self):
+    @staticmethod
+    def about():
         """About message."""
         msg = ("This is a collection of tools to convert analog neural "
                "networks to fast and high-performing spiking nets.\n\n"
@@ -1162,7 +1166,7 @@ class SNNToolboxGUI():
                          'overwrite': tk.BooleanVar(),
                          'batch_size': tk.IntVar(),
                          'verbose': tk.IntVar(),
-                         'path_wd': tk.StringVar(value=snntoolbox._dir),
+                         'path_wd': tk.StringVar(value=snntoolbox.dir),
                          'filename_ann': tk.StringVar(),
                          'filename_parsed_model': tk.StringVar(),
                          'filename_snn': tk.StringVar(),
@@ -1222,7 +1226,7 @@ class SNNToolboxGUI():
         defaults = settings
         defaults.update(pyNN_settings)
         self.set_preferences(defaults)
-        self.toggle_state_pyNN(self.settings['simulator'].get())
+        self.toggle_state_pynn(self.settings['simulator'].get())
 
     def set_preferences(self, p):
         """Set preferences."""
@@ -1261,7 +1265,7 @@ class SNNToolboxGUI():
             if not os.path.isfile(path_to_pref):
                 return
         else:
-            path_to_pref = tk.filedialog.askopenfilename(
+            path_to_pref = filedialog.askopenfilename(
                 defaultextension='.json', filetypes=[("json files", '*.json')],
                 initialdir=self.default_path_to_pref,
                 title="Choose filename")
@@ -1306,90 +1310,100 @@ class SNNToolboxGUI():
             self.toggle_start_state(False)
             self.toggle_stop_state(False)
 
-    def check_sample(self, P):
+    def check_sample(self, p):
         """Check samples."""
         if not self.initialized:
             return True
-        elif P == '':
+        elif p == '':
             self.toggle_num_to_test_state(True)
             return True
         elif False:
             # Put some other tests here
             return False
         else:
-            samples = [int(i) for i in P.split() if i.isnumeric()]
+            samples = [int(i) for i in p.split() if i.isnumeric()]
             self.settings['num_to_test'].set(len(samples))
             self.toggle_num_to_test_state(False)
             return True
 
-    def check_file(self, P):
+    def check_file(self, p):
         """Check files."""
         if not os.path.exists(self.settings['path_wd'].get()) or \
-                not any(P in fname for fname in
+                not any(p in fname for fname in
                         os.listdir(self.settings['path_wd'].get())):
             msg = ("Failed to set filename base:\n"
                    "Either working directory does not exist or contains no "
-                   "files with base name \n '{}'".format(P))
+                   "files with base name \n '{}'".format(p))
             messagebox.showwarning(title="Warning", message=msg)
             return False
         else:
             return True
 
-    def check_path(self, P):
+    def check_path(self, p):
         """Check path."""
         if not self.initialized:
             result = True
-        elif not os.path.exists(P):
+        elif not os.path.exists(p):
             msg = "Failed to set working directory:\n" + \
                   "Specified directory does not exist."
             messagebox.showwarning(title="Warning", message=msg)
             result = False
         elif self.settings['model_lib'].get() == 'caffe':
             if not any(fname.endswith('.caffemodel') for fname in
-                       os.listdir(P)):
-                msg = "No '*.caffemodel' file found in \n {}".format(P)
+                       os.listdir(p)):
+                msg = "No '*.caffemodel' file found in \n {}".format(p)
                 messagebox.showwarning(title="Warning", message=msg)
                 result = False
             elif not any(fname.endswith('.prototxt') for fname in
-                         os.listdir(P)):
-                msg = "No '*.prototxt' file found in \n {}".format(P)
+                         os.listdir(p)):
+                msg = "No '*.prototxt' file found in \n {}".format(p)
                 messagebox.showwarning(title="Warning", message=msg)
                 result = False
             else:
                 result = True
-        elif not any(fname.endswith('.json') for fname in os.listdir(P)):
-            msg = "No model file '*.json' found in \n {}".format(P)
+        elif not any(fname.endswith('.json') for fname in os.listdir(p)):
+            msg = "No model file '*.json' found in \n {}".format(p)
             messagebox.showwarning(title="Warning", message=msg)
             result = False
         else:
             result = True
 
         if result:
-            self.settings['path_wd'].set(P)
-            self.gui_log.set(os.path.join(P, 'log', 'gui'))
+            self.settings['path_wd'].set(p)
+            self.gui_log.set(os.path.join(p, 'log', 'gui'))
             # Look for plots in working directory to display
             self.graph_widgets()
 
         return result
 
-    def check_dataset_path(self, P):
+    def check_runlabel(self, p):
+        """Check runlabel."""
+        if self.initialized:
+            # Set path to plots for the current simulation run
+            self.settings['log_dir_of_current_run'].set(
+                os.path.join(self.gui_log.get(), p))
+            if not os.path.exists(
+                    self.settings['log_dir_of_current_run'].get()):
+                os.makedirs(self.settings['log_dir_of_current_run'].get())
+
+    def check_dataset_path(self, p):
         if not self.initialized:
             result = True
-        elif not os.path.exists(P):
+        elif not os.path.exists(p):
             msg = "Failed to set dataset directory:\n" + \
                   "Specified directory does not exist."
             messagebox.showwarning(title="Warning", message=msg)
             result = False
         elif self.settings['normalize'] and \
-                self.settings['dataset_format'] == 'npz' and not \
-                os.path.exists(os.path.join(P, 'X_norm.npz')):
+                        self.settings['dataset_format'] == 'npz' and not \
+                os.path.exists(os.path.join(p, 'X_norm.npz')):
             msg = "No data set file 'X_norm.npz' found.\n" + \
                   "Add it, or disable normalization."
             messagebox.showerror(title="Error", message=msg)
             result = False
         elif self.settings['dataset_format'] == 'npz' and not \
-            (os.path.exists(os.path.join(P, 'X_test.npz')) and
-             os.path.exists(os.path.join(P, 'Y_test.npz'))):
+                (os.path.exists(os.path.join(p, 'X_test.npz')) and
+                     os.path.exists(os.path.join(p, 'Y_test.npz'))):
             msg = "Data set file 'X_test.npz' or 'Y_test.npz' was not found."
             messagebox.showerror(title="Error", message=msg)
             result = False
@@ -1397,39 +1411,29 @@ class SNNToolboxGUI():
             result = True
 
         if result:
-            self.settings['dataset_path'].set(P)
+            self.settings['dataset_path'].set(p)
 
         return result
 
-    def check_runlabel(self, P):
-        """Check runlabel."""
-        if self.initialized:
-            # Set path to plots for the current simulation run
-            self.settings['log_dir_of_current_run'].set(
-                os.path.join(self.gui_log.get(), P))
-            if not os.path.exists(
-                    self.settings['log_dir_of_current_run'].get()):
-                os.makedirs(self.settings['log_dir_of_current_run'].get())
-
     def set_cwd(self):
-        P = filedialog.askdirectory(title="Set directory",
-                                    initialdir=snntoolbox._dir)
-        self.check_path(P)
+        p = filedialog.askdirectory(title="Set directory",
+                                    initialdir=snntoolbox.dir)
+        self.check_path(p)
 
     def set_dataset_path(self):
-        P = filedialog.askdirectory(title="Set directory",
-                                    initialdir=snntoolbox._dir)
-        self.check_dataset_path(P)
+        p = filedialog.askdirectory(title="Set directory",
+                                    initialdir=snntoolbox.dir)
+        self.check_dataset_path(p)
 
-    def __scrollHandler(self, *L):
-        op, howMany = L[0], L[1]
+    def __scroll_handler(self, *l):
+        op, how_many = l[0], l[1]
         if op == 'scroll':
-            units = L[2]
-            self.path_entry.xview_scroll(howMany, units)
+            units = l[2]
+            self.path_entry.xview_scroll(how_many, units)
         elif op == 'moveto':
-            self.path_entry.xview_moveto(howMany)
+            self.path_entry.xview_moveto(how_many)
 
-    def toggle_state_pyNN(self, val):
+    def toggle_state_pynn(self, val):
         """Toogle state for pyNN."""
         if val not in list(simulators_pyNN) + ['brian2']:
             self.settings['state_pyNN'].set('disabled')

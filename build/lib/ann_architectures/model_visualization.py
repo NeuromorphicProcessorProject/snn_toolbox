@@ -10,7 +10,7 @@ from keras.models import model_from_json
 import snntoolbox
 from snntoolbox.core.inisim import custom_layers
 
-data_path = snntoolbox._dir
+data_path = snntoolbox.dir
 
 model_name = "snn_99.16_INI"
 model_name = os.path.join(data_path, model_name)

@@ -7,12 +7,12 @@ if not os.access(_base_dir, os.W_OK):
     _base_dir = '/tmp'
 
 # Toolbox root directory.
-_dir = os.path.join(_base_dir, '.snntoolbox')
-if not os.path.exists(_dir):
-    os.makedirs(_dir)
+dir = os.path.join(_base_dir, '.snntoolbox')
+if not os.path.exists(dir):
+    os.makedirs(dir)
 
 # Path to toolbox preferences.
-_config_path = os.path.join(_dir, 'preferences')
+_config_path = os.path.join(dir, 'preferences')
 if not os.path.exists(_config_path):
     os.makedirs(_config_path)
 

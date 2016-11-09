@@ -777,7 +777,8 @@ def plot_spikecount_vs_time(spikecounts, path=None):
 def plot_input_image(X, label, path=None):
     plt.figure
     plt.title('Input image (class: {})'.format(label))
-    plt.imshow(X.transpose(1, 2, 0))
+    X = X.transpose(1, 2, 0) if X.shape[0] == 3 else X[0]
+    plt.imshow(X)
     if path is not None:
         filename = 'input_image'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
