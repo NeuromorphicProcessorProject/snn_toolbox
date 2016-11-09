@@ -13,21 +13,21 @@ Created on Tue Dec  8 10:41:10 2015
 """
 
 # For compatibility with python2
-from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
-from future import standard_library
+from __future__ import print_function, unicode_literals
+
 from builtins import super
 
 import numpy as np
 import theano
 import theano.tensor as t
-from theano.tensor.signal import pool
-from theano.tensor.shared_randomstreams import RandomStreams
-from keras.layers.core import Dense, Flatten
-from keras.layers.convolutional import AveragePooling2D, MaxPooling2D
-from keras.layers.convolutional import Convolution2D
+from future import standard_library
 from keras import backend as k
+from keras.layers import Convolution2D
+from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D
 from snntoolbox.config import settings
+from theano.tensor.shared_randomstreams import RandomStreams
+from theano.tensor.signal import pool
 
 standard_library.install_aliases()
 
@@ -104,10 +104,9 @@ def update_neurons(self, time, updates):
             updates.append((self.spikerate,
                             self.spikerate + output_spikes /
                             ((time + settings['dt']) / settings['dt'])))
-        #            updates.append((self.spikerate,
-        #                            (self.spikecounts+output_spikes) *
-        #                            settings['dt'] /
-        #                            (time + settings['dt'])))
+        #    updates.append((self.spikerate,
+        #                    (self.spikecounts+output_spikes) *
+        #                    settings['dt'] / (time + settings['dt'])))
         elif settings['maxpool_type'] == 'exp_max':
             updates.append((self.spikerate,
                             self.spikerate + output_spikes /

@@ -8,24 +8,24 @@ Created on Thu May 19 16:37:29 2016
 """
 
 # For compatibility with python2
-from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
-from future import standard_library
-
-from importlib import import_module
+from __future__ import print_function, unicode_literals
 
 import os
+from importlib import import_module
+
 import numpy as np
+from future import standard_library
 from keras.preprocessing.image import ImageDataGenerator
-from snntoolbox.io_utils.plotting import plot_param_sweep
-from snntoolbox.core.util import print_description, normalize_parameters, parse
-from snntoolbox.core.util import evaluate_keras
 from snntoolbox.config import settings
+from snntoolbox.core.util import evaluate_keras
+from snntoolbox.core.util import print_description, normalize_parameters, parse
+from snntoolbox.io_utils.plotting import plot_param_sweep
 
 standard_library.install_aliases()
 
 
-def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
+def test_full(queue=None, params=None, param_name='v_thresh',
               param_logscale=False):
     """Convert an snn to a spiking neural network and simulate it.
 
@@ -70,7 +70,11 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
         value in param_range.
     """
 
+    if params is None:
+        params = [settings['v_thresh']]
+
     # ____________________________ LOAD DATASET _____________________________ #
+    evalset = normset = testset = {}
     if settings['dataset_format'] == 'npz':
         from snntoolbox.io_utils.common import load_dataset
         if settings['evaluateANN'] or settings['simulate']:
@@ -97,9 +101,9 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
         # Compute quantities required for featurewise normalization
         # (std, mean, and principal components if ZCA whitening is applied)
         rs = datagen_kwargs['rescale'] if 'rescale' in datagen_kwargs else None
-        X_orig = ImageDataGenerator(rescale=rs).flow_from_directory(
+        x_orig = ImageDataGenerator(rescale=rs).flow_from_directory(
             **dataflow_kwargs).next()[0]
-        datagen.fit(X_orig)
+        datagen.fit(x_orig)
         if settings['evaluateANN']:
             evalset = {'dataflow':
                        datagen.flow_from_directory(**dataflow_kwargs)}
@@ -115,6 +119,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
                        datagen.flow_from_directory(**batchflow_kwargs)}
 
     # Instantiate an empty spiking network
+    input_model = {}
     target_sim = import_module('snntoolbox.target_simulators.' +
                                settings['simulator'] + '_target_sim')
     spiking_model = target_sim.SNN()  # t=0.1%
@@ -150,9 +155,9 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
             for batch_idx in range(num_batches):
                 batch_idxs = range(settings['batch_size'] * batch_idx,
                                    settings['batch_size'] * (batch_idx + 1))
-                X_batch = evalset['X_test'][batch_idxs, :]
+                x_batch = evalset['X_test'][batch_idxs, :]
                 activations_batch = get_activations_batch(parsed_model,
-                                                          X_batch)
+                                                          x_batch)
                 np.savez_compressed(os.path.join(path, str(batch_idx)),
                                     activations=activations_batch,
                                     spiketrains=None)
@@ -224,8 +229,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
     # Number of samples used in one run:
     n = settings['num_to_test']
     # Plot and return results of parameter sweep.
-    if results != []:
-        plot_param_sweep(results, n, params, param_name, param_logscale)
+    plot_param_sweep(results, n, params, param_name, param_logscale)
 
     # Add results to queue to be displayed in GUI.
     if queue:
