@@ -1,20 +1,20 @@
-from __future__ import absolute_import
-from __future__ import print_function
-
-from keras.datasets import mnist as dataset
-from keras.models import Sequential
-from keras.layers.core import Dense, Activation, Flatten
-from keras.layers.convolutional import Convolution2D, AveragePooling2D
-from keras.utils import np_utils
-from keras.constraints import maxnorm
-
-from snntoolbox.io_utils.plotting import plot_history
-
+# coding=utf-8
 
 """
     Train a simple convnet on the MNIST dataset, without biases.
 
 """
+
+from __future__ import absolute_import
+from __future__ import print_function
+
+from keras.constraints import maxnorm
+from keras.datasets import mnist as dataset
+from keras.layers.convolutional import Convolution2D
+from keras.layers.core import Dense, Activation, Flatten
+from keras.models import Sequential
+from keras.utils import np_utils
+from snntoolbox.io_utils.plotting import plot_history
 
 batch_size = 128
 nb_classes = 10

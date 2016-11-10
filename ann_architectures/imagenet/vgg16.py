@@ -13,15 +13,21 @@ Reference:
 from __future__ import print_function
 
 import numpy as np
-from keras.models import Sequential
-from keras.layers import Flatten, Dense, Convolution2D, MaxPooling2D
-from keras.utils.data_utils import get_file
-from keras.preprocessing import image
 from ann_architectures.imagenet.utils import decode_predictions
 from ann_architectures.imagenet.utils import preprocess_input
+from keras.layers import Flatten, Dense, Convolution2D, MaxPooling2D
+from keras.models import Sequential
+from keras.preprocessing import image
 
 
 def get_vgg16():
+    """Build VGG16.
+
+    Returns
+    -------
+
+    """
+
     model = Sequential()
 
     # Block 1
@@ -76,8 +82,8 @@ def get_vgg16():
 
 if __name__ == '__main__':
 
-    model = get_vgg16()
-    model.compile('sgd', 'categorical_crossentropy', ['accuracy'])
+    vgg16 = get_vgg16()
+    vgg16.compile('sgd', 'categorical_crossentropy', ['accuracy'])
 
 #    # load weights
 #    weights_path = 'https://github.com/fchollet/deep-learning-models/' + \
@@ -85,7 +91,7 @@ if __name__ == '__main__':
 #    weights_path = get_file('vgg16_weights_th_dim_ordering_th_kernels.h5',
 #                            weights_path, cache_subdir='models')
     weights_path = '/home/rbodo/.snntoolbox/data/imagenet/vgg16/INI/70.88.h5'
-    model.load_weights(weights_path)
+    vgg16.load_weights(weights_path)
     img_path = 'elephant.jpg'
     img = image.load_img(img_path, target_size=(224, 224))
     x = image.img_to_array(img)
@@ -93,9 +99,9 @@ if __name__ == '__main__':
     x = preprocess_input(x)
     print('Input image shape:', x.shape)
 
-    preds = model.predict(x)
+    preds = vgg16.predict(x)
     print('Predicted:', decode_predictions(preds))
 
     filename = 'vgg16_no_classifier'
-    open(filename + '.json', 'w').write(model.to_json())
-    model.save_weights(filename + '.h5', overwrite=True)
+    open(filename + '.json', 'w').write(vgg16.to_json())
+    vgg16.save_weights(filename + '.h5', overwrite=True)

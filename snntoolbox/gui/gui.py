@@ -43,13 +43,17 @@ if sys.version_info[0] < 3:
     import tkFileDialog as filedialog
     import tkMessageBox as messagebox
     import tkFont as font
+    # noinspection PyCompatibility
     from Queue import Queue
 else:
     import tkinter as tk
+    # noinspection PyCompatibility
     from tkinter import filedialog, messagebox, font
+    # noinspection PyCompatibility
     from queue import Queue
 
 
+# noinspection PyAttributeOutsideInit
 class SNNToolboxGUI:
     """Main Class of SNN Toolbox."""
 
@@ -57,7 +61,7 @@ class SNNToolboxGUI:
         """Init method of SNNToolboxGUI."""
         self.initialized = False
         self.root = root
-        self.default_path_to_pref = os.path.join(snntoolbox.dir,
+        self.default_path_to_pref = os.path.join(snntoolbox.toolbox_root,
                                                  'preferences')
         self.define_style()
         self.declare_parameter_vars()
@@ -769,6 +773,8 @@ class SNNToolboxGUI:
         ToolTip(self.stop_processing_bt, text=tip, wraplength=750)
 
     def edit_normalization_settings(self):
+        """Settings menu for parameter normalization"""
+
         self.normalization_settings_container = tk.Toplevel(bg='white')
         self.normalization_settings_container.geometry('300x400')
         self.normalization_settings_container.wm_title(
@@ -881,6 +887,8 @@ class SNNToolboxGUI:
         ToolTip(timestep_fraction_frame, text=tip, wraplength=750)
 
     def edit_experimental_settings(self):
+        """Settings menu for experimental features."""
+
         self.experimental_settings_container = tk.Toplevel(bg='white')
         self.experimental_settings_container.geometry('300x400')
         self.experimental_settings_container.wm_title('Experimental settings')
@@ -900,6 +908,8 @@ class SNNToolboxGUI:
         ToolTip(experimental_settings_cb, text=tip, wraplength=750)
 
     def edit_dataset_settings(self):
+        """Settings menu for dataset parameters."""
+
         dataset_settings_container = tk.Toplevel(bg='white')
         dataset_settings_container.wm_title('Dataset settings')
         dataset_settings_container.protocol(
@@ -1166,7 +1176,7 @@ class SNNToolboxGUI:
                          'overwrite': tk.BooleanVar(),
                          'batch_size': tk.IntVar(),
                          'verbose': tk.IntVar(),
-                         'path_wd': tk.StringVar(value=snntoolbox.dir),
+                         'path_wd': tk.StringVar(value=snntoolbox.toolbox_root),
                          'filename_ann': tk.StringVar(),
                          'filename_parsed_model': tk.StringVar(),
                          'filename_snn': tk.StringVar(),
@@ -1387,6 +1397,16 @@ class SNNToolboxGUI:
                 os.makedirs(self.settings['log_dir_of_current_run'].get())
 
     def check_dataset_path(self, p):
+        """
+
+        Parameters
+        ----------
+        p :
+
+        Returns
+        -------
+
+        """
         if not self.initialized:
             result = True
         elif not os.path.exists(p):
@@ -1395,7 +1415,7 @@ class SNNToolboxGUI:
             messagebox.showwarning(title="Warning", message=msg)
             result = False
         elif self.settings['normalize'] and \
-                        self.settings['dataset_format'] == 'npz' and not \
+                self.settings['dataset_format'] == 'npz' and not \
                 os.path.exists(os.path.join(p, 'X_norm.npz')):
             msg = "No data set file 'X_norm.npz' found.\n" + \
                   "Add it, or disable normalization."
@@ -1403,7 +1423,7 @@ class SNNToolboxGUI:
             result = False
         elif self.settings['dataset_format'] == 'npz' and not \
                 (os.path.exists(os.path.join(p, 'X_test.npz')) and
-                     os.path.exists(os.path.join(p, 'Y_test.npz'))):
+                 os.path.exists(os.path.join(p, 'Y_test.npz'))):
             msg = "Data set file 'X_test.npz' or 'Y_test.npz' was not found."
             messagebox.showerror(title="Error", message=msg)
             result = False
@@ -1416,13 +1436,15 @@ class SNNToolboxGUI:
         return result
 
     def set_cwd(self):
+        """Set current working directory."""
         p = filedialog.askdirectory(title="Set directory",
-                                    initialdir=snntoolbox.dir)
+                                    initialdir=snntoolbox.toolbox_root)
         self.check_path(p)
 
     def set_dataset_path(self):
+        """Set path to dataset."""
         p = filedialog.askdirectory(title="Set directory",
-                                    initialdir=snntoolbox.dir)
+                                    initialdir=snntoolbox.toolbox_root)
         self.check_dataset_path(p)
 
     def __scroll_handler(self, *l):

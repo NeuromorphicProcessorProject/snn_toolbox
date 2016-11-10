@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """Manage Parameters of SNNToolbox.
 
 In the GUI, the toolbox settings are grouped in three categories:
@@ -407,7 +409,7 @@ def update_setup(s=None):
         s['convert'] = True
     # Set default path if user did not specify one.
     if 'path_wd' not in s or s['path_wd'] == '':
-        s['path_wd'] = os.path.join(snntoolbox.dir, 'data',
+        s['path_wd'] = os.path.join(snntoolbox.toolbox_root, 'data',
                                     s['filename_ann'], s['simulator'])
     # Create directory if not there yet.
     if not os.path.exists(s['path_wd']):
@@ -463,10 +465,12 @@ def initialize_simulator(simulator=None):
     if simulator is None:
         simulator = settings['simulator']
 
+    sim = None
     if simulator in simulators_pyNN:
         if simulator == 'nest':
             # Workaround for missing link bug, see
             # https://github.com/ContinuumIO/anaconda-issues/issues/152
+            # noinspection PyUnresolvedReferences
             import readline
         sim = import_module('pyNN.' + simulator)
         # From the pyNN documentation:
@@ -481,5 +485,6 @@ def initialize_simulator(simulator=None):
         sim = import_module('snntoolbox.core.inisim')
     elif simulator == 'MegaSim':
         sim = import_module('snntoolbox.core.megasim')
+    assert sim, "Simulator could not be initialized."
     print("Initialized {} simulator.\n".format(simulator))
     return sim

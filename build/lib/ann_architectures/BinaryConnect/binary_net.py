@@ -69,7 +69,7 @@ def binarization(W,H,binary=True,deterministic=False,stochastic=False,srng=None)
 
         # [-1,1] -> [0,1]
         Wb = hard_sigmoid(W/H)
-        # Wb = T.clip(W/H,-1,1)
+        # Wb = t.clip(W/H,-1,1)
 
         # Stochastic BinaryConnect
         if stochastic:

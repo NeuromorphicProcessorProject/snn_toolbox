@@ -21,7 +21,7 @@ Citation
     Fast-Classifying, High-Accuracy Spiking Deep Networks Through Weight and Threshold Balancing,
     IEEE International Joint Conference on Neural Networks (IJCNN), 2015
 
-.. figure:: workflow.png
+.. figure:: images/workflow.png
    :scale: 50 %
    :alt: Workflow diagram of the SNN toolbox.
 
@@ -63,13 +63,13 @@ Features
 * So far, this toolbox is able to handle classification datasets. For other applications,
   the ``io.load.get_dataset`` module needs to be extended.
 
-.. figure:: gui_parameters.png
+.. figure:: images/gui_parameters.png
    :scale: 100 %
    :alt: Snapshot of the SNN toolbox GUI.
 
    **SNN toolbox GUI.** In the main window, the user can specify which tools to use during the experiment (e.g. whether or not to normalize weights prior to conversion, to evaluate the ANN before converting, to load an already converted net and simulate only, etc.). Also, parameters of the neuron cells used during simulation can be set. The GUI saves and reloads last settings automatically, and allows saving and loading preferences manually. Tooltips explain all functionality.
 
-.. figure:: gui_plots.png
+.. figure:: images/gui_plots.png
    :scale: 50 %
    :alt: Snapshot of the SNN toolbox GUI plot window.
 

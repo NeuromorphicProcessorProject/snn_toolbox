@@ -156,20 +156,20 @@ def get_range(start=0.0, stop=1.0, num=5, method='linear'):
     Parameters
     ----------
 
-    start: scalar, optional
+    start: float
         The starting value of the sequence
-    stop: scalar, optional
+    stop: float
         End value of the sequence.
-    num: int, optional
+    num: int
         Number of samples to generate. Must be non-negative.
-    method: string, optional
+    method: str
         The sequence will be computed on either a linear, logarithmic or random
         grid.
 
     Returns
     -------
 
-    samples: ndarray
+    samples: np.array
         There are ``num`` samples in the closed interval [start, stop].
     """
 

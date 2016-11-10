@@ -1,3 +1,13 @@
+# coding=utf-8
+
+"""
+    Train a simple deep NN on the MNIST dataset.
+
+    Get to 98.30% test accuracy after 20 epochs
+    (there is *a lot* of margin for parameter tuning).
+    2 seconds per epoch on a GRID K520 GPU.
+"""
+
 from __future__ import absolute_import
 from __future__ import print_function
 
@@ -8,14 +18,6 @@ from keras.optimizers import SGD
 from keras.utils import np_utils
 from keras.datasets import mnist
 from snntoolbox.io_utils.plotting import plot_history
-
-'''
-    Train a simple deep NN on the MNIST dataset.
-
-    Get to 98.30% test accuracy after 20 epochs
-    (there is *a lot* of margin for parameter tuning).
-    2 seconds per epoch on a GRID K520 GPU.
-'''
 
 batch_size = 128
 nb_classes = 10

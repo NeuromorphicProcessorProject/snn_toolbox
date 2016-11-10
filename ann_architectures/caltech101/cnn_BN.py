@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """
 Train a CNN on a data augmented version of the Caltech101 images dataset.
 """

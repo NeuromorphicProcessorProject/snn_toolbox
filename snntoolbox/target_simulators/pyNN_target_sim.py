@@ -14,25 +14,22 @@ Created on Thu May 19 15:00:02 2016
 """
 
 # For compatibility with python2
-from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
-from future import standard_library
-from builtins import int, range
+from __future__ import print_function, unicode_literals
 
 import os
 import sys
-import numpy as np
-from random import randint
-from six.moves import cPickle
-
-# Turn off warning because we have no influence on it:
-# "UserWarning: ConvergentConnect is deprecated and will be removed
-# in a future version of NEST. Please use Connect instead!"
 import warnings
+from random import randint
 
+import numpy as np
+from future import standard_library
+# noinspection PyUnresolvedReferences
+from six.moves import cPickle
 from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
 from snntoolbox.io_utils.common import confirm_overwrite
+from typing import Optional
 
 standard_library.install_aliases()
 
@@ -40,7 +37,7 @@ cellparams_pyNN = {'v_thresh', 'v_reset', 'v_rest', 'e_rev_E', 'e_rev_I', 'cm',
                    'i_offset', 'tau_refrac', 'tau_m', 'tau_syn_E', 'tau_syn_I'}
 
 
-class SNN():
+class SNN:
     """Class to hold the compiled spiking neural network.
 
     Class to hold the compiled spiking neural network, ready for testing in a
@@ -88,8 +85,10 @@ class SNN():
 
         self.sim = initialize_simulator()
         self.layers = []
-        self.connections = []
+        self.conns = []  # Temporary container for each layer.
+        self.connections = []  # Final container for all layers.
         self.cellparams = {key: settings[key] for key in cellparams_pyNN}
+        self.parsed_model = None
 
     def build(self, parsed_model):
         """
@@ -269,14 +268,14 @@ class SNN():
                 self.layers[-2], self.layers[-1],
                 self.sim.FromListConnector(self.conns, ['weight', 'delay'])))
 
-    def run(self, X_test, Y_test):
+    def run(self, x_test, y_test):
         """Simulate a spiking network with IF units and Poisson input in pyNN.
 
         Simulate a spiking network with IF units and Poisson input in pyNN,
         using a simulator like Brian, NEST, NEURON, etc.
 
         This function will randomly select ``settings['num_to_test']`` test
-        samples among ``X_test`` and simulate the network on those.
+        samples among ``x_test`` and simulate the network on those.
 
         Alternatively, a list of specific input samples can be given to the
         toolbox GUI, which will then be used for testing.
@@ -291,13 +290,13 @@ class SNN():
         Parameters
         ----------
 
-        X_test: float32 array
+        x_test: float32 array
             The input samples to test. With data of the form
-            (channels, num_rows, num_cols), X_test has dimension
+            (channels, num_rows, num_cols), x_test has dimension
             (num_samples, channels*num_rows*num_cols) for a multi-layer
             perceptron, and (num_samples, channels, num_rows, num_cols) for a
             convolutional net.
-        Y_test: float32 array
+        y_test: float32 array
             Ground truth of test data. Has dimension (num_samples, num_classes)
 
         Returns
@@ -312,7 +311,7 @@ class SNN():
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
 
         # Setup pyNN simulator if it was not passed on from a previous session.
-        if self.layers == []:  # Contains only input layer
+        if len(self.layers) == 0:
             echo("Restoring layer connections...\n")
             self.load()
             self.parsed_model = keras.models.load_model(os.path.join(
@@ -354,14 +353,14 @@ class SNN():
 
             # If a list of specific input samples is given, iterate over that,
             # and otherwise pick a random test sample from among all possible
-            # input samples in X_test.
+            # input samples in x_test.
             si = settings['sample_indices_to_test']
-            ind = randint(0, len(X_test) - 1) if si == [] else si[test_num]
+            ind = randint(0, len(x_test) - 1) if si == [] else si[test_num]
 
             # Add Poisson input.
             if settings['verbose'] > 1:
                 echo("Creating poisson input...\n")
-            rates = X_test[ind, :].flatten()
+            rates = x_test[ind, :].flatten()
             for (i, ss) in enumerate(self.layers[0]):
                 ss.rate = rates[i] * settings['input_rate']
 
@@ -375,7 +374,7 @@ class SNN():
             output = [len(spiketrain) for spiketrain in
                       self.layers[-1].get_data().segments[-1].spiketrains]
             guesses.append(np.argmax(output))
-            truth.append(np.argmax(Y_test[ind, :]))
+            truth.append(np.argmax(y_test[ind, :]))
             results.append(guesses[-1] == truth[-1])
 
             if settings['verbose'] > 0:
@@ -388,7 +387,7 @@ class SNN():
                     test_num == settings['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
                 self.collect_plot_results(
-                    X_test[ind:ind+settings['batch_size']], test_num)
+                    x_test[ind:ind+settings['batch_size']], test_num)
 
             # Reset simulation time and recorded network variables for next run
             if settings['verbose'] > 1:
@@ -536,18 +535,18 @@ class SNN():
         Parameters
         ----------
 
-        path: string, optional
+        path: Optional[str]
             Path to directory where to load model from. Defaults to
             ``settings['path']``.
 
-        filename: string, optional
+        filename: Optional[str]
             Name of file to load model from. Defaults to
             ``settings['filename_snn']``.
 
         Returns
         -------
 
-        layers: list
+        layers: list[pyNN.Population]
             List of pyNN ``Population`` objects.
         """
 
@@ -588,11 +587,11 @@ class SNN():
         Parameters
         ----------
 
-        path: string, optional
+        path: Optional[str]
             Path to directory where to load model from. Defaults to
             ``settings['path']``.
 
-        filename: string, optional
+        filename: Optional[str]
             Name of file to load model from. Defaults to
             ``settings['filename_snn']``.
         """
@@ -613,7 +612,7 @@ class SNN():
                 self.sim.Projection(self.layers[i], self.layers[i+1],
                                     self.sim.FromFileConnector(filepath))
 
-    def collect_plot_results(self, X_batch, idx=0):
+    def collect_plot_results(self, x_batch, idx=0):
         """Collect spiketrains of all ``layers`` of a net.
 
         Collect spiketrains of all ``layers`` of a net from one simulation run,
@@ -629,7 +628,7 @@ class SNN():
         Membrane potential vs time is plotted for all except the input layer.
 
         The activations are obtained by evaluating the original ANN on a sample
-        ``X_batch``. The optional integer ``idx`` represents the index of a
+        ``x_batch``. The optional integer ``idx`` represents the index of a
         specific sample to plot.
         """
 
@@ -638,7 +637,7 @@ class SNN():
 
         # Collect spiketrains of all layers, for the last test sample.
         vmem = []
-        showLegend = False
+        show_legend = False
 
         # Allocate a list 'spiketrains_batch' with the following specification:
         # Each entry in ``spiketrains_batch`` contains a tuple
@@ -675,10 +674,10 @@ class SNN():
                 vmem.append((vm, layer.label))
                 times = settings['dt'] * np.arange(len(vmem[0][0][0]))
                 if i == len(self.layers) - 2:
-                    showLegend = True
-                plot_potential(times, vmem[-1], showLegend,
+                    show_legend = True
+                plot_potential(times, vmem[-1], show_legend,
                                settings['log_dir_of_current_run'])
 
-        activations_batch = get_activations_batch(self.parsed_model, X_batch)
+        activations_batch = get_activations_batch(self.parsed_model, x_batch)
         output_graphs(spiketrains_batch, activations_batch,
                       settings['log_dir_of_current_run'], idx)

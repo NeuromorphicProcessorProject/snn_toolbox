@@ -158,11 +158,19 @@
 <span class="n">use_simple_label</span> <span class="o">=</span> <span class="bp">True</span>
 
 
-<div class="viewcode-block" id="binary_tanh"><a class="viewcode-back" href="../../core.html#core.util.binary_tanh">[docs]</a><span class="k">def</span> <span class="nf">binary_tanh</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<div class="viewcode-block" id="binary_tanh"><a class="viewcode-back" href="../../core.html#core.util.binary_tanh">[docs]</a><span class="k">def</span> <span class="nf">binary_tanh</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Round a float to -1 or 1.</span>
 
-<span class="sd">    :param x: Float</span>
-<span class="sd">    :return: Integer in {-1, 1}</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    x: float</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    : int</span>
+<span class="sd">        Integer in {-1, 1}</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">k</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
@@ -171,8 +179,16 @@
 <div class="viewcode-block" id="binary_sigmoid"><a class="viewcode-back" href="../../core.html#core.util.binary_sigmoid">[docs]</a><span class="k">def</span> <span class="nf">binary_sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Round a float to 0 or 1.</span>
 
-<span class="sd">    :param x: Float</span>
-<span class="sd">    :return: Integer in {0, 1}</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    x: float</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    : int</span>
+<span class="sd">        Integer in {0, 1}</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">x</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">clip</span><span class="p">((</span><span class="n">x</span> <span class="o">+</span> <span class="mf">1.</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -196,13 +212,13 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 
-<span class="sd">    input_model: Analog Neural Network</span>
-<span class="sd">        A pretrained neural network model.</span>
+<span class="sd">    input_model: Any</span>
+<span class="sd">        A pretrained neural network model in the respective ``model_lib``.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 
-<span class="sd">    parsed_model: Keras model</span>
+<span class="sd">    parsed_model: keras.models.Sequential</span>
 <span class="sd">        A Keras model functionally equivalent to ``input_model``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -247,7 +263,9 @@
 <span class="sd">    (``Keras.ImageDataGenerator.flow_from_directory`` object).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">assert</span> <span class="p">(</span><span class="n">x_test</span> <span class="ow">and</span> <span class="n">y_test</span> <span class="ow">or</span> <span class="n">dataflow</span><span class="p">),</span> <span class="s2">&quot;No testsamples provided.&quot;</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="n">x_test</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">y_test</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">dataflow</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">),</span> \
+        <span class="s2">&quot;No testsamples provided.&quot;</span>
 
     <span class="k">if</span> <span class="n">dataflow</span><span class="p">:</span>
         <span class="n">batch_size</span> <span class="o">=</span> <span class="n">dataflow</span><span class="o">.</span><span class="n">batch_size</span>
@@ -298,7 +316,7 @@
     <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;random&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random_sample</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">stop</span><span class="o">-</span><span class="n">start</span><span class="p">)</span> <span class="o">+</span> <span class="n">start</span></div>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random_sample</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">stop</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">+</span> <span class="n">start</span></div>
 
 
 <div class="viewcode-block" id="print_description"><a class="viewcode-back" href="../../core.html#core.util.print_description">[docs]</a><span class="k">def</span> <span class="nf">print_description</span><span class="p">(</span><span class="n">snn</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
@@ -341,7 +359,12 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 
-<span class="sd">    spiketrains_batch: List</span>
+<span class="sd">    spiketrains_batch: list[tuple[np.array, str]]</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    spikerates_batch: list[tuple[np.array, str]]</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">spikerates_batch</span> <span class="o">=</span> <span class="p">[]</span>
@@ -358,7 +381,7 @@
             <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
                 <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">])):</span>
                     <span class="n">spikerates_batch</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">][</span><span class="n">jj</span><span class="p">])[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">*</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">][</span><span class="n">jj</span><span class="p">])</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">*</span>
                         <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
                     <span class="n">spikerates_batch</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span>
                         <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]))</span>  <span class="c1"># For negative spikes</span>
@@ -368,8 +391,8 @@
                     <span class="k">for</span> <span class="n">kk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">])):</span>
                         <span class="k">for</span> <span class="n">ll</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">])):</span>
                             <span class="n">spikerates_batch</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">ll</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                                <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">ll</span><span class="p">])[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span>
-                                <span class="mi">1000</span> <span class="o">*</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
+                                <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">ll</span><span class="p">])</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">*</span>
+                                <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
                             <span class="n">spikerates_batch</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">ll</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span>
                                 <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">ll</span><span class="p">]))</span>
 
@@ -408,24 +431,25 @@
 
     <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Using {} samples for normalization.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x_norm</span><span class="p">)))</span>
 
-<span class="c1">#        import numpy as np</span>
-<span class="c1">#        sizes = [len(x_norm) * np.array(layer[&#39;output_shape&#39;][1:]).prod() *</span>
-<span class="c1">#                 32 / (8 * 1e9) for idx, layer in enumerate(self.layers)</span>
-<span class="c1">#                 if idx != 0 and &#39;parameters&#39; in self.layers[idx-1]]</span>
-<span class="c1">#        size_str = [&#39;{:.2f}&#39;.format(s) for s in sizes]</span>
-<span class="c1">#        print(&quot;INFO: Need {} GB for layer activations.\n&quot;.format(size_str) +</span>
-<span class="c1">#              &quot;May have to reduce size of data set used for normalization.\n&quot;)</span>
+    <span class="c1">#        import numpy as np</span>
+    <span class="c1">#        sizes = [len(x_norm) * np.array(layer[&#39;output_shape&#39;][1:]).prod() *</span>
+    <span class="c1">#                 32 / (8 * 1e9) for idx, layer in enumerate(self.layers)</span>
+    <span class="c1">#                 if idx != 0 and &#39;parameters&#39; in self.layers[idx-1]]</span>
+    <span class="c1">#        size_str = [&#39;{:.2f}&#39;.format(s) for s in sizes]</span>
+    <span class="c1">#        print(&quot;INFO: Need {} GB for layer activations.\n&quot;.format(</span>
+    <span class="c1"># size_str) +</span>
+    <span class="c1">#              &quot;May have to reduce size of data set used for</span>
+    <span class="c1"># normalization.\n&quot;)</span>
 
     <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Normalizing parameters:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">newpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">],</span> <span class="s1">&#39;normalization&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">newpath</span><span class="p">):</span>
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">newpath</span><span class="p">)</span>
     <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">newpath</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="ow">and</span> \
-            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">])</span><span class="o">+</span><span class="s1">&#39;.json&#39;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span>
+            <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span><span class="p">:</span>
         <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Loading scale factors from disk instead of recalculating.&quot;</span><span class="p">)</span>
         <span class="n">facs_from_disk</span> <span class="o">=</span> <span class="bp">True</span>
-        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">scale_facs</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
@@ -433,6 +457,8 @@
         <span class="n">scale_facs</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="c1"># Loop through all layers, looking for layers with parameters</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">get_activ</span> <span class="o">=</span> <span class="bp">None</span>
     <span class="n">scale_fac_prev_layer</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">):</span>
         <span class="c1"># Skip layer if not preceeded by a layer with parameters</span>
@@ -441,15 +467,15 @@
         <span class="n">parameters</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">facs_from_disk</span><span class="p">:</span>
-            <span class="n">scale_fac_prev_layer</span> <span class="o">=</span> <span class="n">scale_facs</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1</span>
+            <span class="n">scale_fac_prev_layer</span> <span class="o">=</span> <span class="n">scale_facs</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1</span>
             <span class="n">scale_fac</span> <span class="o">=</span> <span class="n">scale_facs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
             <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;verbose&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Calculating activation of layer {} ...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                      <span class="n">layer</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">layer</span><span class="o">.</span><span class="n">output_shape</span><span class="p">))</span>
+                    <span class="n">layer</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">layer</span><span class="o">.</span><span class="n">output_shape</span><span class="p">))</span>
             <span class="c1"># Undo previous scaling before calculating activations:</span>
-            <span class="n">layer</span><span class="o">.</span><span class="n">set_weights</span><span class="p">([</span><span class="n">parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">scale_fac_prev_layer</span><span class="p">,</span>
+            <span class="n">layer</span><span class="o">.</span><span class="n">set_weights</span><span class="p">([</span><span class="n">parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale_fac_prev_layer</span><span class="p">,</span>
                                <span class="n">parameters</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
             <span class="c1"># t=4.9%</span>
             <span class="n">get_activ</span> <span class="o">=</span> <span class="n">get_activ_fn_for_layer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
@@ -486,14 +512,15 @@
         <span class="n">activations_norm</span> <span class="o">=</span> <span class="n">get_activations_layer</span><span class="p">(</span><span class="n">get_activ</span><span class="p">,</span> <span class="n">x_norm</span><span class="p">)</span>
         <span class="n">activation_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Activations&#39;</span><span class="p">:</span> <span class="n">activations</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">activations</span><span class="p">)],</span>
                            <span class="s1">&#39;Activations_norm&#39;</span><span class="p">:</span>
-                           <span class="n">activations_norm</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">activations</span><span class="p">)]}</span>
+                               <span class="n">activations_norm</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">activations</span><span class="p">)]}</span>
         <span class="n">plot_hist</span><span class="p">(</span><span class="n">activation_dict</span><span class="p">,</span> <span class="s1">&#39;Activation&#39;</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">newpath</span><span class="p">,</span> <span class="n">scale_fac</span><span class="p">)</span>
-<span class="c1">#        plot_hist({&#39;Activations&#39;: activations[np.nonzero(activations)]},</span>
-<span class="c1">#                  &#39;Activation&#39;, label, newpath, scale_fac)</span>
-<span class="c1">#        plot_hist({&#39;Activations_max&#39;: np.max(activations, axis=tuple(</span>
-<span class="c1">#            np.arange(activations.ndim)[1:]))}, &#39;Activation&#39;, label, newpath,</span>
-<span class="c1">#            scale_fac)</span>
-        <span class="c1"># t=83.1%</span>
+    <span class="c1"># plot_hist({&#39;Activations&#39;: activations[np.nonzero(activations)]},</span>
+    <span class="c1">#                  &#39;Activation&#39;, label, newpath, scale_fac)</span>
+    <span class="c1">#        plot_hist({&#39;Activations_max&#39;: np.max(activations, axis=tuple(</span>
+    <span class="c1">#            np.arange(activations.ndim)[1:]))}, &#39;Activation&#39;, label,</span>
+    <span class="c1"># newpath,</span>
+    <span class="c1">#            scale_fac)</span>
+    <span class="c1"># t=83.1%</span>
     <span class="c1"># Write scale factors to disk</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">facs_from_disk</span> <span class="ow">and</span> <span class="n">confirm_overwrite</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
@@ -524,7 +551,7 @@
     <span class="c1"># Remove zeros, because they bias the distribution too much</span>
     <span class="n">a</span> <span class="o">=</span> <span class="n">activations</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">activations</span><span class="p">)]</span>
 
-    <span class="n">scale_fac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">idx</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">scale_fac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">idx</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">200</span><span class="p">,</span>
                               <span class="n">overwrite_input</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;verbose&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Scale factor: {:.2f}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scale_fac</span><span class="p">))</span>
@@ -650,7 +677,7 @@
 
     <span class="c1"># Quantile z of a standard normal distribution, for the error quantile a:</span>
     <span class="n">z</span> <span class="o">=</span> <span class="mf">1.96</span>  <span class="c1"># 1.44 for a == 85%, 1.96 for a == 95%</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">z</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">)</span> <span class="o">+</span> <span class="n">z</span><span class="o">*</span><span class="n">z</span><span class="o">/</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="n">n</span><span class="p">))</span><span class="o">/</span><span class="n">n</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">z</span><span class="o">*</span><span class="n">z</span><span class="o">/</span><span class="n">n</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="p">(</span><span class="n">z</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">p</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">+</span> <span class="n">z</span> <span class="o">*</span> <span class="n">z</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">n</span><span class="p">))</span> <span class="o">/</span> <span class="n">n</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">z</span> <span class="o">*</span> <span class="n">z</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="extract_label"><a class="viewcode-back" href="../../core.html#core.util.extract_label">[docs]</a><span class="k">def</span> <span class="nf">extract_label</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
@@ -701,7 +728,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Nov 09, 2016.
+      Last updated on Nov 10, 2016.
 
     </p>
   </div>

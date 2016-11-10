@@ -1,3 +1,5 @@
+.. # coding=utf-8
+
 Getting Started
 ===============
 
@@ -39,7 +41,7 @@ Alternitively, read and run example.py in snntoolbox/tests/, which contains a nu
 Extending the toolbox
 ---------------------
 
-Have a look at the :doc:`pipeline </core/pipeline.py>` module to examine the complete pipeline of
+Have a look at the :py:func:`snntoolbox.core.pipeline.test_full` module to examine the complete pipeline of
 
     1. loading and testing a pretrained ANN,
     2. normalizing weights

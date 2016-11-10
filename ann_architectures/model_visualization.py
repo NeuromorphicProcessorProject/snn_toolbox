@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """Keras Model Visualization.
 
 Author: Yuhuang Hu
@@ -5,12 +7,13 @@ Email : duguyue100@gmail.com
 """
 
 import os
-from keras.utils.visualize_util import plot
-from keras.models import model_from_json
+
 import snntoolbox
+from keras.models import model_from_json
+from keras.utils.visualize_util import plot
 from snntoolbox.core.inisim import custom_layers
 
-data_path = snntoolbox.dir
+data_path = snntoolbox.toolbox_root
 
 model_name = "snn_99.16_INI"
 model_name = os.path.join(data_path, model_name)

@@ -26,7 +26,7 @@ url_img_gen = "https://www.googledrive.com/host/0B6t56IB_eb6hNjY1NXFSZEdsbkE"
 url_img_gen_resized = \
     "https://www.googledrive.com/host/0B6t56IB_eb6hdXliTUFMdzZEMU0"
 tar_inner_dirname = "101_ObjectCategories"
-data_dir = os.path.join(snntoolbox.dir, 'datasets', 'caltech101')
+data_dir = os.path.join(snntoolbox.toolbox_root, 'datasets', 'caltech101')
 nb_classes = 102
 
 

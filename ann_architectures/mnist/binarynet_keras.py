@@ -1,16 +1,4 @@
-from __future__ import absolute_import
-from __future__ import print_function
-
-from keras.models import Sequential
-from keras.callbacks import EarlyStopping
-from keras.layers import MaxPooling2D, Dropout, Flatten
-from ann_architectures.BinaryConnect.binary_net_keras import Convolution2D
-from ann_architectures.BinaryConnect.binary_net_keras import Dense
-from ann_architectures.BinaryConnect.common import binary_sigmoid_unit
-from snntoolbox.io_utils.common import load_dataset
-
-from snntoolbox.io_utils.plotting import plot_history
-
+# coding=utf-8
 
 """
     Train a simple convnet on the MNIST dataset.
@@ -23,6 +11,19 @@ from snntoolbox.io_utils.plotting import plot_history
 
     16 seconds per epoch on a GRID K520 GPU.
 """
+
+from __future__ import absolute_import
+from __future__ import print_function
+
+from keras.models import Sequential
+from keras.callbacks import EarlyStopping
+from keras.layers import MaxPooling2D, Dropout, Flatten
+from ann_architectures.BinaryConnect.binary_net_keras import Convolution2D
+from ann_architectures.BinaryConnect.binary_net_keras import Dense
+from ann_architectures.BinaryConnect.common import binary_sigmoid_unit
+from snntoolbox.io_utils.common import load_dataset
+from snntoolbox.io_utils.plotting import plot_history
+
 
 batch_size = 128
 nb_classes = 10
@@ -58,7 +59,7 @@ model.add(Dense(nb_classes, activation='softmax'))
 model.compile(loss='categorical_crossentropy', optimizer='adam',
               metrics=['accuracy'])
 
-path_to_dataset = '/home/rbodo/.snntoolbox/Datasets/mnist/cnn'
+path_to_dataset = '/home/rbodo/.snntoolbox/Datasets/mnist/model'
 X_train = load_dataset(path_to_dataset, 'X_norm.npz')
 Y_train = load_dataset(path_to_dataset, 'Y_train.npz')
 X_test = load_dataset(path_to_dataset, 'X_test.npz')

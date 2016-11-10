@@ -1,3 +1,7 @@
+# coding=utf-8
+
+"""BinaryNet"""
+
 from __future__ import absolute_import
 from __future__ import print_function
 
@@ -8,9 +12,18 @@ theano.sandbox.cuda.use('gpu0')
 
 
 def build_network():
+    """Build BinaryNet.
+
+    Returns
+    -------
+
+    : tuple[lasagne.layers.Layer, theano.function, theano.function]
+        The network (``model``), and functions to train and test
+        (``train_func``, ``val_fn``).
+    """
 
     import theano
-    import theano.tensor as T
+    import theano.tensor as t
     from collections import OrderedDict
 
     # BN parameters
@@ -27,46 +40,46 @@ def build_network():
     print("binary = "+str(binary))
     stochastic = False
     print("stochastic = "+str(stochastic))
-    # (-H,+H) are the two binary values
-    # H = "Glorot"
-    H = 1.
-    print("H = "+str(H))
-    # W_LR_scale = 1.
+    # (-h,+h) are the two binary values
+    # h = "Glorot"
+    h = 1.
+    print("h = "+str(h))
+    # w_lr_scale = 1.
     # "Glorot" means we are using the coefficients from Glorot's paper
-    W_LR_scale = "Glorot"
-    print("W_LR_scale = "+str(W_LR_scale))
+    w_lr_scale = "Glorot"
+    print("w_lr_scale = "+str(w_lr_scale))
 
     # Prepare Theano variables for inputs and targets
-    input_var = T.tensor4('inputs')
-    target = T.matrix('targets')
-    LR = T.scalar('LR', dtype=theano.config.floatX)
+    input_var = t.tensor4('inputs')
+    target = t.matrix('targets')
+    lr = t.scalar('lr', dtype=theano.config.floatX)
 
     cnn = lasagne.layers.InputLayer(shape=(None, 1, 28, 28),
                                     input_var=input_var)
 
     cnn = binary_net.Conv2DLayer(cnn, binary=binary, stochastic=stochastic,
-                                 H=H, W_LR_scale=W_LR_scale, num_filters=32,
+                                 H=h, W_LR_scale=w_lr_scale, num_filters=32,
                                  filter_size=(3, 3), nonlinearity=activation)
 
     cnn = lasagne.layers.BatchNormLayer(cnn, epsilon=epsilon, alpha=alpha)
     cnn = lasagne.layers.NonlinearityLayer(cnn, nonlinearity=activation)
 
     cnn = binary_net.Conv2DLayer(cnn, binary=binary, stochastic=stochastic,
-                                 H=H, W_LR_scale=W_LR_scale, num_filters=32,
+                                 H=h, W_LR_scale=w_lr_scale, num_filters=32,
                                  filter_size=(3, 3), nonlinearity=activation)
 
     cnn = lasagne.layers.MaxPool2DLayer(cnn, pool_size=(2, 2))
 
     cnn = lasagne.layers.DropoutLayer(cnn, 0.25)
 
-    cnn = binary_net.DenseLayer(cnn, binary=binary, stochastic=stochastic, H=H,
-                                W_LR_scale=W_LR_scale, num_units=128,
+    cnn = binary_net.DenseLayer(cnn, binary=binary, stochastic=stochastic, H=h,
+                                W_LR_scale=w_lr_scale, num_units=128,
                                 nonlinearity=activation)
 
     cnn = lasagne.layers.DropoutLayer(cnn)
 
-    cnn = binary_net.DenseLayer(cnn, binary=binary, stochastic=stochastic, H=H,
-                                W_LR_scale=W_LR_scale, num_units=10,
+    cnn = binary_net.DenseLayer(cnn, binary=binary, stochastic=stochastic, H=h,
+                                W_LR_scale=w_lr_scale, num_units=10,
                                 nonlinearity=lasagne.nonlinearities.softmax)
 
     train_output = lasagne.layers.get_output(cnn, deterministic=False)
@@ -77,40 +90,40 @@ def build_network():
 
     if binary:
         from itertools import chain
-        # W updates
-        W = lasagne.layers.get_all_params(cnn, binary=True)
-        W_grads = binary_net.compute_grads(loss, cnn)
-        updates = lasagne.updates.adam(loss_or_grads=W_grads, params=W,
-                                       learning_rate=LR)
+        # w updates
+        w = lasagne.layers.get_all_params(cnn, binary=True)
+        w_grads = binary_net.compute_grads(loss, cnn)
+        updates = lasagne.updates.adam(loss_or_grads=w_grads, params=w,
+                                       learning_rate=lr)
         updates = binary_net.clipping_scaling(updates, cnn)
 
         # other parameters updates
-        params = lasagne.layers.get_all_params(cnn, trainable=True,
-                                               binary=False)
+        parameters = lasagne.layers.get_all_params(cnn, trainable=True,
+                                                   binary=False)
         updates = OrderedDict(chain(updates.items(), lasagne.updates.adam(
-            loss_or_grads=loss, params=params, learning_rate=LR).items()))
+            loss_or_grads=loss, params=parameters, learning_rate=lr).items()))
 
     else:
-        params = lasagne.layers.get_all_params(cnn, trainable=True)
-        updates = lasagne.updates.adam(loss_or_grads=loss, params=params,
-                                       learning_rate=LR)
+        parameters = lasagne.layers.get_all_params(cnn, trainable=True)
+        updates = lasagne.updates.adam(loss_or_grads=loss, params=parameters,
+                                       learning_rate=lr)
 
     test_output = lasagne.layers.get_output(cnn, deterministic=True)
     test_loss = lasagne.objectives.categorical_crossentropy(test_output,
                                                             target)
     test_loss = lasagne.objectives.aggregate(test_loss, mode='mean')
-    test_err = T.mean(T.neq(T.argmax(test_output, axis=1),
-                            T.argmax(target, axis=1)),
+    test_err = t.mean(t.neq(t.argmax(test_output, axis=1),
+                            t.argmax(target, axis=1)),
                       dtype=theano.config.floatX)
 
     # Compile a function performing a training step on a mini-batch (by giving
     # the updates dictionary) and returning the corresponding training loss:
-    train_fn = theano.function([input_var, target, LR], loss, updates=updates)
+    train_func = theano.function([input_var, target, lr], loss, updates=updates)
 
     # Compile a second function computing the validation loss and accuracy:
-    val_fn = theano.function([input_var, target], [test_loss, test_err])
+    val_func = theano.function([input_var, target], [test_loss, test_err])
 
-    return cnn, train_fn, val_fn
+    return cnn, train_func, val_func
 
 
 if __name__ == "__main__":
@@ -135,7 +148,7 @@ if __name__ == "__main__":
 
     print("Loading dataset...")
 
-    path_to_dataset = '/home/rbodo/.snntoolbox/Datasets/mnist/cnn'
+    path_to_dataset = '/home/rbodo/.snntoolbox/Datasets/mnist/model'
     X_train = load_dataset(path_to_dataset, 'X_norm.npz')
     Y_train = load_dataset(path_to_dataset, 'Y_train.npz')
     X_test = load_dataset(path_to_dataset, 'X_test.npz')
@@ -143,15 +156,15 @@ if __name__ == "__main__":
 
     print('Building the CNN...')
 
-    cnn, train_fn, val_fn = build_network()
+    model, train_fn, val_fn = build_network()
 
     print('Training...')
 
-    binary_net.train(train_fn, val_fn, cnn, batch_size, LR_start, LR_decay,
+    binary_net.train(train_fn, val_fn, model, batch_size, LR_start, LR_decay,
                      num_epochs, X_train, Y_train, X_test, Y_test, X_test,
                      Y_test, shuffle_parts=1)
 
-    W = lasagne.layers.get_all_layers(cnn)[1].W.get_value()
+    W = lasagne.layers.get_all_layers(model)[1].W.get_value()
 
     import matplotlib.pyplot as plt
     plt.hist(W.flatten())
@@ -159,5 +172,5 @@ if __name__ == "__main__":
 
     # Dump the network weights to a file
     filepath = '70.14.h5'
-    params = lasagne.layers.get_all_param_values(cnn)
+    params = lasagne.layers.get_all_param_values(model)
     save_parameters(params, filepath)

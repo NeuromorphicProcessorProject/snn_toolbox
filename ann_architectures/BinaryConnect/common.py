@@ -11,7 +11,7 @@ from __future__ import division, absolute_import
 from future import standard_library
 
 import theano
-import theano.tensor as T
+import theano.tensor as t
 import numpy as np
 
 from theano.scalar.basic import UnaryScalarOp, same_out_nocomplex
@@ -26,13 +26,59 @@ standard_library.install_aliases()
 
 # Our own rounding function, that does not set the gradient to 0 like Theano's
 class Round3(UnaryScalarOp):
+    """Rounding function.
+
+    """
+
+    def R_op(self, inputs, eval_points):
+        """
+
+        Parameters
+        ----------
+
+        inputs :
+        eval_points :
+        """
+
+        pass
 
     def c_code(self, node, name, xx, zz, sub):
+        """
+
+        Parameters
+        ----------
+
+        node :
+        name :
+        xx :
+        zz :
+        sub :
+
+        Returns
+        -------
+
+
+        """
+
         (x,) = xx
         (z,) = zz
         return "%(z)s = round(%(x)s);" % locals()
 
     def grad(self, inputs, gout):
+        """
+
+        Parameters
+        ----------
+
+        inputs :
+        gout :
+
+        Returns
+        -------
+
+
+        """
+
         (gz,) = gout
         return gz,
 
@@ -41,7 +87,19 @@ round3 = Elemwise(round3_scalar)
 
 
 def hard_sigmoid(x):
-    return T.clip((x+1.)/2., 0, 1)
+    """
+
+    Parameters
+    ----------
+
+    x :
+
+    Returns
+    -------
+
+    """
+
+    return t.clip((x + 1.) / 2., 0, 1)
 
 
 # The neurons' activations binarization function
@@ -50,42 +108,84 @@ def hard_sigmoid(x):
 #   hard_tanh(x) = 2*hard_sigmoid(x)-1
 # during back propagation
 def binary_tanh_unit(x):
+    """
+
+    Parameters
+    ----------
+
+    x :
+
+    Returns
+    -------
+
+
+    """
+
     return 2.*round3(hard_sigmoid(x))-1.
 
 
 def binary_sigmoid_unit(x):
+    """
+
+    Parameters
+    ----------
+
+    x :
+
+    Returns
+    -------
+
+
+    """
+
     return round3(hard_sigmoid(x))
 
 
 # The weights' binarization function,
 # taken directly from the BinaryConnect github repository
 # (which was made available by his authors)
-def binarization(W, H, binary=True, deterministic=False, stochastic=False):
 
-    # (deterministic == True) <-> test-time <-> inference-time
+def binarization(w, h, binary=True, deterministic=False, stochastic=False):
+    """
+
+    Parameters
+    ----------
+
+    w :
+    h :
+    binary :
+    deterministic :
+    stochastic :
+
+    Returns
+    -------
+
+
+    """
+
     if not binary or (deterministic and stochastic):
         print("not binary")
-        Wb = W
+        wb = w
 
     else:
 
         # [-1,1] -> [0,1]
-        Wb = hard_sigmoid(W/H)
-        # Wb = T.clip(W/H,-1,1)
+        wb = hard_sigmoid(w/h)
+        # wb = t.clip(w/h,-1,1)
 
         # Stochastic BinaryConnect
         if stochastic:
 
             print("stoch")
-            Wb = T.cast(np.random.binomial(1, Wb, T.shape(Wb)),
+            wb = t.cast(np.random.binomial(1, wb, t.shape(wb)),
                         theano.config.floatX)
 
         # Deterministic BinaryConnect (round to nearest)
         else:
             print("det")
-            Wb = T.round(Wb)
+            wb = t.round(wb)
 
         # 0 or 1 -> -1 or 1
-        Wb = T.cast(T.switch(Wb, H, -H), theano.config.floatX)
+        wb = t.cast(t.switch(wb, h, -h), theano.config.floatX)
 
-    return Wb
+    return wb

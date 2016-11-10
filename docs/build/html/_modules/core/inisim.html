@@ -480,7 +480,7 @@
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Init function.&quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Flatten</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SpikeFlatten</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">updates</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;payloads&#39;</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">payloads</span> <span class="o">=</span> <span class="bp">None</span>
@@ -513,7 +513,7 @@
         <span class="c1"># we are using a custom activation function that Keras doesn&#39;t</span>
         <span class="c1"># understand.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">activation_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;activation&#39;</span><span class="p">))</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Dense</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">output_dim</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SpikeDense</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">output_dim</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span>
                                     <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_refrac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spiketrain</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_spike_count</span> <span class="o">=</span> <span class="bp">None</span>
@@ -550,7 +550,7 @@
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Init function.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">activation_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;activation&#39;</span><span class="p">))</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Convolution2D</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SpikeConvolution2D</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
             <span class="n">nb_filter</span><span class="o">=</span><span class="n">nb_filter</span><span class="p">,</span> <span class="n">nb_row</span><span class="o">=</span><span class="n">nb_row</span><span class="p">,</span> <span class="n">nb_col</span><span class="o">=</span><span class="n">nb_col</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span>
             <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">,</span> <span class="n">subsample</span><span class="o">=</span><span class="n">subsample</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_flip</span> <span class="o">=</span> <span class="n">filter_flip</span>
@@ -617,7 +617,7 @@
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Init average pooling.&quot;&quot;&quot;</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">AveragePooling2D</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SpikeAveragePooling2D</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
             <span class="n">pool_size</span><span class="o">=</span><span class="n">pool_size</span><span class="p">,</span> <span class="n">strides</span><span class="o">=</span><span class="n">strides</span><span class="p">,</span> <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_refrac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spiketrain</span> <span class="o">=</span> <span class="bp">None</span>
@@ -658,7 +658,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">ignore_border</span> <span class="o">=</span> <span class="bp">True</span> <span class="k">if</span> <span class="n">border_mode</span> <span class="o">==</span> <span class="s1">&#39;valid&#39;</span> <span class="k">else</span> <span class="bp">False</span>
         <span class="k">if</span> <span class="s1">&#39;binary&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;maxpool_type&#39;</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">activation_str</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;maxpool_type&#39;</span><span class="p">]</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">MaxPooling2D</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">pool_size</span><span class="o">=</span><span class="n">pool_size</span><span class="p">,</span> <span class="n">strides</span><span class="o">=</span><span class="n">strides</span><span class="p">,</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SpikeMaxPooling2D</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">pool_size</span><span class="o">=</span><span class="n">pool_size</span><span class="p">,</span> <span class="n">strides</span><span class="o">=</span><span class="n">strides</span><span class="p">,</span>
                                            <span class="n">border_mode</span><span class="o">=</span><span class="n">border_mode</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">v_thresh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_refrac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spiketrain</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">impulse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikecounts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_spike_count</span> <span class="o">=</span> <span class="bp">None</span>
@@ -764,7 +764,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Nov 09, 2016.
+      Last updated on Nov 10, 2016.
 
     </p>
   </div>

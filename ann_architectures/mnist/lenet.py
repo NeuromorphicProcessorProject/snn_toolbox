@@ -1,4 +1,16 @@
-"""A example for letnet."""
+# coding=utf-8
+
+"""
+    Train a simple convnet on the MNIST dataset.
+
+    Run on GPU:
+    THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python mnist_cnn.py
+
+    Get to 99.25% test accuracy after 12 epochs (there is still a lot of margin
+    for parameter tuning).
+
+    16 seconds per epoch on a GRID K520 GPU.
+"""
 
 from __future__ import absolute_import
 from __future__ import print_function
@@ -13,18 +25,6 @@ from keras.callbacks import EarlyStopping
 
 from snntoolbox.io_utils.plotting import plot_history
 
-
-"""
-    Train a simple convnet on the MNIST dataset.
-
-    Run on GPU:
-    THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python mnist_cnn.py
-
-    Get to 99.25% test accuracy after 12 epochs (there is still a lot of margin
-    for parameter tuning).
-
-    16 seconds per epoch on a GRID K520 GPU.
-"""
 
 batch_size = 128
 nb_classes = 10

@@ -26,11 +26,19 @@ standard_library.install_aliases()
 use_simple_label = True
 
 
-def binary_tanh(x: float) -> int:
+def binary_tanh(x):
     """Round a float to -1 or 1.
 
-    :param x: Float
-    :return: Integer in {-1, 1}
+    Parameters
+    ----------
+
+    x: float
+
+    Returns
+    -------
+
+    : int
+        Integer in {-1, 1}
     """
 
     return k.sign(x)
@@ -39,8 +47,16 @@ def binary_tanh(x: float) -> int:
 def binary_sigmoid(x):
     """Round a float to 0 or 1.
 
-    :param x: Float
-    :return: Integer in {0, 1}
+    Parameters
+    ----------
+
+    x: float
+
+    Returns
+    -------
+
+    : int
+        Integer in {0, 1}
     """
 
     x = k.clip((x + 1.) / 2., 0, 1)
@@ -64,13 +80,13 @@ def parse(input_model):
     Parameters
     ----------
 
-    input_model: Analog Neural Network
-        A pretrained neural network model.
+    input_model: Any
+        A pretrained neural network model in the respective ``model_lib``.
 
     Returns
     -------
 
-    parsed_model: Keras model
+    parsed_model: keras.models.Sequential
         A Keras model functionally equivalent to ``input_model``.
     """
 
@@ -115,7 +131,9 @@ def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
     (``Keras.ImageDataGenerator.flow_from_directory`` object).
     """
 
-    assert (x_test and y_test or dataflow), "No testsamples provided."
+    assert (
+        x_test is not None and y_test is not None or dataflow is not None), \
+        "No testsamples provided."
 
     if dataflow:
         batch_size = dataflow.batch_size
@@ -166,7 +184,7 @@ def get_range(start=0.0, stop=1.0, num=5, method='linear'):
     if method == 'log':
         return np.logspace(start, stop, num, endpoint=False)
     if method == 'random':
-        return np.random.random_sample(num) * (stop-start) + start
+        return np.random.random_sample(num) * (stop - start) + start
 
 
 def print_description(snn=None, log=True):
@@ -209,7 +227,12 @@ def spiketrains_to_rates(spiketrains_batch):
     Parameters
     ----------
 
-    spiketrains_batch: List
+    spiketrains_batch: list[tuple[np.array, str]]
+
+    Returns
+    -------
+
+    spikerates_batch: list[tuple[np.array, str]]
     """
 
     spikerates_batch = []
@@ -226,7 +249,7 @@ def spiketrains_to_rates(spiketrains_batch):
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
                     spikerates_batch[i][0][ii, jj] = (
-                        len(np.nonzero(sp[0][ii][jj])[0]) * 1000 *
+                        np.count_nonzero(sp[0][ii][jj]) * 1000 *
                         settings['dt'] / settings['duration'])
                     spikerates_batch[i][0][ii, jj] *= np.sign(
                         np.sum(sp[0][ii, jj]))  # For negative spikes
@@ -236,8 +259,8 @@ def spiketrains_to_rates(spiketrains_batch):
                     for kk in range(len(sp[0][ii, jj])):
                         for ll in range(len(sp[0][ii, jj, kk])):
                             spikerates_batch[i][0][ii, jj, kk, ll] = (
-                                len(np.nonzero(sp[0][ii, jj, kk, ll])[0]) *
-                                1000 * settings['dt'] / settings['duration'])
+                                np.count_nonzero(sp[0][ii, jj, kk, ll]) * 1000 *
+                                settings['dt'] / settings['duration'])
                             spikerates_batch[i][0][ii, jj, kk, ll] *= np.sign(
                                 np.sum(sp[0][ii, jj, kk, ll]))
 
@@ -276,24 +299,25 @@ def normalize_parameters(model, dataflow=None):
 
     print("Using {} samples for normalization.".format(len(x_norm)))
 
-#        import numpy as np
-#        sizes = [len(x_norm) * np.array(layer['output_shape'][1:]).prod() *
-#                 32 / (8 * 1e9) for idx, layer in enumerate(self.layers)
-#                 if idx != 0 and 'parameters' in self.layers[idx-1]]
-#        size_str = ['{:.2f}'.format(s) for s in sizes]
-#        print("INFO: Need {} GB for layer activations.\n".format(size_str) +
-#              "May have to reduce size of data set used for normalization.\n")
+    #        import numpy as np
+    #        sizes = [len(x_norm) * np.array(layer['output_shape'][1:]).prod() *
+    #                 32 / (8 * 1e9) for idx, layer in enumerate(self.layers)
+    #                 if idx != 0 and 'parameters' in self.layers[idx-1]]
+    #        size_str = ['{:.2f}'.format(s) for s in sizes]
+    #        print("INFO: Need {} GB for layer activations.\n".format(
+    # size_str) +
+    #              "May have to reduce size of data set used for
+    # normalization.\n")
 
     print("Normalizing parameters:\n")
     newpath = os.path.join(settings['log_dir_of_current_run'], 'normalization')
     if not os.path.exists(newpath):
         os.makedirs(newpath)
     filepath = os.path.join(newpath, str(settings['percentile']) + '.json')
-    if os.path.isfile(filepath) and \
-            os.path.basename(filepath) == str(settings['percentile'])+'.json':
+    if os.path.isfile(filepath) and os.path.basename(filepath) == str(
+            settings['percentile']) + '.json':
         print("Loading scale factors from disk instead of recalculating.")
         facs_from_disk = True
-        i = 0
         with open(filepath) as f:
             scale_facs = json.load(f)
     else:
@@ -301,6 +325,8 @@ def normalize_parameters(model, dataflow=None):
         scale_facs = []
 
     # Loop through all layers, looking for layers with parameters
+    i = 0
+    get_activ = None
     scale_fac_prev_layer = 1
     for idx, layer in enumerate(model.layers):
         # Skip layer if not preceeded by a layer with parameters
@@ -309,15 +335,15 @@ def normalize_parameters(model, dataflow=None):
         parameters = layer.get_weights()
 
         if facs_from_disk:
-            scale_fac_prev_layer = scale_facs[i-1] if i > 0 else 1
+            scale_fac_prev_layer = scale_facs[i - 1] if i > 0 else 1
             scale_fac = scale_facs[i]
             i += 1
         else:
             if settings['verbose'] > 1:
                 print("Calculating activation of layer {} ...".format(
-                      layer.name, layer.output_shape))
+                    layer.name, layer.output_shape))
             # Undo previous scaling before calculating activations:
-            layer.set_weights([parameters[0]*scale_fac_prev_layer,
+            layer.set_weights([parameters[0] * scale_fac_prev_layer,
                                parameters[1]])
             # t=4.9%
             get_activ = get_activ_fn_for_layer(model, idx)
@@ -354,14 +380,15 @@ def normalize_parameters(model, dataflow=None):
         activations_norm = get_activations_layer(get_activ, x_norm)
         activation_dict = {'Activations': activations[np.nonzero(activations)],
                            'Activations_norm':
-                           activations_norm[np.nonzero(activations)]}
+                               activations_norm[np.nonzero(activations)]}
         plot_hist(activation_dict, 'Activation', label, newpath, scale_fac)
-#        plot_hist({'Activations': activations[np.nonzero(activations)]},
-#                  'Activation', label, newpath, scale_fac)
-#        plot_hist({'Activations_max': np.max(activations, axis=tuple(
-#            np.arange(activations.ndim)[1:]))}, 'Activation', label, newpath,
-#            scale_fac)
-        # t=83.1%
+    # plot_hist({'Activations': activations[np.nonzero(activations)]},
+    #                  'Activation', label, newpath, scale_fac)
+    #        plot_hist({'Activations_max': np.max(activations, axis=tuple(
+    #            np.arange(activations.ndim)[1:]))}, 'Activation', label,
+    # newpath,
+    #            scale_fac)
+    # t=83.1%
     # Write scale factors to disk
     if not facs_from_disk and confirm_overwrite(filepath):
         with open(filepath, 'w') as f:
@@ -392,7 +419,7 @@ def get_scale_fac(activations, idx=0):
     # Remove zeros, because they bias the distribution too much
     a = activations[np.nonzero(activations)]
 
-    scale_fac = np.percentile(a, settings['percentile']-idx**2/200,
+    scale_fac = np.percentile(a, settings['percentile'] - idx ** 2 / 200,
                               overwrite_input=True)
     if settings['verbose'] > 1:
         print("Scale factor: {:.2f}.".format(scale_fac))
@@ -518,7 +545,7 @@ def wilson_score(p, n):
 
     # Quantile z of a standard normal distribution, for the error quantile a:
     z = 1.96  # 1.44 for a == 85%, 1.96 for a == 95%
-    return (z*np.sqrt((p*(1-p) + z*z/(4*n))/n)) / (1 + z*z/n)
+    return (z * np.sqrt((p * (1 - p) + z * z / (4 * n)) / n)) / (1 + z * z / n)
 
 
 def extract_label(label):

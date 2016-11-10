@@ -138,7 +138,7 @@ def VGG16(include_top=True, weights='imagenet',
 
     # load weights
     if weights == 'imagenet':
-        print('K.image_dim_ordering:', K.image_dim_ordering())
+        print('k.image_dim_ordering:', K.image_dim_ordering())
         if K.image_dim_ordering() == 'th':
             if include_top:
                 weights_path = TH_WEIGHTS_PATH

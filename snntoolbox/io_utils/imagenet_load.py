@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """ImageNet utilities.
 
 Created on Mon Jun  6 12:55:20 2016
@@ -6,17 +8,18 @@ Created on Mon Jun  6 12:55:20 2016
 """
 
 # For compatibility with python2
-from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
-from future import standard_library
+from __future__ import print_function, unicode_literals
 
-import os
-from os.path import join
-import shutil
-import random
 import json
-import numpy as np
+import os
+import random
+import shutil
+from os.path import join
+from typing import Optional
 
+import numpy as np
+from future import standard_library
 from keras.preprocessing.image import ImageDataGenerator
 
 standard_library.install_aliases()
@@ -33,19 +36,23 @@ def sample_imagenet(origin_path, target_path, num_samples=50):
 
     Parameters
     ----------
-    origin_path : string
+
+    origin_path: str
         The path to training dataset
-    target_path : string
+    target_path: str
         The path to target destination
+    num_samples: Optional[int]
+        Number of samples to get from ImageNet
     """
+
     if not os.path.isdir(origin_path):
         raise ValueError("The source folder is not existed!")
     if not os.path.isdir(target_path):
         os.makedirs(target_path)
-        print ("[MESSAGE] WARNING! The target path is not existed, "
-               "The path is created automatically.")
+        print("[MESSAGE] WARNING! The target path is not existed, "
+              "The path is created automatically.")
 
-    print ("[MESSAGE] Start Copying.")
+    print("[MESSAGE] Start Copying.")
     folder_list = [f for f in os.listdir(origin_path)
                    if os.path.isdir(join(origin_path, f))]
 
@@ -64,10 +71,10 @@ def sample_imagenet(origin_path, target_path, num_samples=50):
         for idx in file_idx:
             shutil.copy(join(folder_path, file_list[idx]),
                         join(target_path, folder_name))
-            print ("[MESSAGE] Image %s is copied to %s" %
-                   (file_list[idx], join(target_path, folder_name)))
+            print("[MESSAGE] Image %s is copied to %s" %
+                  (file_list[idx], join(target_path, folder_name)))
 
-    print ("[MESSAGE] Images are sampled! Stored at %s" % (target_path))
+    print("[MESSAGE] Images are sampled! Stored at %s" % target_path)
 
 
 def generate_class_idx(class_map_path, save_path, filename=None):
@@ -86,8 +93,8 @@ def generate_class_idx(class_map_path, save_path, filename=None):
         raise ValueError("The class mapping file is not available!")
     if not os.path.isdir(save_path):
         os.makedirs(save_path)
-        print ("[MESSAGE] WARNING! The target path is not existed, "
-               "The path is created automatically.")
+        print("[MESSAGE] WARNING! The target path is not existed, "
+              "The path is created automatically.")
 
     if filename is None:
         filename = "imagenet_class_map.json"
@@ -101,7 +108,7 @@ def generate_class_idx(class_map_path, save_path, filename=None):
 
     out_f = open(file_path, mode="w")
     json.dump(cls_dict, out_f)
-    print ("[MESSAGE] The class mapping file is dumped at %s." % (file_path))
+    print("[MESSAGE] The class mapping file is dumped at %s." % file_path)
 
 
 def reorganize_validation(val_path, val_label_path, class_idx_path):
@@ -125,7 +132,7 @@ def reorganize_validation(val_path, val_label_path, class_idx_path):
     class_idx = json.load(open(class_idx_path, "r"))
     label = np.loadtxt(val_label_path, dtype=int)
 
-    for idx in xrange(label.shape[0]):
+    for idx in range(label.shape[0]):
         img_fn = join(val_path, "ILSVRC2012_val_%08d.JPEG" % (idx+1))
 
         img_label = label[idx]
@@ -136,9 +143,9 @@ def reorganize_validation(val_path, val_label_path, class_idx_path):
             os.makedirs(label_path)
 
         shutil.move(img_fn, label_path)
-        print ("[MESSAGE] Image %s is moved to %s" % (img_fn, label_path))
+        print("[MESSAGE] Image %s is moved to %s" % (img_fn, label_path))
 
-    print ("[MESSAGE] The validation data is reorganized.")
+    print("[MESSAGE] The validation data is reorganized.")
 
 
 def get_imagenet(train_path, test_path, save_path, class_idx_path,
@@ -149,30 +156,29 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
     converted to binary class matrices. Output can be flattened for use in
     fully-connected networks.
 
+    Three compressed files ``path/filename_x_norm.npz``,
+    ``path/filename_x_test.npz``, and ``path/filename_y_test.npz``.
+    With data of the form (channels, num_rows, num_cols), ``x_norm`` and
+    ``x_test`` have dimension (num_samples, channels, num_rows, num_cols).
+    ``y_test`` has dimension (num_samples, num_classes).
+
     Parameters
     ----------
 
-    train_path : string
+    train_path : str
         The path of training data
-    test_path : string
+    test_path : str
         The path of testing data (using validation data)
-    save_path : string
+    save_path : str
         If a ``path`` is given, the loaded and modified dataset is saved to
         ``path`` directory.
-    filename: string, optional
+    class_idx_path: str
+        Path to class indexes
+    filename: Optional[str]
         Basename of file to create. Individual files will be appended
-        ``_X_norm``, ``_X_test``, etc.
-
-    Returns
-    -------
-
-    Three compressed files ``path/filename_X_norm.npz``,
-    ``path/filename_X_test.npz``, and ``path/filename_Y_test.npz``.
-    With data of the form (channels, num_rows, num_cols), ``X_norm`` and
-    ``X_test`` have dimension (num_samples, channels, num_rows, num_cols).
-    ``Y_test`` has dimension (num_samples, num_classes).
-
+        ``_x_norm``, ``_x_test``, etc.
     """
+
     if not os.path.isdir(train_path):
         raise ValueError("Training dataset is not found!")
     if not os.path.isdir(test_path):
@@ -193,34 +199,34 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
                                                  target_size=(224, 224),
                                                  classes=classes,
                                                  batch_size=10)
-    X_train, Y_train = train_dataflow.next()
+    x_train, y_train = train_dataflow.next()
 
-    X_train[:, 0, :, :] -= 103.939
-    X_train[:, 1, :, :] -= 116.779
-    X_train[:, 2, :, :] -= 123.68
-    X_train = X_train[:, ::-1, :, :]
-    # X_train /= 255.
+    x_train[:, 0, :, :] -= 103.939
+    x_train[:, 1, :, :] -= 116.779
+    x_train[:, 2, :, :] -= 123.68
+    x_train = x_train[:, ::-1, :, :]
+    # x_train /= 255.
 
     test_dataflow = datagen.flow_from_directory(test_path,
                                                 target_size=(224, 224),
                                                 classes=classes,
                                                 batch_size=10000)
 
-    X_test, Y_test = test_dataflow.next()
+    x_test, y_test = test_dataflow.next()
 
-    X_test[:, 0, :, :] -= 103.939
-    X_test[:, 1, :, :] -= 116.779
-    X_test[:, 2, :, :] -= 123.68
-    X_test = X_test[:, ::-1, :, :]
-    # X_test /= 255.
+    x_test[:, 0, :, :] -= 103.939
+    x_test[:, 1, :, :] -= 116.779
+    x_test[:, 2, :, :] -= 123.68
+    x_test = x_test[:, ::-1, :, :]
+    # x_test /= 255.
 
     if filename is None:
         filename = ''
     filepath = os.path.join(save_path, filename)
-    np.savez_compressed(filepath + 'X_norm', X_train.astype('float32'))
-    np.savez_compressed(filepath + 'Y_norm', Y_train.astype('float32'))
-    np.savez_compressed(filepath + 'X_test', X_test.astype('float32'))
-    np.savez_compressed(filepath + 'Y_test', Y_test.astype('float32'))
+    np.savez_compressed(filepath + 'X_norm', x_train.astype('float32'))
+    np.savez_compressed(filepath + 'Y_norm', y_train.astype('float32'))
+    np.savez_compressed(filepath + 'x_test', x_test.astype('float32'))
+    np.savez_compressed(filepath + 'y_test', y_test.astype('float32'))
 
 if __name__ == '__main__':
     # sample_imagenet("/home/duguyue100/imagenet/ILSVRC2015/Data/CLS-LOC/train/",

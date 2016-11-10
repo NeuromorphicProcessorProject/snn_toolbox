@@ -10,6 +10,22 @@ Created on Thu May 19 08:26:49 2016
 
 
 def border_mode_string(pad, pool_size):
+    """Get string defining the border mode.
+
+    Parameters
+    ----------
+    pad: tuple[int]
+        Zero-padding in x- and y-direction.
+    pool_size: list[int]
+        Size of kernel.
+
+    Returns
+    -------
+
+    border_mode: str
+        Border mode identifier.
+    """
+
     if pad == (0, 0):
         border_mode = 'valid'
     elif pad == (pool_size[0] // 2, pool_size[1] // 2):
@@ -71,17 +87,21 @@ def import_script(path=None, filename=None):
     if filename is None:
         filename = settings['filename']
 
+    filepath = os.path.join(path, filename + '.py')
+
     v = sys.version_info
     if v >= (3, 5):
         import importlib.util
-        filepath = os.path.join(path, filename + '.py')
         spec = importlib.util.spec_from_file_location(filename, filepath)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
     elif v >= (3, 3):
+        # noinspection PyCompatibility
         from importlib.machinery import SourceFileLoader
         mod = SourceFileLoader(filename, filepath).load_module()
     else:
+        # noinspection PyDeprecation
         import imp
+        # noinspection PyDeprecation
         mod = imp.load_source(filename, filepath)
     return mod

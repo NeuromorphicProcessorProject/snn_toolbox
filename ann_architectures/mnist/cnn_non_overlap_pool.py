@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """MNIST with non-overlapping pooling."""
 
 from __future__ import absolute_import

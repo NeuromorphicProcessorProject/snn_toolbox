@@ -182,15 +182,15 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 
-<span class="sd">    queue: Queue, optional</span>
+<span class="sd">    queue: Optional[Queue.Queue]</span>
 <span class="sd">        Results are added to the queue to be displayed in the GUI.</span>
-<span class="sd">    params: ndarray, optional</span>
+<span class="sd">    params: Optional[list[int]]</span>
 <span class="sd">        Contains the parameter values for which the simulation will be</span>
 <span class="sd">        repeated.</span>
-<span class="sd">    param_name: string, optional</span>
+<span class="sd">    param_name: string</span>
 <span class="sd">        Label indicating the parameter to sweep, e.g. ``&#39;v_thresh&#39;``.</span>
 <span class="sd">        Must be identical to the parameter&#39;s label in ``globalparams``.</span>
-<span class="sd">    param_logscale: boolean, optional</span>
+<span class="sd">    param_logscale: bool</span>
 <span class="sd">        If ``True``, plot test accuracy vs ``params`` in log scale.</span>
 <span class="sd">        Defaults to ``False``.</span>
 
@@ -211,14 +211,14 @@
         <span class="kn">from</span> <span class="nn">snntoolbox.io_utils.common</span> <span class="kn">import</span> <span class="n">load_dataset</span>
         <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;evaluateANN&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;simulate&#39;</span><span class="p">]:</span>
             <span class="n">evalset</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s1">&#39;X_test&#39;</span><span class="p">:</span> <span class="n">load_dataset</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">],</span> <span class="s1">&#39;X_test.npz&#39;</span><span class="p">),</span>
-                <span class="s1">&#39;Y_test&#39;</span><span class="p">:</span> <span class="n">load_dataset</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">],</span> <span class="s1">&#39;Y_test.npz&#39;</span><span class="p">)}</span>
+                <span class="s1">&#39;x_test&#39;</span><span class="p">:</span> <span class="n">load_dataset</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">],</span> <span class="s1">&#39;x_test.npz&#39;</span><span class="p">),</span>
+                <span class="s1">&#39;y_test&#39;</span><span class="p">:</span> <span class="n">load_dataset</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">],</span> <span class="s1">&#39;y_test.npz&#39;</span><span class="p">)}</span>
 <span class="c1">#            # Binarize the input. Hack: Should be independent of maxpool type</span>
 <span class="c1">#            if settings[&#39;maxpool_type&#39;] == &#39;binary_tanh&#39;:</span>
-<span class="c1">#                evalset[&#39;X_test&#39;] = np.sign(evalset[&#39;X_test&#39;])</span>
+<span class="c1">#                evalset[&#39;x_test&#39;] = np.sign(evalset[&#39;x_test&#39;])</span>
 <span class="c1">#            elif settings[&#39;maxpool_type&#39;] == &#39;binary_sigmoid&#39;:</span>
-<span class="c1">#                np.clip((evalset[&#39;X_test&#39;]+1.)/2., 0, 1, evalset[&#39;X_test&#39;])</span>
-<span class="c1">#                np.round(evalset[&#39;X_test&#39;], out=evalset[&#39;X_test&#39;])</span>
+<span class="c1">#                np.clip((evalset[&#39;x_test&#39;]+1.)/2., 0, 1, evalset[&#39;x_test&#39;])</span>
+<span class="c1">#                np.round(evalset[&#39;x_test&#39;], out=evalset[&#39;x_test&#39;])</span>
         <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;normalize&#39;</span><span class="p">]:</span>
             <span class="n">normset</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;simulate&#39;</span><span class="p">]:</span>
@@ -287,7 +287,7 @@
             <span class="k">for</span> <span class="n">batch_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_batches</span><span class="p">):</span>
                 <span class="n">batch_idxs</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">batch_idx</span><span class="p">,</span>
                                    <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">batch_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
-                <span class="n">x_batch</span> <span class="o">=</span> <span class="n">evalset</span><span class="p">[</span><span class="s1">&#39;X_test&#39;</span><span class="p">][</span><span class="n">batch_idxs</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="n">x_batch</span> <span class="o">=</span> <span class="n">evalset</span><span class="p">[</span><span class="s1">&#39;x_test&#39;</span><span class="p">][</span><span class="n">batch_idxs</span><span class="p">,</span> <span class="p">:]</span>
                 <span class="n">activations_batch</span> <span class="o">=</span> <span class="n">get_activations_batch</span><span class="p">(</span><span class="n">parsed_model</span><span class="p">,</span>
                                                           <span class="n">x_batch</span><span class="p">)</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">savez_compressed</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">batch_idx</span><span class="p">)),</span>
@@ -397,7 +397,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Nov 09, 2016.
+      Last updated on Nov 10, 2016.
 
     </p>
   </div>

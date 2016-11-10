@@ -8,14 +8,16 @@ Created on Mon Jun  6 12:55:20 2016
 """
 
 # For compatibility with python2
-from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
-from future import standard_library
+from __future__ import print_function, unicode_literals
 
 import os
+
 import numpy as np
 from PIL import Image
+from future import standard_library
 from snntoolbox.io_utils.common import to_categorical
+from typing import Optional
 
 standard_library.install_aliases()
 
@@ -47,55 +49,88 @@ def get_facedetection(sourcepath, imagepath, targetpath=None, filename=None):
     -------
 
     The dataset as a tuple containing the training and test sample arrays
-    (X_train, Y_train, X_test, Y_test).
-    With data of the form (channels, num_rows, num_cols), ``X_train`` and
-    ``X_test`` have dimension (num_samples, channels, num_rows, num_cols).
-    ``Y_train`` and ``Y_test`` have dimension (num_samples, num_classes).
+    (x_train, y_train, x_test, y_test).
+    With data of the form (channels, num_rows, num_cols), ``x_train`` and
+    ``x_test`` have dimension (num_samples, channels, num_rows, num_cols).
+    ``y_train`` and ``y_test`` have dimension (num_samples, num_classes).
     """
 
     nb_classes = 2
 
     # X contains only paths to images. y contains the true labels as integers.
-    (X_train, y_train) = load_paths_from_files(sourcepath, imagepath,
+    (x_train, y_train) = load_paths_from_files(sourcepath, imagepath,
                                                'train_36x36.txt')
-    (X_test, y_test) = load_paths_from_files(sourcepath, imagepath,
+    (x_test, y_test) = load_paths_from_files(sourcepath, imagepath,
                                              'test_36x36.txt')
-    X_train = load_samples(X_train)
-    X_test = load_samples(X_test)
+    x_train = load_samples(x_train)
+    x_test = load_samples(x_test)
 
-    X_train = X_train.astype('float32')
-    X_test = X_test.astype('float32')
-    X_train /= 255
-    X_test /= 255
+    x_train = x_train.astype('float32')
+    x_test = x_test.astype('float32')
+    x_train /= 255
+    x_test /= 255
 
     # convert class vectors to binary class matrices
-    Y_train = to_categorical(y_train, nb_classes)
-    Y_test = to_categorical(y_test, nb_classes)
+    y_train = to_categorical(y_train, nb_classes)
+    y_test = to_categorical(y_test, nb_classes)
 
     if targetpath is not None:
         if filename is None:
             filename = ''
         filepath = os.path.join(targetpath, filename)
-        np.savez_compressed(filepath + 'X_norm', X_train)
-        np.savez_compressed(filepath + 'X_test', X_test)
-        np.savez_compressed(filepath + 'Y_train', Y_train)
-        np.savez_compressed(filepath + 'Y_test', Y_test)
+        np.savez_compressed(filepath + 'X_norm', x_train)
+        np.savez_compressed(filepath + 'x_test', x_test)
+        np.savez_compressed(filepath + 'y_train', y_train)
+        np.savez_compressed(filepath + 'y_test', y_test)
 
-    return (X_train, Y_train, X_test, Y_test)
+    return x_train, y_train, x_test, y_test
 
 
 def load_paths_from_files(sourcepath, imagepath, filename):
+    """Load paths to data samples from a file.
+
+    Parameters
+    ----------
+
+    sourcepath: str
+        Path to source file
+    imagepath: str
+        Path to samples
+    filename: str
+        Name of source file
+
+    Returns
+    -------
+
+    : np.array, np.array
+        Samples and targets.
+    """
+
     filepath = os.path.join(sourcepath, filename)
     assert os.path.isfile(filepath)
-    X = []
-    Y = []
+    x = []
+    y = []
     for s in np.loadtxt(filepath, dtype=np.str):
-        X.append(os.path.join(imagepath, s[0][2:-1]))
-        Y.append(int(s[1][2:-1]))
-    return np.array(X), np.array(Y)
+        x.append(os.path.join(imagepath, s[0][2:-1]))
+        y.append(int(s[1][2:-1]))
+    return np.array(x), np.array(y)
 
 
 def load_samples(filepaths, nb_samples=None):
+    """Load samples from file containing the paths to individual samples.
+
+    Parameters
+    ----------
+
+    filepaths: np.array
+    nb_samples: Optional[int]
+
+    Returns
+    -------
+
+    sample_data: np.array
+    """
+
     if nb_samples is None:
         nb_samples = len(filepaths)
 
@@ -122,8 +157,9 @@ def load_samples(filepaths, nb_samples=None):
 
 
 if __name__ == '__main__':
-    sourcepath = '/mnt/2646BAF446BAC3B9/.snntoolbox/datasets/facedetection/' +\
+    source_path = '/mnt/2646BAF446BAC3B9/.snntoolbox/datasets/facedetection/' +\
                  'Databases/All_combined/txt'
-    imagepath = os.path.abspath(os.path.join(sourcepath, '..', 'images_36x36'))
-    targetpath = '/mnt/2646BAF446BAC3B9/.snntoolbox/datasets/facedetection/'
-    get_facedetection(sourcepath, imagepath, targetpath)
+    image_path = os.path.abspath(os.path.join(source_path, '..',
+                                              'images_36x36'))
+    target_path = '/mnt/2646BAF446BAC3B9/.snntoolbox/datasets/facedetection/'
+    get_facedetection(source_path, image_path, target_path)

@@ -1,3 +1,5 @@
+.. # coding=utf-8
+
 cifar10
 -------
 
@@ -39,7 +41,7 @@ plotting
     :show-inheritance:
 
 common
--------
+------
 
 .. automodule:: snntoolbox.io_utils.common
     :members:

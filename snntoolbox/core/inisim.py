@@ -382,7 +382,7 @@ class SpikeDense(Dense):
         # understand.
         self.activation_str = str(kwargs.pop('activation'))
         super(SpikeDense, self).__init__(output_dim=output_dim, weights=weights,
-                                    **kwargs)
+                                         **kwargs)
         self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
         self.impulse = self.spikecounts = self.total_spike_count = None
         self.updates = self.refrac_until = self.max_spikerate = None
@@ -526,8 +526,9 @@ class SpikeMaxPooling2D(MaxPooling2D):
         self.ignore_border = True if border_mode == 'valid' else False
         if 'binary' in settings['maxpool_type']:
             self.activation_str = settings['maxpool_type']
-        super(SpikeMaxPooling2D, self).__init__(pool_size=pool_size, strides=strides,
-                                           border_mode=border_mode, **kwargs)
+        super(SpikeMaxPooling2D, self).__init__(
+            pool_size=pool_size, strides=strides,
+            border_mode=border_mode, **kwargs)
         self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
         self.impulse = self.spikecounts = self.total_spike_count = None
         self.updates = self.refrac_until = None

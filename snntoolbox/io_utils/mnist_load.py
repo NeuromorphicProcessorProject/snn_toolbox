@@ -11,7 +11,6 @@ Created on Mon Jun  6 12:54:49 2016
 from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
 from future import standard_library
-from builtins import open
 
 import sys
 import os
@@ -46,12 +45,12 @@ def get_mnist(path=None, filename=None, flat=False):
     -------
 
     The dataset as a tuple containing the training and test sample arrays
-    (X_train, Y_train, X_test, Y_test).
-    With data of the form (channels, num_rows, num_cols), ``X_train`` and
-    ``X_test`` have dimension (num_samples, channels*num_rows*num_cols)
+    (x_train, y_train, x_test, y_test).
+    With data of the form (channels, num_rows, num_cols), ``x_train`` and
+    ``x_test`` have dimension (num_samples, channels*num_rows*num_cols)
     in case ``flat==True``, and
     (num_samples, channels, num_rows, num_cols) otherwise.
-    ``Y_train`` and ``Y_test`` have dimension (num_samples, num_classes).
+    ``y_train`` and ``y_test`` have dimension (num_samples, num_classes).
 
     """
 
@@ -67,37 +66,37 @@ def get_mnist(path=None, filename=None, flat=False):
         f = open(d, 'rb')
 
     if sys.version_info < (3,):
-        (X_train, y_train), (X_test, y_test) = cPickle.load(f)
+        (x_train, y_train), (x_test, y_test) = cPickle.load(f)
     else:
-        (X_train, y_train), (X_test, y_test) = cPickle.load(f,
+        (x_train, y_train), (x_test, y_test) = cPickle.load(f,
                                                             encoding='bytes')
     f.close()
 
-    X_train /= 255
-    X_test /= 255
+    x_train /= 255
+    x_test /= 255
 
     # Convert class vectors to binary class matrices
-    Y_train = to_categorical(y_train, nb_classes)
-    Y_test = to_categorical(y_test, nb_classes)
+    y_train = to_categorical(y_train, nb_classes)
+    y_test = to_categorical(y_test, nb_classes)
 
     # Data container has no channel dimension, but we need 4D input for CNN:
-    if X_train.ndim < 4 and not flat:
-        X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1],
-                                  X_train.shape[2])
-        X_test = X_test.reshape(X_test.shape[0], 1, X_test.shape[1],
-                                X_test.shape[2])
+    if x_train.ndim < 4 and not flat:
+        x_train = x_train.reshape(x_train.shape[0], 1, x_train.shape[1],
+                                  x_train.shape[2])
+        x_test = x_test.reshape(x_test.shape[0], 1, x_test.shape[1],
+                                x_test.shape[2])
 
     if flat:
-        X_train = X_train.reshape(X_train.shape[0], np.prod(X_train.shape[1:]))
-        X_test = X_test.reshape(X_test.shape[0], np.prod(X_test.shape[1:]))
+        x_train = x_train.reshape(x_train.shape[0], np.prod(x_train.shape[1:]))
+        x_test = x_test.reshape(x_test.shape[0], np.prod(x_test.shape[1:]))
 
     if path is not None:
         if filename is None:
             filename = ''
         filepath = os.path.join(path, filename)
-        np.savez_compressed(filepath+'X_norm', X_train.astype('float32'))
-        np.savez_compressed(filepath+'X_test', X_test.astype('float32'))
-#       np.savez_compressed(filepath+'Y_train', Y_train.astype('float32'))
-        np.savez_compressed(filepath+'Y_test', Y_test.astype('float32'))
+        np.savez_compressed(filepath+'X_norm', x_train.astype('float32'))
+        np.savez_compressed(filepath+'x_test', x_test.astype('float32'))
+#       np.savez_compressed(filepath+'y_train', y_train.astype('float32'))
+        np.savez_compressed(filepath+'y_test', y_test.astype('float32'))
 
-    return (X_train, Y_train, X_test, Y_test)
+    return x_train, y_train, x_test, y_test

@@ -8,13 +8,13 @@ Created on Mon Jun  6 12:55:20 2016
 """
 
 # For compatibility with python2
-from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
-from future import standard_library
+from __future__ import print_function, unicode_literals
 
 import os
-import numpy as np
 
+import numpy as np
+from future import standard_library
 from keras.preprocessing.image import ImageDataGenerator
 
 standard_library.install_aliases()
@@ -44,8 +44,8 @@ def get_caltech101(path, filename=None):
     Three compressed files ``path/filename_X_norm.npz``,
     ``path/filename_X_test.npz``, and ``path/filename_Y_test.npz``.
     With data of the form (channels, num_rows, num_cols), ``X_norm`` and
-    ``X_test`` have dimension (num_samples, channels, num_rows, num_cols).
-    ``Y_test`` has dimension (num_samples, num_classes).
+    ``x_test`` have dimension (num_samples, channels, num_rows, num_cols).
+    ``y_test`` has dimension (num_samples, num_classes).
     """
 
     num_samples = 9144
@@ -57,21 +57,21 @@ def get_caltech101(path, filename=None):
 
     # Compute quantities required for featurewise normalization
     # (std, mean, and principal components if ZCA whitening is applied)
-    X = ImageDataGenerator(rescale=1./255).flow_from_directory(
+    x = ImageDataGenerator(rescale=1./255).flow_from_directory(
         path, target_size, batch_size=num_samples).next()[0]
-    datagen.fit(X)
+    datagen.fit(x)
 
     dataflow = datagen.flow_from_directory(
         path, target_size, batch_size=num_samples)
 
-    X_test, Y_test = dataflow.next()
+    x_test, y_test = dataflow.next()
 
     if filename is None:
         filename = ''
     filepath = os.path.join(path, filename)
-    np.savez_compressed(filepath + 'X_norm', X_test[::100].astype('float32'))
-    np.savez_compressed(filepath + 'X_test', X_test.astype('float32'))
-    np.savez_compressed(filepath + 'Y_test', Y_test)
+    np.savez_compressed(filepath + 'X_norm', x_test[::100].astype('float32'))
+    np.savez_compressed(filepath + 'x_test', x_test.astype('float32'))
+    np.savez_compressed(filepath + 'y_test', y_test)
 
 if __name__ == '__main__':
     get_caltech101('/home/rbodo/.snntoolbox/Datasets/caltech101/original/')

@@ -98,6 +98,7 @@
 <li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.common">common</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="todo.html">Todo</a></li>
 </ul>
 
             
@@ -197,12 +198,12 @@ using the updated default parameters.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>queue</strong> (<em>Queue, optional</em>) &#8211; Results are added to the queue to be displayed in the GUI.</li>
-<li><strong>params</strong> (<em>ndarray, optional</em>) &#8211; Contains the parameter values for which the simulation will be
+<li><strong>queue</strong> (<em>Optional[Queue.Queue]</em>) &#8211; Results are added to the queue to be displayed in the GUI.</li>
+<li><strong>params</strong> (<em>Optional[list[int]]</em>) &#8211; Contains the parameter values for which the simulation will be
 repeated.</li>
-<li><strong>param_name</strong> (<em>string, optional</em>) &#8211; Label indicating the parameter to sweep, e.g. <code class="docutils literal"><span class="pre">'v_thresh'</span></code>.
+<li><strong>param_name</strong> (<a class="reference external" href="https://docs.python.org/library/string.html#module-string" title="(in Python v2.7)"><em>string</em></a>) &#8211; Label indicating the parameter to sweep, e.g. <code class="docutils literal"><span class="pre">'v_thresh'</span></code>.
 Must be identical to the parameter&#8217;s label in <code class="docutils literal"><span class="pre">globalparams</span></code>.</li>
-<li><strong>param_logscale</strong> (<em>boolean, optional</em>) &#8211; If <code class="docutils literal"><span class="pre">True</span></code>, plot test accuracy vs <code class="docutils literal"><span class="pre">params</span></code> in log scale.
+<li><strong>param_logscale</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If <code class="docutils literal"><span class="pre">True</span></code>, plot test accuracy vs <code class="docutils literal"><span class="pre">params</span></code> in log scale.
 Defaults to <code class="docutils literal"><span class="pre">False</span></code>.</li>
 </ul>
 </td>
@@ -488,9 +489,11 @@ conversion and simulation of an SNN.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> &#8211; Float</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Integer in {0, 1}</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)">int</a></td>
 </tr>
 </tbody>
 </table>
@@ -498,15 +501,17 @@ conversion and simulation of an SNN.</p>
 
 <dl class="function">
 <dt id="core.util.binary_tanh">
-<code class="descclassname">core.util.</code><code class="descname">binary_tanh</code><span class="sig-paren">(</span><em>x: float</em><span class="sig-paren">)</span> &rarr; int<a class="reference internal" href="_modules/core/util.html#binary_tanh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.binary_tanh" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">core.util.</code><code class="descname">binary_tanh</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core/util.html#binary_tanh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.util.binary_tanh" title="Permalink to this definition">¶</a></dt>
 <dd><p>Round a float to -1 or 1.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> &#8211; Float</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Integer in {-1, 1}</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)">int</a></td>
 </tr>
 </tbody>
 </table>
@@ -714,11 +719,11 @@ single module to <code class="docutils literal"><span class="pre">model_libs</sp
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>input_model</strong> (<em>Analog Neural Network</em>) &#8211; A pretrained neural network model.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>input_model</strong> (<em>Any</em>) &#8211; A pretrained neural network model in the respective <code class="docutils literal"><span class="pre">model_lib</span></code>.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>parsed_model</strong> &#8211; A Keras model functionally equivalent to <code class="docutils literal"><span class="pre">input_model</span></code>.</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Keras model</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">keras.models.Sequential</td>
 </tr>
 </tbody>
 </table>
@@ -743,7 +748,11 @@ single rate value.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>spiketrains_batch</strong> (<em>List</em>) &#8211; </td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>spiketrains_batch</strong> (<em>list[tuple[np.array, str]]</em>) &#8211; </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>spikerates_batch</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list[tuple[np.array, str]]</td>
 </tr>
 </tbody>
 </table>
@@ -797,7 +806,7 @@ single rate value.</p>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Nov 09, 2016.
+      Last updated on Nov 10, 2016.
 
     </p>
   </div>

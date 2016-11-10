@@ -360,7 +360,7 @@ def update_setup(s=None):
         s['convert'] = True
     # Set default path if user did not specify one.
     if 'path_wd' not in s or s['path_wd'] == '':
-        s['path_wd'] = os.path.join(snntoolbox.dir, 'data',
+        s['path_wd'] = os.path.join(snntoolbox.toolbox_root, 'data',
                                     s['filename_ann'], s['simulator'])
     # Create directory if not there yet.
     if not os.path.exists(s['path_wd']):

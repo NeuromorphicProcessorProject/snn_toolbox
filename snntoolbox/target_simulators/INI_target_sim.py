@@ -357,17 +357,17 @@ class SNN:
 
                 if record_error_vs_time:
                     ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
-                    plot_error_vs_time(err, ANN_err=ann_err,
+                    plot_error_vs_time(err, ann_err=ann_err,
                                        path=settings['log_dir_of_current_run'])
                     with open(os.path.join(settings['log_dir_of_current_run'],
                                            'err_vs_time.txt'), 'w') as f:
                         f.write(str(err))
 
                 if batch_idx == 0 and settings['verbose'] > 2:
-                    plot_input_image(x_batch[0], np.argmax(y_batch[0]),
+                    plot_input_image(x_batch[0], int(np.argmax(y_batch[0])),
                                      settings['log_dir_of_current_run'])
                     ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
-                    plot_error_vs_time(err, ANN_err=ann_err,
+                    plot_error_vs_time(err, ann_err=ann_err,
                                        path=settings['log_dir_of_current_run'])
                     with open(os.path.join(settings['log_dir_of_current_run'],
                                            'err_vs_time.txt'), 'w') as f:

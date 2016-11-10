@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """
 Copyright (c) 2016, Gavin Weiguang Ding
 All rights reserved.
@@ -36,6 +38,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 from matplotlib.collections import PatchCollection
+from typing import Optional
 plt.rcdefaults()
 
 
@@ -48,55 +51,92 @@ Dark = 0.3
 Black = 0.
 
 
-def add_layer(patches, colors, size=24, num=5,
-              top_left=[0, 0],
-              loc_diff=[3, -3],
-              ):
-    # add a rectangle
+def add_layer(patch_list, color_list, size=24, num=5, top_left=None,
+              loc_diff=None):
+    """Add layer.
+
+    Parameters
+    ----------
+    patch_list :
+    color_list :
+    size :
+    num :
+    top_left :
+    loc_diff :
+    """
+
+    if top_left is None:
+        top_left = [0, 0]
+    if loc_diff is None:
+        loc_diff = [3, -3]
     top_left = np.array(top_left)
     loc_diff = np.array(loc_diff)
     loc_start = top_left - np.array([0, size])
-    for ind in range(num):
-        patches.append(Rectangle(loc_start + ind * loc_diff, size, size))
-        if ind % 2:
-            colors.append(Medium)
+    for i in range(num):
+        patch_list.append(Rectangle(loc_start + i * loc_diff, size, size))
+        if i % 2:
+            color_list.append(Medium)
         else:
-            colors.append(Light)
+            color_list.append(Light)
 
 
-def add_mapping(patches, colors, start_ratio, patch_size, ind_bgn,
-                top_left_list, loc_diff_list, num_show_list, size_list):
+def add_mapping(patch_list, color_list, start_ratio, patch_size, ind_bgn,
+                topleftlist, locdifflist, numshowlist, sizelist):
+    """
 
-    start_loc = top_left_list[ind_bgn] \
-        + (num_show_list[ind_bgn] - 1) * np.array(loc_diff_list[ind_bgn]) \
-        + np.array([start_ratio[0] * size_list[ind_bgn],
-                    -start_ratio[1] * size_list[ind_bgn]])
+    Parameters
+    ----------
+    patch_list :
+    color_list :
+    start_ratio :
+    patch_size :
+    ind_bgn :
+    topleftlist :
+    locdifflist :
+    numshowlist :
+    sizelist :
+    """
 
-    end_loc = top_left_list[ind_bgn + 1] \
-        + (num_show_list[ind_bgn + 1] - 1) \
-        * np.array(loc_diff_list[ind_bgn + 1]) \
-        + np.array([(start_ratio[0] + .5 * patch_size / size_list[ind_bgn]) *
-                    size_list[ind_bgn + 1],
-                    -(start_ratio[1] - .5 * patch_size / size_list[ind_bgn]) *
-                    size_list[ind_bgn + 1]])
+    start_loc = topleftlist[ind_bgn] \
+                + (numshowlist[ind_bgn] - 1) * np.array(locdifflist[ind_bgn]) \
+                + np.array([start_ratio[0] * sizelist[ind_bgn],
+                -start_ratio[1] * sizelist[ind_bgn]])
 
-    patches.append(Rectangle(start_loc, patch_size, patch_size))
-    colors.append(Dark)
-    patches.append(Line2D([start_loc[0], end_loc[0]],
-                          [start_loc[1], end_loc[1]]))
-    colors.append(Black)
-    patches.append(Line2D([start_loc[0] + patch_size, end_loc[0]],
-                          [start_loc[1], end_loc[1]]))
-    colors.append(Black)
-    patches.append(Line2D([start_loc[0], end_loc[0]],
-                          [start_loc[1] + patch_size, end_loc[1]]))
-    colors.append(Black)
-    patches.append(Line2D([start_loc[0] + patch_size, end_loc[0]],
-                          [start_loc[1] + patch_size, end_loc[1]]))
-    colors.append(Black)
+    end_loc = topleftlist[ind_bgn + 1] + (numshowlist[ind_bgn + 1] - 1) \
+        * np.array(locdifflist[ind_bgn + 1]) \
+        + np.array([(start_ratio[0] + .5 * patch_size / sizelist[ind_bgn]) *
+        sizelist[ind_bgn + 1],
+        -(start_ratio[1] - .5 * patch_size / sizelist[ind_bgn]) *
+        sizelist[ind_bgn + 1]])
+
+    patch_list.append(Rectangle(start_loc, patch_size, patch_size))
+    color_list.append(Dark)
+    patch_list.append(Line2D([start_loc[0], end_loc[0]],
+                             [start_loc[1], end_loc[1]]))
+    color_list.append(Black)
+    patch_list.append(Line2D([start_loc[0] + patch_size, end_loc[0]],
+                             [start_loc[1], end_loc[1]]))
+    color_list.append(Black)
+    patch_list.append(Line2D([start_loc[0], end_loc[0]],
+                             [start_loc[1] + patch_size, end_loc[1]]))
+    color_list.append(Black)
+    patch_list.append(Line2D([start_loc[0] + patch_size, end_loc[0]],
+                             [start_loc[1] + patch_size, end_loc[1]]))
+    color_list.append(Black)
 
 
-def label(xy, text, xy_off=[0, 4]):
+def label(xy, text, xy_off=None):
+    """Create layer label.
+
+    Parameters
+    ----------
+    xy: list[int]
+    text: str
+    xy_off: Optional[list[int]]
+    """
+
+    if xy_off is None:
+        xy_off = [0, 4]
     plt.text(xy[0] + xy_off[0], xy[1] + xy_off[1], text,
              family='sans-serif', size=8)
 

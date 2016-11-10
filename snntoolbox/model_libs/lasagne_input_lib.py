@@ -19,14 +19,15 @@ Created on Thu Jun  9 08:11:09 2016
 """
 
 import os
-import theano
+from typing import Optional
+
 import lasagne
+import numpy as np
+import theano
 from snntoolbox.config import settings, spiking_layers
 from snntoolbox.io_utils.common import load_parameters
-import numpy as np
-
-from snntoolbox.model_libs.common import import_script
 from snntoolbox.model_libs.common import border_mode_string
+from snntoolbox.model_libs.common import import_script
 
 layer_dict = {'DenseLayer': 'Dense',
               'Conv2DLayer': 'Convolution2D',
@@ -82,13 +83,9 @@ def extract(model):
     Parameters
     ----------
 
-    model: dict
-        A dictionary of objects that constitute the input model. Contains at
-        least the key
-            - ``model``: A model instance of the network in the respective
-              ``model_lib``.
-        For instance, if the input model was written using Keras, the 'model'-
-        value would be an instance of ``keras.Model``.
+    model: lasagne.layers.Layer
+        Lasagne model instance of the network, given by the last layer.
+        Obtained from calling the ``load_ann`` function in this module.
 
     Returns
     -------
@@ -145,10 +142,10 @@ def extract(model):
             parameters = prev_layer['parameters']
             print("Absorbing batch-normalization parameters into " +
                   "parameters of previous {}.".format(prev_layer['name']))
+            assert isinstance(layer, object)
             prev_layer['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[1],
-                bn_parameters[0], bn_parameters[2], bn_parameters[3],
-                layer.epsilon)
+                bn_parameters[0], bn_parameters[2], bn_parameters[3])
             parameters_idx += 4
 
         if layer_type not in spiking_layers:
@@ -231,24 +228,55 @@ def extract(model):
 
 
 def hard_sigmoid(x):
-    return np.clip((x + 1.) / 2., 0, 1)
+    """Hard sigmoid (step) function.
+
+    Parameters
+    ----------
+    x: np.array
+        Input values.
+
+    Returns
+    -------
+
+    : np.array
+        Array with values in ``{0, 1}``
+    """
+
+    return np.clip(np.divide((x + 1.), 2.), 0, 1)
 
 
-def binarize(W, H=1., deterministic=True):
-    Wb = hard_sigmoid(W / H)
-    Wb = np.round(Wb) if deterministic else np.random.binomial(1, Wb, Wb.shape)
-    Wb[Wb.nonzero()] = H
-    Wb[Wb == 0] = -H
-    return np.asarray(Wb, theano.config.floatX)
+def binarize(w, h=1., deterministic=True):
+    """Binarize weights.
+
+    Parameters
+    ----------
+    w: np.array
+        Weights.
+    h: float
+        Values are round to ``+/-h``.
+    deterministic: bool
+        Whether to apply deterministic rounding.
+
+    Returns
+    -------
+
+    : np.array
+        The binarized weights.
+    """
+
+    wb = hard_sigmoid(w / h)
+    # noinspection PyTypeChecker
+    wb = np.round(wb) if deterministic else np.random.binomial(1, wb)
+    wb[wb.nonzero()] = h
+    wb[wb == 0] = -h
+    return np.asarray(wb, theano.config.floatX)
 
 
-def absorb_bn(w, b, gamma, beta, mean, var_squ_eps_inv, epsilon):
+def absorb_bn(w, b, gamma, beta, mean, var_squ_eps_inv):
     """
     Absorb the parameters of a batch-normalization layer into the previous
     layer.
     """
-
-    import numpy as np
 
     axis = 0 if w.ndim > 2 else 1
 
@@ -269,18 +297,16 @@ def load_ann(path=None, filename=None):
     Parameters
     ----------
 
-        path: string, optional
-            Path to directory where to load model from. Defaults to
-            ``settings['path']``.
-
-        filename: string, optional
-            Name of file to load model from. Defaults to
-            ``settings['filename']``.
+    path: Optional[str]
+        Path to directory where to load model from. Defaults to
+        ``settings['path']``.
+    filename: Optional[str]
+        Name of file to load model from. Defaults to ``settings['filename']``.
 
     Returns
     -------
 
-    model: dict
+    : dict[str, Union[lasagne.models, theano.function]]
         A dictionary of objects that constitute the input model. It must
         contain the following two keys:
 
@@ -298,6 +324,30 @@ def load_ann(path=None, filename=None):
 
 
 def model_from_py(path=None, filename=None):
+    """Load model from *.py file.
+
+    Parameters
+    ----------
+
+    path: Optional[str]
+        Path to directory where to load model from. Defaults to
+        ``settings['path']``.
+    filename: Optional[str]
+        Name of file to load model from. Defaults to ``settings['filename']``.
+
+    Returns
+    -------
+
+    : dict[str, Union[lasagne.layers.Layer, theano.function]]
+        A dictionary of objects that constitute the input model. It must
+        contain the following two keys:
+
+        - 'model': lasagne.layers.Layer
+            Lasagne model instance of the network, given by the last layer.
+        - 'val_fn': Theano function that allows evaluating the original
+          model.
+    """
+
     if path is None:
         path = settings['path']
     if filename is None:
@@ -311,10 +361,10 @@ def model_from_py(path=None, filename=None):
     return {'model': model, 'val_fn': val_fn}
 
 
-def evaluate(val_fn, X_test=None, Y_test=None, dataflow=None):
+def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
     """Evaluate the original ANN.
 
-    Can use either numpy arrays ``X_test, Y_test`` containing the test samples,
+    Can use either numpy arrays ``x_test, y_test`` containing the test samples,
     or generate them with a dataflow
     (``Keras.ImageDataGenerator.flow_from_directory`` object).
     """
@@ -322,20 +372,20 @@ def evaluate(val_fn, X_test=None, Y_test=None, dataflow=None):
     err = 0
     loss = 0
 
-    if X_test is None:
+    if x_test is None:
         # Get samples from Keras.ImageDataGenerator
         batch_size = dataflow.batch_size
         dataflow.batch_size = settings['num_to_test']
-        X_test, Y_test = dataflow.next()
+        x_test, y_test = dataflow.next()
         dataflow.batch_size = batch_size
-        print("Using {} samples to evaluate input model".format(len(X_test)))
+        print("Using {} samples to evaluate input model".format(len(x_test)))
 
     batch_size = settings['batch_size']
-    batches = int(len(X_test) / batch_size)
+    batches = int(len(x_test) / batch_size)
 
     for i in range(batches):
-        new_loss, new_err = val_fn(X_test[i*batch_size: (i+1)*batch_size],
-                                   Y_test[i*batch_size: (i+1)*batch_size])
+        new_loss, new_err = val_fn(x_test[i*batch_size: (i+1)*batch_size],
+                                   y_test[i*batch_size: (i+1)*batch_size])
         err += new_err
         loss += new_loss
 

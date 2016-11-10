@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """
 This script makes a dataset of 32x32 contrast normalized, approximately
 whitened CIFAR-10 images.
@@ -5,14 +7,17 @@ whitened CIFAR-10 images.
 
 from __future__ import print_function
 
-from pylearn2.utils import serial
-from pylearn2.datasets import preprocessing
-from pylearn2.utils import string_utils
-from pylearn2.datasets.cifar10 import CIFAR10
 import textwrap
+
+from pylearn2.datasets import preprocessing
+from pylearn2.datasets.cifar10 import CIFAR10
+from pylearn2.utils import serial
+from pylearn2.utils import string_utils
 
 
 def main():
+    """Whiten Cifar10 with Global Contrast Normalization"""
+
     data_dir = string_utils.preprocess('${PYLEARN2_DATA_PATH}/cifar10')
 
     print('Loading CIFAR-10 train dataset...')
@@ -21,9 +26,9 @@ def main():
     print("Preparing output directory...")
     output_dir = data_dir + '/pylearn2_gcn_whitened'
     serial.mkdir(output_dir)
-    README = open(output_dir + '/README', 'w')
+    readme = open(output_dir + '/README', 'w')
 
-    README.write(textwrap.dedent("""
+    readme.write(textwrap.dedent("""
     The .pkl files in this directory may be opened in python using cPickle,
     pickle, or pylearn2.serial.load.
 
@@ -38,12 +43,12 @@ def main():
 
     They were created with the pylearn2 script make_cifar10_gcn_whitened.py.
 
-    All other files in this directory, including this README, were created
+    All other files in this directory, including this readme, were created
     by the same script and are necessary for the other files to function
     correctly.
     """))
 
-    README.close()
+    readme.close()
 
     print("Learning the preprocessor and \
           preprocessing the unsupervised train data...")

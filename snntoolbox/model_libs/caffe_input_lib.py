@@ -19,6 +19,7 @@ Created on Thu Jun  9 08:11:09 2016
 """
 
 import os
+
 import caffe
 import numpy as np
 from snntoolbox.config import settings, spiking_layers
@@ -160,11 +161,13 @@ def extract(model):
             attributes['batch_input_shape'] = tuple(batch_input_shape)
 
         # Insert Flatten layer
+        prev_layer_key = None
         output_shape = list(caffe_model.blobs[layer.name].shape)
         for k in [layer_num - i for i in range(1, 4)]:
             prev_layer_key = caffe_layers[k].name
             if prev_layer_key in caffe_model.blobs:
                 break
+        assert prev_layer_key, "Search for layer to flatten was unsuccessful."
         prev_layer_output_shape = list(caffe_model.blobs[prev_layer_key].shape)
         if len(output_shape) < len(prev_layer_output_shape) and \
                 layer_type != 'Flatten':
@@ -186,11 +189,11 @@ def extract(model):
         attributes['name'] = num_str + layer_type + shape_string
 
         if layer_type in {'Dense', 'Convolution2D'}:
-            W = caffe_model.params[layer.name][0].data
+            w = caffe_model.params[layer.name][0].data
             b = caffe_model.params[layer.name][1].data
             if layer_type == 'Dense':
-                W = np.transpose(W)
-            attributes['parameters'] = [W, b]
+                w = np.transpose(w)
+            attributes['parameters'] = [w, b]
             # Get type of nonlinearity if the activation is directly in the
             # Dense / Conv layer:
             activation = activation_dict.get(layer.__class__.__name__,
@@ -286,24 +289,24 @@ def load_ann(path=None, filename=None):
     return {'model': (model, model_protobuf), 'val_fn': model.forward_all}
 
 
-def evaluate(val_fn, X_test=None, Y_test=None, dataflow=None):
+def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
     """Evaluate the original ANN.
 
-    Can use either numpy arrays ``X_test, Y_test`` containing the test samples,
+    Can use either numpy arrays ``x_test, y_test`` containing the test samples,
     or generate them with a dataflow
     (``Keras.ImageDataGenerator.flow_from_directory`` object).
     """
 
-    if X_test is None:
+    if x_test is None:
         # Get samples from Keras.ImageDataGenerator
         batch_size = dataflow.batch_size
         dataflow.batch_size = settings['num_to_test']
-        X_test, Y_test = dataflow.next()
+        x_test, y_test = dataflow.next()
         dataflow.batch_size = batch_size
-        print("Using {} samples to evaluate input model".format(len(X_test)))
+        print("Using {} samples to evaluate input model".format(len(x_test)))
 
-    guesses = np.argmax(val_fn(data=X_test)['prob'], axis=1)
-    truth = np.argmax(Y_test, axis=1)
+    guesses = np.argmax(val_fn(data=x_test)['prob'], axis=1)
+    truth = np.argmax(y_test, axis=1)
     accuracy = np.mean(guesses == truth)
     loss = -1
 

@@ -61,7 +61,8 @@ def extract(model):
     ----------
 
     model: keras.models.Sequential
-        Keras model instance of the network.
+        Keras model instance of the network. Obtained from calling the
+        ``load_ann`` function in this module.
 
     Returns
     -------
@@ -184,10 +185,6 @@ def load_ann(path=None, filename=None):
             Keras model instance of the network.
         - 'val_fn': theano.function
             Theano function that allows evaluating the original model.
-
-        For instance, if the input model was written using Keras, the 'model'-
-        value would be an instance of ``keras.models.Sequential``,
-        and 'val_fn' the ``model.evaluate`` method.
     """
 
     from keras import models
