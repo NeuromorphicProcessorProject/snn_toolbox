@@ -94,7 +94,7 @@ def get_mnist(path=None, filename=None, flat=False):
         if filename is None:
             filename = ''
         filepath = os.path.join(path, filename)
-        np.savez_compressed(filepath+'X_norm', x_train.astype('float32'))
+        np.savez_compressed(filepath+'x_norm', x_train.astype('float32'))
         np.savez_compressed(filepath+'x_test', x_test.astype('float32'))
 #       np.savez_compressed(filepath+'y_train', y_train.astype('float32'))
         np.savez_compressed(filepath+'y_test', y_test.astype('float32'))

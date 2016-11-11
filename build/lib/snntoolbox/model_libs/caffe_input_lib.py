@@ -138,9 +138,11 @@ def extract(model):
         if layer_type == 'BatchNormalization':
             bn_parameters = [layer.blobs[0].data,
                              layer.blobs[1].data]
+            prev_layer = None
+            k = 0
             for k in [layer_num - i for i in range(1, 3)]:
                 prev_layer = caffe_model.layers[k]
-                if prev_layer.blobs != []:
+                if len(prev_layer.blobs) > 0:
                     break
             parameters = [caffe_model.params[layer.name][0].data,
                           caffe_model.params[layer.name][1].data]
@@ -162,6 +164,7 @@ def extract(model):
 
         # Insert Flatten layer
         output_shape = list(caffe_model.blobs[layer.name].shape)
+        prev_layer_key = None
         for k in [layer_num - i for i in range(1, 4)]:
             prev_layer_key = caffe_layers[k].name
             if prev_layer_key in caffe_model.blobs:
@@ -187,11 +190,11 @@ def extract(model):
         attributes['name'] = num_str + layer_type + shape_string
 
         if layer_type in {'Dense', 'Convolution2D'}:
-            W = caffe_model.params[layer.name][0].data
+            w = caffe_model.params[layer.name][0].data
             b = caffe_model.params[layer.name][1].data
             if layer_type == 'Dense':
-                W = np.transpose(W)
-            attributes['parameters'] = [W, b]
+                w = np.transpose(w)
+            attributes['parameters'] = [w, b]
             # Get type of nonlinearity if the activation is directly in the
             # Dense / Conv layer:
             activation = activation_dict.get(layer.__class__.__name__,
@@ -287,11 +290,11 @@ def load_ann(path=None, filename=None):
     return {'model': (model, model_protobuf), 'val_fn': model.forward_all}
 
 
-def evaluate(val_fn, X_test, Y_test):
+def evaluate(val_fn, x_test, y_test):
     """Evaluate the original ANN."""
 
-    guesses = np.argmax(val_fn(data=X_test)['prob'], axis=1)
-    truth = np.argmax(Y_test, axis=1)
+    guesses = np.argmax(val_fn(data=x_test)['prob'], axis=1)
+    truth = np.argmax(y_test, axis=1)
     accuracy = np.mean(guesses == truth)
     loss = -1
 

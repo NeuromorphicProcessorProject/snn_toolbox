@@ -381,7 +381,7 @@ class SNN:
                     output_graphs(spiketrains_batch, activations_batch,
                                   settings['log_dir_of_current_run'])
                     # t=70.1% m=0.6GB
-                    del spiketrains_batch
+                    # del spiketrains_batch
 
                 save_activations = True
                 if save_activations:

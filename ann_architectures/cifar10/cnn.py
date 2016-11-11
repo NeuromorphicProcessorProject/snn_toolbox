@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """
 Train a (fairly simple) deep CNN on the CIFAR10 small images dataset.
 
@@ -76,6 +78,7 @@ if not data_augmentation:
 #    early_stopping = EarlyStopping(monitor='val_loss', patience=3)
     history = model.fit(X_train, Y_train, batch_size=batch_size,
                         validation_data=(X_test, Y_test), nb_epoch=nb_epoch)
+    score = model.evaluate(X_test, Y_test)
 else:
     print("Using real time data augmentation")
 
@@ -111,9 +114,10 @@ else:
                                   validation_data=testflow,
                                   nb_val_samples=len(X_test))
 
+    score = model.evaluate_generator(testflow, val_samples=len(X_test))
+
 plot_history(history)
 
-score = model.evaluate_generator(testflow, val_samples=len(X_test))
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 

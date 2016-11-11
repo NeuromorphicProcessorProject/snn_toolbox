@@ -145,13 +145,13 @@ class SNNToolboxGUI:
             Two input formats are supported:
                 A) .npz: Compressed numpy format.
                 B) .jpg: Images in directories corresponding to their class.
-            A) Provide at least two compressed numpy files called 'X_test.npz'
-            and 'Y_test.npz' containing the testset and groundtruth. In
+            A) Provide at least two compressed numpy files called 'x_test.npz'
+            and 'y_test.npz' containing the testset and groundtruth. In
             addition, if the network should be normalized, put a file
-            'X_norm.npz' in the folder. This can be a the training set X_train,
+            'x_norm.npz' in the folder. This can be a the training set x_train,
             or a subset of it. Take care of memory limitations: If numpy can
             allocate a 4 GB float32 container for the activations to be
-            computed during normalization, X_norm should contain not more than
+            computed during normalization, x_norm should contain not more than
             4*1e9*8bit/(fc*fx*fy*32bit) = 1/n samples, where (fc, fx, fy) is
             the shape of the largest layer, and n = fc*fx*fy its total cell
             count.
@@ -161,10 +161,10 @@ class SNNToolboxGUI:
             Keras.ImageDataGenerator to load and process the files batchwise.
 
             With original data of the form (channels, num_rows, num_cols),
-            X_norm and X_test have dimension
+            x_norm and x_test have dimension
             (num_samples, channels*num_rows*num_cols) for a fully-connected
             network, and (num_samples, channels, num_rows, num_cols) otherwise.
-            Y_train and Y_test have dimension (num_samples, num_classes).
+            y_train and y_test have dimension (num_samples, num_classes).
             See snntoolbox.io_utils.datasets for examples how to prepare a
             dataset for use in the toolbox.""")
         ToolTip(dataset_frame, text=tip, wraplength=750)
@@ -1416,15 +1416,15 @@ class SNNToolboxGUI:
             result = False
         elif self.settings['normalize'] and \
                 self.settings['dataset_format'] == 'npz' and not \
-                os.path.exists(os.path.join(p, 'X_norm.npz')):
-            msg = "No data set file 'X_norm.npz' found.\n" + \
+                os.path.exists(os.path.join(p, 'x_norm.npz')):
+            msg = "No data set file 'x_norm.npz' found.\n" + \
                   "Add it, or disable normalization."
             messagebox.showerror(title="Error", message=msg)
             result = False
         elif self.settings['dataset_format'] == 'npz' and not \
-                (os.path.exists(os.path.join(p, 'X_test.npz')) and
-                 os.path.exists(os.path.join(p, 'Y_test.npz'))):
-            msg = "Data set file 'X_test.npz' or 'Y_test.npz' was not found."
+                (os.path.exists(os.path.join(p, 'x_test.npz')) and
+                 os.path.exists(os.path.join(p, 'y_test.npz'))):
+            msg = "Data set file 'x_test.npz' or 'y_test.npz' was not found."
             messagebox.showerror(title="Error", message=msg)
             result = False
         else:

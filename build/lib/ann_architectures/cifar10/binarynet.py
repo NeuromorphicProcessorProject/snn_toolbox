@@ -193,7 +193,7 @@ def build_network():
             cnn,
             nonlinearity=activation)
 
-    # print(cnn.output_shape)
+    # print(model.output_shape)
 
     # 1024FP-1024FP-10FP
     cnn = binary_net.DenseLayer(

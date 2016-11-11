@@ -1,3 +1,5 @@
+# coding=utf-8
+
 # For compatibility with python2
 from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import

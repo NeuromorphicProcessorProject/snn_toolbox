@@ -36,14 +36,14 @@ def get_caltech101(path, filename=None):
         ``path`` directory.
     filename: string, optional
         Basename of file to create. Individual files will be appended
-        ``_X_norm``, ``_X_test``, etc.
+        ``_x_norm``, ``_x_test``, etc.
 
     Returns
     -------
 
-    Three compressed files ``path/filename_X_norm.npz``,
-    ``path/filename_X_test.npz``, and ``path/filename_Y_test.npz``.
-    With data of the form (channels, num_rows, num_cols), ``X_norm`` and
+    Three compressed files ``path/filename_x_norm.npz``,
+    ``path/filename_x_test.npz``, and ``path/filename_y_test.npz``.
+    With data of the form (channels, num_rows, num_cols), ``x_norm`` and
     ``x_test`` have dimension (num_samples, channels, num_rows, num_cols).
     ``y_test`` has dimension (num_samples, num_classes).
     """
@@ -69,7 +69,7 @@ def get_caltech101(path, filename=None):
     if filename is None:
         filename = ''
     filepath = os.path.join(path, filename)
-    np.savez_compressed(filepath + 'X_norm', x_test[::100].astype('float32'))
+    np.savez_compressed(filepath + 'x_norm', x_test[::100].astype('float32'))
     np.savez_compressed(filepath + 'x_test', x_test.astype('float32'))
     np.savez_compressed(filepath + 'y_test', y_test)
 

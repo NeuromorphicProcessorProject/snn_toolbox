@@ -1,4 +1,7 @@
+# coding=utf-8
+
 """Train CIFAR10 in LeNet style."""
+
 from __future__ import absolute_import
 from __future__ import print_function
 
@@ -11,7 +14,7 @@ from keras.utils import np_utils
 
 from snntoolbox.io_utils.plotting import plot_history
 
-'''
+"""
     Train a (fairly simple) deep CNN on the CIFAR10 small images dataset.
 
     GPU run command:
@@ -19,7 +22,7 @@ from snntoolbox.io_utils.plotting import plot_history
 
     Gets to about 0.5 test loss or 83% accuracy after 65 epochs.
 
-'''
+"""
 
 batch_size = 128
 nb_classes = 10

@@ -106,7 +106,7 @@ def extract(model):
             bn_parameters = layer.get_weights()  # gamma, beta, mean, std
             for k in [layer_num - i for i in range(1, 3)]:
                 prev_layer = layers[k]
-                if prev_layer.weights != []:
+                if len(prev_layer.weights) > 0:
                     break
             parameters = prev_layer.get_weights()  # W, b of next layer
             print("Absorbing batch-normalization parameters into " +
@@ -209,7 +209,7 @@ def load_ann(path=None, filename=None):
     return {'model': model, 'val_fn': model.evaluate}
 
 
-def evaluate(val_fn, X_test, Y_test):
+def evaluate(val_fn, x_test, y_test):
     """Evaluate the original ANN."""
 
-    return val_fn(X_test, Y_test)
+    return val_fn(x_test, y_test)

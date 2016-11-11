@@ -79,10 +79,10 @@ def load_dataset(path, filename):
     : tuple[np.array]
         The dataset as a numpy array containing samples. Example:
         With original data of the form (channels, num_rows, num_cols),
-        ``X_train`` and ``X_test`` have dimension
+        ``x_train`` and ``x_test`` have dimension
         (num_samples, channels*num_rows*num_cols) for a fully-connected network,
         and (num_samples, channels, num_rows, num_cols) otherwise.
-        ``Y_train`` and ``Y_test`` have dimension (num_samples, num_classes).
+        ``y_train`` and ``y_test`` have dimension (num_samples, num_classes).
     """
 
     return np.load(os.path.join(path, filename))['arr_0']

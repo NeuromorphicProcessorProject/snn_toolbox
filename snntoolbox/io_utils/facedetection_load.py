@@ -78,7 +78,7 @@ def get_facedetection(sourcepath, imagepath, targetpath=None, filename=None):
         if filename is None:
             filename = ''
         filepath = os.path.join(targetpath, filename)
-        np.savez_compressed(filepath + 'X_norm', x_train)
+        np.savez_compressed(filepath + 'x_norm', x_train)
         np.savez_compressed(filepath + 'x_test', x_test)
         np.savez_compressed(filepath + 'y_train', y_train)
         np.savez_compressed(filepath + 'y_test', y_test)

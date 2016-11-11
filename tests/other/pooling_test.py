@@ -24,4 +24,4 @@ A = np.array([[[[1.,  1.,  1.,  1.,  5.,  6.],
 # A = np.arange(36).reshape(1, 1, 6, 6)
 # A = np.array(A, dtype=np.float32)
 
-print f(A)
+print(f(A))

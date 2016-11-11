@@ -45,8 +45,8 @@ def get_cifar10(path=None, filename=None, flat=False):
     Returns
     -------
 
-    Three compressed files ``path/filename_X_norm.npz``,
-    ``path/filename_X_test.npz``, and ``path/filename_Y_test.npz``.
+    Three compressed files ``path/filename_x_norm.npz``,
+    ``path/filename_x_test.npz``, and ``path/filename_y_test.npz``.
     With data of the form (channels, num_rows, num_cols), ``x_norm`` and
     ``x_test`` have dimension (num_samples, channels*num_rows*num_cols)
     in case ``flat==True``, and (num_samples, channels, num_rows, num_cols)
@@ -81,15 +81,17 @@ def get_cifar10(path=None, filename=None, flat=False):
         x_test = x_test.reshape(x_test.shape[0], np.prod(x_test.shape[1:]))
 
     if path is not None:
+        if not os.path.exists(path):
+            os.makedirs(path)
         if filename is None:
             filename = ''
         filepath = os.path.join(path, filename)
         np.savez_compressed(filepath+'x_norm', x_norm.astype('float32'))
         np.savez_compressed(filepath+'x_test', x_test.astype('float32'))
-#       np.savez_compressed(filepath+'y_train', y_train.astype('float32'))
+        # np.savez_compressed(filepath+'y_train', y_train.astype('float32'))
         np.savez_compressed(filepath+'y_test', y_test.astype('float32'))
 
-#    return (X_train, Y_train, X_test, Y_test)
+#    return (x_train, y_train, x_test, y_test)
 
 if __name__ == '__main__':
     get_cifar10('/home/rbodo/.snntoolbox/Datasets/cifar10/original/')

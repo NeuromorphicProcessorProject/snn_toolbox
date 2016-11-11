@@ -1,3 +1,5 @@
+# coding=utf-8
+
 # Network in Network CIFAR10 Model
 # Original source: https://gist.github.com/mavenlin/e56253735ef32c3c296d
 # License: unknown
@@ -13,20 +15,26 @@ Make sure the converted spiking net behaves the same.
 
 
 def build_network():
+    """Build network.
+
+    Returns
+    -------
+
+    """
+
     import lasagne
     import theano
-    import theano.tensor as T
+    import theano.tensor as t
     from lasagne.layers import InputLayer, DropoutLayer, FlattenLayer
     from lasagne.layers.dnn import Conv2DDNNLayer as ConvLayer
     from lasagne.layers import Pool2DLayer as PoolLayer
 
     # Prepare Theano variables for inputs and targets
-    input_var = T.tensor4('inputs')
-    target = T.matrix('targets')
-    LR = T.scalar('LR', dtype=theano.config.floatX)
+    input_var = t.tensor4('inputs')
+    target = t.matrix('targets')
+    lr = t.scalar('lr', dtype=theano.config.floatX)
 
-    cnn = {}
-    cnn['input'] = InputLayer(shape=(None, 3, 32, 32), input_var=input_var)
+    cnn = {'input': InputLayer(shape=(None, 3, 32, 32), input_var=input_var)}
     cnn['conv1'] = ConvLayer(cnn['input'],
                              num_filters=192,
                              filter_size=5,
@@ -76,22 +84,22 @@ def build_network():
                                              deterministic=False)
 
     # squared hinge loss
-    loss = T.mean(T.sqr(T.maximum(0., 1. - target * train_output)))
+    loss = t.mean(t.sqr(t.maximum(0., 1. - target * train_output)))
 
     params = lasagne.layers.get_all_params(cnn['output'], trainable=True)
     updates = lasagne.updates.adam(loss_or_grads=loss, params=params,
-                                   learning_rate=LR)
+                                   learning_rate=lr)
 
     test_output = lasagne.layers.get_output(cnn['output'], deterministic=True)
-    test_loss = T.mean(T.sqr(T.maximum(0., 1. - target * test_output)))
-    test_err = T.mean(T.neq(T.argmax(test_output, axis=1),
-                            T.argmax(target, axis=1)),
+    test_loss = t.mean(t.sqr(t.maximum(0., 1. - target * test_output)))
+    test_err = t.mean(t.neq(t.argmax(test_output, axis=1),
+                            t.argmax(target, axis=1)),
                       dtype=theano.config.floatX)
 
     # Compile a function performing a training step on a mini-batch
     # (by giving the updates dictionary)
     # and returning the corresponding training loss:
-    train_fn = theano.function([input_var, target, LR], loss, updates=updates,
+    train_fn = theano.function([input_var, target, lr], loss, updates=updates,
                                on_unused_input='ignore')
 
     # Compile a second function computing the validation loss and accuracy:

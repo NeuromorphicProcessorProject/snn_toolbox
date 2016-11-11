@@ -223,8 +223,8 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
     if filename is None:
         filename = ''
     filepath = os.path.join(save_path, filename)
-    np.savez_compressed(filepath + 'X_norm', x_train.astype('float32'))
-    np.savez_compressed(filepath + 'Y_norm', y_train.astype('float32'))
+    np.savez_compressed(filepath + 'x_norm', x_train.astype('float32'))
+    np.savez_compressed(filepath + 'y_norm', y_train.astype('float32'))
     np.savez_compressed(filepath + 'x_test', x_test.astype('float32'))
     np.savez_compressed(filepath + 'y_test', y_test.astype('float32'))
 

@@ -4,7 +4,7 @@
 numpy
 scipy
 matplotlib
-Theano
+theano
 future
 neo
 lazyarray
@@ -14,6 +14,7 @@ sphinx
 pyNN
 keras
 h5py
+pytest
 
 # You may need to install 'freetype' (including 'libpng') on system-level
 # to be able to install matplotlib:

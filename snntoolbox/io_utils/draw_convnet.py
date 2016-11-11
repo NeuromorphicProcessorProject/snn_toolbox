@@ -98,16 +98,16 @@ def add_mapping(patch_list, color_list, start_ratio, patch_size, ind_bgn,
     """
 
     start_loc = topleftlist[ind_bgn] \
-                + (numshowlist[ind_bgn] - 1) * np.array(locdifflist[ind_bgn]) \
-                + np.array([start_ratio[0] * sizelist[ind_bgn],
-                -start_ratio[1] * sizelist[ind_bgn]])
+        + (numshowlist[ind_bgn] - 1) * np.array(locdifflist[ind_bgn]) \
+        + np.array([start_ratio[0] * sizelist[ind_bgn],
+                    -start_ratio[1] * sizelist[ind_bgn]])
 
     end_loc = topleftlist[ind_bgn + 1] + (numshowlist[ind_bgn + 1] - 1) \
         * np.array(locdifflist[ind_bgn + 1]) \
         + np.array([(start_ratio[0] + .5 * patch_size / sizelist[ind_bgn]) *
-        sizelist[ind_bgn + 1],
-        -(start_ratio[1] - .5 * patch_size / sizelist[ind_bgn]) *
-        sizelist[ind_bgn + 1]])
+                    sizelist[ind_bgn + 1],
+                    -(start_ratio[1] - .5 * patch_size / sizelist[ind_bgn]) *
+                    sizelist[ind_bgn + 1]])
 
     patch_list.append(Rectangle(start_loc, patch_size, patch_size))
     color_list.append(Dark)

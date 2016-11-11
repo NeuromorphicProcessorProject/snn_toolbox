@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """
 Train a (fairly simple) deep CNN on the CIFAR10 small images dataset.
 

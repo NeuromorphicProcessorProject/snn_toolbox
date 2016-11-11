@@ -43,77 +43,43 @@ Usecase C is shown in full in the example below.
 Created on Mon Mar  7 15:30:28 2016
 @author: rbodo
 """
-import os
-import numpy as np
+
 import snntoolbox
 
 
 def main():
+    """Full example run of toolbox."""
 
-    # Parameters
-    settings = {'dataset_path': './dataset',  # Dataset file
+    settings = {'path_wd': '.',
+                'dataset_path': 'dataset/',
                 'filename_ann': '83.62',
-                'path_wd': '.',  # Working directory
                 'evaluateANN': True,
                 'normalize': True,
-                'percentile': 99,
-                'batch_size': 100,                
-                'overwrite': True,
                 'convert': True,
                 'simulate': True,
-                'verbose': 3,
+                'simulator': 'INI',
                 'v_thresh': 1,
                 'tau_refrac': 0,
-                'softmax_clockrate': 300,
-                'simulator': 'INI',
-                'duration': 100,
-                'dt': 1,
-                'poisson_input': False,
-                'reset': 'Reset by subtraction',
-                'input_rate': 1000,
-                'normalization_schedule': False,
-                'online_normalization': False,
-                'payloads': False,          
-                'diff_to_max_rate': 200,
-                'timestep_fraction': 10,
-                'diff_to_min_rate': 100,
-                'scaling_factor' : 10000000,
-                'maxpool_type': "fir_max"}
-
+                'duration': 100}
 
     # Update defaults with parameters specified above:
     snntoolbox.update_setup(settings)
 
     # Download and save dataset in npy format which the toolbox can load later.
     from snntoolbox.io_utils.cifar10_load import get_cifar10
-    try: 
-        os.makedirs("./dataset")
-    except OSError:
-        if not os.path.isdir("./dataset"):
-            raise  
     get_cifar10(settings['dataset_path'])
 
     # Run network (including loading the model, parameter normalization,
     # conversion and simulation).
-
-    # If set True, the converted model is simulated for three different values
-    # of v_thresh. Otherwise use parameters as specified above,
-    # for a single run.
     do_param_sweep = False
+    # If set True, the converted model is simulated for three different values
+    # of v_thresh. Otherwise use parameters as specified above for a single run.
     if do_param_sweep:
-        network_runs = 5
-        param_name = 'v_thresh'       
-        params = snntoolbox.get_range(0.1, 1.5, 3, method='linear')
-        results = np.zeros((network_runs, len(params)))    
-        for n in range(network_runs):
-            results[n, :] = snntoolbox.test_full(params=params,
-                                 param_name=param_name,
-                                 param_logscale=False)                                
-                                 
+        params = snntoolbox.get_range(0.1, 1.5, 3)
+        snntoolbox.test_full(params=params, param_name='v_thresh')
     else:
         snntoolbox.test_full()
 
+
 if __name__ == '__main__':
-#    import pdb
-#    pdb.set_trace()
     main()

@@ -26,13 +26,13 @@ dataset_path: string
         A) ``.npz``: Compressed numpy format.
         B) ``.jpg``: Images in directories corresponding to their class.
 
-    A) Provide at least two compressed numpy files called ``X_test.npz``
-    and ``Y_test.npz`` containing the testset and groundtruth. In
+    A) Provide at least two compressed numpy files called ``x_test.npz``
+    and ``y_test.npz`` containing the testset and groundtruth. In
     addition, if the network should be normalized, put a file
-    ``X_norm.npz`` in the folder. This can be a the training set X_train,
+    ``x_norm.npz`` in the folder. This can be a the training set x_train,
     or a subset of it. Take care of memory limitations: If numpy can
     allocate a 4 GB float32 container for the activations to be
-    computed during normalization, X_norm should contain not more than
+    computed during normalization, x_norm should contain not more than
     4*1e9*8bit/(fc*fx*fy*32bit) = 1/n samples, where (fc, fx, fy) is
     the shape of the largest layer, and n = fc*fx*fy its total cell
     count.
@@ -280,7 +280,6 @@ Default values
 import matplotlib as mpl
 from textwrap import dedent
 
-
 # Define text sizes of various plot properties relative to font.size, using the
 # following values: xx-small, x-small, small, medium, large, x-large, xx-large,
 # larger, or smaller.
@@ -308,7 +307,7 @@ simulators = simulators_pyNN.copy()
 simulators.update(simulators_other)
 
 # Default parameters:
-settings = {'dataset_path': '',
+settings = {'dataset_path': 'dataset/',
             'dataset_format': 'npz',
             'datagen_kwargs': '{}',
             'dataflow_kwargs': '{}',
@@ -367,7 +366,27 @@ spiking_layers = {'Dense', 'Convolution2D', 'MaxPooling2D', 'AveragePooling2D',
                   'Flatten'}
 
 
-def update_setup(s=None):
+def file_not_found_msg(filename, path=None):
+    """Return string stating that file was not found at path.
+
+    Parameters
+    ----------
+    filename: str
+    path: Optional[str]
+
+    Returns
+    -------
+
+    : str
+    """
+
+    if path is None:
+        path = settings['path_wd']
+    return "Input model file {} not found in working dir {}".format(filename,
+                                                                    path)
+
+
+def update_setup(s):
     """Update parameters.
 
     Check that parameter choices ``s`` are valid and update the global
@@ -377,89 +396,144 @@ def update_setup(s=None):
     import os
     import snntoolbox
 
-    if s is None:
-        s = {}
+    assert isinstance(s, dict), "Input argument must be a dictionary."
 
-    # Check that choice of input model library is valid (not really needed when
-    # using GUI because options are hardwired in dropdown list).
-    if 'model_lib' in s:
-        assert s['model_lib'] in model_libs, \
-            "Input model library '{}' ".format(s['model_lib']) + \
-            "not supported yet. Possible values: {}".format(model_libs)
+    # Update settings with user specified settings.
+    settings.update(s)
+
     # Name of input file must be given.
-    assert 'filename_ann' in s, "Filename of stored model not specified."
-    # Check that simulator choice is valid (not really needed when using GUI
-    # because options are hardwired in dropdown list).
-    if 'simulator' in s:
-        assert s['simulator'] in simulators, \
-            "Simulator '{}' not supported.".format(s['simulator']) + \
-            " Choose from {}".format(simulators)
-    else:
-        # Fall back on default if none specified.
-        s['simulator'] = 'INI'
+    assert 'filename_ann' in s, "Filename of input model not specified."
+
+    # Check that simulator choice is valid.
+    assert settings['simulator'] in simulators, \
+        "Simulator '{}' not supported.".format(settings['simulator']) + \
+        " Choose from {}".format(simulators)
+
     # Warn user that it is not possible to use Brian2 simulator by loading a
     # pre-converted network from disk.
-    if s['simulator'] == 'brian2' and 'convert' in s and not s['convert'] \
-            or 'convert' not in s and not settings['convert']:
+    if settings['simulator'] == 'brian2' and not settings['convert']:
         print(dedent("""\ \n
             SNN toolbox Warning: When using Brian 2 simulator, you need to
             convert the network each time you start a new session. (No
             saving/reloading methods implemented.) Setting convert = True.
             \n"""))
-        s['convert'] = True
-    # Set default path if user did not specify one.
-    if 'path_wd' not in s or s['path_wd'] == '':
-        s['path_wd'] = os.path.join(snntoolbox.toolbox_root, 'data',
-                                    s['filename_ann'], s['simulator'])
-    # Create directory if not there yet.
-    if not os.path.exists(s['path_wd']):
-        os.makedirs(s['path_wd'])
+        settings['convert'] = True
+
+    # Set default path if user passed empty string.
+    if 'path_wd' in s and s['path_wd'] == '':
+        settings['path_wd'] = os.path.join(snntoolbox.toolbox_root, 'data',
+                                           settings['filename_ann'],
+                                           settings['simulator'])
+
+    # Check specified working directory exists.
+    assert os.path.exists(settings['path_wd']), \
+        "Working directory {} does not exist.".format(settings['path_wd'])
+
+    # Check that choice of input model library is valid.
+    assert settings['model_lib'] in model_libs, \
+        "Input model library '{}' ".format(settings['model_lib']) + \
+        "not supported yet. Possible values: {}".format(model_libs)
+
+    # Check input model is found and has the right format for the specified
+    # model library.
+    if settings['model_lib'] == 'caffe':
+        caffemodel_file = settings['filename_ann'] + '.caffemodel'
+        assert os.path.isfile(
+            os.path.join(settings['path_wd'], caffemodel_file)), \
+            file_not_found_msg(caffemodel_file)
+        prototxt_file = settings['filename_ann'] + '.prototxt'
+        assert os.path.isfile(
+            os.path.join(settings['path_wd'], prototxt_file)), \
+            file_not_found_msg(prototxt_file)
+    elif settings['model_lib'] == 'keras':
+        h5_file = settings['filename_ann'] + '.h5'
+        h5_filepath = os.path.join(settings['path_wd'], h5_file)
+        assert os.path.isfile(h5_filepath), \
+            file_not_found_msg(h5_file)
+        json_file = settings['filename_ann'] + '.json'
+        if not os.path.isfile(os.path.join(settings['path_wd'], json_file)):
+            import keras
+            try:
+                keras.models.load_model(h5_filepath)
+            except:
+                raise AssertionError("You provided an h5 file with weights, "
+                                     "but without network configuration. In "
+                                     "earlier versions of Keras, this is "
+                                     "contained in a json file.")
+    elif settings['model_lib'] == 'lasagne':
+        h5_file = settings['filename_ann'] + '.h5'
+        assert os.path.isfile(os.path.join(settings['path_wd'], h5_file)), \
+            file_not_found_msg(h5_file)
+        py_file = settings['filename_ann'] + '.py'
+        assert os.path.isfile(os.path.join(settings['path_wd'], py_file)), \
+            file_not_found_msg(py_file)
+    else:
+        print("For the specified input model library {}, ".format(
+            settings['model_lib']) + "no test is implemented to check if input "
+            "model files exist in the specified working directory!")
+
+    # Check that the data set path is valid and contains the data in the
+    # specified format. For jpg format we only do a superficial check because
+    # listing the subdirectory contents becomes too costly for large data sets.
+    assert os.path.exists(settings['dataset_path']), \
+        "Path to data set does not exist."
+    if settings['normalize'] and settings['dataset_format'] == 'npz' and not \
+            os.path.exists(
+                os.path.join(settings['dataset_path'], 'x_norm.npz')):
+        raise AssertionError(
+            "No data set file 'x_norm.npz' found in specified data set path " +
+            "{}. Add it, or disable normalization.".format(
+                settings['dataset_path']))
+    if settings['dataset_format'] == 'npz' and not (os.path.exists(os.path.join(
+            settings['dataset_path'], 'x_test.npz')) and os.path.exists(
+            os.path.join(settings['dataset_path'], 'y_test.npz'))):
+        raise AssertionError(
+            "Data set file 'x_test.npz' or 'y_test.npz' was not found in "
+            "specified data set path {}.".format(
+                settings['dataset_path']))
+    if settings['dataset_format'] == 'jpg':
+        assert os.listdir(settings['dataset_path']), "Data set directory is" \
+                                                     " empty."
 
     # Convert string containing sample indices to list of indices.
-    if 'samples_to_test' not in s:
-        s['samples_to_test'] = ''
-    s['sample_indices_to_test'] = [
-        int(i) for i in s['samples_to_test'].split() if i.isnumeric()]
+    assert isinstance(settings['samples_to_test'], str), "The parameter " + \
+        "'samples_to_test' must be of type 'string'. Given: {}".format(
+        settings['samples_to_test'].__class__)
+    settings['sample_indices_to_test'] = [
+        int(i) for i in settings['samples_to_test'].split() if i.isnumeric()]
 
+    # Create log directory if it does not exist.
     if 'log_dir_of_current_run' not in s:
-        s['log_dir_of_current_run'] = os.path.join(s['path_wd'],
-                                                   'log', 'gui', 'test')
-        if not os.path.isdir(s['log_dir_of_current_run']):
-            os.makedirs(s['log_dir_of_current_run'])
+        settings['log_dir_of_current_run'] = os.path.join(s['path_wd'], 'log',
+                                                          'gui', 'test')
+    if not os.path.isdir(settings['log_dir_of_current_run']):
+        os.makedirs(settings['log_dir_of_current_run'])
 
     # Specify filenames for models at different stages of the conversion.
     if 'filename_parsed_model' not in s or s['filename_parsed_model'] == '':
-        s['filename_parsed_model'] = s['filename_ann'] + '_parsed'
+        settings['filename_parsed_model'] = settings['filename_ann'] + '_parsed'
     if 'filename_snn' not in s or s['filename_snn'] == '':
-        s['filename_snn'] = 'snn_' + s['filename_ann'] + '_' + s['simulator']
+        settings['filename_snn'] = '{}_{}'.format(settings['filename_ann'],
+                                                  settings['simulator'])
 
-    if 'poisson_input' not in s:
-        s['poisson_input'] = True
-
-    if s['simulator'] != 'INI' and not s['poisson_input']:
-        s['poisson_input'] = True
+    if settings['simulator'] != 'INI' and not settings['poisson_input']:
+        settings['poisson_input'] = True
         print(dedent("""\
             SNN toolbox Warning: Currently, turning off Poisson input is
             only possible in INI simulator. Falling back on Poisson input."""))
 
-    if 'maxpool_type' not in s or s['maxpool_type'] == '':
-        s['maxpool_type'] = 'fir_max'
-
-    if 'num_to_test' in s:
-        if s['num_to_test'] < s['batch_size']:
-            print(dedent("""\
-                SNN toolbox Warning: 'num_to_test' set lower than 'batch_size'.
-                In simulators that test samples batch-wise (e.g. INIsim), this
-                can lead to undesired behavior. Setting 'num_to_test' equal to
-                'batch_size'."""))
-            s['num_to_test'] = s['batch_size']
-
-    # If there are any parameters specified, merge with default parameters.
-    settings.update(s)
+    # Make sure the number of samples to test is not lower than the batch size.
+    if settings['num_to_test'] < settings['batch_size']:
+        print(dedent("""\
+            SNN toolbox Warning: 'num_to_test' set lower than 'batch_size'.
+            In simulators that test samples batch-wise (e.g. INIsim), this
+            can lead to undesired behavior. Setting 'num_to_test' equal to
+            'batch_size'."""))
+        settings['num_to_test'] = settings['batch_size']
 
 
 def initialize_simulator(simulator=None):
-    """Import module containing utility functions of spiking simulator."""
+    """Import a module that contains utility functions of spiking simulator."""
     from importlib import import_module
 
     if simulator is None:

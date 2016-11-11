@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """A example for CIFAR-10 CNN with overlapping pool."""
 
 from __future__ import absolute_import
