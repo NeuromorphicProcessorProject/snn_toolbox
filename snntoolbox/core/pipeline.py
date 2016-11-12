@@ -16,9 +16,8 @@ from importlib import import_module
 
 import numpy as np
 from future import standard_library
-from keras.preprocessing.image import ImageDataGenerator
 from snntoolbox.config import settings
-from snntoolbox.core.util import evaluate_keras
+from snntoolbox.core.util import evaluate_keras, get_dataset
 from snntoolbox.core.util import print_description, normalize_parameters, parse
 from snntoolbox.io_utils.plotting import plot_param_sweep
 
@@ -71,52 +70,10 @@ def test_full(queue=None, params=None, param_name='v_thresh',
     """
 
     if params is None:
-        params = [settings['v_thresh']]
+        params = [settings[param_name]]
 
     # ____________________________ LOAD DATASET _____________________________ #
-    evalset = normset = testset = {}
-    if settings['dataset_format'] == 'npz':
-        from snntoolbox.io_utils.common import load_dataset
-        if settings['evaluateANN'] or settings['simulate']:
-            evalset = {
-                'x_test': load_dataset(settings['dataset_path'], 'x_test.npz'),
-                'y_test': load_dataset(settings['dataset_path'], 'y_test.npz')}
-#            # Binarize the input. Hack: Should be independent of maxpool type
-#            if settings['maxpool_type'] == 'binary_tanh':
-#                evalset['x_test'] = np.sign(evalset['x_test'])
-#            elif settings['maxpool_type'] == 'binary_sigmoid':
-#                np.clip((evalset['x_test']+1.)/2., 0, 1, evalset['x_test'])
-#                np.round(evalset['x_test'], out=evalset['x_test'])
-        if settings['normalize']:
-            normset = {}
-        if settings['simulate']:
-            testset = evalset
-    elif settings['dataset_format'] == 'jpg':
-        import ast
-        datagen_kwargs = ast.literal_eval(settings['datagen_kwargs'])
-        dataflow_kwargs = ast.literal_eval(settings['dataflow_kwargs'])
-        dataflow_kwargs['directory'] = settings['dataset_path']
-        dataflow_kwargs['batch_size'] = settings['num_to_test']
-        datagen = ImageDataGenerator(**datagen_kwargs)
-        # Compute quantities required for featurewise normalization
-        # (std, mean, and principal components if ZCA whitening is applied)
-        rs = datagen_kwargs['rescale'] if 'rescale' in datagen_kwargs else None
-        x_orig = ImageDataGenerator(rescale=rs).flow_from_directory(
-            **dataflow_kwargs).next()[0]
-        datagen.fit(x_orig)
-        if settings['evaluateANN']:
-            evalset = {'dataflow':
-                       datagen.flow_from_directory(**dataflow_kwargs)}
-        if settings['normalize']:
-            batchflow_kwargs = dataflow_kwargs.copy()
-            batchflow_kwargs['batch_size'] = settings['batch_size']
-            normset = {'dataflow':
-                       datagen.flow_from_directory(**batchflow_kwargs)}
-        if settings['simulate']:
-            batchflow_kwargs = dataflow_kwargs.copy()
-            batchflow_kwargs['batch_size'] = settings['batch_size']
-            testset = {'dataflow':
-                       datagen.flow_from_directory(**batchflow_kwargs)}
+    evalset, normset, testset = get_dataset()
 
     # Instantiate an empty spiking network
     input_model = {}

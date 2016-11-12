@@ -531,34 +531,36 @@ def update_setup(s):
             'batch_size'."""))
         settings['num_to_test'] = settings['batch_size']
 
+    return True
 
-def initialize_simulator(simulator=None):
+
+def initialize_simulator(simulator, **kwargs):
     """Import a module that contains utility functions of spiking simulator."""
     from importlib import import_module
 
-    if simulator is None:
-        simulator = settings['simulator']
-
     sim = None
     if simulator in simulators_pyNN:
+        assert 'dt' in kwargs, "Need to pass timestep as keyword-argument" \
+                               " 'dt=' if initializing a pyNN simulator."
         if simulator == 'nest':
             # Workaround for missing link bug, see
             # https://github.com/ContinuumIO/anaconda-issues/issues/152
             # noinspection PyUnresolvedReferences
             import readline
         sim = import_module('pyNN.' + simulator)
+
         # From the pyNN documentation:
         # "Before using any other functions or classes from PyNN, the user
         # must call the setup() function. Calling setup() a second time
         # resets the simulator entirely, destroying any network that may
         # have been created in the meantime."
-        sim.setup(timestep=settings['dt'])
+        sim.setup(timestep=kwargs['dt'])
     elif simulator == 'brian2':
         sim = import_module('brian2')
     elif simulator == 'INI':
         sim = import_module('snntoolbox.core.inisim')
     elif simulator == 'MegaSim':
         sim = import_module('snntoolbox.core.megasim')
-    assert sim, "Simulator could not be initialized."
+    assert sim, "Simulator {} could not be initialized.".format(simulator)
     print("Initialized {} simulator.\n".format(simulator))
     return sim

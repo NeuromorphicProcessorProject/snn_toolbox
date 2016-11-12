@@ -83,7 +83,8 @@ class SNN:
     def __init__(self):
         """Init function."""
 
-        self.sim = initialize_simulator()
+        self.sim = initialize_simulator(settings['simulator'],
+                                        dt=settings['dt'])
         self.layers = []
         self.conns = []  # Temporary container for each layer.
         self.connections = []  # Final container for all layers.

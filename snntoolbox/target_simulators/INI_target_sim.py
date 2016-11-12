@@ -72,7 +72,7 @@ class SNN:
 
     def __init__(self):
         """Init function."""
-        self.sim = initialize_simulator()
+        self.sim = initialize_simulator(settings['simulator'])
         self.snn = keras.models.Sequential()
         self.get_output = None
         self.parsed_model = None

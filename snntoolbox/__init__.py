@@ -8,11 +8,6 @@ from __future__ import absolute_import, print_function
 
 import os
 
-from snntoolbox.config import update_setup
-from snntoolbox.core.pipeline import test_full
-from snntoolbox.core.util import get_range
-
-
 # Set a base directory for the toolbox.
 _base_dir = os.path.expanduser('~')
 if not os.access(_base_dir, os.W_OK):

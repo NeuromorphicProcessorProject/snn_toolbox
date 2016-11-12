@@ -44,7 +44,9 @@ Created on Mon Mar  7 15:30:28 2016
 @author: rbodo
 """
 
-import snntoolbox
+from snntoolbox.config import update_setup
+from snntoolbox.core.util import get_range
+from snntoolbox.core.pipeline import test_full
 
 
 def main():
@@ -63,7 +65,7 @@ def main():
                 'duration': 100}
 
     # Update defaults with parameters specified above:
-    snntoolbox.update_setup(settings)
+    update_setup(settings)
 
     # Download and save dataset in npy format which the toolbox can load later.
     from snntoolbox.io_utils.cifar10_load import get_cifar10
@@ -75,10 +77,10 @@ def main():
     # If set True, the converted model is simulated for three different values
     # of v_thresh. Otherwise use parameters as specified above for a single run.
     if do_param_sweep:
-        params = snntoolbox.get_range(0.1, 1.5, 3)
-        snntoolbox.test_full(params=params, param_name='v_thresh')
+        params = get_range(0.1, 1.5, 3)
+        test_full(params=params, param_name='v_thresh')
     else:
-        snntoolbox.test_full()
+        test_full()
 
 
 if __name__ == '__main__':

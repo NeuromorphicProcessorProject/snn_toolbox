@@ -123,6 +123,81 @@ def parse(input_model):
     return parsed_model
 
 
+def parse_dataset_kwargs(datagen_kwargs_str, dataflow_kwargs_str):
+    """
+    Parse kwargs specified by user to be passed to
+    keras.preprocessing.image.ImageDataGenerator.
+
+    Parameters
+    ----------
+
+    datagen_kwargs_str: str
+    dataflow_kwargs_str: str
+
+    Returns
+    -------
+
+    datagen_kwargs: dict
+    dataflow_kwargs: dict
+    """
+
+    import ast
+    datagen_kwargs = ast.literal_eval(datagen_kwargs_str)
+    dataflow_kwargs = ast.literal_eval(dataflow_kwargs_str)
+    dataflow_kwargs['directory'] = settings['dataset_path']
+    dataflow_kwargs['batch_size'] = settings['num_to_test']
+    return datagen_kwargs, dataflow_kwargs
+
+
+def get_dataset(s):
+    """Get data set.
+
+    """
+
+    evalset = normset = testset = {}
+    if s['dataset_format'] == 'npz':
+        from snntoolbox.io_utils.common import load_dataset
+        if s['evaluateANN'] or s['simulate']:
+            evalset = {
+                'x_test': load_dataset(s['dataset_path'], 'x_test.npz'),
+                'y_test': load_dataset(s['dataset_path'], 'y_test.npz')}
+#            # Binarize the input. Hack: Should be independent of maxpool type
+#            if s['maxpool_type'] == 'binary_tanh':
+#                evalset['x_test'] = np.sign(evalset['x_test'])
+#            elif s['maxpool_type'] == 'binary_sigmoid':
+#                np.clip((evalset['x_test']+1.)/2., 0, 1, evalset['x_test'])
+#                np.round(evalset['x_test'], out=evalset['x_test'])
+        if s['normalize']:
+            normset = {}
+        if s['simulate']:
+            testset = evalset
+    elif s['dataset_format'] == 'jpg':
+        from keras.preprocessing.image import ImageDataGenerator
+        datagen_kwargs, dataflow_kwargs = parse_dataset_kwargs(
+            s['datagen_kwargs'], s['dataflow_kwargs'])
+        datagen = ImageDataGenerator(**datagen_kwargs)
+        # Compute quantities required for featurewise normalization
+        # (std, mean, and principal components if ZCA whitening is applied)
+        rs = datagen_kwargs['rescale'] if 'rescale' in datagen_kwargs else None
+        x_orig = ImageDataGenerator(rescale=rs).flow_from_directory(
+            **dataflow_kwargs).next()[0]
+        datagen.fit(x_orig)
+        if s['evaluateANN']:
+            evalset = {'dataflow':
+                       datagen.flow_from_directory(**dataflow_kwargs)}
+        if s['normalize']:
+            batchflow_kwargs = dataflow_kwargs.copy()
+            batchflow_kwargs['batch_size'] = s['batch_size']
+            normset = {'dataflow':
+                       datagen.flow_from_directory(**batchflow_kwargs)}
+        if s['simulate']:
+            batchflow_kwargs = dataflow_kwargs.copy()
+            batchflow_kwargs['batch_size'] = s['batch_size']
+            testset = {'dataflow':
+                       datagen.flow_from_directory(**batchflow_kwargs)}
+    return evalset, normset, testset
+
+
 def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
     """Evaluate parsed Keras model.
 

@@ -1140,7 +1140,7 @@ class SNN():
     """
 
     def __init__(self):
-        self.sim = initialize_simulator() #TODO i can get the megasim path from here!
+        self.sim = initialize_simulator(settings['simulator']) #TODO i can get the megasim path from here!
         self.megasim_path = self.sim.megasim_path()
         self.connections = []
         self.spikemonitors = []
