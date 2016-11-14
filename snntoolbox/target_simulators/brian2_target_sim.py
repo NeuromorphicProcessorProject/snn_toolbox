@@ -81,10 +81,13 @@ class SNN:
         Clean up after simulation.
     """
 
-    def __init__(self):
+    def __init__(self, s=None):
         """Init function."""
 
-        self.sim = initialize_simulator()
+        if s is None:
+            s = settings
+
+        self.sim = initialize_simulator(s['simulator'])
         self.connections = []
         self.threshold = 'v > v_thresh'
         self.reset = 'v = v_reset'
@@ -266,7 +269,7 @@ class SNN:
         self.snn = self.sim.Network(self.layers, self.connections,
                                     self.spikemonitors, self.statemonitors)
 
-    def run(self, x_test, y_test):
+    def run(self, x_test, y_test, s=None):
         """Simulate a spiking network with IF units and Poisson input in pyNN.
 
         Simulate a spiking network with IF units and Poisson input in pyNN,
@@ -288,6 +291,8 @@ class SNN:
         Parameters
         ----------
 
+        s: dict
+            Settings.
         x_test : float32 array
             The input samples to test. With data of the form
             (channels, num_rows, num_cols), x_test has dimension
@@ -307,6 +312,9 @@ class SNN:
 
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
 
+        if s is None:
+            s = settings
+
         # Load input layer
         input_layer = None
         for obj in self.snn.objects:
@@ -315,33 +323,32 @@ class SNN:
         assert input_layer, "No input layer found."
 
         # Update parameters
-        namespace = {'v_thresh': settings['v_thresh'] * self.sim.volt,
-                     'v_reset': settings['v_reset'] * self.sim.volt,
-                     'tau_m': settings['tau_m'] * self.sim.ms}
+        namespace = {'v_thresh': s['v_thresh'] * self.sim.volt,
+                     'v_reset': s['v_reset'] * self.sim.volt,
+                     'tau_m': s['tau_m'] * self.sim.ms}
         results = []
         guesses = []
         truth = []
 
         # Iterate over the number of samples to test
-        for test_num in range(settings['num_to_test']):
+        for test_num in range(s['num_to_test']):
             # If a list of specific input samples is given, iterate over that,
             # and otherwise pick a random test sample from among all possible
             # input samples in x_test.
-            si = settings['sample_indices_to_test']
+            si = s['sample_indices_to_test']
             ind = randint(0, len(x_test) - 1) if si == [] else si[test_num]
 
             # Add Poisson input.
-            if settings['verbose'] > 1:
+            if s['verbose'] > 1:
                 echo("Creating poisson input...\n")
-            input_layer.rates = x_test[ind, :].flatten() * \
-                settings['input_rate'] * self.sim.Hz
+            input_layer.rates = x_test[ind, :].flatten() * s['input_rate'] * \
+                self.sim.Hz
 
             # Run simulation for 'duration'.
-            if settings['verbose'] > 1:
+            if s['verbose'] > 1:
                 echo("Starting new simulation...\n")
             self.snn.store()
-            self.snn.run(settings['duration'] * self.sim.ms,
-                         namespace=namespace)
+            self.snn.run(s['duration'] * self.sim.ms, namespace=namespace)
 
             # Get result by comparing the guessed class (i.e. the index of the
             # neuron in the last layer which spiked most) to the ground truth.
@@ -349,36 +356,34 @@ class SNN:
             truth.append(np.argmax(y_test[ind, :]))
             results.append(guesses[-1] == truth[-1])
 
-            if settings['verbose'] > 0:
+            if s['verbose'] > 0:
                 echo("Sample {} of {} completed.\n".format(test_num + 1,
-                     settings['num_to_test']))
+                     s['num_to_test']))
                 echo("Moving average accuracy: {:.2%}.\n".format(
                     np.mean(results)))
 
-            if settings['verbose'] > 1 and \
-                    test_num == settings['num_to_test'] - 1:
+            if s['verbose'] > 1 and test_num == s['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
-                self.collect_plot_results(
-                    x_test[ind:ind+settings['batch_size']], test_num)
+                self.collect_plot_results(x_test[ind:ind+s['batch_size']],
+                                          test_num)
 
             # Reset simulation time and recorded network variables for next
             # run.
-            if settings['verbose'] > 1:
+            if s['verbose'] > 1:
                 echo("Resetting simulator...\n")
             # Skip during last run so the recorded variables are not discarded
-            if test_num < settings['num_to_test'] - 1:
+            if test_num < s['num_to_test'] - 1:
                 self.snn.restore()
-            if settings['verbose'] > 1:
+            if s['verbose'] > 1:
                 echo("Done.\n")
 
-        if settings['verbose'] > 1:
-            plot_confusion_matrix(truth, guesses,
-                                  settings['log_dir_of_current_run'])
+        if s['verbose'] > 1:
+            plot_confusion_matrix(truth, guesses, s['log_dir_of_current_run'])
 
         total_acc = np.mean(results)
-        s = '' if settings['num_to_test'] == 1 else 's'
+        ss = '' if s['num_to_test'] == 1 else 's'
         echo("Total accuracy: {:.2%} on {} test sample{}.\n\n".format(
-             total_acc, settings['num_to_test'], s))
+             total_acc, s['num_to_test'], ss))
 
         self.snn.restore()
 

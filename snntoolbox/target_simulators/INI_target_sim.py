@@ -70,9 +70,12 @@ class SNN:
         ``pass``.
     """
 
-    def __init__(self):
+    def __init__(self, s=None):
         """Init function."""
-        self.sim = initialize_simulator(settings['simulator'])
+
+        if s is None:
+            s = settings
+        self.sim = initialize_simulator(s['simulator'])
         self.snn = keras.models.Sequential()
         self.get_output = None
         self.parsed_model = None
@@ -149,7 +152,7 @@ class SNN:
                                               updates=updates,
                                               allow_input_downcast=True)
 
-    def run(self, x_test=None, y_test=None, dataflow=None):
+    def run(self, x_test=None, y_test=None, dataflow=None, s=None, **kwargs):
         """Simulate a SNN with LIF and Poisson input.
 
         Simulate a spiking network with leaky integrate-and-fire units and
@@ -193,17 +196,24 @@ class SNN:
         from snntoolbox.io_utils.plotting import plot_input_image
         from snntoolbox.io_utils.plotting import plot_spikecount_vs_time
 
+        if s is None:
+            s = settings
+
+        log_dir = kwargs['path'] if 'path' in kwargs \
+            else s['log_dir_of_current_run']
+
         # Load neuron layers and connections if conversion was done during a
         # previous session.
         if self.get_output is None:
             echo("Restoring layer connections...\n")
             self.load()
             self.parsed_model = keras.models.load_model(os.path.join(
-                settings['path_wd'], settings['filename_parsed_model']+'.h5'))
+                s['path_wd'], s['filename_parsed_model']+'.h5'))
 
-        si = settings['sample_indices_to_test']
+        si = s['sample_indices_to_test'] \
+            if 'sample_indices_to_test' in s else []
         if not si == []:
-            assert len(si) == settings['batch_size'], dedent("""
+            assert len(si) == s['batch_size'], dedent("""
                 You attempted to test the SNN on a total number of samples that
                 is not compatible with the batch size with which the SNN was
                 converted. Either change the number of samples to test to be
@@ -218,10 +228,9 @@ class SNN:
 
         # Divide the test set into batches and run all samples in a batch in
         # parallel.
-        num_batches = int(np.floor(
-            settings['num_to_test'] / settings['batch_size']))
+        num_batches = int(np.floor(s['num_to_test'] / s['batch_size']))
 
-        if settings['verbose'] > 1:
+        if s['verbose'] > 1:
             print("Starting new simulation...\n")
         # Allocate a list 'spiketrains_batch' with the following specification:
         # Each entry in ``spiketrains_batch`` contains a tuple
@@ -233,13 +242,12 @@ class SNN:
         # (batch_size, n_chnls, n_rows, n_cols, duration)
         # ``label`` is a string specifying both the layer type and the index,
         # e.g. ``'03Dense'``.
-        if settings['verbose'] > 2:
+        if s['verbose'] > 2:
             spiketrains_batch = []
             for layer in self.snn.layers:
                 if 'Flatten' in layer.name:
                     continue
-                shape = list(layer.output_shape) + \
-                    [int(settings['duration'] / settings['dt'])]
+                shape = list(layer.output_shape) + [int(s['duration']/s['dt'])]
                 spiketrains_batch.append((np.zeros(shape, 'float32'),
                                           layer.name))
             # Allocate list for plotting the error vs simulation time
@@ -253,7 +261,7 @@ class SNN:
         guesses = []
         rescale_fac = 1
         num_classes = 0
-        for batch_idx in range(num_batches):  # m=2.3GB
+        for batch_idx in range(num_batches):
             # Get a batch of samples
             if x_test is None:
                 x_batch, y_batch = dataflow.next()
@@ -261,20 +269,19 @@ class SNN:
                 if imagenet:  # Only for imagenet!
                     x_batch = preprocess_input(x_batch)
             else:
-                batch_idxs = range(settings['batch_size'] * batch_idx,
-                                   settings['batch_size'] * (batch_idx + 1))
+                batch_idxs = range(s['batch_size'] * batch_idx,
+                                   s['batch_size'] * (batch_idx + 1))
                 x_batch = x_test[batch_idxs, :]
                 y_batch = y_test[batch_idxs, :]
             num_classes = y_batch.shape[1]
 
             # Either use Poisson spiketrains as inputs to the SNN, or take the
             # original data.
-            if settings['poisson_input']:
+            if s['poisson_input']:
                 # This factor determines the probability threshold for cells in
                 # the input layer to fire a spike. Increasing ``input_rate``
                 # increases the firing rate of the input and subsequent layers.
-                rescale_fac = np.max(x_batch) * 1000 / (
-                    settings['input_rate'] * settings['dt'])
+                rescale_fac = np.max(x_batch) * 1000 / (s['input_rate']*s['dt'])
             else:
                 # Simply use the analog values of the original data as input.
                 inp = x_batch
@@ -283,16 +290,16 @@ class SNN:
             self.sim.reset(self.snn.layers[-1])
 
             # Loop through simulation time.
-            output = np.zeros((settings['batch_size'], y_batch.shape[1]),
+            output = np.zeros((s['batch_size'], y_batch.shape[1]),
                               dtype='int32')
-            num_timesteps = int(settings['duration'] / settings['dt'])
-            if settings['verbose'] > 2:
-                total_spike_count_over_time = np.zeros(
-                    (num_timesteps, settings['batch_size']))
+            num_timesteps = int(s['duration'] / s['dt'])
+            if s['verbose'] > 2:
+                total_spike_count_over_time = np.zeros((num_timesteps,
+                                                        s['batch_size']))
 
             t_idx = 0
-            for t in np.arange(0, settings['duration'], settings['dt']):
-                if settings['poisson_input']:
+            for t in np.arange(0, s['duration'], s['dt']):
+                if s['poisson_input']:
                     # Create poisson input.
                     spike_snapshot = \
                         np.random.random_sample(x_batch.shape) * rescale_fac
@@ -304,7 +311,7 @@ class SNN:
                     # inp *= np.max(x_batch) * np.sign(x_batch)
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
-                if settings['online_normalization']:
+                if s['online_normalization']:
                     out_spikes, ts, total_spike_count, thresh, max_spikerate, \
                         spiketrain = self.get_output(inp, float(t))
                     print('Time: {:.2f}, thresh: {:.2f},'
@@ -312,7 +319,7 @@ class SNN:
                             float(np.array(ts)),
                             float(np.array(thresh)),
                             float(np.array(max_spikerate))))
-                else:  # t=27.6%
+                else:
                     out_spikes, ts, total_spike_count = \
                         self.get_output(inp, float(t))
                 # Count number of spikes in output layer during whole
@@ -321,13 +328,13 @@ class SNN:
                 # For the first batch only, record the spiketrains of each
                 # neuron in each layer.
                 verb = 1 if record_error_vs_time else 2
-                if batch_idx == 0 and settings['verbose'] > verb:
+                if batch_idx == 0 and s['verbose'] > verb:
                     j = 0
                     for i, layer in enumerate(self.snn.layers):
                         if 'Flatten' in self.snn.layers[i].name:
                             continue
                         spiketrains_batch[j][0][Ellipsis, t_idx] = \
-                            layer.spiketrain.get_value()  # t=1.8% m=0.6GB
+                            layer.spiketrain.get_value()
                         j += 1
                     total_spike_count_over_time[t_idx] = \
                         np.array(total_spike_count)
@@ -338,10 +345,10 @@ class SNN:
                     guesses_tmp = np.argmax(output, axis=1)
                     err.append(np.mean(truth_tmp != guesses_tmp))
                 t_idx += 1
-                if settings['verbose'] > 1:
+                if s['verbose'] > 1:
                     echo('.')
 
-            if settings['verbose'] > 0:
+            if s['verbose'] > 0:
                 echo('\n')
                 echo("Batch {} of {} completed ({:.1%})\n".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
@@ -349,38 +356,32 @@ class SNN:
                 guesses += list(np.argmax(output, axis=1))
                 avg = np.mean(np.array(truth) == np.array(guesses))
                 echo("Moving average accuracy: {:.2%}.\n".format(avg))
-                with open(os.path.join(settings['log_dir_of_current_run'],
-                                       'accuracy.txt'), 'w') as f:
+                with open(os.path.join(log_dir, 'accuracy.txt'), 'w') as f:
                     f.write("Moving average accuracy after batch " +
                             "{} of {}: {:.2%}.\n".format(batch_idx + 1,
                                                          num_batches, avg))
 
                 if record_error_vs_time:
                     ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
-                    plot_error_vs_time(err, ann_err=ann_err,
-                                       path=settings['log_dir_of_current_run'])
-                    with open(os.path.join(settings['log_dir_of_current_run'],
-                                           'err_vs_time.txt'), 'w') as f:
+                    plot_error_vs_time(err, ann_err=ann_err, path=log_dir)
+                    with open(os.path.join(log_dir, 'err_vs_time.txt'), 'w') \
+                            as f:
                         f.write(str(err))
 
-                if batch_idx == 0 and settings['verbose'] > 2:
+                if batch_idx == 0 and s['verbose'] > 2:
                     plot_input_image(x_batch[0], int(np.argmax(y_batch[0])),
-                                     settings['log_dir_of_current_run'])
+                                     log_dir)
                     ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
-                    plot_error_vs_time(err, ann_err=ann_err,
-                                       path=settings['log_dir_of_current_run'])
-                    with open(os.path.join(settings['log_dir_of_current_run'],
-                                           'err_vs_time.txt'), 'w') as f:
+                    plot_error_vs_time(err, ann_err=ann_err, path=log_dir)
+                    with open(os.path.join(log_dir, 'err_vs_time.txt'), 'w') \
+                            as f:
                         f.write(str(err))
                     plot_spikecount_vs_time(total_spike_count_over_time,
-                                            settings['log_dir_of_current_run'])
-                    plot_confusion_matrix(truth, guesses,
-                                          settings['log_dir_of_current_run'])
+                                            log_dir)
+                    plot_confusion_matrix(truth, guesses, log_dir)
                     activations_batch = get_activations_batch(
                         self.parsed_model, x_batch)
-                    output_graphs(spiketrains_batch, activations_batch,
-                                  settings['log_dir_of_current_run'])
-                    # t=70.1% m=0.6GB
+                    output_graphs(spiketrains_batch, activations_batch, log_dir)
                     # del spiketrains_batch
 
                 save_activations = True
@@ -388,8 +389,7 @@ class SNN:
                     print("Saving activations")
                     activations_batch = get_activations_batch(
                         self.parsed_model, x_batch)
-                    path = os.path.join(settings['log_dir_of_current_run'],
-                                        'activations')
+                    path = os.path.join(log_dir, 'activations')
                     if not os.path.isdir(path):
                         os.makedirs(path)
                     np.savez_compressed(os.path.join(path, str(batch_idx)),
@@ -404,9 +404,8 @@ class SNN:
                 match[gt] += 1
         avg_acc = np.mean(match / count)
         total_acc = np.mean(np.array(truth) == np.array(guesses))
-        if settings['verbose'] > 2:
-            plot_confusion_matrix(truth, guesses,
-                                  settings['log_dir_of_current_run'])
+        if s['verbose'] > 2:
+            plot_confusion_matrix(truth, guesses, log_dir)
         echo("Simulation finished.\n\n")
         echo("Total accuracy: {:.2%} on {} test samples.\n\n".format(total_acc,
              len(guesses)))

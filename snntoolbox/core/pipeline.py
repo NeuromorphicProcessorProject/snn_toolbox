@@ -73,13 +73,13 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         params = [settings[param_name]]
 
     # ____________________________ LOAD DATASET _____________________________ #
-    evalset, normset, testset = get_dataset()
+    evalset, normset, testset = get_dataset(settings)
 
     # Instantiate an empty spiking network
     input_model = {}
     target_sim = import_module('snntoolbox.target_simulators.' +
                                settings['simulator'] + '_target_sim')
-    spiking_model = target_sim.SNN()  # t=0.1%
+    spiking_model = target_sim.SNN()
 
     if (settings['evaluateANN'] or settings['convert']) and not is_stop(queue):
         # ___________________________ LOAD MODEL ____________________________ #
@@ -88,16 +88,25 @@ def test_full(queue=None, params=None, param_name='v_thresh',
                                   settings['model_lib'] + '_input_lib')
         input_model = model_lib.load_ann(settings['path_wd'],
                                          settings['filename_ann'])
+        # ____________________________ EVALUATE _____________________________ #
+        # Evaluate ANN
         if settings['evaluateANN']:
             print('\n' + "Evaluating input model...")
             score = model_lib.evaluate(input_model['val_fn'], **evalset)
             spiking_model.ANN_err = 1-score[1]
 
     if settings['convert'] and not is_stop(queue):
-
+        # _____________________________ PARSE ________________________________ #
+        # Parse ANN to a Keras model with only layers that can be converted.
         print("Parsing input model...")
-        parsed_model = parse(input_model['model'])  # t=0.5% m=0.6GB
+        parsed_model = parse(input_model['model'])
         print_description(parsed_model)
+
+        # ____________________________ EVALUATE _____________________________ #
+        # (Re-) evaluate ANN
+        if settings['evaluateANN'] and not is_stop(queue):
+            print('\n' + "Evaluating parsed model...")
+            evaluate_keras(parsed_model, **evalset)
 
         save_activations = False
         if save_activations:
@@ -122,12 +131,6 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         # ____________________________ NORMALIZE ____________________________ #
         # Normalize model
         if settings['normalize'] and not is_stop(queue):
-            # Evaluate ANN before normalization to ensure it doesn't affect
-            # accuracy
-            if settings['evaluateANN'] and not is_stop(queue):
-                print('\n' + "Evaluating parsed model before normalization...")
-                evaluate_keras(parsed_model, **evalset)
-            # t=9.1 (t=90.8% without sim) m=0.2GB
             normalize_parameters(parsed_model, **normset)
 
         # ____________________________ EVALUATE _____________________________ #
@@ -136,15 +139,17 @@ def test_full(queue=None, params=None, param_name='v_thresh',
             print('\n' + "Evaluating parsed model...")
             evaluate_keras(parsed_model, **evalset)
 
-        # _____________________________ EXPORT ______________________________ #
-        # Write model to disk
+        # __________________________ SAVE PARSED _____________________________ #
+        # Write parsed model to disk
         parsed_model.save(os.path.join(
             settings['path_wd'], settings['filename_parsed_model'] + '.h5'))
 
+        # ____________________________ BUILD SNN _____________________________ #
         # Compile spiking network from ANN
         if not is_stop(queue):
             spiking_model.build(parsed_model)
 
+        # ____________________________ SAVE SNN ______________________________ #
         # Export network in a format specific to the simulator with which it
         # will be tested later.
         if not is_stop(queue):
@@ -174,7 +179,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
                 print("Current value of parameter to sweep: " +
                       "{} = {:.2f}\n".format(param_name, p))
             # Simulate network
-            total_acc = spiking_model.run(**testset)  # t=90.1% m=2.3GB
+            total_acc = spiking_model.run(**testset)
 
             # Write out results
             results.append(total_acc)

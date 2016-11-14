@@ -123,39 +123,15 @@ def parse(input_model):
     return parsed_model
 
 
-def parse_dataset_kwargs(datagen_kwargs_str, dataflow_kwargs_str):
-    """
-    Parse kwargs specified by user to be passed to
-    keras.preprocessing.image.ImageDataGenerator.
-
-    Parameters
-    ----------
-
-    datagen_kwargs_str: str
-    dataflow_kwargs_str: str
-
-    Returns
-    -------
-
-    datagen_kwargs: dict
-    dataflow_kwargs: dict
-    """
-
-    import ast
-    datagen_kwargs = ast.literal_eval(datagen_kwargs_str)
-    dataflow_kwargs = ast.literal_eval(dataflow_kwargs_str)
-    dataflow_kwargs['directory'] = settings['dataset_path']
-    dataflow_kwargs['batch_size'] = settings['num_to_test']
-    return datagen_kwargs, dataflow_kwargs
-
-
 def get_dataset(s):
     """Get data set.
-
+    TODO: Docstring
     """
 
-    evalset = normset = testset = {}
+    evalset = normset = testset = None
     if s['dataset_format'] == 'npz':
+        print("Loading data set from '.npz' files in {}.\n".format(
+            s['dataset_path']))
         from snntoolbox.io_utils.common import load_dataset
         if s['evaluateANN'] or s['simulate']:
             evalset = {
@@ -167,14 +143,23 @@ def get_dataset(s):
 #            elif s['maxpool_type'] == 'binary_sigmoid':
 #                np.clip((evalset['x_test']+1.)/2., 0, 1, evalset['x_test'])
 #                np.round(evalset['x_test'], out=evalset['x_test'])
+            assert evalset, "Evaluation set empty."
         if s['normalize']:
-            normset = {}
+            normset = {
+                'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
+            assert normset, "Normalization set empty."
         if s['simulate']:
             testset = evalset
+            assert testset, "Test set empty."
     elif s['dataset_format'] == 'jpg':
+        import ast
         from keras.preprocessing.image import ImageDataGenerator
-        datagen_kwargs, dataflow_kwargs = parse_dataset_kwargs(
-            s['datagen_kwargs'], s['dataflow_kwargs'])
+        print("Loading data set from ImageDataGenerator, using images in "
+              "{}.\n".format(s['dataset_path']))
+        datagen_kwargs = ast.literal_eval(s['datagen_kwargs'])
+        dataflow_kwargs = ast.literal_eval(s['dataflow_kwargs'])
+        dataflow_kwargs['directory'] = s['dataset_path']
+        dataflow_kwargs['batch_size'] = s['num_to_test']
         datagen = ImageDataGenerator(**datagen_kwargs)
         # Compute quantities required for featurewise normalization
         # (std, mean, and principal components if ZCA whitening is applied)
@@ -183,18 +168,21 @@ def get_dataset(s):
             **dataflow_kwargs).next()[0]
         datagen.fit(x_orig)
         if s['evaluateANN']:
-            evalset = {'dataflow':
-                       datagen.flow_from_directory(**dataflow_kwargs)}
+            evalset = {
+                'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
+            assert evalset, "Evaluation set empty."
         if s['normalize']:
             batchflow_kwargs = dataflow_kwargs.copy()
             batchflow_kwargs['batch_size'] = s['batch_size']
-            normset = {'dataflow':
-                       datagen.flow_from_directory(**batchflow_kwargs)}
+            normset = {
+                'dataflow': datagen.flow_from_directory(**batchflow_kwargs)}
+            assert normset, "Normalization set empty."
         if s['simulate']:
             batchflow_kwargs = dataflow_kwargs.copy()
             batchflow_kwargs['batch_size'] = s['batch_size']
-            testset = {'dataflow':
-                       datagen.flow_from_directory(**batchflow_kwargs)}
+            testset = {
+                'dataflow': datagen.flow_from_directory(**batchflow_kwargs)}
+            assert testset, "Test set empty."
     return evalset, normset, testset
 
 
@@ -349,7 +337,7 @@ def get_sample_activity_from_batch(activity_batch, idx=0):
     return [(layer_act[0][idx], layer_act[1]) for layer_act in activity_batch]
 
 
-def normalize_parameters(model, dataflow=None):
+def normalize_parameters(model, **kwargs):
     """Normalize the parameters of a network.
 
     The parameters of each layer are normalized with respect to the maximum
@@ -364,13 +352,13 @@ def normalize_parameters(model, dataflow=None):
     from snntoolbox.io_utils.plotting import plot_hist
     from snntoolbox.io_utils.common import confirm_overwrite
 
-    if dataflow is None:
-        from snntoolbox.io_utils.common import load_dataset
-        print("Loading normalization data set from '.npz' file.\n")
-        x_norm = load_dataset(settings['dataset_path'], 'x_norm.npz')  # t=0.2%
-    else:
-        print("Loading normalization data set from ImageDataGenerator.\n")
-        x_norm, y = dataflow.next()
+    assert 'x_norm' in kwargs or 'dataflow' in kwargs, \
+        "Normalization data set could not be loaded."
+    x_norm = None
+    if 'x_norm' in kwargs:
+        x_norm = kwargs['x_norm']
+    elif 'dataflow' in kwargs:
+        x_norm, y = kwargs['dataflow'].next()
 
     print("Using {} samples for normalization.".format(len(x_norm)))
 
@@ -385,7 +373,8 @@ def normalize_parameters(model, dataflow=None):
     # normalization.\n")
 
     print("Normalizing parameters:\n")
-    newpath = os.path.join(settings['log_dir_of_current_run'], 'normalization')
+    newpath = kwargs['path'] if 'path' in kwargs else \
+        os.path.join(settings['log_dir_of_current_run'], 'normalization')
     if not os.path.exists(newpath):
         os.makedirs(newpath)
     filepath = os.path.join(newpath, str(settings['percentile']) + '.json')
