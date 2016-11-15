@@ -80,7 +80,8 @@ class SNN:
         self.get_output = None
         self.parsed_model = None
 
-    def build(self, parsed_model):
+    # noinspection PyUnusedLocal
+    def build(self, parsed_model, **kwargs):
         """Compile a SNN to prepare for simulation with INI simulator.
 
         Convert an ANN to a spiking neural network, using layers derived from
@@ -105,7 +106,7 @@ class SNN:
 
         # Pass time variable to first layer
         input_time = theano.tensor.scalar('time')
-        kwargs = {'time_var': input_time}
+        kwargs2 = {'time_var': input_time}
 
         # Iterate over layers to create spiking neurons and connections.
         for layer in parsed_model.layers:
@@ -116,8 +117,8 @@ class SNN:
             self.sim.init_neurons(self.snn.layers[-1],
                                   v_thresh=settings['v_thresh'],
                                   tau_refrac=settings['tau_refrac'],
-                                  **kwargs)
-            kwargs = {}
+                                  **kwargs2)
+            kwargs2 = {}
 
         # Compile
         self.compile_snn(input_time)
@@ -152,7 +153,7 @@ class SNN:
                                               updates=updates,
                                               allow_input_downcast=True)
 
-    def run(self, x_test=None, y_test=None, dataflow=None, s=None, **kwargs):
+    def run(self, x_test=None, y_test=None, dataflow=None, **kwargs):
         """Simulate a SNN with LIF and Poisson input.
 
         Simulate a spiking network with leaky integrate-and-fire units and
@@ -168,7 +169,6 @@ class SNN:
         Parameters
         ----------
 
-        dataflow : keras.DataFlowGenerator
         x_test: float32 array
             The input samples to test.
             With data of the form (channels, num_rows, num_cols),
@@ -178,6 +178,15 @@ class SNN:
             net.
         y_test: float32 array
             Ground truth of test data. Has dimension (num_samples, num_classes)
+        dataflow : keras.DataFlowGenerator
+
+        kwargs: Optional[dict]
+            - s: Optional[dict]
+                Settings. If not given, the ``snntoolobx.config.settings``
+                dictionary is used.
+            - path: Optional[str]
+                Where to store the output plots. If no path given, this value is
+                taken from the settings dictionary.
 
         Returns
         -------
@@ -196,9 +205,7 @@ class SNN:
         from snntoolbox.io_utils.plotting import plot_input_image
         from snntoolbox.io_utils.plotting import plot_spikecount_vs_time
 
-        if s is None:
-            s = settings
-
+        s = kwargs['settings'] if 'settings' in kwargs else settings
         log_dir = kwargs['path'] if 'path' in kwargs \
             else s['log_dir_of_current_run']
 

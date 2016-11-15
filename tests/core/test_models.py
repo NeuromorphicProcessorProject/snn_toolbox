@@ -36,14 +36,14 @@ class TestOutputModel:
 
     def test_building(self, spiking_model_and_sim, parsed_model, path_wd):
         spiking_model = spiking_model_and_sim['spiking_model']
-        spiking_model.build(parsed_model)
+        spiking_model.build(parsed_model, path_wd=str(path_wd))
         spiking_model.save(str(path_wd),
                            spiking_model_and_sim['target_sim'].__name__)
 
     def test_simulating(self, spiking_model_and_sim, testset, path_wd,
                         settings):
         score = spiking_model_and_sim['spiking_model'].run(
-            path=path_wd, s=settings, **testset)
+            path=str(path_wd), settings=settings, **testset)
         target_acc = float(spiking_model_and_sim['target_acc'])
         assert round(100 * score, 2) >= target_acc
 
@@ -55,8 +55,8 @@ class TestOutputModel:
 
         target_sim = import_module(
             'snntoolbox.target_simulators.brian2_target_sim')
-        settings['simulator'] = 'brian2'
+        settings.update({'simulator': 'brian2', 'num_to_test': 2})
         spiking_model = target_sim.SNN(settings)
         spiking_model.build(parsed_model)
-        score = spiking_model.run(path=path_wd, s=settings, **testset)
+        score = spiking_model.run(path=path_wd, settings=settings, **testset)
         assert round(100 * score, 2) >= 99.00

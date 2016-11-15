@@ -93,7 +93,8 @@ class SNN:
         self.cellparams = {key: s[key] for key in cellparams_pyNN}
         self.parsed_model = None
 
-    def build(self, parsed_model):
+    # noinspection PyUnusedLocal
+    def build(self, parsed_model, **kwargs):
         """
         Compile a spiking neural network to prepare for simulation.
 
@@ -271,7 +272,7 @@ class SNN:
                 self.layers[-2], self.layers[-1],
                 self.sim.FromListConnector(self.conns, ['weight', 'delay'])))
 
-    def run(self, x_test, y_test, s=None):
+    def run(self, x_test, y_test, kwargs):
         """Simulate a spiking network with IF units and Poisson input in pyNN.
 
         Simulate a spiking network with IF units and Poisson input in pyNN,
@@ -293,8 +294,6 @@ class SNN:
         Parameters
         ----------
 
-        s: dict
-            Settings.
         x_test: float32 array
             The input samples to test. With data of the form
             (channels, num_rows, num_cols), x_test has dimension
@@ -303,6 +302,13 @@ class SNN:
             convolutional net.
         y_test: float32 array
             Ground truth of test data. Has dimension (num_samples, num_classes)
+        kwargs: Optional[dict]
+            - s: Optional[dict]
+                Settings. If not given, the ``snntoolobx.config.settings``
+                dictionary is used.
+            - path: Optional[str]
+                Where to store the output plots. If no path given, this value is
+                taken from the settings dictionary.
 
         Returns
         -------
@@ -315,8 +321,9 @@ class SNN:
         import keras
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
 
-        if s is None:
-            s = settings
+        s = kwargs['settings'] if 'settings' in kwargs else settings
+        log_dir = kwargs['path'] if 'path' in kwargs \
+            else s['log_dir_of_current_run']
 
         # Setup pyNN simulator if it was not passed on from a previous session.
         if len(self.layers) == 0:
@@ -403,7 +410,7 @@ class SNN:
                 echo("Done.\n")
 
         if s['verbose'] > 1:
-            plot_confusion_matrix(truth, guesses, s['log_dir_of_current_run'])
+            plot_confusion_matrix(truth, guesses, log_dir)
 
         total_acc = np.mean(results)
         ss = '' if s['num_to_test'] == 1 else 's'

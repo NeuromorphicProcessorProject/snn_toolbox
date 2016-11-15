@@ -57,7 +57,7 @@ def parsed_model(path_wd, normset):
     from snntoolbox.core.util import parse, normalize_parameters
     input_model_and_lib = input_model_and_lib_single(ml[0])
     parsed_model = parse(input_model_and_lib['input_model']['model'])
-    # normalize_parameters(parsed_model, path=str(path_wd), **normset)
+    normalize_parameters(parsed_model, path=str(path_wd), **normset)
     return parsed_model
 
 
@@ -75,22 +75,54 @@ def input_model_and_lib_single(p):
 def input_model_and_lib(request):
     return input_model_and_lib_single(request.param)
 
-sm = [
-      # {'simulator': 'INI', 'target_acc': 99.00, 'num_to_test': 200},
-      # {'simulator': 'brian', 'target_acc': 99.00, 'num_to_test': 2},
-      {'simulator': 'brian2', 'target_acc': 99.00, 'num_to_test': 2},
-      # {'simulator': 'nest', 'target_acc': 99.00, 'num_to_test': 2},
-      # {'simulator': 'Neuron', 'target_acc': 99.00, 'num_to_test': 2},
-      {'simulator': 'MegaSim', 'target_acc': 99.00, 'num_to_test': 2}
-      ]
+
+def is_module_installed(mod):
+    import sys
+    if sys.version_info[0] < 3:
+        import pkgutil
+        return pkgutil.find_loader(mod) is not None
+    else:
+        import importlib
+        return importlib.util.find_spec(mod) is not None
+
+
+def get_parameters_for_simtests():
+    from snntoolbox.config import initialize_simulator
+    sm = [{'simulator': 'INI', 'target_acc': 99.00, 'num_to_test': 200}]
+    try:
+        initialize_simulator('nest', dt=1)
+        sm.append({'simulator': 'nest', 'target_acc': 99.00, 'num_to_test': 2,
+                   'poisson_input': True})
+    except ImportError:
+        pass
+    try:
+        initialize_simulator('brian', dt=1)
+        sm.append({'simulator': 'brian', 'target_acc': 99.00, 'num_to_test': 2,
+                   'poisson_input': True})
+    except ImportError:
+        pass
+    try:
+        initialize_simulator('Neuron', dt=1)
+        sm.append({'simulator': 'Neuron', 'target_acc': 99.00, 'num_to_test': 2,
+                   'poisson_input': True})
+    except ImportError:
+        pass
+    try:
+        import_module('snntoolbox.core.megasim')
+        sm.append({'simulator': 'MegaSim', 'target_acc': 99.00,
+                   'num_to_test': 2, 'poisson_input': True, 'batch_size': 1})
+    except ImportError:
+        pass
+    return sm
+
+sm = get_parameters_for_simtests()
 
 
 @pytest.fixture(scope='session', params=sm)
 def spiking_model_and_sim(request, settings):
     target_sim = import_module('snntoolbox.target_simulators.' +
                                request.param['simulator'] + '_target_sim')
-    settings['simulator'] = request.param['simulator']
+    settings.update(request.param)
     spiking_model = target_sim.SNN(settings)
     return {'target_sim': target_sim, 'spiking_model': spiking_model,
-            'target_acc': request.param['target_acc'],
-            'num_to_test': request.param['num_to_test']}
+            'target_acc': request.param['target_acc']}
