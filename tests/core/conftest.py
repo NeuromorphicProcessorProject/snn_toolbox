@@ -7,6 +7,16 @@ import pytest
 from importlib import import_module
 
 
+def is_module_installed(mod):
+    import sys
+    if sys.version_info[0] < 3:
+        import pkgutil
+        return pkgutil.find_loader(mod) is not None
+    else:
+        import importlib
+        return importlib.util.find_spec(mod) is not None
+
+
 @pytest.fixture(scope='session')
 def settings():
     from snntoolbox.config import settings as s
@@ -45,11 +55,18 @@ def normset(dataset):
 def testset(dataset):
     return dataset[2]
 
-# TODO: Train small lasagne and caffe model with all layer types on MNIST
-ml = [{'model_lib': 'keras', 'filename_ann': '99.20'},
-      # {'model_lib': 'caffe', 'filename_ann': '99.00'},
-      # {'model_lib': 'lasagne', 'filename_ann': '99.00'}
-      ]
+
+def get_input_libs():
+    ml = []
+    if is_module_installed('keras'):
+        ml.append({'model_lib': 'keras', 'filename_ann': '99.32'})
+    if is_module_installed('caffe'):
+        ml.append({'model_lib': 'caffe', 'filename_ann': '99.00'})
+    if is_module_installed('lasagne'):
+        ml.append({'model_lib': 'lasagne', 'filename_ann': '99.02'})
+    return ml
+
+ml = get_input_libs()
 
 
 @pytest.fixture(scope='session')
@@ -74,16 +91,6 @@ def input_model_and_lib_single(p):
 @pytest.fixture(scope='session', params=ml)
 def input_model_and_lib(request):
     return input_model_and_lib_single(request.param)
-
-
-def is_module_installed(mod):
-    import sys
-    if sys.version_info[0] < 3:
-        import pkgutil
-        return pkgutil.find_loader(mod) is not None
-    else:
-        import importlib
-        return importlib.util.find_spec(mod) is not None
 
 
 def get_parameters_for_simtests():
