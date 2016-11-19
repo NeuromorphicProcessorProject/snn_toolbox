@@ -13,6 +13,7 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 import os
+import json
 from importlib import import_module
 
 import numpy as np
@@ -142,6 +143,16 @@ def get_dataset(s):
     """
 
     evalset = normset = testset = None
+    # Instead of loading a normalization set, try to get the scale-factors from
+    # a previous run, stored on disk.
+    newpath = os.path.join(settings['log_dir_of_current_run'], 'normalization')
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+    filepath = os.path.join(newpath, str(settings['percentile']) + '.json')
+    if os.path.isfile(filepath):
+        print("Loading scale factors from disk instead of recalculating.")
+        with open(filepath) as f:
+            normset = {'scale_facs': json.load(f)}
     if s['dataset_format'] == 'npz':
         print("Loading data set from '.npz' files in {}.\n".format(
             s['dataset_path']))
@@ -157,7 +168,7 @@ def get_dataset(s):
 #                np.clip((evalset['x_test']+1.)/2., 0, 1, evalset['x_test'])
 #                np.round(evalset['x_test'], out=evalset['x_test'])
             assert evalset, "Evaluation set empty."
-        if s['normalize']:
+        if s['normalize'] and normset is None:
             normset = {
                 'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
             assert normset, "Normalization set empty."
@@ -184,7 +195,7 @@ def get_dataset(s):
             evalset = {
                 'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
             assert evalset, "Evaluation set empty."
-        if s['normalize']:
+        if s['normalize'] and normset is None:
             batchflow_kwargs = dataflow_kwargs.copy()
             batchflow_kwargs['batch_size'] = s['batch_size']
             normset = {
@@ -362,46 +373,38 @@ def normalize_parameters(model, **kwargs):
     time- and memory-consuming for larger networks.
     """
 
-    import json
     from snntoolbox.io_utils.plotting import plot_hist, plot_activ_hist
     from snntoolbox.io_utils.plotting import plot_max_activ_hist
     from snntoolbox.io_utils.common import confirm_overwrite
 
-    assert 'x_norm' in kwargs or 'dataflow' in kwargs, \
-        "Normalization data set could not be loaded."
-    x_norm = None
-    if 'x_norm' in kwargs:
-        x_norm = kwargs['x_norm']
-    elif 'dataflow' in kwargs:
-        x_norm, y = kwargs['dataflow'].next()
-
-    print("Using {} samples for normalization.".format(len(x_norm)))
-
-    sizes = [len(x_norm) * np.array(layer.output_shape[1:]).prod() * 32 /
-             (8*1e9) for layer in model.layers if len(layer.get_weights()) > 0]
-    size_str = ['{:.2f}'.format(s) for s in sizes]
-    print("INFO: Need {} GB for layer activations.\n".format(size_str) +
-          "May have to reduce size of data set used for normalization.\n")
-
-    print("Normalizing parameters:\n")
+    print("\nNormalizing parameters...")
     newpath = kwargs['path'] if 'path' in kwargs else \
         os.path.join(settings['log_dir_of_current_run'], 'normalization')
-    if not os.path.exists(newpath):
-        os.makedirs(newpath)
-    filepath = os.path.join(newpath, str(settings['percentile']) + '.json')
-    if os.path.isfile(filepath) and os.path.basename(filepath) == str(
-            settings['percentile']) + '.json':
-        print("Loading scale factors from disk instead of recalculating.")
-        facs_from_disk = True
-        with open(filepath) as f:
-            scale_facs = json.load(f)
+
+    scale_facs = []
+    scale_facs_from_disk = None
+    if 'scale_facs' in kwargs:
+        scale_facs_from_disk = kwargs['scale_facs']
+    elif 'x_norm' in kwargs or 'dataflow' in kwargs:
+        x_norm = None
+        if 'x_norm' in kwargs:
+            x_norm = kwargs['x_norm']
+        elif 'dataflow' in kwargs:
+            x_norm, y = kwargs['dataflow'].next()
+        print("Using {} samples for normalization.".format(len(x_norm)))
+        sizes = [
+            len(x_norm) * np.array(layer.output_shape[1:]).prod() * 32 /
+            (8*1e9) for layer in model.layers if len(layer.get_weights()) > 0]
+        size_str = ['{:.2f}'.format(s) for s in sizes]
+        print("INFO: Need {} GB for layer activations.\n".format(size_str) +
+              "May have to reduce size of data set used for normalization.\n")
     else:
-        facs_from_disk = False
-        scale_facs = []
+        print("ERROR: No scale factors or normalization data set could not be "
+              "loaded. Proceeding without normalization.")
+        return
 
     # Loop through all layers, looking for layers with parameters
     i = 0
-    get_activ = None
     scale_fac_prev_layer = 1
     for idx, layer in enumerate(model.layers):
         # Skip layer if not preceeded by a layer with parameters
@@ -409,14 +412,13 @@ def normalize_parameters(model, **kwargs):
             continue
         parameters = layer.get_weights()
 
-        if facs_from_disk:
-            scale_fac_prev_layer = scale_facs[i - 1] if i > 0 else 1
-            scale_fac = scale_facs[i]
+        if scale_facs_from_disk:
+            scale_fac_prev_layer = scale_facs_from_disk[i - 1] if i > 0 else 1
+            scale_fac = scale_facs_from_disk[i]
             i += 1
         else:
-            if settings['verbose'] > 1:
-                print("Calculating activation of layer {} ...".format(
-                    layer.name, layer.output_shape))
+            print("Calculating activation of layer {} ...".format(
+                layer.name, layer.output_shape))
             # Undo previous scaling before calculating activations:
             layer.set_weights([parameters[0] * scale_fac_prev_layer,
                                parameters[1]])
@@ -441,9 +443,7 @@ def normalize_parameters(model, **kwargs):
         layer.set_weights(parameters_norm)
 
         # Plot distributions of weights and activations before and after norm.
-        if facs_from_disk:
-            continue  # Assume plots are already there.
-        if settings['verbose'] < 3:
+        if scale_facs_from_disk or settings['verbose'] < 3:
             continue
         label = str(idx) + layer.__class__.__name__ if use_simple_label \
             else layer.name
@@ -463,7 +463,9 @@ def normalize_parameters(model, **kwargs):
         plot_max_activ_hist({'Activations_max': max_activations},
                             'Maximum Activation', label, newpath, scale_fac)
     # Write scale factors to disk
-    if not facs_from_disk and confirm_overwrite(filepath):
+    filepath = os.path.join(settings['log_dir_of_current_run'], 'normalization',
+                            str(settings['percentile']) + '.json')
+    if not scale_facs_from_disk and confirm_overwrite(filepath):
         with open(filepath, 'w') as f:
             json.dump(scale_facs, f)
 
@@ -493,8 +495,7 @@ def get_scale_fac(activations, idx=0):
     a = activations[np.nonzero(activations)]
 
     scale_fac = np.percentile(a, settings['percentile'] - idx ** 2 / 200)
-    if settings['verbose'] > 1:
-        print("Scale factor: {:.2f}.".format(scale_fac))
+    print("Scale factor: {:.2f}.".format(scale_fac))
 
     return scale_fac
 

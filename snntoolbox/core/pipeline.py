@@ -72,7 +72,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
     if params is None:
         params = [settings[param_name]]
 
-    # ____________________________ LOAD DATASET _____________________________ #
+    # ____________________________ LOAD DATASET ______________________________ #
     evalset, normset, testset = get_dataset(settings)
 
     # Instantiate an empty spiking network
@@ -82,13 +82,13 @@ def test_full(queue=None, params=None, param_name='v_thresh',
     spiking_model = target_sim.SNN()
 
     if (settings['evaluateANN'] or settings['convert']) and not is_stop(queue):
-        # ___________________________ LOAD MODEL ____________________________ #
+        # ___________________________ LOAD MODEL _____________________________ #
         # Extract architecture and parameters from input model.
         model_lib = import_module('snntoolbox.model_libs.' +
                                   settings['model_lib'] + '_input_lib')
         input_model = model_lib.load_ann(settings['path_wd'],
                                          settings['filename_ann'])
-        # ____________________________ EVALUATE _____________________________ #
+        # ____________________________ EVALUATE ______________________________ #
         # Evaluate ANN
         if settings['evaluateANN']:
             print('\n' + "Evaluating input model...")
@@ -102,7 +102,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         parsed_model = parse(input_model['model'])
         print_description(parsed_model)
 
-        # ____________________________ EVALUATE _____________________________ #
+        # ____________________________ EVALUATE ______________________________ #
         # (Re-) evaluate ANN
         if settings['evaluateANN'] and not is_stop(queue):
             print('\n' + "Evaluating parsed model...")
@@ -128,16 +128,16 @@ def test_full(queue=None, params=None, param_name='v_thresh',
                                     activations=activations_batch,
                                     spiketrains=None)
 
-        # ____________________________ NORMALIZE ____________________________ #
+        # ____________________________ NORMALIZE _____________________________ #
         # Normalize model
         if settings['normalize'] and not is_stop(queue):
             normalize_parameters(parsed_model, **normset)
 
-        # ____________________________ EVALUATE _____________________________ #
-        # (Re-) evaluate ANN
-        if settings['evaluateANN'] and not is_stop(queue):
-            print('\n' + "Evaluating parsed model...")
-            evaluate_keras(parsed_model, **evalset)
+            # ________________________ EVALUATE ______________________________ #
+            # (Re-) evaluate ANN
+            if settings['evaluateANN'] and not is_stop(queue):
+                print('\n' + "Evaluating normalized model...")
+                evaluate_keras(parsed_model, **evalset)
 
         # __________________________ SAVE PARSED _____________________________ #
         # Write parsed model to disk
@@ -155,7 +155,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         if not is_stop(queue):
             spiking_model.save(settings['path_wd'], settings['filename_snn'])
 
-    # ______________________________ SIMULATE _______________________________ #
+    # _______________________________ SIMULATE _______________________________ #
     results = []
     if settings['simulate'] and not is_stop(queue):
 
@@ -187,7 +187,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         # Clean up
         spiking_model.end_sim()
 
-    # _______________________________ OUTPUT _______________________________ #
+    # ________________________________ OUTPUT ________________________________ #
     # Number of samples used in one run:
     n = settings['num_to_test']
     # Plot and return results of parameter sweep.
