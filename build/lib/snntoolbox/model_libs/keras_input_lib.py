@@ -19,6 +19,7 @@ Created on Thu May 19 08:21:05 2016
 """
 
 import os
+
 from snntoolbox.config import settings, spiking_layers
 from snntoolbox.model_libs.common import absorb_bn
 
@@ -59,13 +60,9 @@ def extract(model):
     Parameters
     ----------
 
-    model: dict
-        A dictionary of objects that constitute the input model. Contains at
-        least the key
-            - ``model``: A model instance of the network in the respective
-              ``model_lib``.
-        For instance, if the input model was written using Keras, the 'model'-
-        value would be an instance of ``keras.Model``.
+    model: keras.models.Sequential
+        Keras model instance of the network. Obtained from calling the
+        ``load_ann`` function in this module.
 
     Returns
     -------
@@ -103,29 +100,34 @@ def extract(model):
 
         # Absorb BatchNormalization layer into parameters of previous layer
         if 'BatchNormalization' in layer_type:
-            bn_parameters = layer.get_weights()  # gamma, beta, mean, std
-            for k in [layer_num - i for i in range(1, 3)]:
-                prev_layer = layers[k]
-                if len(prev_layer.weights) > 0:
+            bn_parameters = layer.get_weights()  # gamma, beta, mean, var
+            for k in range(1, 3):
+                prev_layer = layers[-k]
+                if 'parameters' in prev_layer:
                     break
-            parameters = prev_layer.get_weights()  # W, b of next layer
+            parameters = prev_layer['parameters']  # W, b of next layer
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of layer {}, {}.".format(k, prev_layer.name))
-            layers[-1]['parameters'] = absorb_bn(
+                  "parameters of previous {}.".format(prev_layer['name']))
+            prev_layer['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[0],
                 bn_parameters[1], bn_parameters[2], bn_parameters[3],
                 layer.epsilon)
+
+        # Pass on batch_input_shape (also in case the first layer is skipped)
+        if layer_num == 0:
+            batch_input_shape = list(layer.batch_input_shape)
+            batch_input_shape[0] = settings['batch_size']
+            if layer_type in spiking_layers:
+                layer.batch_input_shape = tuple(batch_input_shape)
+            else:
+                model.layers[layer_num + 1].batch_input_shape = \
+                    tuple(batch_input_shape)
 
         if layer_type not in spiking_layers:
             print("Skipping layer {}".format(layer_type))
             continue
 
         print("Parsing layer {}".format(layer_type))
-
-        if layer_num == 0:
-            batch_input_shape = list(layer.batch_input_shape)
-            batch_input_shape[0] = settings['batch_size']
-            layer.batch_input_shape = tuple(batch_input_shape)
 
         attributes = layer.get_config()
         attributes['layer_type'] = layer.__class__.__name__
@@ -146,7 +148,8 @@ def extract(model):
             # Dense / Conv layer:
             activation = layer.get_config()['activation']
             # Otherwise, search for the activation layer:
-            for k in range(layer_num+1, min(layer_num+4, len(model.layers))):
+            for k in range(layer_num + 1,
+                           min(layer_num + 4, len(model.layers))):
                 if model.layers[k].__class__.__name__ == 'Activation':
                     activation = model.layers[k].get_config()['activation']
                     break
@@ -164,28 +167,24 @@ def load_ann(path=None, filename=None):
     Parameters
     ----------
 
-    path: string, optional
+    path: Optional[string]
         Path to directory where to load model from. Defaults to
         ``settings['path']``.
 
-    filename: string, optional
+    filename: Optional[string]
         Name of file to load model from. Defaults to ``settings['filename']``.
 
     Returns
     -------
 
-    model: dict
+    : dict[str, Union[keras.models.Sequential, theano.function]]
         A dictionary of objects that constitute the input model. It must
         contain the following two keys:
 
-        - 'model': Model instance of the network in the respective
-          ``model_lib``.
-        - 'val_fn': Theano function that allows evaluating the original model.
-
-        For instance, if the input model was written using Keras, the 'model'-
-        value would be an instance of ``keras.Model``, and 'val_fn' the
-        ``keras.Model.evaluate`` method.
-
+        - 'model': keras.models.Sequential
+            Keras model instance of the network.
+        - 'val_fn': theano.function
+            Theano function that allows evaluating the original model.
     """
 
     from keras import models
@@ -204,12 +203,25 @@ def load_ann(path=None, filename=None):
         # at inference time, set them to the most common choice.
         model.compile('sgd', 'categorical_crossentropy', metrics=['accuracy'])
     else:
-        model = models.load_ann(filepath + '.h5')
+        model = models.load_model(filepath + '.h5')
 
     return {'model': model, 'val_fn': model.evaluate}
 
 
-def evaluate(val_fn, x_test, y_test):
-    """Evaluate the original ANN."""
+def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
+    """Evaluate the original ANN.
 
-    return val_fn(x_test, y_test)
+    Can use either numpy arrays ``x_test, y_test`` containing the test samples,
+    or generate them with a dataflow
+    (``Keras.ImageDataGenerator.flow_from_directory`` object).
+    """
+
+    if x_test is None:
+        # Get samples from Keras ImageDataGenerator
+        x_test, y_test = dataflow.next()
+        print("Using {} samples to evaluate input model".format(len(x_test)))
+
+    score = val_fn(x_test, y_test)
+    print('\n' + "Test loss: {:.2f}".format(score[0]))
+    print("Test accuracy: {:.2%}\n".format(score[1]))
+    return score

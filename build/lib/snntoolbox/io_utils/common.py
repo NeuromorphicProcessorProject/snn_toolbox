@@ -9,24 +9,23 @@ Created on Wed Nov 18 13:38:46 2015
 """
 
 # For compatibility with python2
-from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
-from future import standard_library
+from __future__ import print_function, unicode_literals
 
-import os
-import numpy as np
 import json
-from snntoolbox.config import settings
+import os
 
-standard_library.install_aliases()
+import h5py
+import numpy as np
+from future import standard_library
+from snntoolbox.config import settings
+from typing import Optional
 
 standard_library.install_aliases()
 
 
 def load_parameters(filepath):
     """Load all layer parameters from an HDF5 file."""
-
-    import h5py
 
     f = h5py.File(filepath, mode='r')
 
@@ -39,6 +38,15 @@ def load_parameters(filepath):
     return params
 
 
+def save_parameters(params, filepath):
+    """Save all layer parameters to an HDF5 file."""
+
+    with h5py.File(filepath, mode='w') as f:
+        for i, p in enumerate(params):
+            j = '0' + str(i) if i < 10 else str(i)
+            f.create_dataset('param_'+j, data=p)
+
+
 def to_categorical(y, nb_classes):
     """Convert class vector to binary class matrix.
 
@@ -48,10 +56,10 @@ def to_categorical(y, nb_classes):
     """
 
     y = np.asarray(y, dtype='int32')
-    Y = np.zeros((len(y), nb_classes))
+    y_cat = np.zeros((len(y), nb_classes))
     for i in range(len(y)):
-        Y[i, y[i]] = 1.
-    return Y
+        y_cat[i, y[i]] = 1.
+    return y_cat
 
 
 def load_dataset(path, filename):
@@ -60,19 +68,21 @@ def load_dataset(path, filename):
     Parameters
     ----------
 
-    path: string, optional
+    filename : string
+        Name of file.
+    path: string
         Location of dataset to load.
 
     Returns
     -------
 
-    The dataset as a numpy array containing samples. Example:
-    With original data of the form (channels, num_rows, num_cols), ``X_train``
-    and ``X_test`` have dimension (num_samples, channels*num_rows*num_cols) for
-    a fully-connected network, and (num_samples, channels, num_rows, num_cols)
-    otherwise.
-    ``Y_train`` and ``Y_test`` have dimension (num_samples, num_classes).
-
+    : tuple[np.array]
+        The dataset as a numpy array containing samples. Example:
+        With original data of the form (channels, num_rows, num_cols),
+        ``x_train`` and ``x_test`` have dimension
+        (num_samples, channels*num_rows*num_cols) for a fully-connected network,
+        and (num_samples, channels, num_rows, num_cols) otherwise.
+        ``y_train`` and ``y_test`` have dimension (num_samples, num_classes).
     """
 
     return np.load(os.path.join(path, filename))['arr_0']
@@ -84,24 +94,24 @@ def download_dataset(fname, origin, untar=False):
     Parameters
     ----------
 
-    fname: string
+    fname: str
         Full filename of dataset, e.g. ``mnist.pkl.gz``.
-    origin: string
+    origin: str
         Location of dataset, e.g. url
         https://s3.amazonaws.com/img-datasets/mnist.pkl.gz
-    untar: boolean, optional
+    untar: Optional[bool]
         If ``True``, untar file.
 
     Returns
     -------
 
-    fpath: string
+    fpath: str
         The path to the downloaded dataset. If the user has write access to
         ``home``, the dataset will be stored in ``~/.snntoolbox/datasets/``,
         otherwise in ``/tmp/.snntoolbox/datasets/``.
 
-    Todo
-    ----
+    Notes
+    -----
 
     Test under python2.
     """
@@ -120,6 +130,7 @@ def download_dataset(fname, origin, untar=False):
     if not os.path.exists(datadir):
         os.makedirs(datadir)
 
+    untar_fpath = None
     if untar:
         untar_fpath = os.path.join(datadir, fname)
         fpath = untar_fpath + '.tar.gz'
@@ -182,8 +193,26 @@ def to_json(data, path):
     """
 
     def get_json_type(obj):
-        # if obj is any numpy type
+        """Get type of object to check if JSON serializable.
+
+        Parameters
+        ----------
+
+        obj: object
+
+        Raises
+        ------
+
+        TypeError
+
+        Returns
+        -------
+
+        : Union(string, Any)
+        """
+
         if type(obj).__module__ == np.__name__:
+            # noinspection PyUnresolvedReferences
             return obj.item()
 
         # if obj is a python 'type'

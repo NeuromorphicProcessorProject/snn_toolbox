@@ -23,6 +23,24 @@ _config_path = os.path.join(toolbox_root, 'preferences')
 if not os.path.exists(_config_path):
     os.makedirs(_config_path)
 
+# Create a Keras config file so that even when importing Keras for the first
+# time, the backend will be 'theano', not default 'tensorflow'.
+_keras_base_dir = os.path.expanduser('~')
+if not os.access(_keras_base_dir, os.W_OK):
+    _keras_base_dir = '/tmp'
+_keras_dir = os.path.join(_keras_base_dir, '.keras')
+if not os.path.exists(_keras_dir):
+    os.makedirs(_keras_dir)
+_config_path = os.path.expanduser(os.path.join(_keras_dir, 'keras.json'))
+if not os.path.exists(_config_path):
+    import json
+    _config = {'floatx': 'float32',
+               'epsilon': 1e-07,
+               'backend': 'theano',
+               'image_dim_ordering': 'th'}
+    with open(_config_path, 'w') as f:
+        f.write(json.dumps(_config, indent=4))
+
 # python 2 can not handle the 'flush' keyword argument of python 3 print().
 # Provide 'echo' function as an alias for
 # "print with flush and without newline".

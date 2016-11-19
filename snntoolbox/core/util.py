@@ -26,6 +26,19 @@ standard_library.install_aliases()
 use_simple_label = True
 
 
+def get_root_dir():
+    """Get toolbox root directory.
+
+    Returns
+    -------
+
+    : str
+        Toolbox root directory.
+    """
+
+    return os.getcwd()
+
+
 def binary_tanh(x):
     """Round a float to -1 or 1.
 
@@ -337,6 +350,7 @@ def get_sample_activity_from_batch(activity_batch, idx=0):
     return [(layer_act[0][idx], layer_act[1]) for layer_act in activity_batch]
 
 
+# noinspection PyUnboundLocalVariable
 def normalize_parameters(model, **kwargs):
     """Normalize the parameters of a network.
 
@@ -349,7 +363,8 @@ def normalize_parameters(model, **kwargs):
     """
 
     import json
-    from snntoolbox.io_utils.plotting import plot_hist
+    from snntoolbox.io_utils.plotting import plot_hist, plot_activ_hist
+    from snntoolbox.io_utils.plotting import plot_max_activ_hist
     from snntoolbox.io_utils.common import confirm_overwrite
 
     assert 'x_norm' in kwargs or 'dataflow' in kwargs, \
@@ -362,15 +377,11 @@ def normalize_parameters(model, **kwargs):
 
     print("Using {} samples for normalization.".format(len(x_norm)))
 
-    #        import numpy as np
-    #        sizes = [len(x_norm) * np.array(layer['output_shape'][1:]).prod() *
-    #                 32 / (8 * 1e9) for idx, layer in enumerate(self.layers)
-    #                 if idx != 0 and 'parameters' in self.layers[idx-1]]
-    #        size_str = ['{:.2f}'.format(s) for s in sizes]
-    #        print("INFO: Need {} GB for layer activations.\n".format(
-    # size_str) +
-    #              "May have to reduce size of data set used for
-    # normalization.\n")
+    sizes = [len(x_norm) * np.array(layer.output_shape[1:]).prod() * 32 /
+             (8*1e9) for layer in model.layers if len(layer.get_weights()) > 0]
+    size_str = ['{:.2f}'.format(s) for s in sizes]
+    print("INFO: Need {} GB for layer activations.\n".format(size_str) +
+          "May have to reduce size of data set used for normalization.\n")
 
     print("Normalizing parameters:\n")
     newpath = kwargs['path'] if 'path' in kwargs else \
@@ -409,13 +420,16 @@ def normalize_parameters(model, **kwargs):
             # Undo previous scaling before calculating activations:
             layer.set_weights([parameters[0] * scale_fac_prev_layer,
                                parameters[1]])
-            # t=4.9%
             get_activ = get_activ_fn_for_layer(model, idx)
             activations = get_activations_layer(get_activ, x_norm)
+            nonzero_activations = activations[np.nonzero(activations)]
+            ax = tuple(np.arange(len(layer.output_shape))[1:])
+            max_activations = np.max(activations, axis=ax)
+            del activations
             if settings['normalization_schedule']:
-                scale_fac = get_scale_fac(activations, idx)
+                scale_fac = get_scale_fac(nonzero_activations, idx)
             else:
-                scale_fac = get_scale_fac(activations)  # t=3.7%
+                scale_fac = get_scale_fac(nonzero_activations)
             scale_facs.append(scale_fac)
 
         # Scale parameters
@@ -436,23 +450,18 @@ def normalize_parameters(model, **kwargs):
         weight_dict = {
             'weights': parameters[0].flatten(),
             'weights_norm': parameters_norm[0].flatten()}
-        # t=2.8%
         plot_hist(weight_dict, 'Weight', label, newpath)
 
         # Compute activations with modified parameters
-        # t=4.8%
         activations_norm = get_activations_layer(get_activ, x_norm)
-        activation_dict = {'Activations': activations[np.nonzero(activations)],
+        activation_dict = {'Activations': nonzero_activations,
                            'Activations_norm':
-                               activations_norm[np.nonzero(activations)]}
+                               activations_norm[np.nonzero(activations_norm)]}
         plot_hist(activation_dict, 'Activation', label, newpath, scale_fac)
-    # plot_hist({'Activations': activations[np.nonzero(activations)]},
-    #                  'Activation', label, newpath, scale_fac)
-    #        plot_hist({'Activations_max': np.max(activations, axis=tuple(
-    #            np.arange(activations.ndim)[1:]))}, 'Activation', label,
-    # newpath,
-    #            scale_fac)
-    # t=83.1%
+        plot_activ_hist({'Activations': nonzero_activations},
+                        'Activation', label, newpath, scale_fac)
+        plot_max_activ_hist({'Activations_max': max_activations},
+                            'Maximum Activation', label, newpath, scale_fac)
     # Write scale factors to disk
     if not facs_from_disk and confirm_overwrite(filepath):
         with open(filepath, 'w') as f:
@@ -483,8 +492,7 @@ def get_scale_fac(activations, idx=0):
     # Remove zeros, because they bias the distribution too much
     a = activations[np.nonzero(activations)]
 
-    scale_fac = np.percentile(a, settings['percentile'] - idx ** 2 / 200,
-                              overwrite_input=True)
+    scale_fac = np.percentile(a, settings['percentile'] - idx ** 2 / 200)
     if settings['verbose'] > 1:
         print("Scale factor: {:.2f}.".format(scale_fac))
 

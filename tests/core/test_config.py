@@ -2,11 +2,17 @@
 
 """Test configuration of toolbox."""
 
+import os
 import pytest
 import snntoolbox.config as config
+from snntoolbox.core.util import get_root_dir
 
-requs = list(open('../../requirements.txt'))
-imps = [d.strip('\n') for d in requs if '#' not in d and d != '\n']
+
+def get_modules_to_import(root_dir):
+    requs = list(open(os.path.join(root_dir, 'requirements.txt')))
+    return [d.strip('\n') for d in requs if '#' not in d and d != '\n']
+
+imps = get_modules_to_import(get_root_dir())
 
 
 @pytest.mark.parametrize('required_module', imps)
@@ -17,7 +23,8 @@ def test_imports_from_requirements(required_module):
 
 in_and_out = [
     ({}, False),
-    ({'path_wd': '../../examples', 'dataset_path': '../../examples/dataset',
+    ({'path_wd': os.path.join(get_root_dir(), 'examples'),
+      'dataset_path': os.path.join(get_root_dir(), 'examples', 'dataset'),
       'filename_ann': '83.62'}, True)
     ]
 
@@ -33,7 +40,7 @@ def test_updating_settings(params, expect_pass):
 # Specify which simulators are installed:
 simulators = [
     ('INI', {}, True),
-    ('brian2', {}, True),
+    ('brian2', {}, False),
     ('MegaSim', {}, True),
     ('brian', {'dt': 1}, False),
     ('nest', {'dt': 1}, False),

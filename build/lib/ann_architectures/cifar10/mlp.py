@@ -1,3 +1,9 @@
+# coding=utf-8
+
+"""
+    Train a simple deep NN on the cifar10 dataset.
+"""
+
 from __future__ import absolute_import
 from __future__ import print_function
 
@@ -10,9 +16,6 @@ from keras.datasets import cifar10
 
 from snntoolbox.io_utils.plotting import plot_history
 
-'''
-    Train a simple deep NN on the cifar10 dataset.
-'''
 
 batch_size = 128
 nb_classes = 10

@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """A example for MNIST CNN with deeper layers."""
 
 from __future__ import absolute_import

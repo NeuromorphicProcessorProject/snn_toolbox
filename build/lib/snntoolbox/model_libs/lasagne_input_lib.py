@@ -19,14 +19,15 @@ Created on Thu Jun  9 08:11:09 2016
 """
 
 import os
+from typing import Optional
+
 import lasagne
+import numpy as np
+import theano
 from snntoolbox.config import settings, spiking_layers
 from snntoolbox.io_utils.common import load_parameters
-import numpy as np
-
-from snntoolbox.model_libs.common import absorb_bn, import_script
 from snntoolbox.model_libs.common import border_mode_string
-
+from snntoolbox.model_libs.common import import_script
 
 layer_dict = {'DenseLayer': 'Dense',
               'Conv2DLayer': 'Convolution2D',
@@ -41,7 +42,8 @@ layer_dict = {'DenseLayer': 'Dense',
 
 activation_dict = {'rectify': 'relu',
                    'softmax': 'softmax',
-                   'binary_tanh_unit': 'softsign',
+                   'binary_tanh_unit': 'binary_tanh',
+                   'binary_sigmoid_unit': 'binary_sigmoid',
                    'linear': 'linear'}
 
 
@@ -81,13 +83,9 @@ def extract(model):
     Parameters
     ----------
 
-    model: dict
-        A dictionary of objects that constitute the input model. Contains at
-        least the key
-            - ``model``: A model instance of the network in the respective
-              ``model_lib``.
-        For instance, if the input model was written using Keras, the 'model'-
-        value would be an instance of ``keras.Model``.
+    model: lasagne.layers.Layer
+        Lasagne model instance of the network, given by the last layer.
+        Obtained from calling the ``load_ann`` function in this module.
 
     Returns
     -------
@@ -137,17 +135,17 @@ def extract(model):
 
         if layer_type == 'BatchNormalization':
             bn_parameters = all_parameters[parameters_idx: parameters_idx + 4]
-            for k in [layer_num - i for i in range(1, 3)]:
-                prev_layer = lasagne_layers[k]
-                if prev_layer.get_params() != []:
+            for k in range(1, 3):
+                prev_layer = layers[-k]
+                if 'parameters' in prev_layer:
                     break
-            parameters = all_parameters[parameters_idx - 2: parameters_idx]
+            parameters = prev_layer['parameters']
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of layer {}, {}.".format(k, prev_layer.name))
-            layers[-1]['parameters'] = absorb_bn(
+                  "parameters of previous {}.".format(prev_layer['name']))
+            assert isinstance(layer, object)
+            prev_layer['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[1],
-                bn_parameters[0], bn_parameters[2], 1 / bn_parameters[3],
-                layer.epsilon)
+                bn_parameters[0], bn_parameters[2], bn_parameters[3])
             parameters_idx += 4
 
         if layer_type not in spiking_layers:
@@ -186,6 +184,11 @@ def extract(model):
         if layer_type in {'Dense', 'Convolution2D'}:
             attributes['parameters'] = all_parameters[parameters_idx:
                                                       parameters_idx + 2]
+            if settings['binarize_weights']:
+                print("Binarizing weights...")
+                attributes['parameters'] = \
+                    (binarize(attributes['parameters'][0]),
+                     attributes['parameters'][1])
             parameters_idx += 2  # For weights and biases
             # Get type of nonlinearity if the activation is directly in the
             # Dense / Conv layer:
@@ -199,16 +202,17 @@ def extract(model):
                     break
             attributes['activation'] = activation
             print("Detected activation {}".format(activation))
-
-        if layer_type == 'Convolution2D':
-            border_mode = border_mode_string(layer.pad, layer.filter_size)
-            attributes.update({'input_shape': layer.input_shape,
-                               'nb_filter': layer.num_filters,
-                               'nb_col': layer.filter_size[1],
-                               'nb_row': layer.filter_size[0],
-                               'border_mode': border_mode,
-                               'subsample': layer.stride,
-                               'filter_flip': layer.flip_filters})
+            if layer_type == 'Convolution2D':
+                border_mode = border_mode_string(layer.pad, layer.filter_size)
+                attributes.update({'input_shape': layer.input_shape,
+                                   'nb_filter': layer.num_filters,
+                                   'nb_col': layer.filter_size[1],
+                                   'nb_row': layer.filter_size[0],
+                                   'border_mode': border_mode,
+                                   'subsample': layer.stride,
+                                   'filter_flip': layer.flip_filters})
+            else:
+                attributes['output_dim'] = layer.num_units
 
         if layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
             border_mode = border_mode_string(layer.pad, layer.pool_size)
@@ -223,24 +227,86 @@ def extract(model):
     return layers
 
 
+def hard_sigmoid(x):
+    """Hard sigmoid (step) function.
+
+    Parameters
+    ----------
+    x: np.array
+        Input values.
+
+    Returns
+    -------
+
+    : np.array
+        Array with values in ``{0, 1}``
+    """
+
+    return np.clip(np.divide((x + 1.), 2.), 0, 1)
+
+
+def binarize(w, h=1., deterministic=True):
+    """Binarize weights.
+
+    Parameters
+    ----------
+    w: np.array
+        Weights.
+    h: float
+        Values are round to ``+/-h``.
+    deterministic: bool
+        Whether to apply deterministic rounding.
+
+    Returns
+    -------
+
+    : np.array
+        The binarized weights.
+    """
+
+    wb = hard_sigmoid(w / h)
+    # noinspection PyTypeChecker
+    wb = np.round(wb) if deterministic else np.random.binomial(1, wb)
+    wb[wb.nonzero()] = h
+    wb[wb == 0] = -h
+    return np.asarray(wb, theano.config.floatX)
+
+
+def absorb_bn(w, b, gamma, beta, mean, var_squ_eps_inv):
+    """
+    Absorb the parameters of a batch-normalization layer into the previous
+    layer.
+    """
+
+    axis = 0 if w.ndim > 2 else 1
+
+    broadcast_shape = [1] * w.ndim  # e.g. [1, 1, 1, 1] for ConvLayer
+    broadcast_shape[axis] = w.shape[axis]  # [64, 1, 1, 1] for 64 features
+    var_squ_eps_inv_broadcast = np.reshape(var_squ_eps_inv, broadcast_shape)
+    gamma_broadcast = np.reshape(gamma, broadcast_shape)
+
+    b_bn = beta + (b - mean) * gamma * var_squ_eps_inv
+    w_bn = w * gamma_broadcast * var_squ_eps_inv_broadcast
+
+    return w_bn, b_bn
+
+
 def load_ann(path=None, filename=None):
     """Load network from file.
 
     Parameters
     ----------
 
-        path: string, optional
-            Path to directory where to load model from. Defaults to
-            ``settings['path']``.
-
-        filename: string, optional
-            Name of file to load model from. Defaults to
-            ``settings['filename']``.
+    path: Optional[str]
+        Path to directory where to load model from. Defaults to
+        ``settings['path']``.
+    filename: Optional[str]
+        Name of file to load model from. Defaults to ``settings['filename']``.
 
     Returns
     -------
 
-    model: dict
+    : dict[str, Union[lasagne.models, theano.function]]
         A dictionary of objects that constitute the input model. It must
         contain the following two keys:
 
@@ -258,6 +324,30 @@ def load_ann(path=None, filename=None):
 
 
 def model_from_py(path=None, filename=None):
+    """Load model from *.py file.
+
+    Parameters
+    ----------
+
+    path: Optional[str]
+        Path to directory where to load model from. Defaults to
+        ``settings['path']``.
+    filename: Optional[str]
+        Name of file to load model from. Defaults to ``settings['filename']``.
+
+    Returns
+    -------
+
+    : dict[str, Union[lasagne.layers.Layer, theano.function]]
+        A dictionary of objects that constitute the input model. It must
+        contain the following two keys:
+
+        - 'model': lasagne.layers.Layer
+            Lasagne model instance of the network, given by the last layer.
+        - 'val_fn': Theano function that allows evaluating the original
+          model.
+    """
+
     if path is None:
         path = settings['path']
     if filename is None:
@@ -271,22 +361,39 @@ def model_from_py(path=None, filename=None):
     return {'model': model, 'val_fn': val_fn}
 
 
-def evaluate(val_fn, X_test, Y_test):
-    """Test a lasagne model batchwise on the whole dataset.
+def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
+    """Evaluate the original ANN.
+
+    Can use either numpy arrays ``x_test, y_test`` containing the test samples,
+    or generate them with a dataflow
+    (``Keras.ImageDataGenerator.flow_from_directory`` object).
     """
 
     err = 0
     loss = 0
+
+    if x_test is None:
+        # Get samples from Keras.ImageDataGenerator
+        batch_size = dataflow.batch_size
+        dataflow.batch_size = settings['num_to_test']
+        x_test, y_test = dataflow.next()
+        dataflow.batch_size = batch_size
+        print("Using {} samples to evaluate input model".format(len(x_test)))
+
     batch_size = settings['batch_size']
-    batches = int(len(X_test) / batch_size)
+    batches = int(len(x_test) / batch_size)
 
     for i in range(batches):
-        new_loss, new_err = val_fn(X_test[i*batch_size: (i+1)*batch_size],
-                                   Y_test[i*batch_size: (i+1)*batch_size])
+        new_loss, new_err = val_fn(x_test[i*batch_size: (i+1)*batch_size],
+                                   y_test[i*batch_size: (i+1)*batch_size])
         err += new_err
         loss += new_loss
 
     err /= batches
     loss /= batches
+    acc = 1 - err  # Convert error into accuracy here.
 
-    return loss, 1 - err  # Convert error into accuracy here.
+    print('\n' + "Test loss: {:.2f}".format(loss))
+    print("Test accuracy: {:.2%}\n".format(acc))
+
+    return loss, acc

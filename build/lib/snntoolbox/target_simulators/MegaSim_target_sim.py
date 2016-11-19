@@ -1134,13 +1134,15 @@ class SNN():
     end_sim:
         Clean up after simulation.
 
-    collect_plot_results: layers, output_shapes, ann, X_batch, idx
+    collect_plot_results: layers, output_shapes, ann, x_batch, idx
 
 
     """
 
-    def __init__(self):
-        self.sim = initialize_simulator() #TODO i can get the megasim path from here!
+    def __init__(self, s=None):
+        if s is None:
+            s = settings
+        self.sim = initialize_simulator(s['simulator']) #TODO i can get the megasim path from here!
         self.megasim_path = self.sim.megasim_path()
         self.connections = []
         self.spikemonitors = []
@@ -1149,13 +1151,13 @@ class SNN():
         self.input_stimulus_file = "input_events.stim"
         self.layers = []
 
-        if settings["batch_size"]>1:
+        if s["batch_size"]>1:
             self.reset_signal_event = True
             print("Batch mode used, reset signal set")
         else:
             self.reset_signal_event = False
             print("Symbol by Symbol operation")
-        self.scaling_factor = settings['scaling_factor']
+        self.scaling_factor = s['scaling_factor']
 
     def add_input_layer(self, input_shape):
         self.layers.append(
@@ -1163,11 +1165,14 @@ class SNN():
         )
 
 
-    def build(self, parsed_model):
+    def build(self, parsed_model, **kwargs):
         """
         Compile a spiking neural network to prepare for simulation with MegaSim.
 
         """
+
+        path_wd = kwargs['path_wd'] if 'path_wd' in kwargs \
+            else settings['path_wd']
 
         self.parsed_model = parsed_model
 
@@ -1176,7 +1181,7 @@ class SNN():
         self.add_input_layer(parsed_model.layers[0].batch_input_shape)
 
         # Create megasim dir where it will store the SNN params and schematic
-        self.megadirname = settings['path_wd'] + "MegaSim_"+settings['filename_ann'] + '/'
+        self.megadirname = path_wd + "MegaSim_"+settings['filename_ann'] + '/'
         if not os.path.exists(self.megadirname):
             os.makedirs(self.megadirname)
 
@@ -1683,13 +1688,13 @@ class SNN():
             import pdb;pdb.set_trace()
         return pop_spike_hist
 
-    def run(self, X_test, Y_test):
+    def run(self, x_test, y_test, **kwargs):
         """
         Simulate a spiking network with IF units and Poisson input in pyNN,
         using a simulator like Brian, NEST, NEURON, etc.
 
         This function will randomly select ``settings['num_to_test']`` test
-        samples among ``X_test`` and simulate the network on those.
+        samples among ``x_test`` and simulate the network on those.
 
         Alternatively, a list of specific input samples can be given to the
         toolbox GUI, which will then be used for testing.
@@ -1704,13 +1709,13 @@ class SNN():
         Parameters
         ----------
 
-        X_test : float32 array
+        x_test : float32 array
             The input samples to test. With data of the form
-            (channels, num_rows, num_cols), X_test has dimension
+            (channels, num_rows, num_cols), x_test has dimension
             (num_samples, channels*num_rows*num_cols) for a multi-layer
             perceptron, and (num_samples, channels, num_rows, num_cols) for a
             convolutional net.
-        Y_test : float32 array
+        y_test : float32 array
             Ground truth of test data. Has dimension (num_samples, num_classes)
 
         Returns
@@ -1724,28 +1729,32 @@ class SNN():
 
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
 
+        s = kwargs['settings'] if 'settings' in kwargs else settings
+        log_dir = kwargs['path'] if 'path' in kwargs \
+            else s['log_dir_of_current_run']
+
         results = []
         guesses = []
         truth = []
 
         # used for debugging purposes; will generate a CSV file that stores the sample ID, label, guess, status, # of output spikes
-        total_samples = len(X_test)
+        total_samples = len(x_test)
         debug_np_status = np.zeros((total_samples, 5), dtype="int")
 
         # check if we are in batch mode or symbol by symbol mode
-        if settings['batch_size']>1:
+        if s['batch_size']>1:
             batch_mode = True
         else:
             batch_mode = False
 
-        batch_size = settings["batch_size"]
+        batch_size = s["batch_size"]
         num_batches = int(total_samples / batch_size)
         digit_idc_per_batch = [range(batch_size * x, batch_size * (x + 1)) for x in range(num_batches)]
 
         if batch_mode:
             samples_iterate = digit_idc_per_batch
         else:
-            samples_iterate = range(settings['num_to_test'])
+            samples_iterate = range(s['num_to_test'])
 
         for i,current_batch in enumerate(samples_iterate):
             # Clean any previous data. This is not necessary, only for debugging
@@ -1753,16 +1762,16 @@ class SNN():
             self.spikemonitors = []
 
             # Add Poisson input.
-            if settings['verbose'] > 1:
+            if s['verbose'] > 1:
                 echo("Creating poisson input...\n")
 
-            if settings['poisson_input']:
+            if s['poisson_input']:
                 np.random.seed(1)
                 if batch_mode:
-                    timestamp_batches = self.poisson_spike_generator_batchmode_megasim(X_test[current_batch])
+                    timestamp_batches = self.poisson_spike_generator_batchmode_megasim(x_test[current_batch])
                 else:
-                    self.poisson_spike_generator_megasim(mnist_digit=X_test[i, :])
-                    timestamp_batches = [[0, settings['duration']]]
+                    self.poisson_spike_generator_megasim(mnist_digit=x_test[i, :])
+                    timestamp_batches = [[0, s['duration']]]
 
                     # Generate control events for the softmax module if it exists
                     if self.layers[-1].module_string == "module_softmax":
@@ -1776,7 +1785,7 @@ class SNN():
                 self.generate_bias_clk(timestamp_batches)
 
             # Run MegaSim simulation
-            if settings['verbose'] > 0:
+            if s['verbose'] > 0:
                 print("Running MegaSim")
 
             current_dir = os.getcwd()
@@ -1786,7 +1795,7 @@ class SNN():
 
             # Check megasim output for errors
             self.check_megasim_output(run_megasim)
-            if settings['verbose'] > 0:
+            if s['verbose'] > 0:
                 print("Retrieving spikes")
 
             if batch_mode:
@@ -1794,7 +1803,7 @@ class SNN():
 
                 guess_batch = [self.spike_count_histogram(outspk, pop_size=self.layers[-1].population_size) for
                                outspk in out_spikes_per_symbol]
-                truth_batch = [np.argmax(y) for y in Y_test[current_batch]]
+                truth_batch = [np.argmax(y) for y in y_test[current_batch]]
 
                 results_batch = [x == y for x, y in zip(guess_batch, truth_batch)]
 
@@ -1815,7 +1824,7 @@ class SNN():
                 output_pop_activity = self.spike_count_histogram(spike_monitors[-1], self.layers[-1].population_size)
 
                 current_guess = output_pop_activity
-                current_truth = np.argmax(Y_test[i, :])
+                current_truth = np.argmax(y_test[i, :])
                 current_result = current_guess == current_truth
 
                 # just for debugging
@@ -1846,7 +1855,7 @@ class SNN():
                 i + 1, num_batches, num_batches - (i+1)))
             else:
                 echo("Sample {} of {} completed.\n".format(i + 1,
-                                                       settings['num_to_test']))
+                                                       s['num_to_test']))
             echo("Moving average accuracy: {:.2%}.\n".format(total_acc))
 
             # plotting here
@@ -1859,9 +1868,9 @@ class SNN():
                     self.spikemonitors.append(spike_monitors)
 
                 output_shapes = [x.output_shapes for x in self.layers[1:]]
-                if settings['verbose'] > 0:
+                if s['verbose'] > 0:
                     print("Ploting the activity of a single input sample")
-                self.collect_plot_results(X_test[0:])
+                self.collect_plot_results(x_test[0:], log_dir=log_dir)
 
         if batch_mode:
             # concatenate results
@@ -1884,7 +1893,7 @@ class SNN():
         print("MegaSim model is already saved at %s"%self.megadirname)
         pass
 
-    def collect_plot_results(self, X_batch, idx=0):
+    def collect_plot_results(self, x_batch, idx=0, log_dir=None):
         """
         Collect spiketrains of all ``layers`` of a net from one simulation run,
         and plot results.
@@ -1899,7 +1908,7 @@ class SNN():
         Membrane potential vs time is plotted for all except the input layer.
 
         The activations are obtained by evaluating the original ANN ``ann`` on
-        a sample ``X_batch``. The optional integer ``idx`` represents the index
+        a sample ``x_batch``. The optional integer ``idx`` represents the index
         of a specific sample to plot.
 
         The ``output shapes`` of each layer are needed to reshape the output of
@@ -1910,6 +1919,9 @@ class SNN():
 
         from snntoolbox.io_utils.plotting import output_graphs
         from snntoolbox.core.util import get_activations_batch
+
+        if log_dir is None:
+            log_dir = settings['log_dir_of_current_run']
 
         # Allocate a list 'spiketrains_batch' with the following specification:
         # Each entry in ``spiketrains_batch`` contains a tuple
@@ -1975,6 +1987,6 @@ class SNN():
                 # ignore the spikes from the flatten layer
                 plot_c += 1
 
-        activations_batch = get_activations_batch(self.parsed_model, X_batch)
+        activations_batch = get_activations_batch(self.parsed_model, x_batch)
         output_graphs(spiketrains_batch, activations_batch,
-                      settings['log_dir_of_current_run'],results_from_input_sample )
+                      log_dir,results_from_input_sample )

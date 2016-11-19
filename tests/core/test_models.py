@@ -52,11 +52,18 @@ class TestOutputModel:
         """
 
         from importlib import import_module
+        from snntoolbox.config import initialize_simulator
+
+        try:
+            initialize_simulator('brian2')
+        except ImportError:
+            return
 
         target_sim = import_module(
             'snntoolbox.target_simulators.brian2_target_sim')
         settings.update({'simulator': 'brian2', 'num_to_test': 2})
         spiking_model = target_sim.SNN(settings)
         spiking_model.build(parsed_model)
-        score = spiking_model.run(path=path_wd, settings=settings, **testset)
+        score = spiking_model.run(path=str(path_wd), settings=settings,
+                                  **testset)
         assert round(100 * score, 2) >= 99.00

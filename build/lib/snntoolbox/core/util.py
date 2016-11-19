@@ -9,18 +9,72 @@ Created on Wed Mar  9 16:18:33 2016
 """
 
 # For compatibility with python2
-from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
-from future import standard_library
+from __future__ import print_function, unicode_literals
 
 import os
-import theano
-import numpy as np
-from keras import backend as K
 from importlib import import_module
+
+import numpy as np
+import theano
+from future import standard_library
+from keras import backend as k
 from snntoolbox.config import settings
 
 standard_library.install_aliases()
+
+use_simple_label = True
+
+
+def get_root_dir():
+    """Get toolbox root directory.
+
+    Returns
+    -------
+
+    : str
+        Toolbox root directory.
+    """
+
+    return os.getcwd()
+
+
+def binary_tanh(x):
+    """Round a float to -1 or 1.
+
+    Parameters
+    ----------
+
+    x: float
+
+    Returns
+    -------
+
+    : int
+        Integer in {-1, 1}
+    """
+
+    return k.sign(x)
+
+
+def binary_sigmoid(x):
+    """Round a float to 0 or 1.
+
+    Parameters
+    ----------
+
+    x: float
+
+    Returns
+    -------
+
+    : int
+        Integer in {0, 1}
+    """
+
+    x = k.clip((x + 1.) / 2., 0, 1)
+
+    return k.round(x)
 
 
 def parse(input_model):
@@ -39,13 +93,13 @@ def parse(input_model):
     Parameters
     ----------
 
-    input_model: Analog Neural Network
-        A pretrained neural network model.
+    input_model: Any
+        A pretrained neural network model in the respective ``model_lib``.
 
     Returns
     -------
 
-    parsed_model: Keras model
+    parsed_model: keras.models.Sequential
         A Keras model functionally equivalent to ``input_model``.
     """
 
@@ -65,6 +119,11 @@ def parse(input_model):
         # Remove keys that are not understood by Keras layer constructor
         layer_type = layer.pop('layer_type')
         filter_flip = layer.pop('filter_flip', None)
+        if 'activation' in layer:
+            if layer['activation'] == 'binary_sigmoid':
+                layer['activation'] = binary_sigmoid
+            elif layer['activation'] == 'binary_tanh':
+                layer['activation'] = binary_tanh
         # Add layer
         parsed_layer = getattr(keras.layers, layer_type)
         parsed_model.add(parsed_layer(**layer))
@@ -77,6 +136,93 @@ def parse(input_model):
     return parsed_model
 
 
+def get_dataset(s):
+    """Get data set.
+    TODO: Docstring
+    """
+
+    evalset = normset = testset = None
+    if s['dataset_format'] == 'npz':
+        print("Loading data set from '.npz' files in {}.\n".format(
+            s['dataset_path']))
+        from snntoolbox.io_utils.common import load_dataset
+        if s['evaluateANN'] or s['simulate']:
+            evalset = {
+                'x_test': load_dataset(s['dataset_path'], 'x_test.npz'),
+                'y_test': load_dataset(s['dataset_path'], 'y_test.npz')}
+#            # Binarize the input. Hack: Should be independent of maxpool type
+#            if s['maxpool_type'] == 'binary_tanh':
+#                evalset['x_test'] = np.sign(evalset['x_test'])
+#            elif s['maxpool_type'] == 'binary_sigmoid':
+#                np.clip((evalset['x_test']+1.)/2., 0, 1, evalset['x_test'])
+#                np.round(evalset['x_test'], out=evalset['x_test'])
+            assert evalset, "Evaluation set empty."
+        if s['normalize']:
+            normset = {
+                'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
+            assert normset, "Normalization set empty."
+        if s['simulate']:
+            testset = evalset
+            assert testset, "Test set empty."
+    elif s['dataset_format'] == 'jpg':
+        import ast
+        from keras.preprocessing.image import ImageDataGenerator
+        print("Loading data set from ImageDataGenerator, using images in "
+              "{}.\n".format(s['dataset_path']))
+        datagen_kwargs = ast.literal_eval(s['datagen_kwargs'])
+        dataflow_kwargs = ast.literal_eval(s['dataflow_kwargs'])
+        dataflow_kwargs['directory'] = s['dataset_path']
+        dataflow_kwargs['batch_size'] = s['num_to_test']
+        datagen = ImageDataGenerator(**datagen_kwargs)
+        # Compute quantities required for featurewise normalization
+        # (std, mean, and principal components if ZCA whitening is applied)
+        rs = datagen_kwargs['rescale'] if 'rescale' in datagen_kwargs else None
+        x_orig = ImageDataGenerator(rescale=rs).flow_from_directory(
+            **dataflow_kwargs).next()[0]
+        datagen.fit(x_orig)
+        if s['evaluateANN']:
+            evalset = {
+                'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
+            assert evalset, "Evaluation set empty."
+        if s['normalize']:
+            batchflow_kwargs = dataflow_kwargs.copy()
+            batchflow_kwargs['batch_size'] = s['batch_size']
+            normset = {
+                'dataflow': datagen.flow_from_directory(**batchflow_kwargs)}
+            assert normset, "Normalization set empty."
+        if s['simulate']:
+            batchflow_kwargs = dataflow_kwargs.copy()
+            batchflow_kwargs['batch_size'] = s['batch_size']
+            testset = {
+                'dataflow': datagen.flow_from_directory(**batchflow_kwargs)}
+            assert testset, "Test set empty."
+    return evalset, normset, testset
+
+
+def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
+    """Evaluate parsed Keras model.
+
+    Can use either numpy arrays ``x_test, y_test`` containing the test samples,
+    or generate them with a dataflow
+    (``Keras.ImageDataGenerator.flow_from_directory`` object).
+    """
+
+    assert (
+        x_test is not None and y_test is not None or dataflow is not None), \
+        "No testsamples provided."
+
+    if dataflow:
+        batch_size = dataflow.batch_size
+        dataflow.batch_size = settings['num_to_test']
+        score = model.evaluate_generator(dataflow, settings['num_to_test'])
+        dataflow.batch_size = batch_size
+    else:
+        score = model.evaluate(x_test, y_test)
+    print('\n' + "Test loss: {:.2f}".format(score[0]))
+    print("Test accuracy: {:.2%}\n".format(score[1]))
+    return score
+
+
 def get_range(start=0.0, stop=1.0, num=5, method='linear'):
     """Return a range of parameter values.
 
@@ -86,20 +232,20 @@ def get_range(start=0.0, stop=1.0, num=5, method='linear'):
     Parameters
     ----------
 
-    start: scalar, optional
+    start: float
         The starting value of the sequence
-    stop: scalar, optional
+    stop: float
         End value of the sequence.
-    num: int, optional
+    num: int
         Number of samples to generate. Must be non-negative.
-    method: string, optional
+    method: str
         The sequence will be computed on either a linear, logarithmic or random
         grid.
 
     Returns
     -------
 
-    samples: ndarray
+    samples: np.array
         There are ``num`` samples in the closed interval [start, stop].
     """
 
@@ -114,7 +260,7 @@ def get_range(start=0.0, stop=1.0, num=5, method='linear'):
     if method == 'log':
         return np.logspace(start, stop, num, endpoint=False)
     if method == 'random':
-        return np.random.random_sample(num) * (stop-start) + start
+        return np.random.random_sample(num) * (stop - start) + start
 
 
 def print_description(snn=None, log=True):
@@ -153,6 +299,16 @@ def spiketrains_to_rates(spiketrains_batch):
     The output will have the same shape as the input except for the last
     dimension, which is removed by replacing a sequence of spiketimes by a
     single rate value.
+
+    Parameters
+    ----------
+
+    spiketrains_batch: list[tuple[np.array, str]]
+
+    Returns
+    -------
+
+    spikerates_batch: list[tuple[np.array, str]]
     """
 
     spikerates_batch = []
@@ -169,16 +325,20 @@ def spiketrains_to_rates(spiketrains_batch):
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
                     spikerates_batch[i][0][ii, jj] = (
-                        len(np.nonzero(sp[0][ii][jj])[0]) * 1000 /
-                        settings['duration'])
+                        np.count_nonzero(sp[0][ii][jj]) * 1000 *
+                        settings['dt'] / settings['duration'])
+                    spikerates_batch[i][0][ii, jj] *= np.sign(
+                        np.sum(sp[0][ii, jj]))  # For negative spikes
         elif len(shape) == 4:
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
                     for kk in range(len(sp[0][ii, jj])):
                         for ll in range(len(sp[0][ii, jj, kk])):
                             spikerates_batch[i][0][ii, jj, kk, ll] = (
-                                len(np.nonzero(sp[0][ii, jj, kk, ll])[0]) *
-                                1000 / settings['duration'])
+                                np.count_nonzero(sp[0][ii, jj, kk, ll]) * 1000 *
+                                settings['dt'] / settings['duration'])
+                            spikerates_batch[i][0][ii, jj, kk, ll] *= np.sign(
+                                np.sum(sp[0][ii, jj, kk, ll]))
 
     return spikerates_batch
 
@@ -190,7 +350,7 @@ def get_sample_activity_from_batch(activity_batch, idx=0):
     return [(layer_act[0][idx], layer_act[1]) for layer_act in activity_batch]
 
 
-def normalize_parameters(model):
+def normalize_parameters(model, **kwargs):
     """Normalize the parameters of a network.
 
     The parameters of each layer are normalized with respect to the maximum
@@ -201,66 +361,115 @@ def normalize_parameters(model):
     time- and memory-consuming for larger networks.
     """
 
+    import json
     from snntoolbox.io_utils.plotting import plot_hist
-    from snntoolbox.io_utils.common import load_dataset
+    from snntoolbox.io_utils.common import confirm_overwrite
 
-    print("Loading normalization data set.\n")
-    X_norm = load_dataset(settings['dataset_path'], 'X_norm.npz')  # t=0.2%
-    print("Using {} samples for normalization.".format(len(X_norm)))
+    assert 'x_norm' in kwargs or 'dataflow' in kwargs, \
+        "Normalization data set could not be loaded."
+    x_norm = None
+    if 'x_norm' in kwargs:
+        x_norm = kwargs['x_norm']
+    elif 'dataflow' in kwargs:
+        x_norm, y = kwargs['dataflow'].next()
 
-#        import numpy as np
-#        sizes = [len(X_norm) * np.array(layer['output_shape'][1:]).prod() *
-#                 32 / (8 * 1e9) for idx, layer in enumerate(self.layers)
-#                 if idx != 0 and 'parameters' in self.layers[idx-1]]
-#        size_str = ['{:.2f}'.format(s) for s in sizes]
-#        print("INFO: Need {} GB for layer activations.\n".format(size_str) +
-#              "May have to reduce size of data set used for normalization.\n")
+    print("Using {} samples for normalization.".format(len(x_norm)))
+
+    #        import numpy as np
+    #        sizes = [len(x_norm) * np.array(layer['output_shape'][1:]).prod() *
+    #                 32 / (8 * 1e9) for idx, layer in enumerate(self.layers)
+    #                 if idx != 0 and 'parameters' in self.layers[idx-1]]
+    #        size_str = ['{:.2f}'.format(s) for s in sizes]
+    #        print("INFO: Need {} GB for layer activations.\n".format(
+    # size_str) +
+    #              "May have to reduce size of data set used for
+    # normalization.\n")
 
     print("Normalizing parameters:\n")
-    newpath = os.path.join(settings['log_dir_of_current_run'], 'normalization')
+    newpath = kwargs['path'] if 'path' in kwargs else \
+        os.path.join(settings['log_dir_of_current_run'], 'normalization')
     if not os.path.exists(newpath):
         os.makedirs(newpath)
+    filepath = os.path.join(newpath, str(settings['percentile']) + '.json')
+    if os.path.isfile(filepath) and os.path.basename(filepath) == str(
+            settings['percentile']) + '.json':
+        print("Loading scale factors from disk instead of recalculating.")
+        facs_from_disk = True
+        with open(filepath) as f:
+            scale_facs = json.load(f)
+    else:
+        facs_from_disk = False
+        scale_facs = []
+
     # Loop through all layers, looking for layers with parameters
+    i = 0
+    get_activ = None
     scale_fac_prev_layer = 1
     for idx, layer in enumerate(model.layers):
         # Skip layer if not preceeded by a layer with parameters
-        if layer.get_weights() == []:
+        if len(layer.get_weights()) == 0:
             continue
-        if settings['verbose'] > 1:
-            print("Calculating activation of layer {} with shape {}...".format(
-                  layer.name, layer.output_shape))
         parameters = layer.get_weights()
-        # Undo previous scaling before calculating activations:
-        layer.set_weights([parameters[0]*scale_fac_prev_layer, parameters[1]])
-        # t=4.9%
-        get_activ = get_activ_fn_for_layer(model, idx)
-        activations = get_activations_layer(get_activ, X_norm)
-        if settings['normalization_schedule']:
-            scale_fac = get_scale_fac(activations, idx)
+
+        if facs_from_disk:
+            scale_fac_prev_layer = scale_facs[i - 1] if i > 0 else 1
+            scale_fac = scale_facs[i]
+            i += 1
         else:
-            scale_fac = get_scale_fac(activations)  # t=3.7%
+            if settings['verbose'] > 1:
+                print("Calculating activation of layer {} ...".format(
+                    layer.name, layer.output_shape))
+            # Undo previous scaling before calculating activations:
+            layer.set_weights([parameters[0] * scale_fac_prev_layer,
+                               parameters[1]])
+            # t=4.9%
+            get_activ = get_activ_fn_for_layer(model, idx)
+            activations = get_activations_layer(get_activ, x_norm)
+            if settings['normalization_schedule']:
+                scale_fac = get_scale_fac(activations, idx)
+            else:
+                scale_fac = get_scale_fac(activations)  # t=3.7%
+            scale_facs.append(scale_fac)
+
+        # Scale parameters
         parameters_norm = [parameters[0] * scale_fac_prev_layer / scale_fac,
                            parameters[1] / scale_fac]
         scale_fac_prev_layer = scale_fac
+
         # Update model with modified parameters
         layer.set_weights(parameters_norm)
+
+        # Plot distributions of weights and activations before and after norm.
+        if facs_from_disk:
+            continue  # Assume plots are already there.
         if settings['verbose'] < 3:
             continue
+        label = str(idx) + layer.__class__.__name__ if use_simple_label \
+            else layer.name
         weight_dict = {
             'weights': parameters[0].flatten(),
             'weights_norm': parameters_norm[0].flatten()}
         # t=2.8%
-        plot_hist(weight_dict, 'Weight', layer.name, newpath)
+        plot_hist(weight_dict, 'Weight', label, newpath)
 
-        if True:  # Too costly
-            continue
         # Compute activations with modified parameters
         # t=4.8%
-        activations_norm = get_activations_layer(get_activ, X_norm)
-        activation_dict = {'Activations': activations.flatten(),
-                           'Activations_norm': activations_norm.flatten()}
-        plot_hist(activation_dict, 'Activation', layer.name, newpath,
-                  scale_fac)  # t=83.1%
+        activations_norm = get_activations_layer(get_activ, x_norm)
+        activation_dict = {'Activations': activations[np.nonzero(activations)],
+                           'Activations_norm':
+                               activations_norm[np.nonzero(activations)]}
+        plot_hist(activation_dict, 'Activation', label, newpath, scale_fac)
+    # plot_hist({'Activations': activations[np.nonzero(activations)]},
+    #                  'Activation', label, newpath, scale_fac)
+    #        plot_hist({'Activations_max': np.max(activations, axis=tuple(
+    #            np.arange(activations.ndim)[1:]))}, 'Activation', label,
+    # newpath,
+    #            scale_fac)
+    # t=83.1%
+    # Write scale factors to disk
+    if not facs_from_disk and confirm_overwrite(filepath):
+        with open(filepath, 'w') as f:
+            json.dump(scale_facs, f)
 
 
 def get_scale_fac(activations, idx=0):
@@ -269,7 +478,7 @@ def get_scale_fac(activations, idx=0):
     Parameters
     ----------
 
-    activations: array
+    activations: np.array
         The activations of cells in a specific layer, flattened to 1-d.
 
     idx: int, optional
@@ -284,13 +493,18 @@ def get_scale_fac(activations, idx=0):
         Parameters of the respective layer are scaled by this value.
     """
 
-    scale_fac = np.percentile(activations, settings['percentile']-idx/10)
+    # Remove zeros, because they bias the distribution too much
+    a = activations[np.nonzero(activations)]
+
+    scale_fac = np.percentile(a, settings['percentile'] - idx ** 2 / 200,
+                              overwrite_input=True)
     if settings['verbose'] > 1:
         print("Scale factor: {:.2f}.".format(scale_fac))
+
     return scale_fac
 
 
-def get_activations_layer(get_activ, X_train):
+def get_activations_layer(get_activ, x_train):
     """
     Get activations of a specific layer, iterating batch-wise over the complete
     data set.
@@ -301,39 +515,39 @@ def get_activations_layer(get_activ, X_train):
     get_activ: Theano function
         A Theano function computing the activations of a layer.
 
-    X_train: float32 array
+    x_train: float32 array
         The samples to compute activations for. With data of the form
-        (channels, num_rows, num_cols), X_train has dimension
+        (channels, num_rows, num_cols), x_train has dimension
         (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
         and (batch_size, channels, num_rows, num_cols) for a convolutional net.
 
     Returns
     -------
 
-    activations: array
+    activations: np.array
         The activations of cells in a specific layer. Has the same shape as the
         layer.
     """
 
-    shape = list(get_activ(X_train[:settings['batch_size']]).shape)
-    shape[0] = X_train.shape[0]
+    shape = list(get_activ(x_train[:settings['batch_size']]).shape)
+    shape[0] = x_train.shape[0]
     activations = np.empty(shape)
-    num_batches = int(np.ceil(X_train.shape[0] / settings['batch_size']))
+    num_batches = int(np.ceil(x_train.shape[0] / settings['batch_size']))
     for batch_idx in range(num_batches):
         # Determine batch indices.
         max_idx = min((batch_idx + 1) * settings['batch_size'],
-                      X_train.shape[0])
+                      x_train.shape[0])
         batch_idxs = range(batch_idx * settings['batch_size'], max_idx)
-        batch = X_train[batch_idxs, :]
+        batch = x_train[batch_idxs, :]
         if len(batch_idxs) < settings['batch_size']:
-            batch.resize(X_train[:settings['batch_size']].shape)
+            batch.resize(x_train[:settings['batch_size']].shape)
             activations[batch_idxs] = get_activ(batch)[:len(batch_idxs)]
         else:
             activations[batch_idxs] = get_activ(batch)
     return activations
 
 
-def get_activations_batch(ann, X_batch):
+def get_activations_batch(ann, x_batch):
     """Compute layer activations of an ANN.
 
     Parameters
@@ -342,7 +556,7 @@ def get_activations_batch(ann, X_batch):
     ann: Keras model
         Needed to compute activations.
 
-    X_batch: float32 array
+    x_batch: float32 array
         The input samples to use for determining the layer activations. With
         data of the form (channels, num_rows, num_cols), X has dimension
         (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
@@ -365,13 +579,20 @@ def get_activations_batch(ann, X_batch):
         if 'Flatten' in layer.name:
             continue
         get_activ = get_activ_fn_for_layer(ann, i)
-        activations_batch.append((get_activ(X_batch), layer.name))
+        activations_batch.append((get_activ(x_batch), layer.name))
     return activations_batch
 
 
 def get_activ_fn_for_layer(model, i):
+    """Get a function that computes the activations of a layer.
+
+    :param model: The network.
+    :param i: The layer index.
+    :return: A theano function that computes the activations of layer ``i``.
+    """
+
     f = theano.function(
-        [model.layers[0].input, theano.In(K.learning_phase(), value=0)],
+        [model.layers[0].input, theano.In(k.learning_phase(), value=0)],
         model.layers[i].output, allow_input_downcast=True,
         on_unused_input='ignore')
     return lambda x: f(x).astype('float16', copy=False)
@@ -401,7 +622,7 @@ def wilson_score(p, n):
 
     # Quantile z of a standard normal distribution, for the error quantile a:
     z = 1.96  # 1.44 for a == 85%, 1.96 for a == 95%
-    return (z*np.sqrt((p*(1-p) + z*z/(4*n))/n)) / (1 + z*z/n)
+    return (z * np.sqrt((p * (1 - p) + z * z / (4 * n)) / n)) / (1 + z * z / n)
 
 
 def extract_label(label):
@@ -439,4 +660,4 @@ def extract_label(label):
         shape = tuple([int(s) for s in l[-1].split('x')])
     else:
         shape = ()
-    return (layer_num, name, shape)
+    return layer_num, name, shape

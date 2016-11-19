@@ -14,21 +14,20 @@ Created on Thu May 19 15:00:02 2016
 """
 
 # For compatibility with python2
-from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
-from future import standard_library
-from builtins import int, range
+from __future__ import print_function, unicode_literals
 
-import numpy as np
 from random import randint
 
+import numpy as np
+from future import standard_library
 from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
 
 standard_library.install_aliases()
 
 
-class SNN():
+class SNN:
     """
     Class to hold the compiled spiking neural network, ready for testing in a
     spiking simulator.
@@ -66,10 +65,6 @@ class SNN():
         Brian2 ``StateMonitor`` s for each layer that records membrane
         potential.
 
-    cellparams: dict
-        Neuron cell parameters determining properties of the spiking neurons in
-        pyNN simulators.
-
     Methods
     -------
 
@@ -86,10 +81,13 @@ class SNN():
         Clean up after simulation.
     """
 
-    def __init__(self):
+    def __init__(self, s=None):
         """Init function."""
 
-        self.sim = initialize_simulator()
+        if s is None:
+            s = settings
+
+        self.sim = initialize_simulator(s['simulator'])
         self.connections = []
         self.threshold = 'v > v_thresh'
         self.reset = 'v = v_reset'
@@ -97,8 +95,11 @@ class SNN():
         self.layers = []
         self.spikemonitors = []
         self.statemonitors = []
+        self.snn = None
+        self.parsed_model = None
 
-    def build(self, parsed_model):
+    # noinspection PyUnusedLocal
+    def build(self, parsed_model, **kwargs):
         """Compile SNN to prepare for simulation with Brian2.
 
         Parameters
@@ -248,7 +249,7 @@ class SNN():
                     echo('.')
                 echo(' {:.1%}\n'.format((1 + fout) / layer.input_shape[1]))
             self.connections[-1].w = self.sim.volt / (dx * dy)
-        elif layer.__class__.__name == 'AveragePooling2D':
+        elif layer.__class__.__name__ == 'AveragePooling2D':
             for fout in range(layer.input_shape[1]):  # Feature maps
                 for y in range(0, ny-dy+1, sy):
                     for x in range(0, nx-dx+1, sx):
@@ -269,14 +270,14 @@ class SNN():
         self.snn = self.sim.Network(self.layers, self.connections,
                                     self.spikemonitors, self.statemonitors)
 
-    def run(self, X_test, Y_test):
+    def run(self, x_test, y_test, **kwargs):
         """Simulate a spiking network with IF units and Poisson input in pyNN.
 
         Simulate a spiking network with IF units and Poisson input in pyNN,
         using a simulator like Brian, NEST, NEURON, etc.
 
         This function will randomly select ``settings['num_to_test']`` test
-        samples among ``X_test`` and simulate the network on those.
+        samples among ``x_test`` and simulate the network on those.
 
         Alternatively, a list of specific input samples can be given to the
         toolbox GUI, which will then be used for testing.
@@ -291,14 +292,21 @@ class SNN():
         Parameters
         ----------
 
-        X_test : float32 array
+        x_test : float32 array
             The input samples to test. With data of the form
-            (channels, num_rows, num_cols), X_test has dimension
+            (channels, num_rows, num_cols), x_test has dimension
             (num_samples, channels*num_rows*num_cols) for a multi-layer
             perceptron, and (num_samples, channels, num_rows, num_cols) for a
             convolutional net.
-        Y_test : float32 array
+        y_test : float32 array
             Ground truth of test data. Has dimension (num_samples, num_classes)
+        kwargs: Optional[dict]
+            - s: Optional[dict]
+                Settings. If not given, the ``snntoolobx.config.settings``
+                dictionary is used.
+            - path: Optional[str]
+                Where to store the output plots. If no path given, this value is
+                taken from the settings dictionary.
 
         Returns
         -------
@@ -310,92 +318,97 @@ class SNN():
 
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
 
+        s = kwargs['settings'] if 'settings' in kwargs else settings
+        log_dir = kwargs['path'] if 'path' in kwargs \
+            else s['log_dir_of_current_run']
+
         # Load input layer
+        input_layer = None
         for obj in self.snn.objects:
             if 'poissongroup' in obj.name and 'thresholder' not in obj.name:
                 input_layer = obj
+        assert input_layer, "No input layer found."
 
         # Update parameters
-        namespace = {'v_thresh': settings['v_thresh'] * self.sim.volt,
-                     'v_reset': settings['v_reset'] * self.sim.volt,
-                     'tau_m': settings['tau_m'] * self.sim.ms}
+        namespace = {'v_thresh': s['v_thresh'] * self.sim.volt,
+                     'v_reset': s['v_reset'] * self.sim.volt,
+                     'tau_m': s['tau_m'] * self.sim.ms}
         results = []
         guesses = []
         truth = []
 
         # Iterate over the number of samples to test
-        for test_num in range(settings['num_to_test']):
+        for test_num in range(s['num_to_test']):
             # If a list of specific input samples is given, iterate over that,
             # and otherwise pick a random test sample from among all possible
-            # input samples in X_test.
-            si = settings['sample_indices_to_test']
-            ind = randint(0, len(X_test) - 1) if si == [] else si[test_num]
+            # input samples in x_test.
+            si = s['sample_indices_to_test']
+            ind = randint(0, len(x_test) - 1) if si == [] else si[test_num]
 
             # Add Poisson input.
-            if settings['verbose'] > 1:
+            if s['verbose'] > 1:
                 echo("Creating poisson input...\n")
-            input_layer.rates = X_test[ind, :].flatten() * \
-                settings['input_rate'] * self.sim.Hz
+            input_layer.rates = x_test[ind, :].flatten() * s['input_rate'] * \
+                self.sim.Hz
 
             # Run simulation for 'duration'.
-            if settings['verbose'] > 1:
+            if s['verbose'] > 1:
                 echo("Starting new simulation...\n")
             self.snn.store()
-            self.snn.run(settings['duration'] * self.sim.ms,
-                         namespace=namespace)
+            self.snn.run(s['duration'] * self.sim.ms, namespace=namespace)
 
             # Get result by comparing the guessed class (i.e. the index of the
             # neuron in the last layer which spiked most) to the ground truth.
             guesses.append(np.argmax(self.spikemonitors[-1].count))
-            truth.append(np.argmax(Y_test[ind, :]))
+            truth.append(np.argmax(y_test[ind, :]))
             results.append(guesses[-1] == truth[-1])
 
-            if settings['verbose'] > 0:
+            if s['verbose'] > 0:
                 echo("Sample {} of {} completed.\n".format(test_num + 1,
-                     settings['num_to_test']))
+                     s['num_to_test']))
                 echo("Moving average accuracy: {:.2%}.\n".format(
                     np.mean(results)))
 
-            if settings['verbose'] > 1 and \
-                    test_num == settings['num_to_test'] - 1:
+            if s['verbose'] > 1 and test_num == s['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
-                self.collect_plot_results(
-                    X_test[ind:ind+settings['batch_size']], test_num)
+                self.collect_plot_results(x_test[ind:ind+s['batch_size']],
+                                          test_num)
 
             # Reset simulation time and recorded network variables for next
             # run.
-            if settings['verbose'] > 1:
+            if s['verbose'] > 1:
                 echo("Resetting simulator...\n")
             # Skip during last run so the recorded variables are not discarded
-            if test_num < settings['num_to_test'] - 1:
+            if test_num < s['num_to_test'] - 1:
                 self.snn.restore()
-            if settings['verbose'] > 1:
+            if s['verbose'] > 1:
                 echo("Done.\n")
 
-        if settings['verbose'] > 1:
-            plot_confusion_matrix(truth, guesses,
-                                  settings['log_dir_of_current_run'])
+        if s['verbose'] > 1:
+            plot_confusion_matrix(truth, guesses, log_dir)
 
         total_acc = np.mean(results)
-        s = '' if settings['num_to_test'] == 1 else 's'
+        ss = '' if s['num_to_test'] == 1 else 's'
         echo("Total accuracy: {:.2%} on {} test sample{}.\n\n".format(
-             total_acc, settings['num_to_test'], s))
+             total_acc, s['num_to_test'], ss))
 
         self.snn.restore()
 
         return total_acc
 
-    def end_sim(self):
+    @staticmethod
+    def end_sim():
         """Clean up after simulation."""
 
         pass
 
-    def save(self, path=None, filename=None):
+    @staticmethod
+    def save(path=None, filename=None):
         """Write model architecture and parameters to disk."""
 
         pass
 
-    def collect_plot_results(self, X_batch, idx=0):
+    def collect_plot_results(self, x_batch, idx=0):
         """Collect spiketrains of all ``layers`` of a net.
 
         Collect spiketrains of all ``layers`` of a net from one simulation run,
@@ -411,7 +424,7 @@ class SNN():
         Membrane potential vs time is plotted for all except the input layer.
 
         The activations are obtained by evaluating the original ANN on a sample
-        ``X_batch``. The optional integer ``idx`` represents the index of a
+        ``x_batch``. The optional integer ``idx`` represents the index of a
         specific sample to plot.
         """
 
@@ -420,7 +433,7 @@ class SNN():
 
         # Collect spiketrains of all layers, for the last test sample.
         vmem = []
-        showLegend = False
+        show_legend = False
 
         # Allocate a list 'spiketrains_batch' with the following specification:
         # Each entry in ``spiketrains_batch`` contains a tuple
@@ -460,10 +473,10 @@ class SNN():
                 vmem.append((vm, layer.label))
                 times = self.statemonitors[0].t / self.sim.ms
                 if i == len(self.layers) - 2:
-                    showLegend = True
-                plot_potential(times, vmem[-1], showLegend,
+                    show_legend = True
+                plot_potential(times, vmem[-1], show_legend,
                                settings['log_dir_of_current_run'])
 
-        activations_batch = get_activations_batch(self.parsed_model, X_batch)
+        activations_batch = get_activations_batch(self.parsed_model, x_batch)
         output_graphs(spiketrains_batch, activations_batch,
                       settings['log_dir_of_current_run'], idx)

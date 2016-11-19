@@ -1,3 +1,5 @@
+# coding=utf-8
+
 # Copyright 2015 Matthieu Courbariaux
 
 # This file is part of BinaryConnect.

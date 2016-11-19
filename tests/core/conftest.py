@@ -35,9 +35,9 @@ def datapath(path_wd):
 
 @pytest.fixture(scope='session')
 def dataset(settings):
-    from snntoolbox.core.util import get_dataset
+    from snntoolbox.core.util import get_dataset, get_root_dir
     s = settings.copy()
-    s['dataset_path'] = os.path.join('..', 'models')
+    s['dataset_path'] = os.path.join(get_root_dir(), 'tests', 'models')
     return get_dataset(s)
 
 
@@ -80,9 +80,10 @@ def parsed_model(path_wd, normset):
 
 @pytest.fixture(scope='session')
 def input_model_and_lib_single(p):
+    from snntoolbox.core.util import get_root_dir
     model_lib = import_module('snntoolbox.model_libs.' +
                               p['model_lib'] + '_input_lib')
-    path_wd = os.path.join('..', 'models', p['model_lib'])
+    path_wd = os.path.join(get_root_dir(), 'tests', 'models', p['model_lib'])
     input_model = model_lib.load_ann(path_wd, p['filename_ann'])
     return {'model_lib': model_lib, 'input_model': input_model,
             'target_acc': float(p['filename_ann'])}

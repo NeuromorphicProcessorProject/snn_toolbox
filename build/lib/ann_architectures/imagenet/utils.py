@@ -1,8 +1,12 @@
+# coding=utf-8
+
+"""Utility functions for ImageNet testing."""
+
 import numpy as np
 import json
 
 from keras.utils.data_utils import get_file
-from keras import backend as K
+from keras import backend as k
 
 CLASS_INDEX = None
 CLASS_INDEX_PATH = 'https://s3.amazonaws.com/deep-learning-models/' + \
@@ -10,8 +14,25 @@ CLASS_INDEX_PATH = 'https://s3.amazonaws.com/deep-learning-models/' + \
 
 
 def preprocess_input(x, dim_ordering='default'):
+    """Preprocess input.
+
+    Parameters
+    ----------
+    x: np.array
+        The input samples.
+    dim_ordering: str
+        Ordering of the dimensions. ``'th'`` for Theano, ``'tf'`` for
+        TensorFlow.
+
+    Returns
+    -------
+
+    x: np.array
+        The processed data.
+    """
+
     if dim_ordering == 'default':
-        dim_ordering = K.image_dim_ordering()
+        dim_ordering = k.image_dim_ordering()
     assert dim_ordering in {'tf', 'th'}
 
     if dim_ordering == 'th':
@@ -30,6 +51,20 @@ def preprocess_input(x, dim_ordering='default'):
 
 
 def decode_predictions(preds):
+    """Decode predictions.
+
+    Parameters
+    ----------
+    preds: np.array
+        The predictions.
+
+    Returns
+    -------
+
+    results: list
+        The class indices.
+    """
+
     global CLASS_INDEX
     assert len(preds.shape) == 2 and preds.shape[1] == 1000
     if CLASS_INDEX is None:

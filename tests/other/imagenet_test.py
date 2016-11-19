@@ -11,7 +11,7 @@ import numpy as np
 
 from keras.models import model_from_json
 
-home_path = os.environ["HOME"]
+home_path = os.environ.get("HOME", '~/')
 config_path = os.path.join(home_path, ".snntoolbox")
 data_dir = os.path.join(config_path, "datasets")
 

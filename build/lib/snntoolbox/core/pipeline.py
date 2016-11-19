@@ -8,22 +8,23 @@ Created on Thu May 19 16:37:29 2016
 """
 
 # For compatibility with python2
-from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
-from future import standard_library
-
-from importlib import import_module
+from __future__ import print_function, unicode_literals
 
 import os
-from snntoolbox.io_utils.plotting import plot_param_sweep
-from snntoolbox.io_utils.common import load_dataset
-from snntoolbox.core.util import print_description, normalize_parameters, parse
+from importlib import import_module
+
+import numpy as np
+from future import standard_library
 from snntoolbox.config import settings
+from snntoolbox.core.util import evaluate_keras, get_dataset
+from snntoolbox.core.util import print_description, normalize_parameters, parse
+from snntoolbox.io_utils.plotting import plot_param_sweep
 
 standard_library.install_aliases()
 
 
-def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
+def test_full(queue=None, params=None, param_name='v_thresh',
               param_logscale=False):
     """Convert an snn to a spiking neural network and simulate it.
 
@@ -48,15 +49,15 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
     Parameters
     ----------
 
-    queue: Queue, optional
+    queue: Optional[Queue.Queue]
         Results are added to the queue to be displayed in the GUI.
-    params: ndarray, optional
+    params: Optional[list[int]]
         Contains the parameter values for which the simulation will be
         repeated.
-    param_name: string, optional
+    param_name: string
         Label indicating the parameter to sweep, e.g. ``'v_thresh'``.
         Must be identical to the parameter's label in ``globalparams``.
-    param_logscale: boolean, optional
+    param_logscale: bool
         If ``True``, plot test accuracy vs ``params`` in log scale.
         Defaults to ``False``.
 
@@ -68,64 +69,87 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
         value in param_range.
     """
 
+    if params is None:
+        params = [settings[param_name]]
+
     # ____________________________ LOAD DATASET _____________________________ #
-    X_test = load_dataset(settings['dataset_path'], 'X_test.npz')
-    Y_test = load_dataset(settings['dataset_path'], 'Y_test.npz')
+    evalset, normset, testset = get_dataset(settings)
 
     # Instantiate an empty spiking network
+    input_model = {}
     target_sim = import_module('snntoolbox.target_simulators.' +
                                settings['simulator'] + '_target_sim')
-    spiking_model = target_sim.SNN()  # t=0.1%
+    spiking_model = target_sim.SNN()
 
-    if settings['convert'] and not is_stop(queue):
-
+    if (settings['evaluateANN'] or settings['convert']) and not is_stop(queue):
         # ___________________________ LOAD MODEL ____________________________ #
         # Extract architecture and parameters from input model.
         model_lib = import_module('snntoolbox.model_libs.' +
                                   settings['model_lib'] + '_input_lib')
         input_model = model_lib.load_ann(settings['path_wd'],
                                          settings['filename_ann'])
+        # ____________________________ EVALUATE _____________________________ #
+        # Evaluate ANN
         if settings['evaluateANN']:
             print('\n' + "Evaluating input model...")
-            score = model_lib.evaluate(input_model['val_fn'], X_test, Y_test)
-            print('\n' + "Test score: {:.2f}".format(score[0]))
-            print("Test accuracy: {:.2%}\n".format(score[1]))
+            score = model_lib.evaluate(input_model['val_fn'], **evalset)
+            spiking_model.ANN_err = 1-score[1]
 
+    if settings['convert'] and not is_stop(queue):
+        # _____________________________ PARSE ________________________________ #
+        # Parse ANN to a Keras model with only layers that can be converted.
         print("Parsing input model...")
-        parsed_model = parse(input_model['model'])  # t=0.5% m=0.6GB
+        parsed_model = parse(input_model['model'])
         print_description(parsed_model)
-
-        # ____________________________ NORMALIZE ____________________________ #
-        # Normalize model
-        if settings['normalize'] and not is_stop(queue):
-            # Evaluate ANN before normalization to ensure it doesn't affect
-            # accuracy
-            if settings['evaluateANN'] and not is_stop(queue):
-                print('\n' + "Evaluating parsed model before parameter " +
-                      "normalization...")
-                score = parsed_model.evaluate(X_test, Y_test)
-                print('\n' + "Test score: {:.2f}".format(score[0]))
-                print("Test accuracy: {:.2%}\n".format(score[1]))
-            # t=9.1 (t=90.8% without sim) m=0.2GB
-            normalize_parameters(parsed_model)
 
         # ____________________________ EVALUATE _____________________________ #
         # (Re-) evaluate ANN
         if settings['evaluateANN'] and not is_stop(queue):
             print('\n' + "Evaluating parsed model...")
-            score = parsed_model.evaluate(X_test, Y_test)
-            print('\n' + "Test score: {:.2f}".format(score[0]))
-            print("Test accuracy: {:.2%}\n".format(score[1]))
+            evaluate_keras(parsed_model, **evalset)
 
-        # _____________________________ EXPORT ______________________________ #
-        # Write model to disk
+        save_activations = False
+        if save_activations:
+            from snntoolbox.core.util import get_activations_batch
+            print("Saving activations")
+            path = os.path.join(settings['log_dir_of_current_run'],
+                                'activations')
+            if not os.path.isdir(path):
+                os.makedirs(path)
+            num_batches = int(np.floor(
+                settings['num_to_test'] / settings['batch_size']))
+            for batch_idx in range(num_batches):
+                batch_idxs = range(settings['batch_size'] * batch_idx,
+                                   settings['batch_size'] * (batch_idx + 1))
+                x_batch = evalset['x_test'][batch_idxs, :]
+                activations_batch = get_activations_batch(parsed_model,
+                                                          x_batch)
+                np.savez_compressed(os.path.join(path, str(batch_idx)),
+                                    activations=activations_batch,
+                                    spiketrains=None)
+
+        # ____________________________ NORMALIZE ____________________________ #
+        # Normalize model
+        if settings['normalize'] and not is_stop(queue):
+            normalize_parameters(parsed_model, **normset)
+
+        # ____________________________ EVALUATE _____________________________ #
+        # (Re-) evaluate ANN
+        if settings['evaluateANN'] and not is_stop(queue):
+            print('\n' + "Evaluating parsed model...")
+            evaluate_keras(parsed_model, **evalset)
+
+        # __________________________ SAVE PARSED _____________________________ #
+        # Write parsed model to disk
         parsed_model.save(os.path.join(
             settings['path_wd'], settings['filename_parsed_model'] + '.h5'))
 
+        # ____________________________ BUILD SNN _____________________________ #
         # Compile spiking network from ANN
         if not is_stop(queue):
             spiking_model.build(parsed_model)
 
+        # ____________________________ SAVE SNN ______________________________ #
         # Export network in a format specific to the simulator with which it
         # will be tested later.
         if not is_stop(queue):
@@ -155,7 +179,7 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
                 print("Current value of parameter to sweep: " +
                       "{} = {:.2f}\n".format(param_name, p))
             # Simulate network
-            total_acc = spiking_model.run(X_test, Y_test)  # t=90.1% m=2.3GB
+            total_acc = spiking_model.run(**testset)
 
             # Write out results
             results.append(total_acc)
@@ -165,11 +189,9 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
     # _______________________________ OUTPUT _______________________________ #
     # Number of samples used in one run:
-    n = len(X_test) if settings['simulator'] == 'INI' \
-        else settings['num_to_test']
+    n = settings['num_to_test']
     # Plot and return results of parameter sweep.
-    if results != []:
-        plot_param_sweep(results, n, params, param_name, param_logscale)
+    plot_param_sweep(results, n, params, param_name, param_logscale)
 
     # Add results to queue to be displayed in GUI.
     if queue:
@@ -179,6 +201,12 @@ def test_full(queue=None, params=[settings['v_thresh']], param_name='v_thresh',
 
 
 def is_stop(queue):
+    """Determine if the user pressed 'stop' in the GUI.
+
+    :param queue: Event queue.
+    :return: ``True`` if user pressed 'stop' in GUI, ``False`` otherwise.
+    """
+
     if not queue:
         return False
     if queue.empty():

@@ -531,6 +531,100 @@ def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None):
     plt.close()
 
 
+def plot_activ_hist(h, title=None, layer_label=None, path=None, scale_fac=None):
+    """Plot a histogram over all activities of a network.
+
+    Parameters
+    ----------
+
+    h: dict
+        Dictionary of datasets to plot in histogram.
+    title: string, optional
+        Title of histogram.
+    layer_label: string, optional
+        Label of layer from which data was taken.
+    path: string, optional
+        If not ``None``, specifies where to save the resulting image. Else,
+        display plots without saving.
+    scale_fac: float, optional
+        The value with which parameters are normalized (maximum of activations
+        or parameter value of a layer). If given, will be insterted into plot
+        title.
+    """
+
+    keys = sorted(h.keys())
+    plt.hist([h[key] for key in keys], label=keys, bins=1000, edgecolor='blue',
+             histtype='stepfilled', log=True, bottom=1)
+    plt.xlabel('ANN activations')
+    plt.ylabel('Count')
+    plt.xlim(xmin=0)
+    if scale_fac:
+        plt.axvline(scale_fac, color='red', linestyle='dashed', linewidth=2,
+                    label='scale factor')
+    plt.legend()
+    plt.locator_params(axis='x', nbins=10)
+    if title and layer_label:
+        filename = layer_label + '_' + 'activ_distribution'
+        facs = "Applied divisor: {:.2f}".format(scale_fac) if scale_fac else ''
+        plt.title('{} distribution \n of layer {} \n {}'.format(
+            title, layer_label, facs))
+    else:
+        plt.title('Distribution')
+        filename = 'Activity_distribution'
+    if path:
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
+def plot_max_activ_hist(h, title=None, layer_label=None, path=None,
+                        scale_fac=None):
+    """Plot a histogram over the maximum activations.
+
+    Parameters
+    ----------
+
+    h: dict
+        Dictionary of datasets to plot in histogram.
+    title: string, optional
+        Title of histogram.
+    layer_label: string, optional
+        Label of layer from which data was taken.
+    path: string, optional
+        If not ``None``, specifies where to save the resulting image. Else,
+        display plots without saving.
+    scale_fac: float, optional
+        The value with which parameters are normalized (maximum of activations
+        or parameter value of a layer). If given, will be insterted into plot
+        title.
+    """
+
+    keys = sorted(h.keys())
+    plt.hist([h[key] for key in keys], label=keys, bins=1000, edgecolor='blue',
+             histtype='stepfilled')
+    plt.xlabel('Maximum ANN activations')
+    plt.ylabel('Sample count')
+    if scale_fac:
+        plt.axvline(scale_fac, color='red', linestyle='dashed', linewidth=2,
+                    label='scale factor')
+    plt.legend()
+    plt.locator_params(axis='x', nbins=10)
+    if title and layer_label:
+        filename = layer_label + '_' + 'maximum_activity_distribution'
+        facs = "Applied divisor: {:.2f}".format(scale_fac) if scale_fac else ''
+        plt.title('{} distribution \n of layer {} \n {}'.format(
+            title, layer_label, facs))
+    else:
+        plt.title('Distribution')
+        filename = 'Maximum_activity_distribution'
+    if path:
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
 def plot_hist_combined(data, path=None):
     """Plot a histogram over several datasets.
 

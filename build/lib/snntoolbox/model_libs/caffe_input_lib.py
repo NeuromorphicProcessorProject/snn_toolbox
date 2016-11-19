@@ -19,6 +19,7 @@ Created on Thu Jun  9 08:11:09 2016
 """
 
 import os
+
 import caffe
 import numpy as np
 from snntoolbox.config import settings, spiking_layers
@@ -138,17 +139,14 @@ def extract(model):
         if layer_type == 'BatchNormalization':
             bn_parameters = [layer.blobs[0].data,
                              layer.blobs[1].data]
-            prev_layer = None
-            k = 0
-            for k in [layer_num - i for i in range(1, 3)]:
-                prev_layer = caffe_model.layers[k]
-                if len(prev_layer.blobs) > 0:
+            for k in range(1, 3):
+                prev_layer = layers[-k]
+                if 'parameters' in prev_layer:
                     break
-            parameters = [caffe_model.params[layer.name][0].data,
-                          caffe_model.params[layer.name][1].data]
+            parameters = prev_layer['parameters']
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of layer {}, {}.".format(k, prev_layer.name))
-            layers[-1]['parameters'] = absorb_bn(
+                  "parameters of previous {}.".format(prev_layer['name']))
+            prev_layer['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[1],
                 bn_parameters[0], bn_parameters[2], 1 / bn_parameters[3],
                 layer.epsilon)
@@ -163,12 +161,13 @@ def extract(model):
             attributes['batch_input_shape'] = tuple(batch_input_shape)
 
         # Insert Flatten layer
-        output_shape = list(caffe_model.blobs[layer.name].shape)
         prev_layer_key = None
+        output_shape = list(caffe_model.blobs[layer.name].shape)
         for k in [layer_num - i for i in range(1, 4)]:
             prev_layer_key = caffe_layers[k].name
             if prev_layer_key in caffe_model.blobs:
                 break
+        assert prev_layer_key, "Search for layer to flatten was unsuccessful."
         prev_layer_output_shape = list(caffe_model.blobs[prev_layer_key].shape)
         if len(output_shape) < len(prev_layer_output_shape) and \
                 layer_type != 'Flatten':
@@ -290,12 +289,28 @@ def load_ann(path=None, filename=None):
     return {'model': (model, model_protobuf), 'val_fn': model.forward_all}
 
 
-def evaluate(val_fn, x_test, y_test):
-    """Evaluate the original ANN."""
+def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
+    """Evaluate the original ANN.
+
+    Can use either numpy arrays ``x_test, y_test`` containing the test samples,
+    or generate them with a dataflow
+    (``Keras.ImageDataGenerator.flow_from_directory`` object).
+    """
+
+    if x_test is None:
+        # Get samples from Keras.ImageDataGenerator
+        batch_size = dataflow.batch_size
+        dataflow.batch_size = settings['num_to_test']
+        x_test, y_test = dataflow.next()
+        dataflow.batch_size = batch_size
+        print("Using {} samples to evaluate input model".format(len(x_test)))
 
     guesses = np.argmax(val_fn(data=x_test)['prob'], axis=1)
     truth = np.argmax(y_test, axis=1)
     accuracy = np.mean(guesses == truth)
     loss = -1
+
+    print('\n' + "Test loss: {:.2f}".format(loss))
+    print("Test accuracy: {:.2%}\n".format(accuracy))
 
     return [loss, accuracy]

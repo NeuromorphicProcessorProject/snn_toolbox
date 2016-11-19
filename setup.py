@@ -10,49 +10,49 @@ from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
 
-try:
-    here = os.environ['PYTHONPATH'].split(os.pathsep)[-1]
-except KeyError:
-    here = os.path.abspath(os.path.dirname(__file__))
+# try:
+#     here = os.environ['PYTHONPATH'].split(os.pathsep)[-1]
+# except KeyError:
+#     here = os.path.abspath(os.path.dirname(__file__))
 
 
 # Get the long description from the README file
-try:
-    with open(os.path.join(here, 'docs', 'source', 'index.rst'),
-              encoding='utf-8') as f:
-        long_description = f.read()
-except FileNotFoundError:
-    long_description = ''  # Tox can't find the file...
+# try:
+#     with open(os.path.join(here, 'docs', 'source', 'index.rst'),
+#               encoding='utf-8') as f:
+#         long_description = f.read()
+# except FileNotFoundError:
+#     long_description = ''  # Tox can't find the file...
 
 
-# Tell setuptools to run 'tox' when calling 'python setup.py test'.
-class Tox(TestCommand):
-    user_options = [('tox-args=', 'a', "Arguments to pass to tox")]
-
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.tox_args = None
-
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        # import here, cause outside the eggs aren't loaded
-        import tox
-        import shlex
-        args = self.tox_args
-        if args:
-            args = shlex.split(self.tox_args)
-        errno = tox.cmdline(args=args)
-        sys.exit(errno)
+# # Tell setuptools to run 'tox' when calling 'python setup.py test'.
+# class Tox(TestCommand):
+#     user_options = [('tox-args=', 'a', "Arguments to pass to tox")]
+#
+#     def initialize_options(self):
+#         TestCommand.initialize_options(self)
+#         self.tox_args = None
+#
+#     def finalize_options(self):
+#         TestCommand.finalize_options(self)
+#         self.test_args = []
+#         self.test_suite = True
+#
+#     def run_tests(self):
+#         # import here, cause outside the eggs aren't loaded
+#         import tox
+#         import shlex
+#         args = self.tox_args
+#         if args:
+#             args = shlex.split(self.tox_args)
+#         errno = tox.cmdline(args=args)
+#         sys.exit(errno)
 
 setup(
     name='snntoolbox',
     version='0.2.0',  # see https://www.python.org/dev/peps/pep-0440/
     description='Spiking Neural Net Conversion',
-    long_description=long_description,
+    # long_description=long_description,
     author='Bodo Rueckauer',
     author_email='bodo.rueckauer@gmail.com',
     url='https://code.ini.uzh.ch/NPP_theory/SNN_toolbox',
@@ -85,32 +85,21 @@ setup(
 
     keywords='neural networks, deep learning, spiking',
 
-    install_requires=[
-        'numpy',
-        'scipy',
-        'matplotlib',
-	'Theano',
-        'future',
-        'neo',
-        'lazyarray',
-        'sklearn',
-        'sympy',
-        'keras',
-        'pyNN'
-    ],
+    # install_requires=[
+    # ],
 
     setup_requires=['pytest-runner'],
 
     tests_require=['tox', 'pytest'],
 
-    cmdclass={'test': Tox},
+    # cmdclass={'test': Tox},
 
     # Additional groups of dependencies (e.g. development dependencies).
     # Install them with $ pip install -e .[dev,test]
-    extras_require={
-        'dev': ['foo'],
-        'test': ['bar']
-    },
+    # extras_require={
+    #     'dev': ['foo'],
+    #     'test': ['bar']
+    # },
 
     packages=find_packages(),
 
@@ -120,7 +109,7 @@ setup(
     # Include documentation
     data_files=[
         ('', ['README.rst']),
-#        ('docs', ['Documentation.html'])
+        # ('docs', ['Documentation.html'])
     ],
 
     # To provide executable scripts, use entry points in preference to the
@@ -128,7 +117,7 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts':
-            ['snntoolbox_example=snntoolbox.tests.example:main'],
+            ['snntoolbox_example=examples.example:main'],
         'gui_scripts': ['snntoolbox=snntoolbox.gui.gui:main']
     },
 )

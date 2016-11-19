@@ -4,7 +4,10 @@
 
 
 def test_gui():
-    from snntoolbox.gui.gui import tk, SNNToolboxGUI
+    try:
+        from snntoolbox.gui.gui import tk, SNNToolboxGUI
+    except ImportError:
+        return
     import time
 
     root = tk.Tk()

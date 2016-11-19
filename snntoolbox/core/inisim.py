@@ -20,9 +20,11 @@ import numpy as np
 import theano
 import theano.tensor as t
 from future import standard_library
+import inspect
 from keras import backend as k
 from keras.layers import Convolution2D
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D
+import keras.activations as k_activ
 from snntoolbox.config import settings
 from theano.tensor.shared_randomstreams import RandomStreams
 from theano.tensor.signal import pool
@@ -76,17 +78,19 @@ def update_neurons(self, time, updates):
         output_spikes = linear_activation(self, time, updates)
 
     # Store refractory
-    new_refractory = t.set_subtensor(
-        self.refrac_until[output_spikes.nonzero()], time + self.tau_refrac)
-    updates.append((self.refrac_until, new_refractory))
+    if settings['tau_refrac'] > 0:
+        new_refractory = t.set_subtensor(
+            self.refrac_until[output_spikes.nonzero()], time + self.tau_refrac)
+        updates.append((self.refrac_until, new_refractory))
 
-    updates.append((self.spiketrain, output_spikes * (time + settings['dt'])))
-    updates.append((self.spikecounts, self.spikecounts + output_spikes))
+    if settings['verbose'] > 1 or settings['online_normalization']:
+        updates.append((self.spikecounts, self.spikecounts + output_spikes))
 
-    axes = np.arange(len(self.output_shape))
-    reduction_axes = tuple(axes[1:])
-    updates.append((self.total_spike_count, t.sum(self.spikecounts,
-                                                  reduction_axes)))
+    if settings['verbose'] > 1:
+        updates.append((self.spiketrain, output_spikes * (time+settings['dt'])))
+        reduction_axes = tuple(np.arange(len(self.output_shape))[1:])
+        updates.append((self.total_spike_count, t.sum(self.spikecounts,
+                                                      reduction_axes)))
 
     if settings['online_normalization']:
         updates.append((self.max_spikerate,
@@ -129,8 +133,8 @@ def binary_sigmoid_activation(self, time, updates):
     """Binary sigmoid activation."""
 
     # Destroy impulse if in refractory period
-    masked_imp = t.set_subtensor(
-        self.impulse[t.nonzero(self.refrac_until > time)], 0.)
+    masked_imp = self.impulse if settings['tau_refrac'] == 0 else \
+        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > time)], 0.)
 
     # Add impulse
     new_mem = self.mem + masked_imp
@@ -152,8 +156,8 @@ def binary_tanh_activation(self, time, updates):
     """Binary tanh activation."""
 
     # Destroy impulse if in refractory period
-    masked_imp = t.set_subtensor(
-        self.impulse[t.nonzero(self.refrac_until > time)], 0.)
+    masked_imp = self.impulse if settings['tau_refrac'] == 0 else \
+        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > time)], 0.)
 
     # Add impulse
     new_mem = self.mem + masked_imp
@@ -177,8 +181,8 @@ def linear_activation(self, time, updates):
     """Linear activation."""
 
     # Destroy impulse if in refractory period
-    masked_imp = t.set_subtensor(
-        self.impulse[t.nonzero(self.refrac_until > time)], 0.)
+    masked_imp = self.impulse if settings['tau_refrac'] == 0 else \
+        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > time)], 0.)
 
     # Add impulse
     new_mem = self.mem + masked_imp
@@ -212,10 +216,12 @@ def softmax_activation(self, time, updates):
     """Softmax activation."""
 
     # Destroy impulse if in refractory period
-    masked_imp = t.set_subtensor(
-        self.impulse[t.nonzero(self.refrac_until > time)], 0.)
+    masked_imp = self.impulse if settings['tau_refrac'] == 0 else \
+        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > time)], 0.)
+
     # Add impulse
     new_mem = self.mem + masked_imp
+
     # Store spiking
     spiking_samples = t.le(rng.uniform([settings['batch_size'], 1]),
                            settings['softmax_clockrate'] * settings[
@@ -238,19 +244,20 @@ def reset(self):
     if self.inbound_nodes[0].inbound_layers:
         reset(self.inbound_nodes[0].inbound_layers[0])
     self.mem.set_value(float_x(np.zeros(self.output_shape)))
-    self.refrac_until.set_value(float_x(np.zeros(self.output_shape)))
-    self.spiketrain.set_value(float_x(np.zeros(self.output_shape)))
-    self.spikecounts.set_value(float_x(np.zeros(self.output_shape)))
-    self.total_spike_count.set_value(float_x(np.zeros(settings['batch_size'])))
-
+    if settings['tau_refrac'] > 0:
+        self.refrac_until.set_value(float_x(np.zeros(self.output_shape)))
+    if settings['verbose'] > 1:
+        self.spiketrain.set_value(float_x(np.zeros(self.output_shape)))
+        self.total_spike_count.set_value(float_x(
+            np.zeros(settings['batch_size'])))
+    if settings['verbose'] > 1 or settings['online_normalization']:
+        self.spikecounts.set_value(float_x(np.zeros(self.output_shape)))
     if settings['payloads']:
         self.payloads.set_value(float_x(np.zeros(self.output_shape)))
         self.payloads_sum.set_value(float_x(np.zeros(self.output_shape)))
-
     if settings['online_normalization']:
         self.max_spikerate.set_value(0.0)
         self.v_thresh.set_value(settings['v_thresh'])
-
     if hasattr(self, 'spikerate'):
         self.spikerate.set_value(float_x(np.zeros(self.output_shape)))
 
@@ -306,30 +313,30 @@ def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
 def init_layer(self, layer, v_thresh, tau_refrac):
     """Init layer."""
 
-    layer.v_thresh = theano.shared(
-        np.asarray(v_thresh, dtype=theano.config.floatX), 'v_thresh')
+    layer.v_thresh = shared_x(v_thresh, name='v_thresh')
     layer.tau_refrac = tau_refrac
-    layer.refrac_until = shared_zeros(self.output_shape)
     layer.mem = shared_zeros(self.output_shape)
-    layer.spiketrain = shared_zeros(self.output_shape)
-    layer.spikecounts = shared_zeros(self.output_shape)
-    layer.total_spike_count = shared_zeros(settings['batch_size'])
-    if settings['payloads']:
-        layer.payloads = shared_zeros(self.output_shape)
-        layer.payloads_sum = shared_zeros(self.output_shape)
     layer.updates = []
     layer.layer_type = layer.__class__.__name__
-
-    if settings['online_normalization']:
-        layer.max_spikerate = theano.shared(np.asarray([0.0], 'float32'))
-
-    if layer.layer_type == "SpikeMaxPooling2D":
-        prev_layer = self.inbound_nodes[0].inbound_layers[0]
-        prev_layer.spikerate = shared_zeros(self.output_shape)
-
+    # To save memory and computations, allocate only where needed:
     if len(layer.get_weights()) > 0:
         layer.W = k.variable(layer.get_weights()[0])
         layer.b = k.variable(layer.get_weights()[1])
+    if settings['tau_refrac'] > 0:
+        layer.refrac_until = shared_zeros(self.output_shape)
+    if settings['verbose'] > 1:
+        layer.spiketrain = shared_zeros(self.output_shape)
+        layer.total_spike_count = shared_zeros(settings['batch_size'])
+    if settings['verbose'] > 1 or settings['online_normalization']:
+        layer.spikecounts = shared_zeros(self.output_shape)
+    if settings['payloads']:
+        layer.payloads = shared_zeros(self.output_shape)
+        layer.payloads_sum = shared_zeros(self.output_shape)
+    if settings['online_normalization']:
+        layer.max_spikerate = theano.shared(np.asarray([0.0], 'float32'))
+    if layer.layer_type == "SpikeMaxPooling2D":
+        prev_layer = self.inbound_nodes[0].inbound_layers[0]
+        prev_layer.spikerate = shared_zeros(self.output_shape)
 
 
 def get_new_thresh(self, time):
@@ -380,7 +387,17 @@ class SpikeDense(Dense):
         # Remove activation from kwargs before initializing superclass, in case
         # we are using a custom activation function that Keras doesn't
         # understand.
-        self.activation_str = str(kwargs.pop('activation'))
+        self.activation_str = str(kwargs['activation'])
+        activs = [a[0] for a in inspect.getmembers(k_activ, inspect.isfunction)]
+        if self.activation_str not in activs:
+            kwargs.pop('activation')
+            if not settings['convert']:
+                print("WARNING: It seems you have restored a previously "
+                      "converted SNN from disk, which uses an activation "
+                      "function unknown to Keras. This custom function could "
+                      "not be saved and reloaded. Falling back on 'linear' "
+                      "activation. Convert from scratch before simulating to "
+                      "use custom function {}.".format(self.activation_str))
         super(SpikeDense, self).__init__(output_dim=output_dim, weights=weights,
                                          **kwargs)
         self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None

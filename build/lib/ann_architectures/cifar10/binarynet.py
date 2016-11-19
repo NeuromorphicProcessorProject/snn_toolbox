@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """
 
 This python script trains a ConvNet on CIFAR-10 with BinaryNet.
@@ -24,9 +26,15 @@ theano.sandbox.cuda.use('gpu0')
 
 
 def build_network():
+    """Build network.
+
+    Returns
+    -------
+
+    """
 
     import theano
-    import theano.tensor as T
+    import theano.tensor as t
     from collections import OrderedDict
 
     # BN parameters
@@ -47,30 +55,35 @@ def build_network():
     print("binary = "+str(binary))
     stochastic = False
     print("stochastic = "+str(stochastic))
-    # (-H,+H) are the two binary values
-    # H = "Glorot"
-    H = 1.
-    print("H = "+str(H))
-    # W_LR_scale = 1.
+    # (-h,+h) are the two binary values
+    # h = "Glorot"
+    h = 1.
+    print("h = "+str(h))
+    # w_lr_scale = 1.
     # "Glorot" means we are using the coefficients from Glorot's paper
-    W_LR_scale = "Glorot"
-    print("W_LR_scale = "+str(W_LR_scale))
+    w_lr_scale = "Glorot"
+    print("w_lr_scale = "+str(w_lr_scale))
 
     # Prepare Theano variables for inputs and targets
-    input_var = T.tensor4('inputs')
-    target = T.matrix('targets')
-    LR = T.scalar('LR', dtype=theano.config.floatX)
+    input_var = t.tensor4('inputs')
+    target = t.matrix('targets')
+    lr = t.scalar('lr', dtype=theano.config.floatX)
 
     cnn = lasagne.layers.InputLayer(shape=(None, 3, 32, 32),
                                     input_var=input_var)
+
+#    #Experimental: Train on binarized input!
+#    model = lasagne.layers.NonlinearityLayer(
+#            model,
+#            nonlinearity=activation)
 
     # 128C3-128C3-P2
     cnn = binary_net.Conv2DLayer(
             cnn,
             binary=binary,
             stochastic=stochastic,
-            H=H,
-            W_LR_scale=W_LR_scale,
+            H=h,
+            W_LR_scale=w_lr_scale,
             num_filters=128,
             filter_size=(3, 3),
             pad=1,
@@ -89,8 +102,8 @@ def build_network():
             cnn,
             binary=binary,
             stochastic=stochastic,
-            H=H,
-            W_LR_scale=W_LR_scale,
+            H=h,
+            W_LR_scale=w_lr_scale,
             num_filters=128,
             filter_size=(3, 3),
             pad=1,
@@ -112,8 +125,8 @@ def build_network():
             cnn,
             binary=binary,
             stochastic=stochastic,
-            H=H,
-            W_LR_scale=W_LR_scale,
+            H=h,
+            W_LR_scale=w_lr_scale,
             num_filters=256,
             filter_size=(3, 3),
             pad=1,
@@ -132,8 +145,8 @@ def build_network():
             cnn,
             binary=binary,
             stochastic=stochastic,
-            H=H,
-            W_LR_scale=W_LR_scale,
+            H=h,
+            W_LR_scale=w_lr_scale,
             num_filters=256,
             filter_size=(3, 3),
             pad=1,
@@ -155,8 +168,8 @@ def build_network():
             cnn,
             binary=binary,
             stochastic=stochastic,
-            H=H,
-            W_LR_scale=W_LR_scale,
+            H=h,
+            W_LR_scale=w_lr_scale,
             num_filters=512,
             filter_size=(3, 3),
             pad=1,
@@ -175,8 +188,8 @@ def build_network():
             cnn,
             binary=binary,
             stochastic=stochastic,
-            H=H,
-            W_LR_scale=W_LR_scale,
+            H=h,
+            W_LR_scale=w_lr_scale,
             num_filters=512,
             filter_size=(3, 3),
             pad=1,
@@ -200,8 +213,8 @@ def build_network():
                 cnn,
                 binary=binary,
                 stochastic=stochastic,
-                H=H,
-                W_LR_scale=W_LR_scale,
+                H=h,
+                W_LR_scale=w_lr_scale,
                 nonlinearity=lasagne.nonlinearities.identity,
                 num_units=1024)
 
@@ -218,8 +231,8 @@ def build_network():
                 cnn,
                 binary=binary,
                 stochastic=stochastic,
-                H=H,
-                W_LR_scale=W_LR_scale,
+                H=h,
+                W_LR_scale=w_lr_scale,
                 nonlinearity=lasagne.nonlinearities.identity,
                 num_units=1024)
 
@@ -236,8 +249,8 @@ def build_network():
                 cnn,
                 binary=binary,
                 stochastic=stochastic,
-                H=H,
-                W_LR_scale=W_LR_scale,
+                H=h,
+                W_LR_scale=w_lr_scale,
                 nonlinearity=lasagne.nonlinearities.identity,
                 num_units=10)
 
@@ -249,37 +262,37 @@ def build_network():
     train_output = lasagne.layers.get_output(cnn, deterministic=False)
 
     # squared hinge loss
-    loss = T.mean(T.sqr(T.maximum(0., 1.-target*train_output)))
+    loss = t.mean(t.sqr(t.maximum(0., 1.-target*train_output)))
 
     if binary:
         from itertools import chain
-        # W updates
-        W = lasagne.layers.get_all_params(cnn, binary=True)
-        W_grads = binary_net.compute_grads(loss, cnn)
-        updates = lasagne.updates.adam(loss_or_grads=W_grads, params=W,
-                                       learning_rate=LR)
+        # w updates
+        w = lasagne.layers.get_all_params(cnn, binary=True)
+        w_grads = binary_net.compute_grads(loss, cnn)
+        updates = lasagne.updates.adam(loss_or_grads=w_grads, params=w,
+                                       learning_rate=lr)
         updates = binary_net.clipping_scaling(updates, cnn)
 
         # other parameters updates
         params = lasagne.layers.get_all_params(cnn, trainable=True,
                                                binary=False)
         updates = OrderedDict(chain(updates.items(), lasagne.updates.adam(
-            loss_or_grads=loss, params=params, learning_rate=LR).items()))
+            loss_or_grads=loss, params=params, learning_rate=lr).items()))
 
     else:
         params = lasagne.layers.get_all_params(cnn, trainable=True)
         updates = lasagne.updates.adam(loss_or_grads=loss, params=params,
-                                       learning_rate=LR)
+                                       learning_rate=lr)
 
     test_output = lasagne.layers.get_output(cnn, deterministic=True)
-    test_loss = T.mean(T.sqr(T.maximum(0., 1.-target*test_output)))
-    test_err = T.mean(T.neq(T.argmax(test_output, axis=1),
-                            T.argmax(target, axis=1)),
+    test_loss = t.mean(t.sqr(t.maximum(0., 1.-target*test_output)))
+    test_err = t.mean(t.neq(t.argmax(test_output, axis=1),
+                            t.argmax(target, axis=1)),
                       dtype=theano.config.floatX)
 
     # Compile a function performing a training step on a mini-batch (by giving
     # the updates dictionary) and returning the corresponding training loss:
-    train_fn = theano.function([input_var, target, LR], loss, updates=updates)
+    train_fn = theano.function([input_var, target, lr], loss, updates=updates)
 
     # Compile a second function computing the validation loss and accuracy:
     val_fn = theano.function([input_var, target], [test_loss, test_err])
@@ -290,8 +303,9 @@ def build_network():
 if __name__ == "__main__":
 
     from pylearn2.datasets.cifar10 import CIFAR10
-    from snntoolbox.model_libs.lasagne_input_lib import save_parameters
     import numpy as np
+    from snntoolbox.io_utils.common import save_parameters
+#    from snntoolbox.model_libs.lasagne_input_lib import load_parameters
     np.random.seed(1234)  # for reproducibility?
 
     # Training parameters
@@ -347,22 +361,28 @@ if __name__ == "__main__":
 
     print('Building the CNN...')
 
-    cnn, train_fn, val_fn = build_network()
+    model, train_func, val_func = build_network()
+
+    # Experimental: Initialize with pretrained weights, refine with binarized
+    #  input.
+#    params = load_parameters(
+#        '/home/rbodo/.snntoolbox/data/cifar10/88.63/INI/88.63.h5')
+#    lasagne.layers.set_all_param_values(model, params)
 
     print('Training...')
 
-    binary_net.train(train_fn, val_fn, cnn, batch_size, LR_start, LR_decay,
-                     num_epochs, train_set.X, train_set.y, valid_set.X,
-                     valid_set.y, test_set.X, test_set.y,
+    binary_net.train(train_func, val_func, model, batch_size, LR_start,
+                     LR_decay, num_epochs, train_set.X, train_set.y,
+                     valid_set.X, valid_set.y, test_set.X, test_set.y,
                      shuffle_parts=shuffle_parts)
 
-    W = lasagne.layers.get_all_layers(cnn)[1].W.get_value()
+    W = lasagne.layers.get_all_layers(model)[1].W.get_value()
 
     import matplotlib.pyplot as plt
     plt.hist(W.flatten())
     plt.title("Weight distribution of first hidden convolution layer")
 
     # Dump the network weights to a file
-    filepath = 'binarynet.h5'
-    params = lasagne.layers.get_all_param_values(cnn)
-    save_parameters(params, filepath)
+    filepath = '70.14.h5'
+    parameters = lasagne.layers.get_all_param_values(model)
+    save_parameters(parameters, filepath)
