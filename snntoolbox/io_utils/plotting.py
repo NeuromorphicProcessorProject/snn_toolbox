@@ -441,8 +441,8 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
                     if (sss > 0 or aaa > 0) and aaa < 1./settings['dt']:
                         ss.append(sss)
                         aa.append(aaa)
-                    s = ss
-                    a = aa
+                s = ss
+                a = aa
             (r, p) = pearsonr(s, a)
             c.append(r)
         co.append(c)

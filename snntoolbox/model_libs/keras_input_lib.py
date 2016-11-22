@@ -157,6 +157,7 @@ def extract(model):
             print("Detected activation {}".format(activation))
 
         layers.append(attributes)
+    print()
 
     return layers
 

@@ -92,27 +92,24 @@ def update_neurons(self, time, updates):
         updates.append((self.total_spike_count, t.sum(self.spikecounts,
                                                       reduction_axes)))
 
+    t_inv = settings['dt'] / (time + settings['dt'])
     if settings['online_normalization']:
-        updates.append((self.max_spikerate,
-                        t.max(self.spikecounts + output_spikes) *
-                        settings['dt'] / (time + settings['dt'])))
+        updates.append((self.max_spikerate, t.max(self.spikecounts) * t_inv))
 
     if hasattr(self, 'spikerate'):
-        if settings['maxpool_type'] == 'fir_max':
-            updates.append((self.spikerate,
-                            self.spikerate + (output_spikes - self.spikerate) /
-                            ((time + settings['dt']) / settings['dt'])))
+        if settings['maxpool_type'] == 'avg_max':
+            updates.append((self.spikerate, self.spikerate +
+                            (output_spikes - self.spikerate) * t_inv))
         elif settings['maxpool_type'] == 'fir_max':
             updates.append((self.spikerate,
-                            self.spikerate + output_spikes /
-                            ((time + settings['dt']) / settings['dt'])))
-        #    updates.append((self.spikerate,
-        #                    (self.spikecounts+output_spikes) *
-        #                    settings['dt'] / (time + settings['dt'])))
+                            self.spikerate + output_spikes * t_inv))
+            # updates.append((self.spikerate,
+            #                 (self.spikerate * time / settings['dt'] +
+            #                  output_spikes) * t_inv))
+            # updates.append((self.spikerate, self.spikecounts * t_inv))
         elif settings['maxpool_type'] == 'exp_max':
             updates.append((self.spikerate,
-                            self.spikerate + output_spikes /
-                            2. ** ((time + settings['dt']) / settings['dt'])))
+                            self.spikerate + output_spikes / 2. ** (1 / t_inv)))
     return output_spikes
 
 
@@ -571,8 +568,9 @@ class SpikeMaxPooling2D(MaxPooling2D):
             max_idx = pool_same_size(spikerate, patch_size=self.pool_size,
                                      ignore_border=self.ignore_border,
                                      st=self.strides)
-            self.impulse = k.pool2d(inp * max_idx, self.pool_size, self.strides,
-                                    self.border_mode, pool_mode='max')
+            self.impulse = k.pool2d(t.mul(inp, max_idx), self.pool_size,
+                                    self.strides, self.border_mode,
+                                    pool_mode='max')
         else:
             print("Wrong max pooling type, "
                   "falling back on Average Pooling instead.")

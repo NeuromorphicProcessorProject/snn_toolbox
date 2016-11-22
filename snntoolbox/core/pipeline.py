@@ -14,7 +14,6 @@ from __future__ import print_function, unicode_literals
 import os
 from importlib import import_module
 
-import numpy as np
 from future import standard_library
 from snntoolbox.config import settings
 from snntoolbox.core.util import evaluate_keras, get_dataset
@@ -91,7 +90,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         # ____________________________ EVALUATE ______________________________ #
         # Evaluate ANN
         if settings['evaluateANN']:
-            print('\n' + "Evaluating input model...")
+            print("Evaluating input model...")
             score = model_lib.evaluate(input_model['val_fn'], **evalset)
             spiking_model.ANN_err = 1-score[1]
 
@@ -105,28 +104,8 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         # ____________________________ EVALUATE ______________________________ #
         # (Re-) evaluate ANN
         if settings['evaluateANN'] and not is_stop(queue):
-            print('\n' + "Evaluating parsed model...")
+            print("Evaluating parsed model...")
             evaluate_keras(parsed_model, **evalset)
-
-        save_activations = False
-        if save_activations:
-            from snntoolbox.core.util import get_activations_batch
-            print("Saving activations")
-            path = os.path.join(settings['log_dir_of_current_run'],
-                                'activations')
-            if not os.path.isdir(path):
-                os.makedirs(path)
-            num_batches = int(np.floor(
-                settings['num_to_test'] / settings['batch_size']))
-            for batch_idx in range(num_batches):
-                batch_idxs = range(settings['batch_size'] * batch_idx,
-                                   settings['batch_size'] * (batch_idx + 1))
-                x_batch = evalset['x_test'][batch_idxs, :]
-                activations_batch = get_activations_batch(parsed_model,
-                                                          x_batch)
-                np.savez_compressed(os.path.join(path, str(batch_idx)),
-                                    activations=activations_batch,
-                                    spiketrains=None)
 
         # ____________________________ NORMALIZE _____________________________ #
         # Normalize model
@@ -136,7 +115,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
             # ________________________ EVALUATE ______________________________ #
             # (Re-) evaluate ANN
             if settings['evaluateANN'] and not is_stop(queue):
-                print('\n' + "Evaluating normalized model...")
+                print("Evaluating normalized model...")
                 evaluate_keras(parsed_model, **evalset)
 
         # __________________________ SAVE PARSED _____________________________ #

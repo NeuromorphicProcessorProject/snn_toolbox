@@ -227,11 +227,16 @@ def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
         dataflow.batch_size = settings['num_to_test']
         score = model.evaluate_generator(dataflow, settings['num_to_test'])
         dataflow.batch_size = batch_size
+        print('\n' + "Test loss: {:.2f}".format(score[0]))
+        print("Test accuracy: {:.2%}\n".format(score[1]))
     else:
-        score = model.evaluate(x_test, y_test)
-    print('\n' + "Test loss: {:.2f}".format(score[0]))
-    print("Test accuracy: {:.2%}\n".format(score[1]))
-    return score
+        score = []
+        truth = np.argmax(y_test, axis=1)
+        preds = model.predict(x_test, settings['batch_size'], verbose=1)
+        score.append(np.mean(np.argmax(preds, axis=1) == truth))
+        score.append(get_top5score(truth, preds) / len(y_test))
+        print('\n' + "Top-1 accuracy: {:.2%}".format(score[0]))
+        print("Top-5 accuracy: {:.2%}\n".format(score[1]))
 
 
 def get_range(start=0.0, stop=1.0, num=5, method='linear'):
@@ -377,7 +382,7 @@ def normalize_parameters(model, **kwargs):
     from snntoolbox.io_utils.plotting import plot_max_activ_hist
     from snntoolbox.io_utils.common import confirm_overwrite
 
-    print("\nNormalizing parameters...")
+    print("Normalizing parameters...")
     newpath = kwargs['path'] if 'path' in kwargs else \
         os.path.join(settings['log_dir_of_current_run'], 'normalization')
 
@@ -388,7 +393,7 @@ def normalize_parameters(model, **kwargs):
     elif 'x_norm' in kwargs or 'dataflow' in kwargs:
         x_norm = None
         if 'x_norm' in kwargs:
-            x_norm = kwargs['x_norm']
+            x_norm = kwargs['x_norm'][::1000]
         elif 'dataflow' in kwargs:
             x_norm, y = kwargs['dataflow'].next()
         print("Using {} samples for normalization.".format(len(x_norm)))
@@ -468,6 +473,7 @@ def normalize_parameters(model, **kwargs):
     if not scale_facs_from_disk and confirm_overwrite(filepath):
         with open(filepath, 'w') as f:
             json.dump(scale_facs, f)
+    print()
 
 
 def get_scale_fac(activations, idx=0):
@@ -657,3 +663,33 @@ def extract_label(label):
     else:
         shape = ()
     return layer_num, name, shape
+
+
+def get_top5score(truth, output):
+    """Compute the top-5-score (not averaged).
+
+    Parameters
+    ----------
+
+    truth: np.array
+        Target classes.
+    output: np.array
+        Output of final classification layer. Shape: (batch_size, num_classes).
+
+    Returns
+    -------
+
+    score: float
+        The top-5-score (not averaged over samples).
+    """
+
+    score = 0
+    for t, o in zip(truth, output):
+        top5pred = []
+        for i in range(5):
+            top = np.argmax(o)
+            top5pred.append(top)
+            o[top] = 0
+        if t in top5pred:
+            score += 1
+    return score

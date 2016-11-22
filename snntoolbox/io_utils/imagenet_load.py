@@ -100,14 +100,16 @@ def generate_class_idx(class_map_path, save_path, filename=None):
         filename = "imagenet_class_map.json"
 
     file_path = join(save_path, filename)
-    class_map_list = np.loadtxt(class_map_path, dtype=str)
+
+    with open(class_map_path) as f:
+        class_map_list = [line.split() for line in f]
 
     cls_dict = {}
     for cls_item in class_map_list:
         cls_dict[str(int(cls_item[1])-1)] = [cls_item[0], cls_item[2]]
 
-    out_f = open(file_path, mode="w")
-    json.dump(cls_dict, out_f)
+    with open(file_path, mode="w") as f_out:
+        json.dump(cls_dict, f_out)
     print("[MESSAGE] The class mapping file is dumped at %s." % file_path)
 
 
@@ -153,8 +155,7 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
     """Load imagenet classification dataset.
 
     Values are normalized and saved as ``float32`` type. Class vectors are
-    converted to binary class matrices. Output can be flattened for use in
-    fully-connected networks.
+    converted to binary class matrices.
 
     Three compressed files ``path/filename_x_norm.npz``,
     ``path/filename_x_test.npz``, and ``path/filename_y_test.npz``.
@@ -209,7 +210,7 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
 
     test_dataflow = datagen.flow_from_directory(test_path,
                                                 target_size=(224, 224),
-                                                classes=classes,
+#                                                classes=classes,
                                                 batch_size=10000)
 
     x_test, y_test = test_dataflow.next()

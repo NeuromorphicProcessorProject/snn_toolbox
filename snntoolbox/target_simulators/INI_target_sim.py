@@ -102,7 +102,7 @@ class SNN:
 
         self.parsed_model = parsed_model
 
-        print('\n' + "Compiling spiking network...")
+        print("Compiling spiking network...")
 
         # Pass time variable to first layer
         input_time = theano.tensor.scalar('time')
@@ -194,7 +194,7 @@ class SNN:
 
         import numpy as np
         from ann_architectures.imagenet.utils import preprocess_input
-        from snntoolbox.core.util import get_activations_batch
+        from snntoolbox.core.util import get_activations_batch, get_top5score
         from snntoolbox.io_utils.plotting import output_graphs
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
         from snntoolbox.io_utils.plotting import plot_error_vs_time
@@ -391,8 +391,9 @@ class SNN:
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
                 print("Moving average accuracy: {:.2%}.\n".format(
                     top1acc_moving))
+                print("Moving top-5 accuracy: {:.2%}.\n".format(top5acc_moving))
 
-            if s['verbose'] > 1:
+            if s['verbose'] > 2:
                 print("Saving batch activations...")
                 activations_batch = get_activations_batch(self.parsed_model,
                                                           x_batch)
@@ -531,35 +532,3 @@ class SNN:
         """
 
         pass
-
-
-def get_top5score(truth, output):
-    """Compute the top-5-score (not averaged).
-
-    Parameters
-    ----------
-
-    truth: np.array
-        Target classes.
-    output: np.array
-        Output of final classification layer. Shape: (batch_size, num_classes).
-
-    Returns
-    -------
-
-    score: float
-        The top-5-score (not averaged over samples).
-    """
-
-    import numpy as np
-
-    score = 0
-    for t, o in zip(truth, output):
-        top5pred = []
-        for i in range(5):
-            top = np.argmax(o)
-            top5pred.append(top)
-            o[top] = 0
-        if t in top5pred:
-            score += 1
-    return score
