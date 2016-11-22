@@ -82,6 +82,11 @@ def get_imagenet(train_path, test_path, save_path, filename=None):
         filename = ''
     filepath = os.path.join(save_path, filename)
     np.savez_compressed(filepath + 'x_norm', x_train.astype('float32'))
-    np.savez_compressed(filepath + 'y_norm', y_train.astype('float32'))
     np.savez_compressed(filepath + 'x_test', x_test.astype('float32'))
     np.savez_compressed(filepath + 'y_test', y_test.astype('float32'))
+
+if __name__ == '__main__':
+    trainpath = '/home/rbodo/.snntoolbox/Datasets/imagenet/training'
+    testpath = '/home/rbodo/.snntoolbox/Datasets/imagenet/validation'
+    savepath = '/home/rbodo/.snntoolbox/Datasets/imagenet/inception'
+    get_imagenet(trainpath, testpath, savepath)

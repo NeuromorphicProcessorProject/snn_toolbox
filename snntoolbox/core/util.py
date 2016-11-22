@@ -106,13 +106,17 @@ def parse(input_model):
 
     import keras
 
-    model_lib = import_module('snntoolbox.model_libs.' +
-                              settings['model_lib'] + '_input_lib')
     # Parse input model to our common format, extracting all necessary
     # information about layers.
+    model_lib = import_module('snntoolbox.model_libs.' +
+                              settings['model_lib'] + '_input_lib')
     layers = model_lib.extract(input_model)
+
     # Create new Keras model
-    parsed_model = keras.models.Sequential()
+    img_input = keras.layers.Input(batch_shape=layers[0]['batch_input_shape'])
+    parsed_layers = {'input_1': img_input}
+    x = img_input
+    print("Building parsed model...")
     for layer in layers:
         # Replace 'parameters' key with Keras key 'weights'
         if 'parameters' in layer:
@@ -126,14 +130,24 @@ def parse(input_model):
             elif layer['activation'] == 'binary_tanh':
                 layer['activation'] = binary_tanh
         # Add layer
+        print(layer['name'])
         parsed_layer = getattr(keras.layers, layer_type)
-        parsed_model.add(parsed_layer(**layer))
-        if 'filter_flip' in layer:
+        if filter_flip:
             parsed_layer.filter_flip = filter_flip
+        if layer_type == 'Merge':
+            inbound = [parsed_layers[inb] for inb in layer.pop('inbound')]
+            x = keras.layers.merge(inbound, layer['mode'], layer['concat_axis'],
+                                   name=layer['name'])
+        else:
+            inbound = layer.pop('inbound')[0]
+            x = parsed_layer(**layer)(parsed_layers[inbound])
+        parsed_layers[layer['name']] = x
+    print("Compiling parsed model...")
+    parsed_model = keras.models.Model(img_input, x)
     # Optimizer and loss should not matter at this stage, but it would be
     # cleaner to set them to the actial values of the input model.
-    parsed_model.compile('sgd', 'categorical_crossentropy',
-                         metrics=['accuracy'])
+    parsed_model.compile('sgd', 'categorical_crossentropy', ['accuracy'])
+
     return parsed_model
 
 

@@ -94,7 +94,9 @@ def extract(model):
         - strides (list): The stepsize in each dimension during pooling.
     """
 
+    name_map = {}
     layers = []
+    i = 0
     for (layer_num, layer) in enumerate(model.layers):
         layer_type = layer.__class__.__name__
 
@@ -102,13 +104,16 @@ def extract(model):
         if 'BatchNormalization' in layer_type:
             bn_parameters = layer.get_weights()  # gamma, beta, mean, var
             for k in range(1, 3):
-                prev_layer = layers[-k]
-                if 'parameters' in prev_layer:
+                prev_layer = get_inbound_layers(layer)[0]
+                if len(prev_layer.get_weights()) > 0:
                     break
-            parameters = prev_layer['parameters']  # W, b of next layer
+            assert prev_layer, "Could not find layer with parameters " \
+                               "preceeding BatchNorm layer."
+            prev_layer_dict = layers[name_map[prev_layer.name]]
+            parameters = prev_layer_dict['parameters']  # W, b of previous layer
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of previous {}.".format(prev_layer['name']))
-            prev_layer['parameters'] = absorb_bn(
+                  "parameters of previous {}.".format(prev_layer_dict['name']))
+            prev_layer_dict['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[0],
                 bn_parameters[1], bn_parameters[2], bn_parameters[3],
                 layer.epsilon)
@@ -156,10 +161,41 @@ def extract(model):
             attributes['activation'] = activation
             print("Detected activation {}".format(activation))
 
+        if len(layers) == 0:
+            attributes['inbound'] = ['input_1']
+        else:
+            inbound = get_inbound_layers(layer)
+            for ib in range(len(inbound)):
+                if 'batchnormalization' in inbound[ib].name:
+                    inbound[ib] = get_inbound_layers(inbound[ib])[0]
+            inb_idxs = [name_map[inb.name] for inb in inbound]
+            attributes['inbound'] = [layers[idx]['name'] for idx in inb_idxs]
         layers.append(attributes)
+        # Map layer index to layer name. Needed for inception modules.
+        name_map[layer.name] = i
+        i += 1
     print()
 
     return layers
+
+
+def get_inbound_layers(layer):
+    """Return inbound layer.
+
+    Parameters
+    ----------
+
+    layer: Keras.layers
+        A Keras layer.
+
+    Returns
+    -------
+
+    : list[Keras.layers]
+        List of inbound layers.
+    """
+
+    return layer.inbound_nodes[0].inbound_layers
 
 
 def load_ann(path=None, filename=None):
