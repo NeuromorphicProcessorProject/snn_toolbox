@@ -96,12 +96,12 @@ def extract(model):
 
     name_map = {}
     layers = []
-    i = 0
+    idx = 0
     for (layer_num, layer) in enumerate(model.layers):
         layer_type = layer.__class__.__name__
 
         # Absorb BatchNormalization layer into parameters of previous layer
-        if 'BatchNormalization' in layer_type:
+        if layer_type == 'BatchNormalization':
             bn_parameters = layer.get_weights()  # gamma, beta, mean, var
             for k in range(1, 3):
                 prev_layer = get_inbound_layers(layer)[0]
@@ -109,7 +109,7 @@ def extract(model):
                     break
             assert prev_layer, "Could not find layer with parameters " \
                                "preceeding BatchNorm layer."
-            prev_layer_dict = layers[name_map[prev_layer.name]]
+            prev_layer_dict = layers[name_map[str(id(prev_layer))]]
             parameters = prev_layer_dict['parameters']  # W, b of previous layer
             print("Absorbing batch-normalization parameters into " +
                   "parameters of previous {}.".format(prev_layer_dict['name']))
@@ -166,14 +166,17 @@ def extract(model):
         else:
             inbound = get_inbound_layers(layer)
             for ib in range(len(inbound)):
-                if 'batchnormalization' in inbound[ib].name:
+                if inbound[ib].__class__.__name__ in ['BatchNormalization',
+                                                      'Activation']:
                     inbound[ib] = get_inbound_layers(inbound[ib])[0]
-            inb_idxs = [name_map[inb.name] for inb in inbound]
+            inb_idxs = [name_map[str(id(inb))] for inb in inbound]
             attributes['inbound'] = [layers[idx]['name'] for idx in inb_idxs]
+
+        # Append layer
         layers.append(attributes)
-        # Map layer index to layer name. Needed for inception modules.
-        name_map[layer.name] = i
-        i += 1
+        # Map layer index to layer id. Needed for inception modules.
+        name_map[str(id(layer))] = idx
+        idx += 1
     print()
 
     return layers

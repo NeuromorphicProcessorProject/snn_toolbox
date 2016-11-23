@@ -362,8 +362,8 @@ pyNN_settings = {'v_reset': 0,
 settings.update(pyNN_settings)
 
 # Layers that can be implemented by our spiking neuron simulators
-spiking_layers = {'Dense', 'Convolution2D', 'MaxPooling2D', 'AveragePooling2D',
-                  'Flatten', 'Merge'}
+spiking_layers = ['Dense', 'Convolution2D', 'MaxPooling2D', 'AveragePooling2D',
+                  'Flatten', 'Merge']
 
 
 def file_not_found_msg(filename, path=None):
@@ -462,8 +462,10 @@ def update_setup(s):
                                      "contained in a json file.")
     elif settings['model_lib'] == 'lasagne':
         h5_file = settings['filename_ann'] + '.h5'
-        assert os.path.isfile(os.path.join(settings['path_wd'], h5_file)), \
-            file_not_found_msg(h5_file)
+        pkl_file = settings['filename_ann'] + '.pkl'
+        assert os.path.isfile(os.path.join(settings['path_wd'], h5_file)) or \
+            os.path.isfile(os.path.join(settings['path_wd'], pkl_file)), \
+            file_not_found_msg('.h5 or .pkl')
         py_file = settings['filename_ann'] + '.py'
         assert os.path.isfile(os.path.join(settings['path_wd'], py_file)), \
             file_not_found_msg(py_file)

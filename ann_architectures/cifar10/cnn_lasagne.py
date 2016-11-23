@@ -32,7 +32,6 @@ def build_network():
     # Prepare Theano variables for inputs and targets
     input_var = t.tensor4('inputs')
     target = t.matrix('targets')
-    lr = t.scalar('lr', dtype=theano.config.floatX)
 
     cnn = {'input': InputLayer(shape=(None, 3, 32, 32), input_var=input_var)}
     cnn['conv1'] = ConvLayer(cnn['input'],
@@ -80,29 +79,13 @@ def build_network():
                              ignore_border=False)
     cnn['output'] = FlattenLayer(cnn['pool3'])
 
-    train_output = lasagne.layers.get_output(cnn['output'],
-                                             deterministic=False)
-
-    # squared hinge loss
-    loss = t.mean(t.sqr(t.maximum(0., 1. - target * train_output)))
-
-    params = lasagne.layers.get_all_params(cnn['output'], trainable=True)
-    updates = lasagne.updates.adam(loss_or_grads=loss, params=params,
-                                   learning_rate=lr)
-
     test_output = lasagne.layers.get_output(cnn['output'], deterministic=True)
     test_loss = t.mean(t.sqr(t.maximum(0., 1. - target * test_output)))
     test_err = t.mean(t.neq(t.argmax(test_output, axis=1),
                             t.argmax(target, axis=1)),
                       dtype=theano.config.floatX)
 
-    # Compile a function performing a training step on a mini-batch
-    # (by giving the updates dictionary)
-    # and returning the corresponding training loss:
-    train_fn = theano.function([input_var, target, lr], loss, updates=updates,
-                               on_unused_input='ignore')
-
     # Compile a second function computing the validation loss and accuracy:
     val_fn = theano.function([input_var, target], [test_loss, test_err])
 
-    return cnn['output'], train_fn, val_fn
+    return {'model': cnn['output'], 'val_fn': val_fn}

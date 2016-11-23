@@ -21,7 +21,8 @@ from keras.preprocessing.image import ImageDataGenerator
 standard_library.install_aliases()
 
 
-def get_imagenet(train_path, test_path, save_path, filename=None):
+def get_imagenet(train_path, test_path, save_path, filename=None,
+                 class_idx_path=None):
     """Load imagenet classification dataset.
 
     Values are normalized and saved as ``float32`` type. Class vectors are
@@ -36,6 +37,7 @@ def get_imagenet(train_path, test_path, save_path, filename=None):
     Parameters
     ----------
 
+    class_idx_path :
     train_path : str
         The path of training data
     test_path : str
@@ -60,17 +62,25 @@ def get_imagenet(train_path, test_path, save_path, filename=None):
     num_test_samples = 5000
 
     datagen = ImageDataGenerator()
-    train_dataflow = datagen.flow_from_directory(train_path,
-                                                 target_size=target_size,
-                                                 batch_size=num_norm_samples)
-    x_train, y_train = train_dataflow.next()
+    # train_dataflow = datagen.flow_from_directory(train_path,
+    #                                              target_size=target_size,
+    #                                              batch_size=num_norm_samples)
+    # x_train, y_train = train_dataflow.next()
+    #
+    # x_train /= 255.
+    # x_train -= 0.5
+    # x_train *= 2.
 
-    x_train /= 255.
-    x_train -= 0.5
-    x_train *= 2.
+    if class_idx_path:
+        import json
+        class_idx = json.load(open(class_idx_path, "r"))
+        classes = [class_idx[str(idx)][0] for idx in range(len(class_idx))]
+    else:
+        classes = None
 
     test_dataflow = datagen.flow_from_directory(test_path,
                                                 target_size=target_size,
+                                                classes=classes,
                                                 batch_size=num_test_samples)
     x_test, y_test = test_dataflow.next()
 
@@ -81,12 +91,14 @@ def get_imagenet(train_path, test_path, save_path, filename=None):
     if filename is None:
         filename = ''
     filepath = os.path.join(save_path, filename)
-    np.savez_compressed(filepath + 'x_norm', x_train.astype('float32'))
+    # np.savez_compressed(filepath + 'x_norm', x_train.astype('float32'))
     np.savez_compressed(filepath + 'x_test', x_test.astype('float32'))
     np.savez_compressed(filepath + 'y_test', y_test.astype('float32'))
 
 if __name__ == '__main__':
-    trainpath = '/home/rbodo/.snntoolbox/Datasets/imagenet/training'
-    testpath = '/home/rbodo/.snntoolbox/Datasets/imagenet/validation'
-    savepath = '/home/rbodo/.snntoolbox/Datasets/imagenet/inception'
-    get_imagenet(trainpath, testpath, savepath)
+    path = '/home/rbodo/.snntoolbox/Datasets/imagenet'
+    trainpath = path + '/training'
+    testpath = path + '/validation'
+    savepath = path + '/GoogLeNet'
+    classidxpath = savepath + '/imagenet_class_index.json'
+    get_imagenet(trainpath, testpath, savepath, class_idx_path=classidxpath)

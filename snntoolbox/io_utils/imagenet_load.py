@@ -17,6 +17,7 @@ import random
 import shutil
 from os.path import join
 from typing import Optional
+from collections import OrderedDict
 
 import numpy as np
 from future import standard_library
@@ -104,7 +105,7 @@ def generate_class_idx(class_map_path, save_path, filename=None):
     with open(class_map_path) as f:
         class_map_list = [line.split() for line in f]
 
-    cls_dict = {}
+    cls_dict = OrderedDict()
     for cls_item in class_map_list:
         cls_dict[str(int(cls_item[1])-1)] = [cls_item[0], cls_item[2]]
 
@@ -210,7 +211,7 @@ def get_imagenet(train_path, test_path, save_path, class_idx_path,
 
     test_dataflow = datagen.flow_from_directory(test_path,
                                                 target_size=(224, 224),
-#                                                classes=classes,
+                                                classes=classes,
                                                 batch_size=10000)
 
     x_test, y_test = test_dataflow.next()

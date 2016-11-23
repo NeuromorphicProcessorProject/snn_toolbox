@@ -19,7 +19,7 @@ Created on Thu Jun  9 08:11:09 2016
 """
 
 import os
-from typing import Optional
+from typing import Optional, Union
 
 import lasagne
 import numpy as np
@@ -37,7 +37,8 @@ layer_dict = {'DenseLayer': 'Dense',
               'DropoutLayer': 'Dropout',
               'FlattenLayer': 'Flatten',
               'BatchNormLayer': 'BatchNormalization',
-              'NonlinearityLayer': 'Activation'}
+              'NonlinearityLayer': 'Activation',
+              'ConcatLayer': 'Merge'}
 
 
 activation_dict = {'rectify': 'relu',
@@ -120,9 +121,10 @@ def extract(model):
     lasagne_layers = lasagne.layers.get_all_layers(model)
     all_parameters = lasagne.layers.get_all_param_values(model)
 
+    name_map = {}
     layers = []
-    parameters_idx = 0
     idx = 0
+    parameters_idx = 0
     for (layer_num, layer) in enumerate(lasagne_layers):
 
         # Convert Lasagne layer names to our 'standard' names.
@@ -134,25 +136,51 @@ def extract(model):
         attributes = {'layer_type': layer_type}
 
         if layer_type == 'BatchNormalization':
-            bn_parameters = all_parameters[parameters_idx: parameters_idx + 4]
+            inc = len(layer.params)
+            bn_parameters = all_parameters[parameters_idx: parameters_idx + inc]
+            parameters_idx += inc
             for k in range(1, 3):
-                prev_layer = layers[-k]
-                if 'parameters' in prev_layer:
+                prev_layer = get_inbound_layers(layer)[0]
+                if len(prev_layer.params) > 0:
                     break
-            parameters = prev_layer['parameters']
+            assert prev_layer, "Could not find layer with parameters " \
+                               "preceeding BatchNorm layer."
+            prev_layer_dict = layers[name_map[str(id(prev_layer))]]
+            parameters = prev_layer_dict['parameters']  # W, b of previous layer
+            if len(parameters) == 1:  # No bias
+                parameters.append(np.zeros_like(bn_parameters[0]))
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of previous {}.".format(prev_layer['name']))
-            assert isinstance(layer, object)
-            prev_layer['parameters'] = absorb_bn(
+                  "parameters of previous {}.".format(prev_layer_dict['name']))
+            prev_layer_dict['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[1],
                 bn_parameters[0], bn_parameters[2], bn_parameters[3])
-            parameters_idx += 4
+
+        if name == 'GlobalPoolLayer':
+            print("Replacing 'GlobalPoolLayer' by 'AveragePooling' plus "
+                  "'Flatten'.")
+            pool_size = [layer.input_shape[-2], layer.input_shape[-1]]
+            shape_string = '_{}x{}x{}'.format(layer.output_shape[1], 1, 1)
+            num_str = str(idx) if idx > 9 else '0' + str(idx)
+            layers.append(
+                {'layer_type': 'AveragePooling2D',
+                 'name': num_str + 'AveragePooling2D' + shape_string,
+                 'input_shape': layer.input_shape, 'pool_size': pool_size,
+                 'inbound': get_inbound_names(layers, layer, name_map)})
+            name_map[str(id(layer))] = idx
+            idx += 1
+            num_str = str(idx) if idx > 9 else '0' + str(idx)
+            shape_string = str(np.prod(layer.output_shape[1:]))
+            layers.append({'name': num_str + 'Flatten_' + shape_string,
+                           'layer_type': 'Flatten',
+                           'inbound': [layers[-1]['name']]})
+            name_map[str(id(layer))] = idx
+            idx += 1
 
         if layer_type not in spiking_layers:
             print("Skipping layer {}".format(layer_type))
             continue
 
-        print("Parsing layer {}".format(layer_type))
+        print("Parsing layer {}.".format(layer_type))
 
         if idx == 0:
             batch_input_shape = list(layer.input_shape)
@@ -164,12 +192,13 @@ def extract(model):
         prev_layer_output_shape = lasagne_layers[layer_num-1].output_shape
         if len(output_shape) < len(prev_layer_output_shape) and \
                 layer_type != 'Flatten':
-            print("Inserting layer Flatten")
-            # Append layer label
+            print("Inserting layer Flatten.")
             num_str = str(idx) if idx > 9 else '0' + str(idx)
             shape_string = str(np.prod(output_shape[1:]))
             layers.append({'name': num_str + 'Flatten_' + shape_string,
-                           'layer_type': 'Flatten'})
+                           'layer_type': 'Flatten', 'inbound':
+                               get_inbound_names(layers, layer, name_map)})
+            name_map[str(id(layer))] = idx
             idx += 1
 
         # Append layer label
@@ -182,14 +211,15 @@ def extract(model):
         attributes['name'] = num_str + layer_type + shape_string
 
         if layer_type in {'Dense', 'Convolution2D'}:
+            inc = len(layer.params)  # For weights and maybe biases
             attributes['parameters'] = all_parameters[parameters_idx:
-                                                      parameters_idx + 2]
+                                                      parameters_idx + inc]
+            parameters_idx += inc
             if settings['binarize_weights']:
                 print("Binarizing weights...")
                 attributes['parameters'] = \
                     (binarize(attributes['parameters'][0]),
                      attributes['parameters'][1])
-            parameters_idx += 2  # For weights and biases
             # Get type of nonlinearity if the activation is directly in the
             # Dense / Conv layer:
             activation = activation_dict.get(layer.nonlinearity.__name__,
@@ -201,7 +231,7 @@ def extract(model):
                     activation = activation_dict.get(nonlinearity, 'linear')
                     break
             attributes['activation'] = activation
-            print("Detected activation {}".format(activation))
+            print("Detected activation {}.".format(activation))
             if layer_type == 'Convolution2D':
                 border_mode = border_mode_string(layer.pad, layer.filter_size)
                 attributes.update({'input_shape': layer.input_shape,
@@ -220,11 +250,61 @@ def extract(model):
                                'pool_size': layer.pool_size,
                                'strides': layer.stride,
                                'border_mode': border_mode})
+
+        if layer_type == 'Merge':
+            attributes.update({'mode': 'concat', 'concat_axis': layer.axis})
+
+        attributes['inbound'] = get_inbound_names(layers, layer, name_map)
+
         # Append layer
         layers.append(attributes)
+        # Map layer index to layer id. Needed for inception modules.
+        name_map[str(id(layer))] = idx
         idx += 1
+    print()
 
     return layers
+
+
+def get_inbound_names(layers, layer, name_map):
+    """Get names of inbound layers.
+
+    """
+
+    if len(layers) == 0:
+        return ['input_1']
+    else:
+        inbound = get_inbound_layers(layer)
+        for ib in range(len(inbound)):
+            ii = 0
+            while ii < 3 and inbound[ib].__class__.__name__ in \
+                    ['BatchNormLayer', 'NonlinearityLayer']:
+                inbound[ib] = get_inbound_layers(inbound[ib])[0]
+                ii += 1
+        inb_idxs = [name_map[str(id(inb))] for inb in inbound]
+        return [layers[ii]['name'] for ii in inb_idxs]
+
+
+def get_inbound_layers(layer):
+    """Return inbound layers.
+
+    Parameters
+    ----------
+
+    layer: Union[lasagne.layers.Layer, lasagne.layers.MergeLayer]
+        A Lasagne layer.
+
+    Returns
+    -------
+
+    : list[lasagne.layers.Layer]
+        List of inbound layers.
+    """
+
+    if layer.__class__.__name__ == 'ConcatLayer':
+        return layer.input_layers
+    else:
+        return [layer.input_layer]
 
 
 def hard_sigmoid(x):
@@ -352,13 +432,21 @@ def model_from_py(path=None, filename=None):
         path = settings['path']
     if filename is None:
         filename = settings['filename']
+    filepath = os.path.join(path, filename)
 
     mod = import_script(path, filename)
-    model, train_fn, val_fn = mod.build_network()
-    params = load_parameters(os.path.join(path, filename + '.h5'))
-    lasagne.layers.set_all_param_values(model, params)
+    model = mod.build_network()
+    if os.path.isfile(filepath + '.pkl'):
+        print("Loading parameters from .pkl")
+        import pickle
+        params = pickle.load(open(filepath + '.pkl', 'rb'),
+                             encoding='latin1')['param values']
+    else:
+        print("Loading parameters from .h5")
+        params = load_parameters(filepath + '.h5')
+    lasagne.layers.set_all_param_values(model['model'], params)
 
-    return {'model': model, 'val_fn': val_fn}
+    return {'model': model['model'], 'val_fn': model['val_fn']}
 
 
 def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
