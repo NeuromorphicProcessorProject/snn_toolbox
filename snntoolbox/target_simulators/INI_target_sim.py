@@ -14,14 +14,16 @@ Created on Thu May 19 14:59:30 2016
 """
 
 # For compatibility with python2
-from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
-from future import standard_library
+from __future__ import print_function, unicode_literals
 
 import os
-import theano
-import keras
 from textwrap import dedent
+
+import keras
+import theano
+from future import standard_library
+
 from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
 
@@ -106,10 +108,9 @@ class SNN:
 
         # Pass time variable to first layer
         input_time = theano.tensor.scalar('time')
-        time_var = input_time
-        img_input = keras.layers.Input(
+        input_images = keras.layers.Input(
             batch_shape=parsed_model.layers[0].batch_input_shape)
-        spiking_layers = {'input_1': img_input}
+        spiking_layers = {'input_1': input_images}
 
         # Iterate over layers to create spiking neurons and connections.
         for layer in parsed_model.layers:
@@ -124,19 +125,24 @@ class SNN:
                 spike_layer.from_config(layer.get_config())(inbound)
 
         # Compile
-        outp = spiking_layers[parsed_model.layers[-1].name]
-        self.snn = keras.models.Model(img_input, outp)
-        self.snn.set_weights(parsed_model.get_weights())
-        for layer in self.snn.layers:
-            if 'Input' in layer.__class__.__name__:
-                continue
-            self.sim.init_neurons(layer, v_thresh=settings['v_thresh'],
-                                  tau_refrac=settings['tau_refrac'],
-                                  time_var=time_var)
-            time_var = None
+        output_vars = [spiking_layers[parsed_model.layers[-1].name], input_time]
+        if settings['verbose'] > 1:
+            total_spike_count = self.snn.layers[0].total_spike_count
+            for layer in self.snn.layers[1:]:
+                if layer.total_spike_count:
+                    total_spike_count += layer.total_spike_count
+            output_vars.append(total_spike_count)
+        if settings['online_normalization']:
+            thresh = self.snn.layers[lidx].v_thresh
+            max_spikerate = self.snn.layers[lidx].max_spikerate
+            spiketrain = self.snn.layers[lidx].spiketrain
+            output_vars += [thresh, max_spikerate, spiketrain]
 
         print("Compiling spiking model...\n")
-        self.compile_snn(input_time)
+        self.snn = keras.models.Model([input_images, input_time], output_vars)
+        self.snn.compile('sgd', 'categorical_crossentropy',
+                         metrics=['accuracy'])
+        self.snn.set_weights(parsed_model.get_weights())
 
     def compile_snn(self, input_time):
         """Set the ``snn`` and ``get_output`` attributes of this class."""
@@ -344,10 +350,10 @@ class SNN:
                     if settings['verbose'] > 1:
                         out_spikes, ts, total_spike_count, thresh, \
                             max_spikerate, spiketrain = \
-                            self.get_output(inp, float(t))
+                            self.snn.predict_on_batch([inp, float(t)])
                     else:
                         out_spikes, ts, thresh, max_spikerate, spiketrain = \
-                            self.get_output(inp, float(t))
+                            self.snn.predict_on_batch([inp, float(t)])
                     print('Time: {:.2f}, thresh: {:.2f},'
                           ' max_spikerate: {:.2f}'.format(
                             float(np.array(ts)),
@@ -356,9 +362,10 @@ class SNN:
                 else:
                     if settings['verbose'] > 1:
                         out_spikes, ts, total_spike_count = \
-                            self.get_output(inp, float(t))
+                            self.snn.predict_on_batch([inp, float(t)])
                     else:
-                        out_spikes, ts = self.get_output(inp, float(t))
+                        out_spikes, ts = self.snn.predict_on_batch([inp,
+                                                                    float(t)])
                 # Count number of spikes in output layer during whole
                 # simulation.
                 output += out_spikes.astype('int32')

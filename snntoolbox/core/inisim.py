@@ -25,6 +25,7 @@ from keras import backend as k
 from keras.layers import Convolution2D, Merge
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D
 import keras.activations as k_activ
+from keras.engine.topology import to_list
 from snntoolbox.config import settings
 from theano.tensor.shared_randomstreams import RandomStreams
 from theano.tensor.signal import pool
@@ -52,64 +53,58 @@ def shared_zeros(shape, dtype=theano.config.floatX, name=None):
     return shared_x(np.zeros(shape), dtype=dtype, name=name)
 
 
-def on_gpu():
-    """Check if running on GPU board."""
-
-    return theano.config.device[:3] == 'gpu'
-
-
-if on_gpu():
-    from theano.sandbox.cuda import dnn
-
-
-def update_neurons(self, time, updates):
+def update_neurons(self, x):
     """Update neurons according to activation function."""
 
     if hasattr(self, 'activation_str'):
         if self.activation_str == 'softmax':
-            output_spikes = softmax_activation(self, time, updates)
+            output_spikes = softmax_activation(self, x)
         elif self.activation_str == 'binary_sigmoid':
-            output_spikes = binary_sigmoid_activation(self, time, updates)
+            output_spikes = binary_sigmoid_activation(self, x)
         elif self.activation_str == 'binary_tanh':
-            output_spikes = binary_tanh_activation(self, time, updates)
+            output_spikes = binary_tanh_activation(self, x)
         else:
-            output_spikes = linear_activation(self, time, updates)
+            output_spikes = linear_activation(self, x)
     else:
-        output_spikes = linear_activation(self, time, updates)
+        output_spikes = linear_activation(self, x)
 
     # Store refractory
     if settings['tau_refrac'] > 0:
         new_refractory = t.set_subtensor(
-            self.refrac_until[output_spikes.nonzero()], time + self.tau_refrac)
-        updates.append((self.refrac_until, new_refractory))
+            self.refrac_until[output_spikes.nonzero()], x[1] + self.tau_refrac)
+        add_updates(self, (self.refrac_until, new_refractory), x)
 
     if settings['verbose'] > 1 or settings['online_normalization']:
-        updates.append((self.spikecounts, self.spikecounts + output_spikes))
+        add_updates(self, (self.spikecounts, self.spikecounts + output_spikes),
+                    x)
 
     if settings['verbose'] > 1:
-        updates.append((self.spiketrain, output_spikes * (time+settings['dt'])))
+        add_updates(
+            self, (self.spiketrain, output_spikes * (x[1] + settings['dt'])), x)
         reduction_axes = tuple(np.arange(len(self.output_shape))[1:])
-        updates.append((self.total_spike_count, t.sum(self.spikecounts,
-                                                      reduction_axes)))
+        add_updates(self, (self.total_spike_count,
+                           t.sum(self.spikecounts, reduction_axes)), x)
 
-    t_inv = settings['dt'] / (time + settings['dt'])
+    t_inv = settings['dt'] / (x[1] + settings['dt'])
     if settings['online_normalization']:
-        updates.append((self.max_spikerate, t.max(self.spikecounts) * t_inv))
+        add_updates(self, (self.max_spikerate, t.max(self.spikecounts) * t_inv),
+                    x)
 
     if hasattr(self, 'spikerate'):
         if settings['maxpool_type'] == 'avg_max':
-            updates.append((self.spikerate, self.spikerate +
-                            (output_spikes - self.spikerate) * t_inv))
+            add_updates(self, (self.spikerate, self.spikerate +
+                               (output_spikes - self.spikerate) * t_inv), x)
         elif settings['maxpool_type'] == 'fir_max':
-            updates.append((self.spikerate,
-                            self.spikerate + output_spikes * t_inv))
-            # updates.append((self.spikerate,
-            #                 (self.spikerate * time / settings['dt'] +
-            #                  output_spikes) * t_inv))
-            # updates.append((self.spikerate, self.spikecounts * t_inv))
+            add_updates(self, (self.spikerate,
+                               self.spikerate + output_spikes * t_inv), x)
+            # add_updates(self, (self.spikerate,
+            #                  (self.spikerate * x[1] / settings['dt'] +
+            #                   output_spikes) * t_inv), x)
+            # add_updates(self, (self.spikerate, self.spikecounts * t_inv),
+            #                  x)
         elif settings['maxpool_type'] == 'exp_max':
-            updates.append((self.spikerate,
-                            self.spikerate + output_spikes / 2. ** (1 / t_inv)))
+            add_updates(self, (self.spikerate, self.spikerate +
+                               output_spikes / 2. ** (1 / t_inv)), x)
     return output_spikes
 
 
@@ -126,12 +121,12 @@ def update_payload(self, residuals, idxs):
     return payloads, payloads_sum
 
 
-def binary_sigmoid_activation(self, time, updates):
+def binary_sigmoid_activation(self, x):
     """Binary sigmoid activation."""
 
     # Destroy impulse if in refractory period
     masked_imp = self.impulse if settings['tau_refrac'] == 0 else \
-        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > time)], 0.)
+        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > x[1])], 0.)
 
     # Add impulse
     new_mem = self.mem + masked_imp
@@ -144,17 +139,17 @@ def binary_sigmoid_activation(self, time, updates):
     # Reset neurons
     new_and_reset_mem = t.set_subtensor(new_mem[spike_idxs], 0.)
 
-    updates.append((self.mem, new_and_reset_mem))
+    add_updates(self, (self.mem, new_and_reset_mem), x)
 
     return output_spikes
 
 
-def binary_tanh_activation(self, time, updates):
+def binary_tanh_activation(self, x):
     """Binary tanh activation."""
 
     # Destroy impulse if in refractory period
     masked_imp = self.impulse if settings['tau_refrac'] == 0 else \
-        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > time)], 0.)
+        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > x[1])], 0.)
 
     # Add impulse
     new_mem = self.mem + masked_imp
@@ -169,17 +164,17 @@ def binary_tanh_activation(self, time, updates):
     # Reset neurons
     new_and_reset_mem = t.set_subtensor(new_mem[output_spikes.nonzero()], 0.)
 
-    updates.append((self.mem, new_and_reset_mem))
+    add_updates(self, (self.mem, new_and_reset_mem), x)
 
     return signed_spikes
 
 
-def linear_activation(self, time, updates):
+def linear_activation(self, x):
     """Linear activation."""
 
     # Destroy impulse if in refractory period
     masked_imp = self.impulse if settings['tau_refrac'] == 0 else \
-        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > time)], 0.)
+        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > x[1])], 0.)
 
     # Add impulse
     new_mem = self.mem + masked_imp
@@ -198,23 +193,23 @@ def linear_activation(self, time, updates):
     else:  # settings['reset'] == 'Reset to zero':
         new_and_reset_mem = t.set_subtensor(new_mem[spike_idxs], 0.)
 
-    updates.append((self.mem, new_and_reset_mem))
+    add_updates(self, (self.mem, new_and_reset_mem), x)
 
     if settings['payloads']:
         residuals = t.inc_subtensor(new_mem[spike_idxs], -self.v_thresh)
         payloads, payloads_sum = update_payload(self, residuals, spike_idxs)
-        updates.append((self.payloads, payloads))
-        updates.append((self.payloads_sum, payloads_sum))
+        add_updates(self, (self.payloads, payloads), x)
+        add_updates(self, (self.payloads_sum, payloads_sum), x)
 
     return output_spikes
 
 
-def softmax_activation(self, time, updates):
+def softmax_activation(self, x):
     """Softmax activation."""
 
     # Destroy impulse if in refractory period
     masked_imp = self.impulse if settings['tau_refrac'] == 0 else \
-        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > time)], 0.)
+        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > x[1])], 0.)
 
     # Add impulse
     new_mem = self.mem + masked_imp
@@ -230,7 +225,7 @@ def softmax_activation(self, time, updates):
     output_spikes = t.set_subtensor(
         output_spikes[t.eq(spiking_neurons, 0).nonzero()], 0.)
     new_and_reset_mem = t.set_subtensor(new_mem[spiking_neurons.nonzero()], 0.)
-    updates.append((self.mem, new_and_reset_mem))
+    add_updates(self, (self.mem, new_and_reset_mem), x)
 
     return output_spikes
 
@@ -259,31 +254,6 @@ def reset(self):
         self.spikerate.set_value(float_x(np.zeros(self.output_shape)))
 
 
-def get_input(self):
-    """Get input."""
-
-    if self.inbound_nodes[0].inbound_layers:
-        if 'input' in self.inbound_nodes[0].inbound_layers[0].name:
-            previous_output = self.input
-        else:
-            previous_output = \
-                self.inbound_nodes[0].inbound_layers[0].get_output()
-    else:
-        previous_output = k.placeholder(shape=self.input_shape)
-    return previous_output, get_time(self), get_updates(self)
-
-
-def get_time(self):
-    """Get time."""
-
-    if hasattr(self, 'time_var'):
-        return self.time_var
-    elif self.inbound_nodes[0].inbound_layers:
-        return get_time(self.inbound_nodes[0].inbound_layers[0])
-    else:
-        raise Exception("Layer is not connected and is not an input layer.")
-
-
 def get_updates(self):
     """Get updates."""
 
@@ -293,45 +263,27 @@ def get_updates(self):
         return []
 
 
-def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, time_var=None):
-    """Init neurons."""
+def init_neurons(self, v_thresh=1.0, tau_refrac=0.0):
+    """Init layer neurons."""
 
-    # The neurons in the spiking layer cannot be initialized until the layer
-    # has been initialized and connected to the network. Otherwise
-    # 'output_shape' is not known (obtained from previous layer), and
-    # the 'input' attribute will not be overwritten by the layer's __init__.
-    init_layer(self, self, v_thresh, tau_refrac)
-    if time_var is not None:
-        input_layer = self.inbound_nodes[0].inbound_layers[0]
-        input_layer.time_var = time_var
-        init_layer(self, input_layer, v_thresh, tau_refrac)
-
-
-def init_layer(self, layer, v_thresh, tau_refrac):
-    """Init layer."""
-
-    layer.v_thresh = shared_x(v_thresh, name='v_thresh')
-    layer.tau_refrac = tau_refrac
-    layer.mem = shared_zeros(self.output_shape)
-    layer.updates = []
-    layer.layer_type = layer.__class__.__name__
+    self.v_thresh = shared_x(v_thresh, name='v_thresh')
+    self.tau_refrac = tau_refrac
+    self.mem = shared_zeros(self.output_shape)
+    self.layer_type = self.__class__.__name__
     # To save memory and computations, allocate only where needed:
-    if len(layer.get_weights()) > 0:
-        layer.W = k.variable(layer.get_weights()[0])
-        layer.b = k.variable(layer.get_weights()[1])
     if settings['tau_refrac'] > 0:
-        layer.refrac_until = shared_zeros(self.output_shape)
+        self.refrac_until = shared_zeros(self.output_shape)
     if settings['verbose'] > 1:
-        layer.spiketrain = shared_zeros(self.output_shape)
-        layer.total_spike_count = shared_zeros(settings['batch_size'])
+        self.spiketrain = shared_zeros(self.output_shape)
+        self.total_spike_count = shared_zeros(settings['batch_size'])
     if settings['verbose'] > 1 or settings['online_normalization']:
-        layer.spikecounts = shared_zeros(self.output_shape)
+        self.spikecounts = shared_zeros(self.output_shape)
     if settings['payloads']:
-        layer.payloads = shared_zeros(self.output_shape)
-        layer.payloads_sum = shared_zeros(self.output_shape)
+        self.payloads = shared_zeros(self.output_shape)
+        self.payloads_sum = shared_zeros(self.output_shape)
     if settings['online_normalization']:
-        layer.max_spikerate = theano.shared(np.asarray([0.0], 'float32'))
-    if layer.layer_type == "SpikeMaxPooling2D":
+        self.max_spikerate = theano.shared(np.asarray([0.0], 'float32'))
+    if self.layer_type == "SpikeMaxPooling2D":
         prev_layer = self.inbound_nodes[0].inbound_layers[0]
         prev_layer.spikerate = shared_zeros(self.output_shape)
 
@@ -347,35 +299,37 @@ def get_new_thresh(self, time):
         self.max_spikerate, self.v_thresh)
 
 
+def add_updates(self, updates, inputs):
+    """Update self.updates.
+    This is taken from a development-version of Keras. Might be able to remove
+    it with the next official version. (27.11.16)"""
+
+    if not hasattr(self, 'updates'):
+        self.updates = []
+    try:
+        self.updates += updates
+    except AttributeError:
+        pass
+    # Update self._per_input_updates
+    if not hasattr(self, '_per_input_updates'):
+        self._per_input_updates = {}
+    inputs = to_list(inputs)
+    updates = to_list(updates)
+    inputs_hash = ', '.join([str(abs(id(x))) for x in inputs])
+    if inputs_hash not in self._per_input_updates:
+        self._per_input_updates[inputs_hash] = []
+    self._per_input_updates[inputs_hash] += updates
+
+
 # class SpikeInputLayer(InputLayer):
 #     """Spike input layer."""
 #
 #     def __init__(self, **kwargs):
 #         super(SpikeInputLayer, self).__init__(**kwargs)
-#
-#     def get_output(self):
-#         """Get output."""
-#         pass
-#
-#     def get_name(self):
-#         """Get class name."""
-#         return self.__class__.__name__
 
 
 class SpikeMerge(Merge):
     """Spike merge layer"""
-
-    def __init__(self, **kwargs):
-        """Init function."""
-        super(SpikeMerge, self).__init__(**kwargs)
-        self.updates = None
-
-    def get_output(self):
-        """Get output."""
-
-        inp = [inb.get_output() for inb in self.inbound_nodes[0].inbound_layers]
-        self.updates = get_updates(self)
-        return self.call(inp)
 
 
 class SpikeFlatten(Flatten):
@@ -383,27 +337,27 @@ class SpikeFlatten(Flatten):
 
     def __init__(self, **kwargs):
         """Init function."""
+
         super(SpikeFlatten, self).__init__(**kwargs)
-        self.updates = None
+        self.updates = self._per_input_updates = None
         if settings['payloads']:
             self.payloads = None
             self.payloads_sum = None
 
-    def get_output(self):
-        """Get output."""
+    def call(self, x, mask=None):
+        """Layer functionality."""
 
-        inp, time, updates = get_input(self)
-        reshaped_inp = t.reshape(inp, self.output_shape)
         if settings['payloads']:
             payloads = t.reshape(self.payloads, self.output_shape)
             payloads_sum = t.reshape(self.payloads_sum, self.output_shape)
-            updates.append((self.payloads, payloads))
-            updates.append((self.payloads_sum, payloads_sum))
-        self.updates = updates
-        return reshaped_inp
+            add_updates(self, (self.payloads, payloads), x)
+            add_updates(self, (self.payloads_sum, payloads_sum), x)
+        return super(SpikeFlatten, self).call(x[0])
 
-    def get_name(self):
+    @property
+    def class_name(self):
         """Get class name."""
+
         return self.__class__.__name__
 
 
@@ -427,29 +381,47 @@ class SpikeDense(Dense):
                       "activation. Convert from scratch before simulating to "
                       "use custom function {}.".format(self.activation_str))
         super(SpikeDense, self).__init__(output_dim, **kwargs)
+        self.layer_type = self.class_name
         self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
         self.impulse = self.spikecounts = self.total_spike_count = None
         self.updates = self.refrac_until = self.max_spikerate = None
+        self._per_input_updates = None
 
-    def get_output(self):
-        """Get output."""
+    def build(self, input_shape):
+        """Creates the layer weights.
+        Must be implemented on all layers that have weights.
 
-        inp, time, updates = get_input(self)
+        Parameters
+        ----------
+
+        input_shape: Union[list, tuple, Any]
+            Keras tensor (future input to layer) or list/tuple of Keras tensors
+            to reference for weight shape computations.
+        """
+
+        super(SpikeDense, self).build(input_shape)
+        init_neurons(self)
+
+    def call(self, x, mask=None):
+        """Layer functionality."""
+
+        inp = x[0]
+
         if settings['online_normalization']:
             # Modify threshold if firing rate of layer too low
-            updates.append((self.v_thresh, get_new_thresh(self, time)))
+            add_updates(self, (self.v_thresh, get_new_thresh(self, x[1])), x)
         if settings['payloads']:
             # Add payload from previous layer
-            prev_layer = self.inbound_nodes[0].inbound_layers[0]
-            inp = add_payloads(prev_layer, inp)
+            inp = add_payloads(self.inbound_nodes[0].inbound_layers[0], inp)
 
-        self.impulse = t.add(t.dot(inp, self.W), self.b)
-        output_spikes = update_neurons(self, time, updates)
-        self.updates = updates
-        return t.cast(output_spikes, 'float32')
+        self.impulse = super(SpikeDense, self).call(inp)
+        output_spikes = update_neurons(self, x)
+        return t.cast(output_spikes, 'float32') # Test if cast is really needed.
 
-    def get_name(self):
+    @property
+    def class_name(self):
         """Get class name."""
+
         return self.__class__.__name__
 
 
@@ -461,57 +433,47 @@ class SpikeConvolution2D(Convolution2D):
         self.activation_str = str(kwargs.pop('activation'))
         super(SpikeConvolution2D, self).__init__(nb_filter, nb_row, nb_col,
                                                  **kwargs)
+        self.layer_type = self.class_name
         self.filter_flip = filter_flip
         self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
         self.impulse = self.spikecounts = self.total_spike_count = None
         self.updates = self.refrac_until = self.max_spikerate = None
+        self._per_input_updates = None
 
-    def get_output(self):
-        """Get output."""
+    def build(self, input_shape):
+        """Creates the layer weights.
+        Must be implemented on all layers that have weights.
 
-        inp, time, updates = get_input(self)
+        Parameters
+        ----------
+
+        input_shape: Union[list, tuple, Any]
+            Keras tensor (future input to layer) or list/tuple of Keras tensors
+            to reference for weight shape computations.
+        """
+
+        super(SpikeConvolution2D, self).build(input_shape)
+        init_neurons(self)
+
+    def call(self, x, mask=None):
+        """Layer functionality."""
+
+        inp = x[0]
+
         if settings['payloads']:
             # Add payload from previous layer
-            prev_layer = self.inbound_nodes[0].inbound_layers[0]
-            inp = add_payloads(prev_layer, inp)
+            inp = add_payloads(self.inbound_nodes[0].inbound_layers[0], inp)
 
         if settings['online_normalization']:
             # Modify threshold if firing rate of layer too low
-            updates.append((self.v_thresh, get_new_thresh(self, time)))
+            add_updates(self, (self.v_thresh, get_new_thresh(self, x[1])), x)
 
-        # CALCULATE SYNAPTIC SUMMED INPUT
-        border_mode = self.border_mode
-        if on_gpu() and dnn.dnn_available():
-            conv_mode = 'conv' if self.filter_flip else 'cross'
-            if border_mode == 'same':
-                assert (self.subsample == (1, 1))
-                pad_x = (self.nb_row - self.subsample[0]) // 2
-                pad_y = (self.nb_col - self.subsample[1]) // 2
-                conv_out = dnn.dnn_conv(img=inp, kerns=self.W,
-                                        border_mode=(pad_x, pad_y),
-                                        conv_mode=conv_mode)
-            else:
-                conv_out = dnn.dnn_conv(img=inp, kerns=self.W,
-                                        border_mode=border_mode,
-                                        subsample=self.subsample,
-                                        conv_mode=conv_mode)
-        else:
-            if border_mode == 'same':
-                border_mode = 'full'
-            conv_out = t.nnet.conv2d(inp, self.W, border_mode=border_mode,
-                                     subsample=self.subsample,
-                                     filter_flip=self.filter_flip)
-            if self.border_mode == 'same':
-                shift_x = (self.nb_row - 1) // 2
-                shift_y = (self.nb_col - 1) // 2
-                conv_out = conv_out[:, :, shift_x:inp.shape[2] + shift_x,
-                                    shift_y:inp.shape[3] + shift_y]
-        self.impulse = conv_out + k.reshape(self.b, (1, self.nb_filter, 1, 1))
-        output_spikes = update_neurons(self, time, updates)
-        self.updates = updates
+        self.impulse = super(SpikeConvolution2D, self).call(inp)
+        output_spikes = update_neurons(self, x)
         return t.cast(output_spikes, 'float32')
 
-    def get_name(self):
+    @property
+    def class_name(self):
         """Get class name."""
 
         return self.__class__.__name__
@@ -524,28 +486,41 @@ class SpikeAveragePooling2D(AveragePooling2D):
         """Init average pooling."""
 
         super(SpikeAveragePooling2D, self).__init__(**kwargs)
+        self.layer_type = self.class_name
         self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
         self.impulse = self.spikecounts = self.total_spike_count = None
         self.updates = self.refrac_until = None
 
-    def get_output(self):
-        """Get output."""
+    def build(self, input_shape):
+        """Creates the layer weights.
+        Must be implemented on all layers that have weights.
 
-        inp, time, updates = get_input(self)
+        Parameters
+        ----------
+
+        input_shape: Union[list, tuple, Any]
+            Keras tensor (future input to layer) or list/tuple of Keras tensors
+            to reference for weight shape computations.
+        """
+
+        super(SpikeAveragePooling2D, self).build(input_shape)
+        init_neurons(self)
+
+    def call(self, x, mask=None):
+        """Layer functionality."""
+
+        inp = x[0]
 
         if settings['payloads']:
             # Add payload from previous layer
-            prev_layer = self.inbound_nodes[0].inbound_layers[0]
-            inp = add_payloads(prev_layer, inp)
+            inp = add_payloads(self.inbound_nodes[0].inbound_layers[0], inp)
 
-        self.impulse = k.pool2d(inp, self.pool_size, self.strides,
-                                self.border_mode, pool_mode='avg')
-
-        output_spikes = update_neurons(self, time, updates)
-        self.updates = updates
+        self.impulse = super(SpikeAveragePooling2D, self).call(inp)
+        output_spikes = update_neurons(self, x)
         return t.cast(output_spikes, 'float32')
 
-    def get_name(self):
+    @property
+    def class_name(self):
         """Get class name."""
 
         return self.__class__.__name__
@@ -558,6 +533,7 @@ class SpikeMaxPooling2D(MaxPooling2D):
         """Init function."""
 
         super(SpikeMaxPooling2D, self).__init__(**kwargs)
+        self.layer_type = self.class_name
         self.ignore_border = True if self.border_mode == 'valid' else False
         if 'binary' in settings['maxpool_type']:
             self.activation_str = settings['maxpool_type']
@@ -565,40 +541,51 @@ class SpikeMaxPooling2D(MaxPooling2D):
         self.impulse = self.spikecounts = self.total_spike_count = None
         self.updates = self.refrac_until = None
 
-    def get_output(self):
-        """Get output."""
+    def build(self, input_shape):
+        """Creates the layer weights.
+        Must be implemented on all layers that have weights.
 
-        inp, time, updates = get_input(self)
+        Parameters
+        ----------
+
+        input_shape: Union[list, tuple, Any]
+            Keras tensor (future input to layer) or list/tuple of Keras tensors
+            to reference for weight shape computations.
+        """
+
+        super(SpikeMaxPooling2D, self).build(input_shape)
+        init_neurons(self)
+
+    def call(self, x, mask=None):
+        """Layer functionality."""
+
+        inp = x[0]
 
         if settings['payloads']:
             # Add payload from previous layer
-            prev_layer = self.inbound_nodes[0].inbound_layers[0]
-            inp = add_payloads(prev_layer, inp)
+            inp = add_payloads(self.inbound_nodes[0].inbound_layers[0], inp)
 
         if 'binary' in settings['maxpool_type']:
-            self.impulse = k.pool2d(inp, self.pool_size, self.strides,
-                                    self.border_mode, pool_mode='max')
+            self.impulse = super(SpikeMaxPooling2D, self).call(inp)
         elif settings['maxpool_type'] in ["avg_max", "fir_max", "exp_max"]:
             spikerate = self.inbound_nodes[0].inbound_layers[0].spikerate \
                 if self.inbound_nodes[0].inbound_layers \
-                else k.placeholder(shape=self.input_shape)
-            max_idx = pool_same_size(spikerate, patch_size=self.pool_size,
-                                     ignore_border=self.ignore_border,
-                                     st=self.strides)
-            self.impulse = k.pool2d(t.mul(inp, max_idx), self.pool_size,
-                                    self.strides, self.border_mode,
-                                    pool_mode='max')
+                else k.placeholder(shape=self.input_shape) # Test if needed.
+            max_idx = pool_same_size(spikerate, self.pool_size,
+                                     self.ignore_border, self.strides)
+            self.impulse = super(SpikeMaxPooling2D, self).call(t.mul(inp,
+                                                                     max_idx))
         else:
             print("Wrong max pooling type, "
                   "falling back on Average Pooling instead.")
             self.impulse = k.pool2d(inp, self.pool_size, self.strides,
                                     self.border_mode, pool_mode='avg')
 
-        output_spikes = update_neurons(self, time, updates)
-        self.updates = updates
+        output_spikes = update_neurons(self, x)
         return t.cast(output_spikes, 'float32')
 
-    def get_name(self):
+    @property
+    def class_name(self):
         """Get class name."""
 
         return self.__class__.__name__
