@@ -22,7 +22,7 @@ import theano.tensor as t
 from future import standard_library
 import inspect
 from keras import backend as k
-from keras.layers import Convolution2D
+from keras.layers import Convolution2D, Merge
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D
 import keras.activations as k_activ
 from snntoolbox.config import settings
@@ -293,7 +293,7 @@ def get_updates(self):
         return []
 
 
-def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
+def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, time_var=None):
     """Init neurons."""
 
     # The neurons in the spiking layer cannot be initialized until the layer
@@ -301,9 +301,9 @@ def init_neurons(self, v_thresh=1.0, tau_refrac=0.0, **kwargs):
     # 'output_shape' is not known (obtained from previous layer), and
     # the 'input' attribute will not be overwritten by the layer's __init__.
     init_layer(self, self, v_thresh, tau_refrac)
-    if 'time_var' in kwargs:
+    if time_var is not None:
         input_layer = self.inbound_nodes[0].inbound_layers[0]
-        input_layer.time_var = kwargs['time_var']
+        input_layer.time_var = time_var
         init_layer(self, input_layer, v_thresh, tau_refrac)
 
 
@@ -347,6 +347,37 @@ def get_new_thresh(self, time):
         self.max_spikerate, self.v_thresh)
 
 
+# class SpikeInputLayer(InputLayer):
+#     """Spike input layer."""
+#
+#     def __init__(self, **kwargs):
+#         super(SpikeInputLayer, self).__init__(**kwargs)
+#
+#     def get_output(self):
+#         """Get output."""
+#         pass
+#
+#     def get_name(self):
+#         """Get class name."""
+#         return self.__class__.__name__
+
+
+class SpikeMerge(Merge):
+    """Spike merge layer"""
+
+    def __init__(self, **kwargs):
+        """Init function."""
+        super(SpikeMerge, self).__init__(**kwargs)
+        self.updates = None
+
+    def get_output(self):
+        """Get output."""
+
+        inp = [inb.get_output() for inb in self.inbound_nodes[0].inbound_layers]
+        self.updates = get_updates(self)
+        return self.call(inp)
+
+
 class SpikeFlatten(Flatten):
     """Spike flatten layer."""
 
@@ -360,7 +391,7 @@ class SpikeFlatten(Flatten):
 
     def get_output(self):
         """Get output."""
-        # Recurse
+
         inp, time, updates = get_input(self)
         reshaped_inp = t.reshape(inp, self.output_shape)
         if settings['payloads']:
@@ -379,7 +410,7 @@ class SpikeFlatten(Flatten):
 class SpikeDense(Dense):
     """Spike Dense layer."""
 
-    def __init__(self, output_dim, weights=None, **kwargs):
+    def __init__(self, output_dim, **kwargs):
         """Init function."""
         # Remove activation from kwargs before initializing superclass, in case
         # we are using a custom activation function that Keras doesn't
@@ -395,8 +426,7 @@ class SpikeDense(Dense):
                       "not be saved and reloaded. Falling back on 'linear' "
                       "activation. Convert from scratch before simulating to "
                       "use custom function {}.".format(self.activation_str))
-        super(SpikeDense, self).__init__(output_dim=output_dim, weights=weights,
-                                         **kwargs)
+        super(SpikeDense, self).__init__(output_dim, **kwargs)
         self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
         self.impulse = self.spikecounts = self.total_spike_count = None
         self.updates = self.refrac_until = self.max_spikerate = None
@@ -404,7 +434,6 @@ class SpikeDense(Dense):
     def get_output(self):
         """Get output."""
 
-        # Recurse
         inp, time, updates = get_input(self)
         if settings['online_normalization']:
             # Modify threshold if firing rate of layer too low
@@ -427,14 +456,11 @@ class SpikeDense(Dense):
 class SpikeConvolution2D(Convolution2D):
     """Spike 2D Convolution."""
 
-    def __init__(self, nb_filter, nb_row, nb_col, weights=None,
-                 border_mode='valid', subsample=(1, 1), filter_flip=True,
-                 **kwargs):
+    def __init__(self, nb_filter, nb_row, nb_col, filter_flip=True, **kwargs):
         """Init function."""
         self.activation_str = str(kwargs.pop('activation'))
-        super(SpikeConvolution2D, self).__init__(
-            nb_filter=nb_filter, nb_row=nb_row, nb_col=nb_col, weights=weights,
-            border_mode=border_mode, subsample=subsample, **kwargs)
+        super(SpikeConvolution2D, self).__init__(nb_filter, nb_row, nb_col,
+                                                 **kwargs)
         self.filter_flip = filter_flip
         self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
         self.impulse = self.spikecounts = self.total_spike_count = None
@@ -443,7 +469,6 @@ class SpikeConvolution2D(Convolution2D):
     def get_output(self):
         """Get output."""
 
-        # Recurse
         inp, time, updates = get_input(self)
         if settings['payloads']:
             # Add payload from previous layer
@@ -495,13 +520,10 @@ class SpikeConvolution2D(Convolution2D):
 class SpikeAveragePooling2D(AveragePooling2D):
     """Average Pooling."""
 
-    def __init__(self, pool_size=(2, 2), strides=None, border_mode='valid',
-                 **kwargs):
+    def __init__(self, **kwargs):
         """Init average pooling."""
 
-        super(SpikeAveragePooling2D, self).__init__(
-            pool_size=pool_size, strides=strides, border_mode=border_mode,
-            **kwargs)
+        super(SpikeAveragePooling2D, self).__init__(**kwargs)
         self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
         self.impulse = self.spikecounts = self.total_spike_count = None
         self.updates = self.refrac_until = None
@@ -509,7 +531,6 @@ class SpikeAveragePooling2D(AveragePooling2D):
     def get_output(self):
         """Get output."""
 
-        # Recurse
         inp, time, updates = get_input(self)
 
         if settings['payloads']:
@@ -533,16 +554,13 @@ class SpikeAveragePooling2D(AveragePooling2D):
 class SpikeMaxPooling2D(MaxPooling2D):
     """Max Pooling."""
 
-    def __init__(self, pool_size=(2, 2), strides=None, border_mode='valid',
-                 **kwargs):
+    def __init__(self, **kwargs):
         """Init function."""
 
-        self.ignore_border = True if border_mode == 'valid' else False
+        super(SpikeMaxPooling2D, self).__init__(**kwargs)
+        self.ignore_border = True if self.border_mode == 'valid' else False
         if 'binary' in settings['maxpool_type']:
             self.activation_str = settings['maxpool_type']
-        super(SpikeMaxPooling2D, self).__init__(
-            pool_size=pool_size, strides=strides,
-            border_mode=border_mode, **kwargs)
         self.v_thresh = self.tau_refrac = self.mem = self.spiketrain = None
         self.impulse = self.spikecounts = self.total_spike_count = None
         self.updates = self.refrac_until = None
@@ -550,7 +568,6 @@ class SpikeMaxPooling2D(MaxPooling2D):
     def get_output(self):
         """Get output."""
 
-        # Recurse
         inp, time, updates = get_input(self)
 
         if settings['payloads']:

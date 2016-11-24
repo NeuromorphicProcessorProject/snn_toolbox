@@ -115,7 +115,6 @@ def parse(input_model):
     # Create new Keras model
     img_input = keras.layers.Input(batch_shape=layers[0]['batch_input_shape'])
     parsed_layers = {'input_1': img_input}
-    x = img_input
     print("Building parsed model...")
     for layer in layers:
         # Replace 'parameters' key with Keras key 'weights'
@@ -130,20 +129,14 @@ def parse(input_model):
             elif layer['activation'] == 'binary_tanh':
                 layer['activation'] = binary_tanh
         # Add layer
-        print(layer['name'])
         parsed_layer = getattr(keras.layers, layer_type)
         if filter_flip:
             parsed_layer.filter_flip = filter_flip
-        if layer_type == 'Merge':
-            inbound = [parsed_layers[inb] for inb in layer.pop('inbound')]
-            x = keras.layers.merge(inbound, layer['mode'], layer['concat_axis'],
-                                   name=layer['name'])
-        else:
-            inbound = layer.pop('inbound')[0]
-            x = parsed_layer(**layer)(parsed_layers[inbound])
-        parsed_layers[layer['name']] = x
+        inbound = [parsed_layers[inb] for inb in layer.pop('inbound')]
+        parsed_layers[layer['name']] = parsed_layer(**layer)(inbound)
     print("Compiling parsed model...")
-    parsed_model = keras.models.Model(img_input, x)
+    parsed_model = keras.models.Model(img_input,
+                                      parsed_layers[layers[-1]['name']])
     # Optimizer and loss should not matter at this stage, but it would be
     # cleaner to set them to the actial values of the input model.
     parsed_model.compile('sgd', 'categorical_crossentropy', ['accuracy'])

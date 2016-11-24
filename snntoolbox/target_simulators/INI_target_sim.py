@@ -102,25 +102,40 @@ class SNN:
 
         self.parsed_model = parsed_model
 
-        print("Compiling spiking network...")
+        print("Building spiking model...")
 
         # Pass time variable to first layer
         input_time = theano.tensor.scalar('time')
-        kwargs2 = {'time_var': input_time}
+        time_var = input_time
+        img_input = keras.layers.Input(
+            batch_shape=parsed_model.layers[0].batch_input_shape)
+        spiking_layers = {'input_1': img_input}
 
         # Iterate over layers to create spiking neurons and connections.
         for layer in parsed_model.layers:
+            layer_type = layer.__class__.__name__
+            if 'Input' in layer_type:
+                continue
             print("Building layer: {}".format(layer.name))
-            spike_layer = getattr(self.sim, 'Spike' + layer.__class__.__name__)
-            self.snn.add(spike_layer(**layer.get_config()))
-            self.snn.layers[-1].set_weights(layer.get_weights())
-            self.sim.init_neurons(self.snn.layers[-1],
-                                  v_thresh=settings['v_thresh'],
-                                  tau_refrac=settings['tau_refrac'],
-                                  **kwargs2)
-            kwargs2 = {}
+            spike_layer = getattr(self.sim, 'Spike' + layer_type)
+            inbound = [spiking_layers[inb.name] for inb in
+                       layer.inbound_nodes[0].inbound_layers]
+            spiking_layers[layer.name] = \
+                spike_layer.from_config(layer.get_config())(inbound)
 
         # Compile
+        outp = spiking_layers[parsed_model.layers[-1].name]
+        self.snn = keras.models.Model(img_input, outp)
+        self.snn.set_weights(parsed_model.get_weights())
+        for layer in self.snn.layers:
+            if 'Input' in layer.__class__.__name__:
+                continue
+            self.sim.init_neurons(layer, v_thresh=settings['v_thresh'],
+                                  tau_refrac=settings['tau_refrac'],
+                                  time_var=time_var)
+            time_var = None
+
+        print("Compiling spiking model...\n")
         self.compile_snn(input_time)
 
     def compile_snn(self, input_time):
@@ -498,11 +513,12 @@ class SNN:
 
         # Allocate input variables
         input_time = theano.tensor.scalar('time')
-        kwargs = {'time_var': input_time}
+        time_var = input_time
         for layer in self.snn.layers:
             self.sim.init_neurons(layer, v_thresh=settings['v_thresh'],
-                                  tau_refrac=settings['tau_refrac'], **kwargs)
-            kwargs = {}
+                                  tau_refrac=settings['tau_refrac'],
+                                  time_var=time_var)
+            time_var = None
 
         # Compile model
         self.compile_snn(input_time)
