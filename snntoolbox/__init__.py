@@ -40,19 +40,3 @@ if not os.path.exists(_config_path):
                'image_dim_ordering': 'th'}
     with open(_config_path, 'w') as f:
         f.write(json.dumps(_config, indent=4))
-
-# python 2 can not handle the 'flush' keyword argument of python 3 print().
-# Provide 'echo' function as an alias for
-# "print with flush and without newline".
-try:
-    from functools import partial
-    echo = partial(print, end='', flush=True)
-    echo(u'')
-except TypeError:
-    # TypeError: 'flush' is an invalid keyword argument for this function
-    import sys
-
-    def echo(text):
-        """python 2 version of print(end='', flush=True)."""
-        sys.stdout.write(u'{0}'.format(text))
-        sys.stdout.flush()

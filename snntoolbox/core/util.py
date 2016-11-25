@@ -17,8 +17,8 @@ import json
 from importlib import import_module
 
 import numpy as np
-import theano
 from future import standard_library
+import keras
 from keras import backend as k
 from snntoolbox.config import settings
 
@@ -103,8 +103,6 @@ def parse(input_model):
     parsed_model: keras.models.Sequential
         A Keras model functionally equivalent to ``input_model``.
     """
-
-    import keras
 
     # Parse input model to our common format, extracting all necessary
     # information about layers.
@@ -239,7 +237,7 @@ def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
     else:
         score = []
         truth = np.argmax(y_test, axis=1)
-        preds = model.predict(x_test, settings['batch_size'], verbose=1)
+        preds = model.predict(x_test, settings['batch_size'], verbose=0)
         score.append(np.mean(np.argmax(preds, axis=1) == truth))
         score.append(get_top5score(truth, preds) / len(y_test))
         print('\n' + "Top-1 accuracy: {:.2%}".format(score[0]))
@@ -434,8 +432,8 @@ def normalize_parameters(model, **kwargs):
             # Undo previous scaling before calculating activations:
             layer.set_weights([parameters[0] * scale_fac_prev_layer,
                                parameters[1]])
-            get_activ = get_activ_fn_for_layer(model, idx)
-            activations = get_activations_layer(get_activ, x_norm)
+            activations = get_activations_layer(model.input, layer.output,
+                                                x_norm)
             nonzero_activations = activations[np.nonzero(activations)]
             ax = tuple(np.arange(len(layer.output_shape))[1:])
             max_activations = np.max(activations, axis=ax)
@@ -461,11 +459,12 @@ def normalize_parameters(model, **kwargs):
             else layer.name
         weight_dict = {
             'weights': parameters[0].flatten(),
-            'weights_norm': parameters_norm[0].flatten()}
+            'weights_norm': np.array(parameters_norm[0]).flatten()}
         plot_hist(weight_dict, 'Weight', label, newpath)
 
         # Compute activations with modified parameters
-        activations_norm = get_activations_layer(get_activ, x_norm)
+        activations_norm = get_activations_layer(model.input, layer.output,
+                                                 x_norm)
         activation_dict = {'Activations': nonzero_activations,
                            'Activations_norm':
                                activations_norm[np.nonzero(activations_norm)]}
@@ -513,7 +512,7 @@ def get_scale_fac(activations, idx=0):
     return scale_fac
 
 
-def get_activations_layer(get_activ, x_train):
+def get_activations_layer(layer_in, layer_out, x):
     """
     Get activations of a specific layer, iterating batch-wise over the complete
     data set.
@@ -521,10 +520,13 @@ def get_activations_layer(get_activ, x_train):
     Parameters
     ----------
 
-    get_activ: Theano function
-        A Theano function computing the activations of a layer.
+    layer_in: keras.layers.Layer
+        The input to the network.
 
-    x_train: float32 array
+    layer_out: keras.layers.Layer
+        The layer for which we want to get the activations.
+
+    x: np.array
         The samples to compute activations for. With data of the form
         (channels, num_rows, num_cols), x_train has dimension
         (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
@@ -534,26 +536,11 @@ def get_activations_layer(get_activ, x_train):
     -------
 
     activations: np.array
-        The activations of cells in a specific layer. Has the same shape as the
-        layer.
+        The activations of cells in a specific layer. Has the same shape as
+        ``layer_out``.
     """
 
-    shape = list(get_activ(x_train[:settings['batch_size']]).shape)
-    shape[0] = x_train.shape[0]
-    activations = np.empty(shape)
-    num_batches = int(np.ceil(x_train.shape[0] / settings['batch_size']))
-    for batch_idx in range(num_batches):
-        # Determine batch indices.
-        max_idx = min((batch_idx + 1) * settings['batch_size'],
-                      x_train.shape[0])
-        batch_idxs = range(batch_idx * settings['batch_size'], max_idx)
-        batch = x_train[batch_idxs, :]
-        if len(batch_idxs) < settings['batch_size']:
-            batch.resize(x_train[:settings['batch_size']].shape)
-            activations[batch_idxs] = get_activ(batch)[:len(batch_idxs)]
-        else:
-            activations[batch_idxs] = get_activ(batch)
-    return activations
+    return keras.models.Model(layer_in, layer_out).predict(x)
 
 
 def get_activations_batch(ann, x_batch):
@@ -562,10 +549,10 @@ def get_activations_batch(ann, x_batch):
     Parameters
     ----------
 
-    ann: Keras model
+    ann: keras.models.Model
         Needed to compute activations.
 
-    x_batch: float32 array
+    x_batch: np.array
         The input samples to use for determining the layer activations. With
         data of the form (channels, num_rows, num_cols), X has dimension
         (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
@@ -574,9 +561,10 @@ def get_activations_batch(ann, x_batch):
     Returns
     -------
 
-    activations_batch: list of tuples ``(activations, label)``
-        Each entry represents a layer in the ANN for which an activation can be
-        calculated (e.g. ``Dense``, ``Convolution2D``).
+    activations_batch: list[tuple[np.array, str]]
+        Each tuple ``(activations, label)`` represents a layer in the ANN for
+        which an activation can be calculated (e.g. ``Dense``,
+        ``Convolution2D``).
         ``activations`` containing the activations of a layer. It has the same
         shape as the original layer, e.g.
         (batch_size, n_features, n_rows, n_cols) for a convolution layer.
@@ -584,27 +572,14 @@ def get_activations_batch(ann, x_batch):
     """
 
     activations_batch = []
-    for i, layer in enumerate(ann.layers):
-        if 'Flatten' in layer.name:
+    for layer in ann.layers:
+        if layer.__class__.__name__ in ['Input', 'InputLayer', 'Flatten',
+                                        'Merge']:
             continue
-        get_activ = get_activ_fn_for_layer(ann, i)
-        activations_batch.append((get_activ(x_batch), layer.name))
+        activations = keras.models.Model(ann.input,
+                                         layer.output).predict_on_batch(x_batch)
+        activations_batch.append((activations, layer.name))
     return activations_batch
-
-
-def get_activ_fn_for_layer(model, i):
-    """Get a function that computes the activations of a layer.
-
-    :param model: The network.
-    :param i: The layer index.
-    :return: A theano function that computes the activations of layer ``i``.
-    """
-
-    f = theano.function(
-        [model.layers[0].input, theano.In(k.learning_phase(), value=0)],
-        model.layers[i].output, allow_input_downcast=True,
-        on_unused_input='ignore')
-    return lambda x: f(x).astype('float16', copy=False)
 
 
 def wilson_score(p, n):
@@ -700,3 +675,19 @@ def get_top5score(truth, output):
         if t in top5pred:
             score += 1
     return score
+
+# python 2 can not handle the 'flush' keyword argument of python 3 print().
+# Provide 'echo' function as an alias for
+# "print with flush and without newline".
+try:
+    from functools import partial
+    echo = partial(print, end='', flush=True)
+    echo(u'')
+except TypeError:
+    # TypeError: 'flush' is an invalid keyword argument for this function
+    import sys
+
+    def echo(text):
+        """python 2 version of print(end='', flush=True)."""
+        sys.stdout.write(u'{0}'.format(text))
+        sys.stdout.flush()

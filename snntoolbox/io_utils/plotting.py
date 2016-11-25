@@ -59,8 +59,8 @@ def output_graphs(spiketrains_batch, activations_batch, path=None, idx=0):
     spikerates_batch = spiketrains_to_rates(spiketrains_batch)
     spikerates = get_sample_activity_from_batch(spikerates_batch, idx)
     activations = get_sample_activity_from_batch(activations_batch, idx)
-#    spiketrains = get_sample_activity_from_batch(spiketrains_batch, idx)
-    spiketrains = None  # Too costly
+    spiketrains = get_sample_activity_from_batch(spiketrains_batch, idx)
+#    spiketrains = None  # Too costly
 
     plot_layer_summaries(spikerates, activations, spiketrains, path)
 

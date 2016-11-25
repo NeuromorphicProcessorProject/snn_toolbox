@@ -161,16 +161,7 @@ def extract(model):
             attributes['activation'] = activation
             print("Detected activation {}".format(activation))
 
-        if len(layers) == 0:
-            attributes['inbound'] = ['input_1']
-        else:
-            inbound = get_inbound_layers(layer)
-            for ib in range(len(inbound)):
-                if inbound[ib].__class__.__name__ in ['BatchNormalization',
-                                                      'Activation']:
-                    inbound[ib] = get_inbound_layers(inbound[ib])[0]
-            inb_idxs = [name_map[str(id(inb))] for inb in inbound]
-            attributes['inbound'] = [layers[idx]['name'] for idx in inb_idxs]
+        attributes['inbound'] = get_inbound_names(layers, layer, name_map)
 
         # Append layer
         layers.append(attributes)
@@ -182,8 +173,27 @@ def extract(model):
     return layers
 
 
+def get_inbound_names(layers, layer, name_map):
+    """Get names of inbound layers.
+
+    """
+
+    if len(layers) == 0:
+        return ['input_1']
+    else:
+        inbound = get_inbound_layers(layer)
+        for ib in range(len(inbound)):
+            ii = 0
+            while ii < 3 and inbound[ib].__class__.__name__ in \
+                    ['BatchNormalization', 'Activation', 'Dropout']:
+                inbound[ib] = get_inbound_layers(inbound[ib])[0]
+                ii += 1
+        inb_idxs = [name_map[str(id(inb))] for inb in inbound]
+        return [layers[ii]['name'] for ii in inb_idxs]
+
+
 def get_inbound_layers(layer):
-    """Return inbound layer.
+    """Return inbound layers.
 
     Parameters
     ----------
@@ -261,7 +271,7 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
         x_test, y_test = dataflow.next()
         print("Using {} samples to evaluate input model".format(len(x_test)))
 
-    score = val_fn(x_test, y_test)
+    score = val_fn(x_test, y_test, verbose=0)
     print('\n' + "Test loss: {:.2f}".format(score[0]))
     print("Test accuracy: {:.2%}\n".format(score[1]))
     return score

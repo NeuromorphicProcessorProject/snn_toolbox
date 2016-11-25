@@ -19,12 +19,8 @@ from __future__ import print_function, unicode_literals
 
 import os
 from textwrap import dedent
-
 import keras
-import theano
 from future import standard_library
-
-from snntoolbox import echo
 from snntoolbox.config import settings, initialize_simulator
 
 standard_library.install_aliases()
@@ -47,13 +43,10 @@ class SNN:
         using Brian simulator, this initialization would be equivalent to
         ``import pyNN.brian as sim``.
 
-    snn: Spiking Model
-        Keras ``Sequential`` model. This is the output format of the compiled
-        spiking model because INI simulator runs networks of layers that are
-        derived from Keras layer base classes.
-
-    get_output: Theano function
-        Compute output of network by iterating over all layers.
+    snn: keras.models.Model
+        Keras model. This is the output format of the compiled spiking model
+        because INI simulator runs networks of layers that are derived from
+        Keras layer base classes.
 
     Methods
     -------
@@ -78,8 +71,7 @@ class SNN:
         if s is None:
             s = settings
         self.sim = initialize_simulator(s['simulator'])
-        self.snn = keras.models.Sequential()
-        self.get_output = None
+        self.snn = None
         self.parsed_model = None
 
     # noinspection PyUnusedLocal
@@ -92,7 +84,7 @@ class SNN:
         Aims at simulating the network on a self-implemented Integrate-and-Fire
         simulator using a timestepped approach.
 
-        Sets the ``snn`` and ``get_output`` attributes of this class.
+        Sets the ``snn`` attribute of this class.
 
         Parameters
         ----------
@@ -105,70 +97,26 @@ class SNN:
         self.parsed_model = parsed_model
 
         print("Building spiking model...")
-
         # Pass time variable to first layer
-        input_time = theano.tensor.scalar('time')
         input_images = keras.layers.Input(
             batch_shape=parsed_model.layers[0].batch_input_shape)
-        spiking_layers = {'input_1': input_images}
+        spiking_layers = {parsed_model.layers[0].name: input_images}
 
         # Iterate over layers to create spiking neurons and connections.
-        for layer in parsed_model.layers:
-            layer_type = layer.__class__.__name__
-            if 'Input' in layer_type:
-                continue
+        for layer in parsed_model.layers[1:]:  # Skip input layer
             print("Building layer: {}".format(layer.name))
-            spike_layer = getattr(self.sim, 'Spike' + layer_type)
+            spike_layer = getattr(self.sim, 'Spike' + layer.__class__.__name__)
             inbound = [spiking_layers[inb.name] for inb in
                        layer.inbound_nodes[0].inbound_layers]
             spiking_layers[layer.name] = \
                 spike_layer.from_config(layer.get_config())(inbound)
 
-        # Compile
-        output_vars = [spiking_layers[parsed_model.layers[-1].name], input_time]
-        if settings['verbose'] > 1:
-            total_spike_count = self.snn.layers[0].total_spike_count
-            for layer in self.snn.layers[1:]:
-                if layer.total_spike_count:
-                    total_spike_count += layer.total_spike_count
-            output_vars.append(total_spike_count)
-        if settings['online_normalization']:
-            thresh = self.snn.layers[lidx].v_thresh
-            max_spikerate = self.snn.layers[lidx].max_spikerate
-            spiketrain = self.snn.layers[lidx].spiketrain
-            output_vars += [thresh, max_spikerate, spiketrain]
-
         print("Compiling spiking model...\n")
-        self.snn = keras.models.Model([input_images, input_time], output_vars)
+        self.snn = keras.models.Model(
+            input_images, spiking_layers[parsed_model.layers[-1].name])
         self.snn.compile('sgd', 'categorical_crossentropy',
                          metrics=['accuracy'])
         self.snn.set_weights(parsed_model.get_weights())
-
-    def compile_snn(self, input_time):
-        """Set the ``snn`` and ``get_output`` attributes of this class."""
-
-        # Optimizer and loss are required by the compiler but not needed at
-        # inference time, so we simply set it to the most common choice here.
-        self.snn.compile('sgd', 'categorical_crossentropy',
-                         metrics=['accuracy'])
-        output_spikes = self.snn.layers[-1].get_output()
-        output_time = self.sim.get_time(self.snn.layers[-1])
-        output_vars = [output_spikes, output_time]
-        updates = self.sim.get_updates(self.snn.layers[-1])
-        if settings['verbose'] > 1:
-            total_spike_count = self.snn.layers[0].total_spike_count
-            for layer in self.snn.layers[1:]:
-                if layer.total_spike_count:
-                    total_spike_count += layer.total_spike_count
-            output_vars.append(total_spike_count)
-        if settings['online_normalization']:
-            thresh = self.snn.layers[lidx].v_thresh
-            max_spikerate = self.snn.layers[lidx].max_spikerate
-            spiketrain = self.snn.layers[lidx].spiketrain
-            output_vars += [thresh, max_spikerate, spiketrain]
-        self.get_output = theano.function([self.snn.input, input_time],
-                                          output_vars, updates=updates,
-                                          allow_input_downcast=True)
 
     def run(self, x_test=None, y_test=None, dataflow=None, **kwargs):
         """Simulate a SNN with LIF and Poisson input.
@@ -216,6 +164,7 @@ class SNN:
         import numpy as np
         from ann_architectures.imagenet.utils import preprocess_input
         from snntoolbox.core.util import get_activations_batch, get_top5score
+        from snntoolbox.core.util import echo
         from snntoolbox.io_utils.plotting import output_graphs
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
         from snntoolbox.io_utils.plotting import plot_error_vs_time
@@ -228,8 +177,8 @@ class SNN:
 
         # Load neuron layers and connections if conversion was done during a
         # previous session.
-        if self.get_output is None:
-            print("Restoring layer connections...\n")
+        if self.snn is None:
+            print("Restoring spiking network...\n")
             self.load()
             self.parsed_model = keras.models.load_model(os.path.join(
                 s['path_wd'], s['filename_parsed_model']+'.h5'))
@@ -268,12 +217,13 @@ class SNN:
         if s['verbose'] > 1:
             spiketrains_batch = []
             for layer in self.snn.layers:
-                if 'Flatten' in layer.name:
+                if not hasattr(layer, 'spiketrain'):
                     continue
                 shape = list(layer.output_shape) + [int(s['duration']/s['dt'])]
                 spiketrains_batch.append((np.zeros(shape, 'float32'),
                                           layer.name))
 
+        inp = None
         top1err_vs_time = []
         top5score_moving = 0
         truth = []
@@ -282,7 +232,6 @@ class SNN:
         rescale_fac = 1
         num_classes = 0
         activations_batch = None
-        total_spike_count = None
         # Prepare files to write moving accuracy and error to.
         path_acc = os.path.join(log_dir, 'accuracy.txt')
         if os.path.isfile(path_acc):
@@ -323,7 +272,7 @@ class SNN:
                 inp = x_batch
 
             # Reset network variables.
-            self.sim.reset(self.snn.layers[-1])
+            self.reset()
 
             # Loop through simulation time.
             output = np.zeros((s['batch_size'], y_batch.shape[1]),
@@ -332,7 +281,9 @@ class SNN:
             if s['verbose'] > 1:
                 total_spike_count_over_time = np.zeros((num_timesteps,
                                                         s['batch_size']))
-                t_idx = 0
+            total_spike_count = np.zeros(s['batch_size'])
+            t_idx = 0
+            interm = np.zeros(self.snn.layers[1].output_shape)
             for t in np.arange(0, s['duration'], s['dt']):
                 if s['poisson_input']:
                     # Create poisson input.
@@ -346,28 +297,10 @@ class SNN:
                     # inp *= np.max(x_batch) * np.sign(x_batch)
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
-                if s['online_normalization']:
-                    if settings['verbose'] > 1:
-                        out_spikes, ts, total_spike_count, thresh, \
-                            max_spikerate, spiketrain = \
-                            self.snn.predict_on_batch([inp, float(t)])
-                    else:
-                        out_spikes, ts, thresh, max_spikerate, spiketrain = \
-                            self.snn.predict_on_batch([inp, float(t)])
-                    print('Time: {:.2f}, thresh: {:.2f},'
-                          ' max_spikerate: {:.2f}'.format(
-                            float(np.array(ts)),
-                            float(np.array(thresh)),
-                            float(np.array(max_spikerate))))
-                else:
-                    if settings['verbose'] > 1:
-                        out_spikes, ts, total_spike_count = \
-                            self.snn.predict_on_batch([inp, float(t)])
-                    else:
-                        out_spikes, ts = self.snn.predict_on_batch([inp,
-                                                                    float(t)])
-                # Count number of spikes in output layer during whole
-                # simulation.
+                self.set_time(float(t))
+                interm += keras.models.Model(self.snn.input, self.snn.layers[1].output).predict_on_batch(inp)
+                print(np.max(interm))
+                out_spikes = self.snn.predict_on_batch(inp)
                 output += out_spikes.astype('int32')
                 # Get result by comparing the guessed class (i.e. the index
                 # of the neuron in the last layer which spiked most) to the
@@ -378,15 +311,14 @@ class SNN:
                 # Record the spiketrains of each neuron in each layer.
                 if s['verbose'] > 1:
                     j = 0
-                    for i, layer in enumerate(self.snn.layers):
-                        if 'Flatten' in self.snn.layers[i].name:
+                    for layer in self.snn.layers:
+                        if not hasattr(layer, 'spiketrain'):
                             continue
-                        # noinspection PyUnboundLocalVariable
                         spiketrains_batch[j][0][Ellipsis, t_idx] = \
                             layer.spiketrain.get_value()
+                        total_spike_count += layer.total_spike_count.get_value()
                         j += 1
-                    total_spike_count_over_time[t_idx] = \
-                        np.array(total_spike_count)
+                    total_spike_count_over_time[t_idx] = total_spike_count
                     t_idx += 1
                 if s['verbose'] > 0:
                     echo('.')
@@ -415,7 +347,7 @@ class SNN:
                     top1acc_moving))
                 print("Moving top-5 accuracy: {:.2%}.\n".format(top5acc_moving))
 
-            if s['verbose'] > 2:
+            if s['verbose'] > 1:
                 print("Saving batch activations...")
                 activations_batch = get_activations_batch(self.parsed_model,
                                                           x_batch)
@@ -493,7 +425,7 @@ class SNN:
     def load(self, path=None, filename=None):
         """Load model architecture and parameters from disk.
 
-        Sets the ``snn`` and ``get_output`` attributes of this class.
+        Sets the ``snn`` attribute of this class.
 
         Parameters
         ----------
@@ -517,18 +449,6 @@ class SNN:
 
         self.snn = keras.models.load_model(filepath, custom_layers)
         self.assert_batch_size(self.snn.layers[0].batch_input_shape[0])
-
-        # Allocate input variables
-        input_time = theano.tensor.scalar('time')
-        time_var = input_time
-        for layer in self.snn.layers:
-            self.sim.init_neurons(layer, v_thresh=settings['v_thresh'],
-                                  tau_refrac=settings['tau_refrac'],
-                                  time_var=time_var)
-            time_var = None
-
-        # Compile model
-        self.compile_snn(input_time)
 
     @staticmethod
     def assert_batch_size(batch_size):
@@ -555,3 +475,23 @@ class SNN:
         """
 
         pass
+
+    def set_time(self, t):
+        """Set the simulation time variable of all layers in the network.
+
+        Parameters
+        ----------
+
+        t: float
+            Current simulation time.
+        """
+
+        for layer in self.snn.layers[1:]:
+            if self.sim.get_time(layer) is not None:  # Has time attribute
+                self.sim.set_time(layer, t)
+
+    def reset(self):
+        """Reset network variables."""
+
+        for layer in self.snn.layers[1:]:  # Skip input layer
+            layer.reset()

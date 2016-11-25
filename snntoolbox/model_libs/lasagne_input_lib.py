@@ -278,7 +278,7 @@ def get_inbound_names(layers, layer, name_map):
         for ib in range(len(inbound)):
             ii = 0
             while ii < 3 and inbound[ib].__class__.__name__ in \
-                    ['BatchNormLayer', 'NonlinearityLayer']:
+                    ['BatchNormLayer', 'NonlinearityLayer', 'DropoutLayer']:
                 inbound[ib] = get_inbound_layers(inbound[ib])[0]
                 ii += 1
         inb_idxs = [name_map[str(id(inb))] for inb in inbound]

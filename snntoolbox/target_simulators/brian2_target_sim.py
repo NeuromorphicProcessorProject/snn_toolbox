@@ -21,7 +21,7 @@ from random import randint
 
 import numpy as np
 from future import standard_library
-from snntoolbox import echo
+from snntoolbox.core.util import echo
 from snntoolbox.config import settings, initialize_simulator
 
 standard_library.install_aliases()
