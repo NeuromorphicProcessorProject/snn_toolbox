@@ -691,3 +691,12 @@ except TypeError:
         """python 2 version of print(end='', flush=True)."""
         sys.stdout.write(u'{0}'.format(text))
         sys.stdout.flush()
+
+
+def to_list(x):
+    """Normalize a list/tensor to a list.
+
+    If a tensor is passed, returns a list of size 1 containing the tensor.
+    """
+
+    return x if type(x) is list else [x]

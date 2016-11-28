@@ -18,6 +18,7 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 import os
+import numpy as np
 from textwrap import dedent
 import keras
 from future import standard_library
@@ -161,7 +162,6 @@ class SNN:
             test samples.
         """
 
-        import numpy as np
         from ann_architectures.imagenet.utils import preprocess_input
         from snntoolbox.core.util import get_activations_batch, get_top5score
         from snntoolbox.core.util import echo
@@ -283,7 +283,6 @@ class SNN:
                                                         s['batch_size']))
             total_spike_count = np.zeros(s['batch_size'])
             t_idx = 0
-            interm = np.zeros(self.snn.layers[1].output_shape)
             for t in np.arange(0, s['duration'], s['dt']):
                 if s['poisson_input']:
                     # Create poisson input.
@@ -297,9 +296,7 @@ class SNN:
                     # inp *= np.max(x_batch) * np.sign(x_batch)
                 # Main step: Propagate poisson input through network and record
                 # output spikes.
-                self.set_time(float(t))
-                interm += keras.models.Model(self.snn.input, self.snn.layers[1].output).predict_on_batch(inp)
-                print(np.max(interm))
+                self.set_time(t)
                 out_spikes = self.snn.predict_on_batch(inp)
                 output += out_spikes.astype('int32')
                 # Get result by comparing the guessed class (i.e. the index
@@ -488,7 +485,7 @@ class SNN:
 
         for layer in self.snn.layers[1:]:
             if self.sim.get_time(layer) is not None:  # Has time attribute
-                self.sim.set_time(layer, t)
+                self.sim.set_time(layer, np.float32(t))
 
     def reset(self):
         """Reset network variables."""
