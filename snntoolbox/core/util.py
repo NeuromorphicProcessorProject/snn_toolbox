@@ -371,7 +371,6 @@ def get_sample_activity_from_batch(activity_batch, idx=0):
     return [(layer_act[0][idx], layer_act[1]) for layer_act in activity_batch]
 
 
-# noinspection PyUnboundLocalVariable
 def normalize_parameters(model, **kwargs):
     """Normalize the parameters of a network.
 
@@ -388,17 +387,15 @@ def normalize_parameters(model, **kwargs):
     from snntoolbox.io_utils.common import confirm_overwrite
 
     print("Normalizing parameters...")
-    newpath = kwargs['path'] if 'path' in kwargs else \
+    norm_dir = kwargs['path'] if 'path' in kwargs else \
         os.path.join(settings['log_dir_of_current_run'], 'normalization')
 
-    scale_facs = []
-    scale_facs_from_disk = None
+    x_norm = None
     if 'scale_facs' in kwargs:
-        scale_facs_from_disk = kwargs['scale_facs']
+        scale_facs = kwargs['scale_facs']
     elif 'x_norm' in kwargs or 'dataflow' in kwargs:
-        x_norm = None
         if 'x_norm' in kwargs:
-            x_norm = kwargs['x_norm'][::1000]
+            x_norm = kwargs['x_norm']
         elif 'dataflow' in kwargs:
             x_norm, y = kwargs['dataflow'].next()
         print("Using {} samples for normalization.".format(len(x_norm)))
@@ -408,78 +405,175 @@ def normalize_parameters(model, **kwargs):
         size_str = ['{:.2f}'.format(s) for s in sizes]
         print("INFO: Need {} GB for layer activations.\n".format(size_str) +
               "May have to reduce size of data set used for normalization.\n")
+        scale_facs = {model.layers[0].name: 1}
     else:
         print("ERROR: No scale factors or normalization data set could not be "
               "loaded. Proceeding without normalization.")
         return
 
-    # Loop through all layers, looking for layers with parameters
-    i = 0
-    scale_fac_prev_layer = 1
-    for idx, layer in enumerate(model.layers):
-        # Skip layer if not preceeded by a layer with parameters
-        if len(layer.get_weights()) == 0:
-            continue
-        parameters = layer.get_weights()
+    modified_scale_facs = False
+    if len(scale_facs) == 1:
+        max_activations = []
+        i = 0
+        for idx, layer in enumerate(model.layers):
+            # Skip if layer has no parameters
+            if len(layer.get_weights()) == 0:
+                continue
 
-        if scale_facs_from_disk:
-            scale_fac_prev_layer = scale_facs_from_disk[i - 1] if i > 0 else 1
-            scale_fac = scale_facs_from_disk[i]
-            i += 1
-        else:
             print("Calculating activation of layer {} ...".format(
                 layer.name, layer.output_shape))
-            # Undo previous scaling before calculating activations:
-            layer.set_weights([parameters[0] * scale_fac_prev_layer,
-                               parameters[1]])
             activations = get_activations_layer(model.input, layer.output,
                                                 x_norm)
             nonzero_activations = activations[np.nonzero(activations)]
             ax = tuple(np.arange(len(layer.output_shape))[1:])
-            max_activations = np.max(activations, axis=ax)
+            max_activations.append(np.max(activations, axis=ax))
             del activations
             if settings['normalization_schedule']:
-                scale_fac = get_scale_fac(nonzero_activations, idx)
+                scale_fac = get_scale_fac(nonzero_activations, i)
             else:
                 scale_fac = get_scale_fac(nonzero_activations)
-            scale_facs.append(scale_fac)
+            scale_facs[layer.name] = scale_fac
+            if settings['verbose'] > 2:
+                label = str(idx) + layer.__class__.__name__ \
+                    if use_simple_label else layer.name
+                plot_activ_hist({'Activations': nonzero_activations},
+                                'Activation', label, norm_dir, scale_fac)
+                plot_max_activ_hist({'Activations_max': max_activations[i]},
+                                    'Maximum Activation', label, norm_dir,
+                                    scale_fac)
+            i += 1
+        # Write scale factors to disk
+        filepath = os.path.join(norm_dir, str(settings['percentile']) + '.json')
+        if confirm_overwrite(filepath):
+            with open(filepath, 'w') as f:
+                json.dump(scale_facs, f)
+        modified_scale_facs = True
+
+    i = 0
+    for idx, layer in enumerate(model.layers):
+        # Skip if layer has no parameters
+        if len(layer.get_weights()) == 0:
+            continue
 
         # Scale parameters
-        parameters_norm = [parameters[0] * scale_fac_prev_layer / scale_fac,
-                           parameters[1] / scale_fac]
-        scale_fac_prev_layer = scale_fac
+        parameters = layer.get_weights()
+        scale_fac = scale_facs[layer.name]
+        inbound = get_inbound_layers_with_params(layer)
+        if len(inbound) == 1:
+            parameters_norm = [
+                parameters[0] * scale_facs[inbound[0].name] / scale_fac,
+                parameters[1] / scale_fac]
+        else:
+            parameters_norm = [parameters[0]]
+            offset = 0
+            for inb in inbound:
+                scale_fac_inb = scale_facs[inb.name]
+                f_out = inb.output_shape[0]
+                f_in = range(offset, offset + f_out)
+                if parameters[0].ndim == 2:  # Fully-connected Layer
+                    parameters_norm[0] = parameters_norm[0][f_in, :] * \
+                                         scale_fac_inb / scale_fac
+                else:
+                    parameters_norm[0] = parameters_norm[0][:, f_in, :, :] * \
+                                         scale_fac_inb / scale_fac
+                offset += f_out
+            parameters_norm.append(parameters[1] / scale_fac)
 
         # Update model with modified parameters
         layer.set_weights(parameters_norm)
 
         # Plot distributions of weights and activations before and after norm.
-        if scale_facs_from_disk or settings['verbose'] < 3:
-            continue
-        label = str(idx) + layer.__class__.__name__ if use_simple_label \
-            else layer.name
-        weight_dict = {
-            'weights': parameters[0].flatten(),
-            'weights_norm': np.array(parameters_norm[0]).flatten()}
-        plot_hist(weight_dict, 'Weight', label, newpath)
+        if modified_scale_facs and settings['verbose'] > 2:
+            label = str(idx) + layer.__class__.__name__ if use_simple_label \
+                else layer.name
+            weight_dict = {
+                'weights': parameters[0].flatten(),
+                'weights_norm': np.array(parameters_norm[0]).flatten()}
+            plot_hist(weight_dict, 'Weight', label, norm_dir)
 
-        # Compute activations with modified parameters
-        activations_norm = get_activations_layer(model.input, layer.output,
-                                                 x_norm)
-        activation_dict = {'Activations': nonzero_activations,
-                           'Activations_norm':
-                               activations_norm[np.nonzero(activations_norm)]}
-        plot_hist(activation_dict, 'Activation', label, newpath, scale_fac)
-        plot_activ_hist({'Activations': nonzero_activations},
-                        'Activation', label, newpath, scale_fac)
-        plot_max_activ_hist({'Activations_max': max_activations},
-                            'Maximum Activation', label, newpath, scale_fac)
-    # Write scale factors to disk
-    filepath = os.path.join(settings['log_dir_of_current_run'], 'normalization',
-                            str(settings['percentile']) + '.json')
-    if not scale_facs_from_disk and confirm_overwrite(filepath):
-        with open(filepath, 'w') as f:
-            json.dump(scale_facs, f)
+            # Compute activations with modified parameters
+            # activations_norm = get_activations_layer(model.input,
+            #                                          layer.output, x_norm)
+            # activation_dict = {
+            #     'Activations': nonzero_activations, 'Activations_norm':
+            #         activations_norm[np.nonzero(activations_norm)]}
+            # plot_hist(activation_dict, 'Activation', label, norm_dir,
+            #           scale_fac)
+
+        i += 1
     print()
+
+
+def get_inbound_layer_with_params(layer):
+    """Iterate until inbound layers are found that have parameters.
+
+    Parameters
+    ----------
+
+    layer: keras.layers.Layer
+        Layer
+
+    Returns
+    -------
+
+    : list
+        List of inbound layers.
+    """
+
+    inbound = layer
+    while True:
+        inbound = get_inbound_layers(inbound)
+        if len(inbound) == 1:
+            inbound = inbound[0]
+            if len(inbound.get_weights()) > 0:
+                return inbound
+        else:
+            result = []
+            for inb in inbound:
+                if len(inb.get_weights()) > 0:
+                    result.append(inb)
+                else:
+                    result.append(get_inbound_layer_with_params(inb))
+            return result
+
+
+def get_inbound_layers_without_params(layer):
+    """Return inbound layers.
+
+    Parameters
+    ----------
+
+    layer: Keras.layers
+        A Keras layer.
+
+    Returns
+    -------
+
+    : list[Keras.layers]
+        List of inbound layers.
+    """
+
+    return [layer for layer in layer.inbound_nodes[0].inbound_layers
+            if len(layer.get_weights()) == 0]
+
+
+def get_inbound_layers(layer):
+    """Return inbound layers.
+
+    Parameters
+    ----------
+
+    layer: Keras.layers
+        A Keras layer.
+
+    Returns
+    -------
+
+    : list[Keras.layers]
+        List of inbound layers.
+    """
+
+    return layer.inbound_nodes[0].inbound_layers
 
 
 def get_scale_fac(activations, idx=0):
@@ -503,10 +597,7 @@ def get_scale_fac(activations, idx=0):
         Parameters of the respective layer are scaled by this value.
     """
 
-    # Remove zeros, because they bias the distribution too much
-    a = activations[np.nonzero(activations)]
-
-    scale_fac = np.percentile(a, settings['percentile'] - idx ** 2 / 200)
+    scale_fac = np.percentile(activations, settings['percentile'] - idx * 0.02)
     print("Scale factor: {:.2f}.".format(scale_fac))
 
     return scale_fac

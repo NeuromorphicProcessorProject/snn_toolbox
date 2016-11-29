@@ -22,6 +22,7 @@ import os
 
 from snntoolbox.config import settings, spiking_layers
 from snntoolbox.model_libs.common import absorb_bn
+from snntoolbox.core.util import get_inbound_layers
 
 
 def extract(model):
@@ -190,25 +191,6 @@ def get_inbound_names(layers, layer, name_map):
                 ii += 1
         inb_idxs = [name_map[str(id(inb))] for inb in inbound]
         return [layers[ii]['name'] for ii in inb_idxs]
-
-
-def get_inbound_layers(layer):
-    """Return inbound layers.
-
-    Parameters
-    ----------
-
-    layer: Keras.layers
-        A Keras layer.
-
-    Returns
-    -------
-
-    : list[Keras.layers]
-        List of inbound layers.
-    """
-
-    return layer.inbound_nodes[0].inbound_layers
 
 
 def load_ann(path=None, filename=None):
