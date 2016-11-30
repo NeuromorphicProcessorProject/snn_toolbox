@@ -8,6 +8,7 @@ dist/*
 build/*
 .eggs/
 snntoolbox.egg-info/
+.pyc
 
 # Datasets #
 ############
@@ -18,3 +19,6 @@ docs/build/html/.doctrees/
 examples/dataset/
 examples/log/
 snntoolbox/gui/console_starter.py
+
+# OSX index file
+.DS_Store
