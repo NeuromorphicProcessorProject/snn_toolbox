@@ -381,15 +381,25 @@ def normalize_parameters(model, **kwargs):
     normalization. Note that plotting the activity-distribution can be very
     time- and memory-consuming for larger networks.
     """
-
-    from snntoolbox.io_utils.plotting import plot_hist, plot_activ_hist
-    from snntoolbox.io_utils.plotting import plot_max_activ_hist
-    from snntoolbox.io_utils.common import confirm_overwrite
+    from collections import OrderedDict
 
     print("Normalizing parameters...")
     norm_dir = kwargs['path'] if 'path' in kwargs else \
         os.path.join(settings['log_dir_of_current_run'], 'normalization')
+    activ_dir = os.path.join(norm_dir, 'activations')
+    if not os.path.exists(activ_dir):
+        os.makedirs(activ_dir)
+    # Store original weights for later plotting
+    if not os.path.isfile(os.path.join(activ_dir, 'weights.npz')):
+        weights = {}
+        for layer in model.layers:
+            w = layer.get_weights()
+            if len(w) > 0:
+                weights[layer.name] = w[0]
+        np.savez_compressed(os.path.join(activ_dir, 'weights.npz'), **weights)
 
+    # Either load scale factors from disk, or get normalization data set to
+    # calculate them.
     x_norm = None
     if 'scale_facs' in kwargs:
         scale_facs = kwargs['scale_facs']
@@ -405,42 +415,44 @@ def normalize_parameters(model, **kwargs):
         size_str = ['{:.2f}'.format(s) for s in sizes]
         print("INFO: Need {} GB for layer activations.\n".format(size_str) +
               "May have to reduce size of data set used for normalization.\n")
-        scale_facs = {model.layers[0].name: 1}
+        scale_facs = OrderedDict({model.layers[0].name: 1})
     else:
         print("ERROR: No scale factors or normalization data set could not be "
               "loaded. Proceeding without normalization.")
         return
 
+    # If scale factors have not been computed in a previous run, do so now.
     modified_scale_facs = False
     if len(scale_facs) == 1:
-        max_activations = []
+        from snntoolbox.io_utils.common import confirm_overwrite
+
         i = 0
-        for idx, layer in enumerate(model.layers):
+        for layer in model.layers:
             # Skip if layer has no parameters
             if len(layer.get_weights()) == 0:
                 continue
 
-            print("Calculating activation of layer {} ...".format(
+            print("Calculating activations of layer {} ...".format(
                 layer.name, layer.output_shape))
             activations = get_activations_layer(model.input, layer.output,
                                                 x_norm)
-            nonzero_activations = activations[np.nonzero(activations)]
-            ax = tuple(np.arange(len(layer.output_shape))[1:])
-            max_activations.append(np.max(activations, axis=ax))
-            del activations
-            if settings['normalization_schedule']:
-                scale_fac = get_scale_fac(nonzero_activations, i)
-            else:
-                scale_fac = get_scale_fac(nonzero_activations)
-            scale_facs[layer.name] = scale_fac
             if settings['verbose'] > 2:
-                label = str(idx) + layer.__class__.__name__ \
-                    if use_simple_label else layer.name
-                plot_activ_hist({'Activations': nonzero_activations},
-                                'Activation', label, norm_dir, scale_fac)
-                plot_max_activ_hist({'Activations_max': max_activations[i]},
-                                    'Maximum Activation', label, norm_dir,
-                                    scale_fac)
+                print("Writing activations to disk...")
+                np.savez_compressed(os.path.join(activ_dir, layer.name),
+                                    activations)
+            nonzero_activations = activations[np.nonzero(activations)]
+            del activations
+            idx = i if settings['normalization_schedule'] else 0
+            scale_facs[layer.name] = get_scale_fac(nonzero_activations, idx)
+            # if layer.activation == 'softmax' and settings['softmax_to_relu']:
+            #     softmax_inputs = ...
+            #     if np.median(softmax_inputs) < 0:
+            #         print("WARNING: You allowed the toolbox to replace "
+            #               "softmax by ReLU activations. However, more than "
+            #               "half of the activations are negative, which could "
+            #               "reduce accuracy. Consider setting "
+            #               "settings['softmax_to_relu'] = False.")
+            #         settings['softmax_to_relu'] = False
             i += 1
         # Write scale factors to disk
         filepath = os.path.join(norm_dir, str(settings['percentile']) + '.json')
@@ -449,8 +461,8 @@ def normalize_parameters(model, **kwargs):
                 json.dump(scale_facs, f)
         modified_scale_facs = True
 
-    i = 0
-    for idx, layer in enumerate(model.layers):
+    # Apply scale factors to normalize the parameters.
+    for layer in model.layers:
         # Skip if layer has no parameters
         if len(layer.get_weights()) == 0:
             continue
@@ -459,52 +471,80 @@ def normalize_parameters(model, **kwargs):
         parameters = layer.get_weights()
         scale_fac = scale_facs[layer.name]
         inbound = get_inbound_layers_with_params(layer)
-        if len(inbound) == 1:
+        if len(inbound) == 0:  # Input layer
+            input_layer = layer.inbound_nodes[0].inbound_layers[0].name
+            parameters_norm = [
+                parameters[0] * scale_facs[input_layer] / scale_fac,
+                parameters[1] / scale_fac]
+        elif len(inbound) == 1:
             parameters_norm = [
                 parameters[0] * scale_facs[inbound[0].name] / scale_fac,
                 parameters[1] / scale_fac]
         else:
-            parameters_norm = [parameters[0]]
-            offset = 0
+            parameters_norm = [parameters[0]]  # Consider only weights at first
+            offset = 0  # Index offset at input filter dimension
             for inb in inbound:
                 scale_fac_inb = scale_facs[inb.name]
-                f_out = inb.output_shape[0]
+                f_out = inb.W_shape[0]  # Num output features of inbound layer
                 f_in = range(offset, offset + f_out)
                 if parameters[0].ndim == 2:  # Fully-connected Layer
-                    parameters_norm[0] = parameters_norm[0][f_in, :] * \
-                                         scale_fac_inb / scale_fac
+                    parameters_norm[0][f_in, :] *= scale_fac_inb / scale_fac
                 else:
-                    parameters_norm[0] = parameters_norm[0][:, f_in, :, :] * \
-                                         scale_fac_inb / scale_fac
+                    parameters_norm[0][:, f_in, :, :] *= \
+                        scale_fac_inb / scale_fac
                 offset += f_out
-            parameters_norm.append(parameters[1] / scale_fac)
+            parameters_norm.append(parameters[1] / scale_fac)  # Append bias
 
         # Update model with modified parameters
         layer.set_weights(parameters_norm)
 
-        # Plot distributions of weights and activations before and after norm.
-        if modified_scale_facs and settings['verbose'] > 2:
+    # Plot distributions of weights and activations before and after norm.
+    if modified_scale_facs and settings['verbose'] > 2:
+        from snntoolbox.io_utils.plotting import plot_hist, plot_activ_hist
+        from snntoolbox.io_utils.plotting import plot_max_activ_hist
+
+        print("Plotting distributions of weights and activations before and "
+              "after normalizing...")
+
+        # Load original parsed model to get parameters before normalization
+        weights = np.load(os.path.join(activ_dir, 'weights.npz'))
+        for idx, layer in enumerate(model.layers):
+            # Skip if layer has no parameters
+            if len(layer.get_weights()) == 0:
+                continue
+
             label = str(idx) + layer.__class__.__name__ if use_simple_label \
                 else layer.name
+            parameters = weights[layer.name]
+            parameters_norm = layer.get_weights()
             weight_dict = {
                 'weights': parameters[0].flatten(),
-                'weights_norm': np.array(parameters_norm[0]).flatten()}
+                'weights_norm': parameters_norm[0].flatten()}
             plot_hist(weight_dict, 'Weight', label, norm_dir)
 
+            # Load activations of model before normalization
+            activations = np.load(os.path.join(activ_dir,
+                                               layer.name + '.npz'))['arr_0']
             # Compute activations with modified parameters
-            # activations_norm = get_activations_layer(model.input,
-            #                                          layer.output, x_norm)
-            # activation_dict = {
-            #     'Activations': nonzero_activations, 'Activations_norm':
-            #         activations_norm[np.nonzero(activations_norm)]}
-            # plot_hist(activation_dict, 'Activation', label, norm_dir,
-            #           scale_fac)
-
-        i += 1
+            nonzero_activations = activations[np.nonzero(activations)]
+            activations_norm = get_activations_layer(model.input,
+                                                     layer.output, x_norm)
+            activation_dict = {
+                'Activations': nonzero_activations, 'Activations_norm':
+                    activations_norm[np.nonzero(activations_norm)]}
+            scale_fac = scale_facs[layer.name]
+            plot_hist(activation_dict, 'Activation', label, norm_dir,
+                      scale_fac)
+            ax = tuple(np.arange(len(layer.output_shape))[1:])
+            plot_activ_hist({'Activations': nonzero_activations},
+                            'Activation', label, norm_dir, scale_fac)
+            plot_max_activ_hist(
+                {'Activations_max': np.max(activations, axis=ax)},
+                'Maximum Activation', label, norm_dir, scale_fac)
     print()
 
 
-def get_inbound_layer_with_params(layer):
+def get_inbound_layers_with_params(layer):
     """Iterate until inbound layers are found that have parameters.
 
     Parameters
@@ -526,14 +566,14 @@ def get_inbound_layer_with_params(layer):
         if len(inbound) == 1:
             inbound = inbound[0]
             if len(inbound.get_weights()) > 0:
-                return inbound
+                return [inbound]
         else:
             result = []
             for inb in inbound:
                 if len(inb.get_weights()) > 0:
                     result.append(inb)
                 else:
-                    result.append(get_inbound_layer_with_params(inb))
+                    result += get_inbound_layers_with_params(inb)
             return result
 
 

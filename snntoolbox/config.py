@@ -160,6 +160,12 @@ tau_syn_E: float, optional
     Decay time of the excitatory synaptic conductance in milliseconds.
 tau_syn_I: float, optional
     Decay time of the inhibitory synaptic conductance in milliseconds.
+softmax_to_relu: boolean, optional
+    If ``True``, replace softmax by ReLU activation function. This is
+    recommended (default), because the spiking softmax implementation tends to
+    reduce accuracy, especially top-5. It is safe to do this replacement as long
+    as the input to the activation function is not all negative. In that case,
+    the ReLU would not be able to determine the winner.
 softmax_clockrate: int, optional
     In our implementation of a spiking softmax activation function we use an
     external Poisson clock to trigger calculating the softmax of a layer. The
@@ -262,6 +268,7 @@ Default values
                   'tau_refrac': 0,
                   'tau_syn_E': 0.01,
                   'tau_syn_I': 0.01,
+                 'softmax_to_relu': True,
                   'softmax_clockrate': 300}
     simparams = {'simulator': 'INI',
                  'duration': 200,
@@ -304,7 +311,7 @@ maxpool_types = {'fir_max', 'exp_max', 'avg_max', 'binary_tanh',
 simulators_pyNN = {'nest', 'brian', 'Neuron'}
 simulators_other = {'INI', 'brian2', 'MegaSim'}
 simulators = simulators_pyNN.copy()
-simulators.update(simulators_other)
+simulators |= simulators_other
 
 # Default parameters:
 settings = {'dataset_path': 'dataset/',
@@ -328,6 +335,7 @@ settings = {'dataset_path': 'dataset/',
             'verbose': 3,
             'v_thresh': 1,
             'tau_refrac': 0,
+            'softmax_to_relu': True,
             'softmax_clockrate': 300,
             'simulator': 'INI',
             'duration': 200,

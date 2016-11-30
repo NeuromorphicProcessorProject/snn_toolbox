@@ -130,7 +130,7 @@ def extract(model):
                     tuple(batch_input_shape)
 
         if layer_type not in spiking_layers:
-            print("Skipping layer {}".format(layer_type))
+            print("Skipping layer {}.".format(layer_type))
             continue
 
         print("Parsing layer {}".format(layer_type))

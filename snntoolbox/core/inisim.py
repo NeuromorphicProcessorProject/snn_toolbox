@@ -59,7 +59,7 @@ def update_neurons(self):
     """Update neurons according to activation function."""
 
     if hasattr(self, 'activation_str'):
-        if self.activation_str == 'softmax':
+        if self.activation_str == 'softmax' and not settings['softmax_to_relu']:
             output_spikes = softmax_activation(self)
         elif self.activation_str == 'binary_sigmoid':
             output_spikes = binary_sigmoid_activation(self)
@@ -635,16 +635,6 @@ class SpikeMaxPooling2D(MaxPooling2D):
 
         inp = x
 
-        t_inv = settings['dt'] / (self.time + settings['dt'])
-        if settings['maxpool_type'] == 'avg_max':
-            add_updates(self, [(self.spikerate, self.spikerate +
-                                (x - self.spikerate) * t_inv)])
-        elif settings['maxpool_type'] == 'fir_max':
-            add_updates(self, [(self.spikerate, self.spikerate + x * t_inv)])
-        elif settings['maxpool_type'] == 'exp_max':
-            add_updates(self, [(self.spikerate, self.spikerate +
-                                x / 2. ** (1 / t_inv))])
-
         if settings['payloads']:
             # Add payload from previous layer
             inp = add_payloads(self.inbound_nodes[0].inbound_layers[0], inp)
@@ -652,6 +642,15 @@ class SpikeMaxPooling2D(MaxPooling2D):
         if 'binary' in settings['maxpool_type']:
             self.impulse = super(SpikeMaxPooling2D, self).call(inp)
         elif settings['maxpool_type'] in ["avg_max", "fir_max", "exp_max"]:
+            t_inv = settings['dt'] / (self.time + settings['dt'])
+            if settings['maxpool_type'] == 'avg_max':
+                update_rule = self.spikerate + (x - self.spikerate) * t_inv
+            elif settings['maxpool_type'] == 'exp_max':
+                update_rule = self.spikerate + x / 2. ** (1 / t_inv)
+            else:  # settings['maxpool_type'] == 'fir_max':
+                update_rule = self.spikerate + x * t_inv
+
+            add_updates(self, [(self.spikerate, update_rule)])
             max_idx = pool_same_size(self.spikerate, self.pool_size,
                                      self.ignore_border, self.strides)
             self.impulse = super(SpikeMaxPooling2D, self).call(t.mul(inp,
@@ -661,7 +660,6 @@ class SpikeMaxPooling2D(MaxPooling2D):
                   "falling back on Average Pooling instead.")
             self.impulse = k.pool2d(inp, self.pool_size, self.strides,
                                     self.border_mode, pool_mode='avg')
-
         return update_neurons(self)
 
     def reset(self):

@@ -497,15 +497,6 @@ def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None):
     keys = sorted(h.keys())
     plt.hist([h[key] for key in keys], label=keys, log=True, bottom=1,
              bins=100, histtype='stepfilled', alpha=0.5)
-#    plt.hist([h[key] for key in keys], label=keys, bins=1000,
-#             edgecolor='blue', histtype='stepfilled')
-#    plt.xlabel('Maximum ANN activations')
-#    plt.ylabel('Sample count')
-#    plt.hist([h[key] for key in keys], label=keys, bins=1000,
-#             edgecolor='blue', histtype='stepfilled', log=True, bottom=1)
-#    plt.xlabel('ANN activations')
-#    plt.ylabel('Count')
-#    plt.xlim(xmin=0)
     if scale_fac:
         plt.axvline(scale_fac, color='red', linestyle='dashed', linewidth=2,
                     label='scale factor')

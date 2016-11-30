@@ -11,10 +11,29 @@ from snntoolbox.config import update_setup
 from snntoolbox.core.pipeline import test_full
 
 
-settings = {'path_wd': '/home/rbodo/.snntoolbox/data/imagenet/vgg16/INI', # vgg16_averagepool',
+# settings = {'path_wd': '/home/rbodo/.snntoolbox/data/imagenet/vgg16_averagepool',
+#             'dataset_path': '/home/rbodo/.snntoolbox/Datasets/imagenet/VGG16',
+#             'dataset_format': 'npz',
+#             'filename_ann': '63.40',
+#             'model_lib': 'keras',
+#             'evaluateANN': False,
+#             'normalize': True,
+#             'convert': True,
+#             'simulate': True,
+#             'simulator': 'INI',
+#             'duration': 200,
+#             'batch_size': 20,
+#             'verbose': 1,
+#             'num_to_test': 10000,
+#             'runlabel': 'test',
+#             'percentile': 99.999,
+#             'normalization_schedule': True
+#             }
+
+settings = {'path_wd': '/home/rbodo/.snntoolbox/data/imagenet/vgg16/INI',
             'dataset_path': '/home/rbodo/.snntoolbox/Datasets/imagenet/VGG16',
             'dataset_format': 'npz',
-            'filename_ann': '70.88', #'63.40',
+            'filename_ann': '70.88',
             'model_lib': 'keras',
             'evaluateANN': False,
             'normalize': True,
@@ -22,8 +41,8 @@ settings = {'path_wd': '/home/rbodo/.snntoolbox/data/imagenet/vgg16/INI', # vgg1
             'simulate': True,
             'simulator': 'INI',
             'duration': 200,
-            'batch_size': 20,
-            'verbose': 1,
+            'batch_size': 1,
+            'verbose': 3,
             'num_to_test': 10000,
             'runlabel': 'test',
             'percentile': 99.999,

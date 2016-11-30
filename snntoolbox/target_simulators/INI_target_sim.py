@@ -318,7 +318,7 @@ class SNN:
                     total_spike_count_over_time[t_idx] = total_spike_count
                     t_idx += 1
                 if s['verbose'] > 0:
-                    echo('.')
+                    echo('{:.2%}_'.format(1-top1err_vs_time[-1]))
 
             truth += list(truth_batch)
             guesses += list(guesses_batch)
