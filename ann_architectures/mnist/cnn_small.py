@@ -8,26 +8,17 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-from keras.constraints import maxnorm
 from keras.datasets import mnist as dataset
-from keras.layers.convolutional import Convolution2D
-from keras.layers.core import Dense, Activation, Flatten
+from keras.layers import Dense, Flatten, MaxPooling2D, Convolution2D
 from keras.models import Sequential
 from keras.utils import np_utils
 from snntoolbox.io_utils.plotting import plot_history
 
-batch_size = 128
 nb_classes = 10
-nb_epoch = 40
+nb_epoch = 20
 
 # input image dimensions
 img_rows, img_cols = 28, 28
-# number of convolutional filters to use
-nb_filters = 32
-# size of pooling area for max pooling
-nb_pool = 2
-# convolution kernel size
-nb_conv = 3
 # color channels
 chnls = 1
 
@@ -51,25 +42,20 @@ print(X_test.shape[0], 'test samples')
 
 model = Sequential()
 
-model.add(Convolution2D(nb_filters, nb_conv, nb_conv, b_constraint=maxnorm(0),
+model.add(Convolution2D(32, 3, 3, activation='relu',
                         input_shape=(chnls, img_rows, img_cols)))
-model.add(Activation('relu'))
-# model.add(AveragePooling2D(pool_size=(nb_pool, nb_pool)))
+model.add(MaxPooling2D((2, 2), (1, 1)))
 model.add(Flatten())
-model.add(Dense(nb_classes, b_constraint=maxnorm(0)))
-model.add(Activation('softmax'))
+model.add(Dense(nb_classes, activation='softmax'))
 
-model.compile(loss='categorical_crossentropy', optimizer='adadelta',
-              metrics=['accuracy'])
+model.compile('adam', 'categorical_crossentropy', metrics=['accuracy'])
 
-history = model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
-                    verbose=1, validation_data=(X_test, Y_test))
+history = model.fit(X_train, Y_train, nb_epoch, verbose=0,
+                    validation_data=(X_test, Y_test))
 score = model.evaluate(X_test, Y_test, verbose=0)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 
 plot_history(history)
 
-filename = '{:2.2f}'.format(score[1] * 100)
-open(filename + '.json', 'w').write(model.to_json())
-model.save_weights(filename + '.h5', overwrite=True)
+model.save('{:2.2f}.h5'.format(score[1]*100))
