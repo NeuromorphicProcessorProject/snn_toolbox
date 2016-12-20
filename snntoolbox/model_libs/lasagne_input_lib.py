@@ -437,12 +437,12 @@ def model_from_py(path=None, filename=None):
     mod = import_script(path, filename)
     model = mod.build_network()
     if os.path.isfile(filepath + '.pkl'):
-        print("Loading parameters from .pkl")
+        print("Loading parameters from .pkl file.")
         import pickle
         params = pickle.load(open(filepath + '.pkl', 'rb'),
                              encoding='latin1')['param values']
     else:
-        print("Loading parameters from .h5")
+        print("Loading parameters from .h5 file.")
         params = load_parameters(filepath + '.h5')
     lasagne.layers.set_all_param_values(model['model'], params)
 

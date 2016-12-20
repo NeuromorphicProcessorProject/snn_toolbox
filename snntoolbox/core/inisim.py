@@ -21,11 +21,9 @@ import numpy as np
 import theano
 import theano.tensor as t
 from future import standard_library
-import inspect
 from keras import backend as k
 from keras.layers import Convolution2D, Merge
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D
-import keras.activations as k_activ
 from snntoolbox.config import settings
 from theano.tensor.shared_randomstreams import RandomStreams
 from theano.tensor.signal import pool
@@ -42,7 +40,7 @@ def update_neurons(self):
     """Update neurons according to activation function."""
 
     if hasattr(self, 'activation_str'):
-        if self.activation_str == 'softmax' and not settings['softmax_to_relu']:
+        if self.activation_str == 'softmax':
             output_spikes = softmax_activation(self)
         elif self.activation_str == 'binary_sigmoid':
             output_spikes = binary_sigmoid_activation(self)
@@ -153,6 +151,16 @@ def linear_activation(self):
     # Add impulse
     new_mem = self.mem + masked_imp
 
+    # Experimental: Clamp the membrane potential to zero for the first few time
+    # steps to avoid transient response. Here, this is done for the first 50
+    # steps, for layer 14 only. For any practical purposes, we would have to
+    # define a rule that sets the clamp-duration depending on each layer
+    # individually, possibly using a heuristic like measuring the variance of
+    # presynaptic spike-rates.
+    # new_mem = theano.ifelse.ifelse(
+    #     t.eq(int(self.name[:2]), 14) * t.lt(self.time, 50),
+    #     self.mem, self.mem + masked_imp)
+
     # Store spiking
     output_spikes = t.ge(new_mem, self.v_thresh)
     spike_idxs = output_spikes.nonzero()
@@ -163,6 +171,9 @@ def linear_activation(self):
         else:
             new_and_reset_mem = t.inc_subtensor(new_mem[spike_idxs],
                                                 -self.v_thresh)
+    elif settings['reset'] == 'Reset by modulo':
+        new_and_reset_mem = t.set_subtensor(new_mem[spike_idxs],
+                                            new_mem[spike_idxs] % self.v_thresh)
     else:  # settings['reset'] == 'Reset to zero':
         new_and_reset_mem = t.set_subtensor(new_mem[spike_idxs], 0.)
 
@@ -273,9 +284,50 @@ def add_updates(self, updates):
         pass
 
 
+def init_membrane_potential(self, mode='zero'):
+    """Initialize membrane potential.
+
+    Helpful to avoid transient response in the beginning of the simulation.
+    Not needed when reset between frames is turned off, e.g. with a video data
+    set.
+
+    Parameters
+    ----------
+
+    self: Subclass[keras.layers.core.Layer]
+        The layer.
+    mode: str
+        Initialization mode.
+
+        - ``'uniform'``: Random numbers from uniform distribution in
+          ``[-thr, thr]``.
+        - ``'bias'``: Negative bias.
+        - ``'zero'``: Zero (default).
+
+    Returns
+    -------
+
+    init_mem: theano.tensor.sharedvar
+        A tensor of ``self.output_shape`` (same as layer).
+    """
+
+    if mode == 'uniform':
+        init_mem = k.random_uniform(self.output_shape,
+                                    -self.v_thresh, self.v_thresh)
+    elif mode == 'bias':
+        init_mem = np.zeros(self.output_shape, floatX)
+        if hasattr(self, 'b'):
+            b = self.get_weights()[1]
+            for i in range(len(b)):
+                init_mem[:, i, Ellipsis] = np.float32(-b[i])
+    else:  # mode == 'zero':
+        init_mem = np.zeros(self.output_shape, floatX)
+    return init_mem
+
+
 def reset_spikevars(self):
     """Reset variables present in spiking layers."""
-    self.mem.set_value(np.zeros(self.output_shape, floatX))
+    self.mem.set_value(init_membrane_potential(self))
     self.time.set_value(np.float32(0))
     if settings['tau_refrac'] > 0:
         self.refrac_until.set_value(np.zeros(self.output_shape, floatX))
@@ -358,20 +410,12 @@ class SpikeDense(Dense):
 
     def __init__(self, output_dim, **kwargs):
         """Init function."""
-        # Remove activation from kwargs before initializing superclass, in case
-        # we are using a custom activation function that Keras doesn't
-        # understand.
-        self.activation_str = str(kwargs['activation'])
-        activs = [a[0] for a in inspect.getmembers(k_activ, inspect.isfunction)]
-        if self.activation_str not in activs:
-            kwargs.pop('activation')
-            if not settings['convert']:
-                print("WARNING: It seems you have restored a previously "
-                      "converted SNN from disk, which uses an activation "
-                      "function unknown to Keras. This custom function could "
-                      "not be saved and reloaded. Falling back on 'linear' "
-                      "activation. Convert from scratch before simulating to "
-                      "use custom function {}.".format(self.activation_str))
+        # Replace activation from kwargs by 'linear' before initializing
+        # superclass, because the relu activation is applied by the spike-
+        # generation mechanism automatically. In some cases (binary activation),
+        # we need to apply a the activation manually. This information is taken
+        # from the 'activation' key during conversion.
+        self.activation_str = str(kwargs.pop('activation'))
         super(SpikeDense, self).__init__(output_dim, **kwargs)
         self.layer_type = self.class_name
         self.tau_refrac = kwargs['tau_refrac'] if 'tau_refrac' in kwargs else 0.
@@ -430,6 +474,11 @@ class SpikeConvolution2D(Convolution2D):
 
     def __init__(self, nb_filter, nb_row, nb_col, filter_flip=True, **kwargs):
         """Init function."""
+        # Replace activation from kwargs by 'linear' before initializing
+        # superclass, because the relu activation is applied by the spike-
+        # generation mechanism automatically. In some cases (binary activation),
+        # we need to apply a the activation manually. This information is taken
+        # from the 'activation' key during conversion.
         self.activation_str = str(kwargs.pop('activation'))
         super(SpikeConvolution2D, self).__init__(nb_filter, nb_row, nb_col,
                                                  **kwargs)
@@ -863,7 +912,7 @@ class SpikePool(theano.Op):
         z_shape = pool.Pool.out_shape(xr.shape, self.ds, self.ignore_border,
                                       self.st, self.padding)
         if (z[0] is None) or (z[0].shape != z_shape):
-            z[0] = np.empty(z_shape, dtype=xr.dtype)
+            z[0] = np.zeros(z_shape, dtype=xr.dtype)
         zz = z[0]
         # number of pooling output rows
         pr = zz.shape[-2]
@@ -906,10 +955,14 @@ class SpikePool(theano.Op):
                             col_st = max(col_st, self.padding[1])
                             col_end = min(col_end, xr.shape[-1] + pad_w)
                         rate_patch = yr[n, j, row_st:row_end, col_st:col_end]
+                        if len(rate_patch.nonzero()[0]) == 0:
+                            # Need to prevent the layer to output a spike at
+                            # index 0 if all rates are equally zero.
+                            continue
                         spike_patch = ys[n, j, row_st:row_end, col_st:col_end]
                         max_rate_idx = np.argmax(rate_patch)  # flattens patch
-                        o = spike_patch.flatten()[max_rate_idx]
-                        zz[n, j, r, c] = o
+                        if spike_patch.flatten()[max_rate_idx]:
+                            zz[n, j, r, c] = settings['v_thresh']
 
 custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeDense': SpikeDense,

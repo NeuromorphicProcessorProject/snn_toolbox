@@ -286,6 +286,7 @@ Default values
 
 import matplotlib as mpl
 from textwrap import dedent
+from collections import OrderedDict
 
 # Define text sizes of various plot properties relative to font.size, using the
 # following values: xx-small, x-small, small, medium, large, x-large, xx-large,
@@ -314,45 +315,47 @@ simulators = simulators_pyNN.copy()
 simulators |= simulators_other
 
 # Default parameters:
-settings = {'dataset_path': 'dataset/',
-            'dataset_format': 'npz',
-            'datagen_kwargs': '{}',
-            'dataflow_kwargs': '{}',
-            'model_lib': 'keras',
-            'path_wd': '',
-            'log_dir_of_current_run': '',
-            'filename_parsed_model': '',
-            'filename_ann': '',
-            'filename_snn': '',
-            'batch_size': 100,
-            'samples_to_test': '',
-            'evaluateANN': True,
-            'normalize': True,
-            'percentile': 99,
-            'overwrite': True,
-            'convert': True,
-            'simulate': True,
-            'verbose': 3,
-            'v_thresh': 1,
-            'tau_refrac': 0,
-            'softmax_to_relu': True,
-            'softmax_clockrate': 300,
-            'simulator': 'INI',
-            'duration': 200,
-            'dt': 1,
-            'num_to_test': 1000,
-            'poisson_input': False,
-            'reset': 'Reset by subtraction',
-            'input_rate': 1000,
-            'normalization_schedule': False,
-            'online_normalization': False,
-            'payloads': False,
-            'diff_to_max_rate': 200,
-            'timestep_fraction': 10,
-            'diff_to_min_rate': 100,
-            'scaling_factor': 10000000,
-            'maxpool_type': 'fir_max',
-            'binarize_weights': False}
+settings = OrderedDict({
+    'dataset_path': 'dataset/',
+    'dataset_format': 'npz',
+    'datagen_kwargs': '{}',
+    'dataflow_kwargs': '{}',
+    'model_lib': 'keras',
+    'path_wd': '',
+    'log_dir_of_current_run': '',
+    'filename_parsed_model': '',
+    'filename_ann': '',
+    'filename_snn': '',
+    'batch_size': 100,
+    'samples_to_test': '',
+    'evaluateANN': True,
+    'normalize': True,
+    'percentile': 99,
+    'overwrite': True,
+    'convert': True,
+    'simulate': True,
+    'verbose': 3,
+    'v_thresh': 1,
+    'tau_refrac': 0,
+    'softmax_to_relu': True,
+    'softmax_clockrate': 300,
+    'simulator': 'INI',
+    'duration': 200,
+    'dt': 1,
+    'num_to_test': 1000,
+    'poisson_input': False,
+    'reset': 'Reset by subtraction',
+    'input_rate': 1000,
+    'normalization_schedule': False,
+    'online_normalization': False,
+    'payloads': False,
+    'diff_to_max_rate': 200,
+    'timestep_fraction': 10,
+    'diff_to_min_rate': 100,
+    'scaling_factor': 10000000,
+    'maxpool_type': 'fir_max',
+    'binarize_weights': False,
+    'runlabel': 'test'})
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,
@@ -514,8 +517,8 @@ def update_setup(s):
 
     # Create log directory if it does not exist.
     if 'log_dir_of_current_run' not in s:
-        settings['log_dir_of_current_run'] = os.path.join(s['path_wd'], 'log',
-                                                          'gui', 'test')
+        settings['log_dir_of_current_run'] = os.path.join(
+            s['path_wd'], 'log', 'gui', settings['runlabel'])
     if not os.path.isdir(settings['log_dir_of_current_run']):
         os.makedirs(settings['log_dir_of_current_run'])
 
@@ -540,6 +543,13 @@ def update_setup(s):
             can lead to undesired behavior. Setting 'num_to_test' equal to
             'batch_size'."""))
         settings['num_to_test'] = settings['batch_size']
+
+    if not settings['convert']:
+        print("WARNING: You have restored a previously converted SNN from "
+              "disk. If this net uses an activation function unknown to Keras, "
+              "this custom function will not have been saved and reloaded, but "
+              "replaced by default 'linear'. Convert from scratch before "
+              "simulating to use custom function.")
 
     return True
 

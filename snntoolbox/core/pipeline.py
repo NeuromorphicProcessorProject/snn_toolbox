@@ -99,7 +99,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         # Parse ANN to a Keras model with only layers that can be converted.
         print("Parsing input model...")
         parsed_model = parse(input_model['model'])
-        print_description(parsed_model)
+        print_description()
 
         # ____________________________ EVALUATE ______________________________ #
         # (Re-) evaluate ANN
