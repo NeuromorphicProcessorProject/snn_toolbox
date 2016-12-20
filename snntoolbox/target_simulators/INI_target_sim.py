@@ -29,6 +29,8 @@ standard_library.install_aliases()
 if settings['online_normalization']:
     lidx = 0
 
+remove_classifier = False
+
 
 class SNN:
     """
@@ -74,6 +76,7 @@ class SNN:
         self.sim = initialize_simulator(s['simulator'])
         self.snn = None
         self.parsed_model = None
+        self.debug_vars = None
 
     # noinspection PyUnusedLocal
     def build(self, parsed_model, **kwargs):
@@ -233,18 +236,21 @@ class SNN:
         num_classes = 0
         activations_batch = None
         # Prepare files to write moving accuracy and error to.
+        path_pred = os.path.join(log_dir, 'predictions')
+        if os.path.isfile(path_pred):
+            os.remove(path_pred)
+        path_target = os.path.join(log_dir, 'target_classes')
+        if os.path.isfile(path_target):
+            os.remove(path_target)
         path_acc = os.path.join(log_dir, 'accuracy.txt')
         if os.path.isfile(path_acc):
             os.remove(path_acc)
-        f_acc = open(path_acc, 'a')
         path_top5acc = os.path.join(log_dir, 'top5accuracy.txt')
         if os.path.isfile(path_top5acc):
             os.remove(path_top5acc)
-        f_top5acc = open(path_top5acc, 'a')
         path_err = os.path.join(log_dir, 'err_vs_time.txt')
         if os.path.isfile(path_err):
             os.remove(path_err)
-        f_err = open(path_err, 'a')
 
         for batch_idx in range(num_batches):
             # Get a batch of samples
@@ -272,6 +278,11 @@ class SNN:
                 inp = x_batch
 
             # Reset network variables.
+            # Resetting the membrane potential might be undesired when running
+            # the network on video data with little change between frames.
+            # Can turn it off completely here, or reset only first layer
+            # (closest to input and thus most susceptible to spatial variations)
+            # self.snn.layers[1].reset()
             self.reset()
 
             # Loop through simulation time.
@@ -283,6 +294,7 @@ class SNN:
                                                         s['batch_size']))
             total_spike_count = np.zeros(s['batch_size'])
             t_idx = 0
+            self.init_debug_vars()
             for t in np.arange(0, s['duration'], s['dt']):
                 if s['poisson_input']:
                     # Create poisson input.
@@ -294,11 +306,16 @@ class SNN:
                     # as the maximum activation, and the same sign as the
                     # corresponding activation. Is there a better solution?
                     # inp *= np.max(x_batch) * np.sign(x_batch)
-                # Main step: Propagate poisson input through network and record
-                # output spikes.
+                # Main step: Propagate input through network and record output
+                # spikes.
                 self.set_time(t)
                 out_spikes = self.snn.predict_on_batch(inp)
-                output += out_spikes.astype('int32')
+                if remove_classifier:
+                    output += np.argmax(np.reshape(out_spikes.astype('int32'),
+                                                   (out_spikes.shape[0], -1)),
+                                        axis=1)
+                else:
+                    output += out_spikes.astype('int32')
                 # Get result by comparing the guessed class (i.e. the index
                 # of the neuron in the last layer which spiked most) to the
                 # ground truth.
@@ -314,11 +331,14 @@ class SNN:
                         spiketrains_batch[j][0][Ellipsis, t_idx] = \
                             layer.spiketrain.get_value()
                         total_spike_count += layer.total_spike_count.get_value()
+                        self.monitor_debug_vars(layer, spiketrains_batch, j,
+                                                t_idx)
                         j += 1
                     total_spike_count_over_time[t_idx] = total_spike_count
                     t_idx += 1
                 if s['verbose'] > 0:
                     echo('{:.2%}_'.format(1-top1err_vs_time[-1]))
+            self.save_debug_vars(log_dir)
 
             truth += list(truth_batch)
             guesses += list(guesses_batch)
@@ -326,16 +346,23 @@ class SNN:
             top5score_moving += get_top5score(truth_batch, output)
             top5acc_moving = top5score_moving / ((batch_idx + 1) *
                                                  settings['batch_size'])
-            with open(os.path.join(log_dir, 'predictions'), 'w') as f_pred:
-                f_pred.write(str(guesses))
-            with open(os.path.join(log_dir, 'target_classes'), 'w') as f_target:
-                f_target.write(str(truth))
-            f_acc.write("Moving average accuracy after batch {}/{}: {:.2%}."
-                        "\n".format(batch_idx + 1, num_batches, top1acc_moving))
-            f_top5acc.write("Moving average of top-5-accuracy after batch "
-                            "{}/{}: {:.2%}.\n".format(
-                                batch_idx + 1, num_batches, top5acc_moving))
-            f_err.write(str(top1err_vs_time))
+            with open(path_pred, 'a') as f_pred:
+                f_pred.write("Predictions of batch {}/{}: {}".format(
+                    batch_idx + 1, num_batches, str(guesses)))
+            with open(path_target, 'a') as f_target:
+                f_target.write("True classes of batch {}/{}: {}".format(
+                    batch_idx + 1, num_batches, str(truth)))
+            with open(path_acc, 'a') as f_acc:
+                f_acc.write(
+                    "Moving average accuracy after batch {}/{}: {:.2%}."
+                    "\n".format(batch_idx + 1, num_batches, top1acc_moving))
+            with open(path_top5acc, 'a') as f_top5acc:
+                f_top5acc.write(
+                    "Moving average of top-5-accuracy after batch {}/{}: "
+                    "{:.2%}.\n".format(batch_idx + 1, num_batches,
+                                       top5acc_moving))
+            with open(path_err, 'a') as f_err:
+                f_err.write(str(top1err_vs_time))
 
             if s['verbose'] > 0:
                 print("\nBatch {} of {} completed ({:.1%})".format(
@@ -348,23 +375,23 @@ class SNN:
                 print("Saving batch activations...")
                 activations_batch = get_activations_batch(self.parsed_model,
                                                           x_batch)
-                path_activ = os.path.join(log_dir, 'activations')
-                if not os.path.isdir(path_activ):
-                    os.makedirs(path_activ)
-                np.savez_compressed(os.path.join(path_activ, str(batch_idx)),
-                                    activations=activations_batch)
-                print("Saving batch spiketrains...")
-                path_trains = os.path.join(log_dir, 'spiketrains')
-                if not os.path.isdir(path_trains):
-                    os.makedirs(path_trains)
-                np.savez_compressed(os.path.join(path_trains, str(batch_idx)),
-                                    spiketrains=spiketrains_batch)
-                print("Saving batch spikecounts...")
-                path_count = os.path.join(log_dir, 'spikecounts')
-                if not os.path.isdir(path_count):
-                    os.makedirs(path_count)
-                np.savez_compressed(os.path.join(path_count, str(batch_idx)),
-                                    spikecounts=total_spike_count_over_time)
+                # path_activ = os.path.join(log_dir, 'activations')
+                # if not os.path.isdir(path_activ):
+                #     os.makedirs(path_activ)
+                # np.savez_compressed(os.path.join(path_activ, str(batch_idx)),
+                #                     activations=activations_batch)
+                # print("Saving batch spiketrains...")
+                # path_trains = os.path.join(log_dir, 'spiketrains')
+                # if not os.path.isdir(path_trains):
+                #     os.makedirs(path_trains)
+                # np.savez_compressed(os.path.join(path_trains, str(batch_idx)),
+                #                     spiketrains=spiketrains_batch)
+                # print("Saving batch spikecounts...")
+                # path_count = os.path.join(log_dir, 'spikecounts')
+                # if not os.path.isdir(path_count):
+                #     os.makedirs(path_count)
+                # np.savez_compressed(os.path.join(path_count, str(batch_idx)),
+                #                     spikecounts=total_spike_count_over_time)
             if s['verbose'] > 2:
                 plot_input_image(x_batch[0], int(np.argmax(y_batch[0])),
                                  log_dir)
@@ -374,9 +401,6 @@ class SNN:
                 plot_spikecount_vs_time(total_spike_count_over_time, log_dir)
                 plot_confusion_matrix(truth, guesses, log_dir)
                 output_graphs(spiketrains_batch, activations_batch, log_dir)
-        f_acc.close()
-        f_top5acc.close()
-        f_err.close()
 
         count = np.zeros(num_classes)
         match = np.zeros(num_classes)
@@ -492,3 +516,51 @@ class SNN:
 
         for layer in self.snn.layers[1:]:  # Skip input layer
             layer.reset()
+
+    def init_debug_vars(self):
+        """Initialize debug variables."""
+
+        self.debug_vars = {
+            'mem8': np.empty(settings['duration']),
+            'mem14': np.empty(settings['duration']),
+            'inputspikes8': np.empty((settings['duration'], 192)),
+            'inputspikes14': np.empty((settings['duration'], 192))}
+
+    def monitor_debug_vars(self, layer, spiketrains_batch, j, t_idx):
+        """Monitor debug variables.
+
+        Parameters
+        ----------
+
+        layer: Subclass[keras.layers.core.Layer]
+        spiketrains_batch: list[np.array]
+        j: int
+        t_idx: int
+        """
+
+        if '08Convolution2D_48' in layer.name:
+            self.debug_vars['mem8'][t_idx] = layer.mem.get_value()[0, 0, 0, 0]
+            self.debug_vars['inputspikes8'][t_idx] = \
+                spiketrains_batch[j - 2][0][0, :, 0, 0, t_idx]
+            self.debug_vars['weights8'] = \
+                self.snn.layers[9].get_weights()[0][0, :, 0, 0]
+            self.debug_vars['bias8'] = self.snn.layers[9].get_weights()[1][0]
+        if '14Convolution2D_32' in layer.name:
+            self.debug_vars['mem14'][t_idx] = layer.mem.get_value()[0, 4, 0, 34]
+            self.debug_vars['inputspikes14'][t_idx] = \
+                spiketrains_batch[j - 4][0][0, :, 0, 34, t_idx]
+            self.debug_vars['weights14'] = \
+                self.snn.layers[15].get_weights()[0][4, :, 0, 0]
+            self.debug_vars['bias15'] = self.snn.layers[15].get_weights()[1][4]
+
+    def save_debug_vars(self, path):
+        """Save debug variables.
+
+        Parameters
+        ----------
+
+        path: str
+            Destination path.
+        """
+
+        np.savez_compressed(os.path.join(path, 'debug_vars'), **self.debug_vars)

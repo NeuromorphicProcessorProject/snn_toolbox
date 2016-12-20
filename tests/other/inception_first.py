@@ -37,7 +37,7 @@ settings = {'path_wd': '/home/rbodo/.snntoolbox/data/imagenet/inception_first',
             'batch_size': 1,
             'verbose': 3,
             'num_to_test': 100,
-            'runlabel': 'reset_first',
+            'runlabel': 'test',
             'percentile': 99.999,
             'normalization_schedule': False
             }
