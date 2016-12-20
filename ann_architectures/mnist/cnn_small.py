@@ -9,7 +9,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 from keras.datasets import mnist as dataset
-from keras.layers import Dense, Flatten, MaxPooling2D, Convolution2D
+from keras.layers import Dense, Flatten, Convolution2D
 from keras.models import Sequential
 from keras.utils import np_utils
 from snntoolbox.io_utils.plotting import plot_history
@@ -44,14 +44,16 @@ model = Sequential()
 
 model.add(Convolution2D(32, 3, 3, activation='relu',
                         input_shape=(chnls, img_rows, img_cols)))
-model.add(MaxPooling2D((2, 2), (1, 1)))
+model.add(Convolution2D(32, 1, 1, activation='relu'))
 model.add(Flatten())
 model.add(Dense(nb_classes, activation='softmax'))
 
 model.compile('adam', 'categorical_crossentropy', metrics=['accuracy'])
 
+print("Training...")
 history = model.fit(X_train, Y_train, nb_epoch, verbose=0,
                     validation_data=(X_test, Y_test))
+print("Testing...")
 score = model.evaluate(X_test, Y_test, verbose=0)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
