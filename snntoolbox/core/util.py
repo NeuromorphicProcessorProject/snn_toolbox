@@ -122,10 +122,14 @@ def parse(input_model):
         layer_type = layer.pop('layer_type')
         filter_flip = layer.pop('filter_flip', None)
         if 'activation' in layer:
-            if layer['activation'] == 'binary_sigmoid':
+            a = layer['activation']
+            if a == 'binary_sigmoid':
                 layer['activation'] = binary_sigmoid
-            elif layer['activation'] == 'binary_tanh':
+            elif a == 'binary_tanh':
                 layer['activation'] = binary_tanh
+            elif a == 'softmax' and settings['softmax_to_relu']:
+                layer['activation'] = 'relu'
+                print("Replaced softmax by relu activation function.")
         # Add layer
         parsed_layer = getattr(keras.layers, layer_type)
         if filter_flip:
@@ -284,7 +288,7 @@ def get_range(start=0.0, stop=1.0, num=5, method='linear'):
         return np.random.random_sample(num) * (stop - start) + start
 
 
-def print_description(snn=None, log=True):
+def print_description(log=True):
     """
     Print a summary of the test run, parameters, and network. If ``log==True``,
     the output is written as ``settings.txt`` file to the folder given by
@@ -298,20 +302,9 @@ def print_description(snn=None, log=True):
         import sys
         f = sys.stdout
 
-    print('\n', file=f)
-    print("SUMMARY SETUP", file=f)
-    print("=============\n", file=f)
-    print("PARAMETERS", file=f)
-    print("----------\n", file=f)
+    print("SNN-TOOLBOX SETTINGS", file=f)
+    print("====================\n", file=f)
     print(settings, file=f)
-    print('\n', file=f)
-    if snn is not None:
-        print("NETWORK", file=f)
-        print("-------\n", file=f)
-        print(snn.get_config(), file=f)
-        print('\n', file=f)
-    print("END OF SUMMARY", file=f)
-    print('\n', file=f)
 
 
 def spiketrains_to_rates(spiketrains_batch):
@@ -444,6 +437,12 @@ def normalize_parameters(model, **kwargs):
             del activations
             idx = i if settings['normalization_schedule'] else 0
             scale_facs[layer.name] = get_scale_fac(nonzero_activations, idx)
+            # Since we have calculated output activations here, check at this
+            # point if the output is mostly negative, in which case we should
+            # stick to softmax. Otherwise ReLU is preferred.
+            # Todo: Determine the input to the activation by replacing the
+            # combined output layer by two distinct layers ``Dense`` and
+            # ``Activation``!
             # if layer.activation == 'softmax' and settings['softmax_to_relu']:
             #     softmax_inputs = ...
             #     if np.median(softmax_inputs) < 0:
