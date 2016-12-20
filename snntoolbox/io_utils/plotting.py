@@ -14,7 +14,7 @@ from __future__ import print_function, unicode_literals
 
 import os
 from typing import Optional, Sequence
-
+import json
 import matplotlib.pyplot as plt
 import numpy as np
 from future import standard_library
@@ -468,6 +468,8 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
     if path is not None:
         filename = 'Pearson'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+        with open(os.path.join(path, filename + '.json'), 'w') as f:
+            json.dump({'corr': list(corr), 'std': list(std)}, f)
     else:
         plt.show()
     plt.close()
