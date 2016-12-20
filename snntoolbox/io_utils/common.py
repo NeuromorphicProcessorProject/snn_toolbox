@@ -27,10 +27,10 @@ standard_library.install_aliases()
 def load_parameters(filepath):
     """Load all layer parameters from an HDF5 file."""
 
-    f = h5py.File(filepath, mode='r')
+    f = h5py.File(filepath, 'r')
 
     params = []
-    for k in f.keys():
+    for k in sorted(f.keys()):
         params.append(np.array(f.get(k)))
 
     f.close()
@@ -38,13 +38,22 @@ def load_parameters(filepath):
     return params
 
 
-def save_parameters(params, filepath):
+def save_parameters(params, filepath, fileformat='h5'):
     """Save all layer parameters to an HDF5 file."""
 
-    with h5py.File(filepath, mode='w') as f:
-        for i, p in enumerate(params):
-            j = '0' + str(i) if i < 10 else str(i)
-            f.create_dataset('param_'+j, data=p)
+    if fileformat == 'pkl':
+        import pickle
+        pickle.dump(params, open(filepath + '.pkl', 'wb'))
+    else:
+        with h5py.File(filepath, mode='w') as f:
+            for i, p in enumerate(params):
+                if i < 10:
+                    j = '00' + str(i)
+                elif i < 100:
+                    j = '0' + str(i)
+                else:
+                    j = str(i)
+                f.create_dataset('param_'+j, data=p)
 
 
 def to_categorical(y, nb_classes):
