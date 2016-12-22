@@ -158,7 +158,7 @@ def linear_activation(self):
     # individually, possibly using a heuristic like measuring the variance of
     # presynaptic spike-rates.
     # new_mem = theano.ifelse.ifelse(
-    #     t.eq(int(self.name[:2]), 14) * t.lt(self.time, 50),
+    #     t.gt(int(self.name[:2]), 10) * t.lt(self.time, 50),
     #     self.mem, self.mem + masked_imp)
 
     # Store spiking
@@ -608,7 +608,7 @@ class SpikeMaxPooling2D(MaxPooling2D):
         self.stateful = True
         self.updates = []
         self._per_input_updates = {}
-        self.spikerate = self.time = None
+        self.spikerate = self.time = self.previous_x = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.total_spike_count = self.refrac_until = self.max_spikerate = None
 
@@ -627,6 +627,7 @@ class SpikeMaxPooling2D(MaxPooling2D):
         super(SpikeMaxPooling2D, self).build(input_shape)
         init_neurons(self, input_shape)
         self.spikerate = theano.shared(np.zeros(input_shape, floatX))
+        self.previous_x = theano.shared(np.zeros(input_shape, floatX))
 
     def call(self, x, mask=None):
         """Layer functionality."""
@@ -639,7 +640,7 @@ class SpikeMaxPooling2D(MaxPooling2D):
 
         if 'binary' in settings['maxpool_type']:
             self.impulse = super(SpikeMaxPooling2D, self).call(inp)
-        elif settings['maxpool_type'] in ["avg_max", "fir_max", "exp_max"]:
+        elif settings['maxpool_type'] in ['avg_max', 'fir_max', 'exp_max']:
             t_inv = settings['dt'] / (self.time + settings['dt'])
             if settings['maxpool_type'] == 'avg_max':
                 update_rule = self.spikerate + (x - self.spikerate) * t_inv
@@ -658,9 +659,11 @@ class SpikeMaxPooling2D(MaxPooling2D):
                 # Spiking MaxPooling as implemented above does not work with
                 # overlapping pool regions. Need to use our own pool-function.
                 inputs = [self.spikerate, x]
+#                inputs = [self.spikerate, self.previous_x]
                 self.impulse = self._pooling_function(
                     inputs, self.pool_size, self.strides, self.border_mode,
                     self.dim_ordering)
+#                add_updates(self, [(self.previous_x, x)])
         else:
             print("Wrong max pooling type, "
                   "falling back on Average Pooling instead.")
@@ -955,11 +958,14 @@ class SpikePool(theano.Op):
                             col_st = max(col_st, self.padding[1])
                             col_end = min(col_end, xr.shape[-1] + pad_w)
                         rate_patch = yr[n, j, row_st:row_end, col_st:col_end]
-                        if len(rate_patch.nonzero()[0]) == 0:
-                            # Need to prevent the layer to output a spike at
-                            # index 0 if all rates are equally zero.
-                            continue
+                        # if not rate_patch.any():
+                        #     # Need to prevent the layer to output a spike at
+                        #     # index 0 if all rates are equally zero.
+                        #     continue
                         spike_patch = ys[n, j, row_st:row_end, col_st:col_end]
+                        # max_rates = rate_patch == np.max(rate_patch)
+                        # if (spike_patch * max_rates).any():
+                        #     zz[n, j, r, c] = settings['v_thresh']
                         max_rate_idx = np.argmax(rate_patch)  # flattens patch
                         if spike_patch.flatten()[max_rate_idx]:
                             zz[n, j, r, c] = settings['v_thresh']

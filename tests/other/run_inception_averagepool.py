@@ -11,10 +11,10 @@ from snntoolbox.config import update_setup
 from snntoolbox.core.pipeline import test_full
 
 
-settings = {'path_wd': '/home/rbodo/.snntoolbox/data/imagenet/inception_lasagne',
+settings = {'path_wd': '/home/rbodo/.snntoolbox/data/imagenet/inception_averagepool',
             'dataset_path': '/home/rbodo/.snntoolbox/Datasets/imagenet/GoogLeNet',
             'dataset_format': 'npz',
-            'filename_ann': 'inception',
+            'filename_ann': '72.94_91.22',
             'model_lib': 'lasagne',
             'evaluateANN': False,
             'normalize': True,
@@ -22,13 +22,12 @@ settings = {'path_wd': '/home/rbodo/.snntoolbox/data/imagenet/inception_lasagne'
             'simulate': True,
             'simulator': 'INI',
             'duration': 200,
-            'batch_size': 1,
-            'verbose': 2,
-            'num_to_test': 1,
-            'runlabel': 'avg_max',
+            'batch_size': 20,
+            'verbose': 1,
+            'num_to_test': 10000,
+            'runlabel': 'clamp',
             'percentile': 100,
-            'normalization_schedule': False,
-            'maxpool_type': 'avg_max'
+            'normalization_schedule': True,
             }
 
 update_setup(settings)

@@ -370,38 +370,38 @@ class SNN:
                 print("Moving average accuracy: {:.2%}.\n".format(
                     top1acc_moving))
                 print("Moving top-5 accuracy: {:.2%}.\n".format(top5acc_moving))
-
             if s['verbose'] > 1:
-                print("Saving batch activations...")
+                print("Calculating activations...")
                 activations_batch = get_activations_batch(self.parsed_model,
                                                           x_batch)
-                # path_activ = os.path.join(log_dir, 'activations')
-                # if not os.path.isdir(path_activ):
-                #     os.makedirs(path_activ)
-                # np.savez_compressed(os.path.join(path_activ, str(batch_idx)),
-                #                     activations=activations_batch)
-                # print("Saving batch spiketrains...")
-                # path_trains = os.path.join(log_dir, 'spiketrains')
-                # if not os.path.isdir(path_trains):
-                #     os.makedirs(path_trains)
-                # np.savez_compressed(os.path.join(path_trains, str(batch_idx)),
-                #                     spiketrains=spiketrains_batch)
-                # print("Saving batch spikecounts...")
-                # path_count = os.path.join(log_dir, 'spikecounts')
-                # if not os.path.isdir(path_count):
-                #     os.makedirs(path_count)
-                # np.savez_compressed(os.path.join(path_count, str(batch_idx)),
-                #                     spikecounts=total_spike_count_over_time)
-            if s['verbose'] > 2:
                 plot_input_image(x_batch[0], int(np.argmax(y_batch[0])),
                                  log_dir)
                 ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
                 plot_error_vs_time(top1err_vs_time, ann_err=ann_err,
                                    path=log_dir)
-                plot_spikecount_vs_time(total_spike_count_over_time, log_dir)
+                plot_spikecount_vs_time(total_spike_count_over_time,
+                                        log_dir)
                 plot_confusion_matrix(truth, guesses, log_dir)
                 output_graphs(spiketrains_batch, activations_batch, log_dir)
-
+            if s['verbose'] > 2:
+                print("Saving batch activations...")
+                path_activ = os.path.join(log_dir, 'activations')
+                if not os.path.isdir(path_activ):
+                    os.makedirs(path_activ)
+                np.savez_compressed(os.path.join(path_activ, str(batch_idx)),
+                                    activations=activations_batch)
+                print("Saving batch spiketrains...")
+                path_trains = os.path.join(log_dir, 'spiketrains')
+                if not os.path.isdir(path_trains):
+                    os.makedirs(path_trains)
+                np.savez_compressed(os.path.join(path_trains, str(batch_idx)),
+                                    spiketrains=spiketrains_batch)
+                print("Saving batch spikecounts...")
+                path_count = os.path.join(log_dir, 'spikecounts')
+                if not os.path.isdir(path_count):
+                    os.makedirs(path_count)
+                np.savez_compressed(os.path.join(path_count, str(batch_idx)),
+                                    spikecounts=total_spike_count_over_time)
         count = np.zeros(num_classes)
         match = np.zeros(num_classes)
         for gt, p in zip(truth, guesses):
@@ -410,7 +410,7 @@ class SNN:
                 match[gt] += 1
         avg_acc = np.mean(match / count)
         top1acc_total = np.mean(np.array(truth) == np.array(guesses))
-        if s['verbose'] > 2:
+        if s['verbose'] > 1:
             plot_confusion_matrix(truth, guesses, log_dir)
         print("Simulation finished.\n\n")
         print("Total accuracy: {:.2%} on {} test samples.\n\n".format(
@@ -524,7 +524,8 @@ class SNN:
             'mem8': np.empty(settings['duration']),
             'mem14': np.empty(settings['duration']),
             'inputspikes8': np.empty((settings['duration'], 192)),
-            'inputspikes14': np.empty((settings['duration'], 192))}
+            'inputspikes14': np.empty((settings['duration'], 192)),
+            'spikerates02': np.empty((settings['duration'], 10))}
 
     def monitor_debug_vars(self, layer, spiketrains_batch, j, t_idx):
         """Monitor debug variables.
@@ -551,7 +552,10 @@ class SNN:
                 spiketrains_batch[j - 4][0][0, :, 0, 34, t_idx]
             self.debug_vars['weights14'] = \
                 self.snn.layers[15].get_weights()[0][4, :, 0, 0]
-            self.debug_vars['bias15'] = self.snn.layers[15].get_weights()[1][4]
+            self.debug_vars['bias14'] = self.snn.layers[15].get_weights()[1][4]
+        if '03MaxPooling2D_64' in layer.name:
+            self.debug_vars['spikerates02'][t_idx] = \
+                layer.spikerate.get_value()[0, 0, 0, :10]
 
     def save_debug_vars(self, path):
         """Save debug variables.
