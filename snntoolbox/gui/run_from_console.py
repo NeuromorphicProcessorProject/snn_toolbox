@@ -25,10 +25,10 @@ settings = {'path_wd': '/home/rbodo/.snntoolbox/data/imagenet/inception_lasagne'
             'batch_size': 1,
             'verbose': 2,
             'num_to_test': 1,
-            'runlabel': 'avg_max',
+            'runlabel': 'exp_max2',
             'percentile': 100,
             'normalization_schedule': False,
-            'maxpool_type': 'avg_max'
+            'maxpool_type': 'exp_max'
             }
 
 update_setup(settings)

@@ -35,6 +35,8 @@ rng = RandomStreams()
 
 floatX = theano.config.floatX
 
+clamp = False
+
 
 def update_neurons(self):
     """Update neurons according to activation function."""
@@ -149,17 +151,20 @@ def linear_activation(self):
                         0.)
 
     # Add impulse
-    new_mem = self.mem + masked_imp
-
-    # Experimental: Clamp the membrane potential to zero for the first few time
-    # steps to avoid transient response. Here, this is done for the first 50
-    # steps, for layer 14 only. For any practical purposes, we would have to
-    # define a rule that sets the clamp-duration depending on each layer
-    # individually, possibly using a heuristic like measuring the variance of
-    # presynaptic spike-rates.
-    # new_mem = theano.ifelse.ifelse(
-    #     t.gt(int(self.name[:2]), 10) * t.lt(self.time, 50),
-    #     self.mem, self.mem + masked_imp)
+    if clamp:
+        # Experimental: Clamp the membrane potential to zero until the
+        # presynaptic neurons fire at their steady-state rates. This helps avoid
+        # a transient response. The clamp-duration can be set by a specific
+        # delay from layer to layer, or by defining a rule using a heuristic
+        # like the measured variances of presynaptic spike-rates.
+        # new_mem = theano.ifelse.ifelse(t.lt(self.time, self.clamp_idx),
+        #                                self.mem, self.mem + masked_imp)
+        new_mem = theano.ifelse.ifelse(
+            t.lt(t.mean(self.var), 1e-4) +
+            t.gt(self.time, settings['duration'] / 2),
+            self.mem + masked_imp, self.mem)
+    else:
+        new_mem = self.mem + masked_imp
 
     # Store spiking
     output_spikes = t.ge(new_mem, self.v_thresh)
@@ -343,6 +348,9 @@ def reset_spikevars(self):
     if settings['online_normalization']:
         self.max_spikerate.set_value(0.)
         self.v_thresh.set_value(settings['v_thresh'])
+    if clamp:
+        self.spikerate.set_value(np.zeros(self.input_shape, floatX))
+        self.var.set_value(np.zeros(self.input_shape, floatX))
 
 
 def init_neurons(self, input_shape, tau_refrac=0.):
@@ -366,6 +374,54 @@ def init_neurons(self, input_shape, tau_refrac=0.):
         self.payloads_sum = k.zeros(output_shape)
     if settings['online_normalization']:
         self.max_spikerate = k.zeros(1)
+    if clamp:
+        # self.clamp_idx = get_clamp_idx(self)
+        self.spikerate = k.zeros(input_shape)
+        self.var = k.zeros(input_shape)
+
+
+def get_clamp_idx(self):
+    """Get time step when to stop clamping membrane potential.
+
+    Parameters
+    ----------
+
+    self:
+        Layer
+
+    Returns
+    -------
+
+    : int
+        Time step when to stop clamping.
+    """
+
+    clamp_idx = np.loadtxt(settings['path_wd'] + '/clamp_idx.txt', 'int')
+    l = self.name.split('_')
+    layer_idx = None
+    for i in range(max(4, len(l) - 2)):
+        if l[0][:i].isnumeric():
+            layer_idx = int(l[0][:i])
+    return clamp_idx[layer_idx]
+
+
+def update_avg_variance(self, spikes):
+    """Keep a running average of the spike-rates and the their variance.
+
+    Parameters
+    ----------
+
+    self:
+        Layer
+    spikes:
+        Output spikes.
+    """
+
+    delta = spikes - self.spikerate
+    spikerate_new = self.spikerate + delta / (self.time + 1)
+    var_new = self.var + delta * (spikes - spikerate_new)
+    add_updates(self, [(self.var, var_new / (self.time + 1))])
+    add_updates(self, [(self.spikerate, spikerate_new)])
 
 
 class SpikeMerge(Merge):
@@ -426,6 +482,8 @@ class SpikeDense(Dense):
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.total_spike_count = self.refrac_until = self.max_spikerate = None
+        if clamp:
+            self.clamp_idx = self.spikerate = self.var = None
 
     def build(self, input_shape):
         """Creates the layer weights.
@@ -444,6 +502,9 @@ class SpikeDense(Dense):
 
     def call(self, x, mask=None):
         """Layer functionality."""
+
+        if clamp:
+            update_avg_variance(self, x)
 
         inp = x
 
@@ -492,6 +553,8 @@ class SpikeConvolution2D(Convolution2D):
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.total_spike_count = self.refrac_until = self.max_spikerate = None
+        if clamp:
+            self.clamp_idx = self.spikerate = self.var = None
 
     def build(self, input_shape):
         """Creates the layer weights.
@@ -510,6 +573,9 @@ class SpikeConvolution2D(Convolution2D):
 
     def call(self, x, mask=None):
         """Layer functionality."""
+
+        if clamp:
+            update_avg_variance(self, x)
 
         inp = x
 
@@ -552,6 +618,8 @@ class SpikeAveragePooling2D(AveragePooling2D):
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.total_spike_count = self.refrac_until = self.max_spikerate = None
+        if clamp:
+            self.clamp_idx = self.spikerate = self.var = None
 
     def build(self, input_shape):
         """Creates the layer weights.
@@ -570,6 +638,9 @@ class SpikeAveragePooling2D(AveragePooling2D):
 
     def call(self, x, mask=None):
         """Layer functionality."""
+
+        if clamp:
+            update_avg_variance(self, x)
 
         inp = x
 
@@ -608,9 +679,11 @@ class SpikeMaxPooling2D(MaxPooling2D):
         self.stateful = True
         self.updates = []
         self._per_input_updates = {}
-        self.spikerate = self.time = self.previous_x = None
+        self.spikerate_pre = self.time = self.previous_x = self.clamp_idx = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.total_spike_count = self.refrac_until = self.max_spikerate = None
+        if clamp:
+            self.spikerate = self.var = None
 
     def build(self, input_shape):
         """Creates the layer weights.
@@ -626,11 +699,14 @@ class SpikeMaxPooling2D(MaxPooling2D):
 
         super(SpikeMaxPooling2D, self).build(input_shape)
         init_neurons(self, input_shape)
-        self.spikerate = theano.shared(np.zeros(input_shape, floatX))
+        self.spikerate_pre = theano.shared(np.zeros(input_shape, floatX))
         self.previous_x = theano.shared(np.zeros(input_shape, floatX))
 
     def call(self, x, mask=None):
         """Layer functionality."""
+
+        if clamp:
+            update_avg_variance(self, x)
 
         inp = x
 
@@ -643,27 +719,18 @@ class SpikeMaxPooling2D(MaxPooling2D):
         elif settings['maxpool_type'] in ['avg_max', 'fir_max', 'exp_max']:
             t_inv = settings['dt'] / (self.time + settings['dt'])
             if settings['maxpool_type'] == 'avg_max':
-                update_rule = self.spikerate + (x - self.spikerate) * t_inv
+                update_rule = self.spikerate_pre + \
+                              (x - self.spikerate_pre) * t_inv
             elif settings['maxpool_type'] == 'exp_max':
-                update_rule = self.spikerate + x / 2. ** (1 / t_inv)
+                # update_rule = self.spikerate_pre + x / 2. ** (1 / t_inv)
+                update_rule = self.spikerate_pre * 1.005 + x * 0.995
             else:  # settings['maxpool_type'] == 'fir_max':
-                update_rule = self.spikerate + x * t_inv
-            add_updates(self, [(self.spikerate, update_rule)])
-
-            if self.strides == self.pool_size:
-                max_idx = t.cast(pool.max_pool_2d_same_size(
-                    self.spikerate, self.pool_size) > 0, floatX)
-                self.impulse = super(SpikeMaxPooling2D, self).call(
-                    t.mul(inp, max_idx))
-            else:
-                # Spiking MaxPooling as implemented above does not work with
-                # overlapping pool regions. Need to use our own pool-function.
-                inputs = [self.spikerate, x]
-#                inputs = [self.spikerate, self.previous_x]
-                self.impulse = self._pooling_function(
-                    inputs, self.pool_size, self.strides, self.border_mode,
-                    self.dim_ordering)
-#                add_updates(self, [(self.previous_x, x)])
+                update_rule = self.spikerate_pre + x * t_inv
+            add_updates(self, [(self.spikerate_pre, update_rule)])
+            add_updates(self, [(self.previous_x, x)])
+            self.impulse = self._pooling_function(
+                [self.spikerate_pre, self.previous_x], self.pool_size,
+                self.strides, self.border_mode, self.dim_ordering)
         else:
             print("Wrong max pooling type, "
                   "falling back on Average Pooling instead.")
@@ -680,7 +747,7 @@ class SpikeMaxPooling2D(MaxPooling2D):
         """Reset layer variables."""
 
         reset_spikevars(self)
-        self.spikerate.set_value(np.zeros(self.input_shape, floatX))
+        self.spikerate_pre.set_value(np.zeros(self.input_shape, floatX))
 
     @property
     def class_name(self):

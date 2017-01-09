@@ -198,7 +198,6 @@ def inception_e(input_layer, nfilt, pool_mode):
 
     l4 = Pool2DLayer(
         input_layer, pool_size=3, stride=1, pad=1, mode=pool_mode)
-
     l4 = bn_conv(l4, num_filters=nfilt[3][0], filter_size=1)
 
     return ConcatLayer([l1, l2a, l2b, l3a, l3b, l4])

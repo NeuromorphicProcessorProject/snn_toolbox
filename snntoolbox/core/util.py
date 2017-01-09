@@ -498,48 +498,48 @@ def normalize_parameters(model, **kwargs):
         layer.set_weights(parameters_norm)
 
     # Plot distributions of weights and activations before and after norm.
-    if modified_scale_facs and settings['verbose'] > 2:
-        from snntoolbox.io_utils.plotting import plot_hist, plot_activ_hist
-        from snntoolbox.io_utils.plotting import plot_max_activ_hist
-
-        print("Plotting distributions of weights and activations before and "
-              "after normalizing...")
-
-        # Load original parsed model to get parameters before normalization
-        weights = np.load(os.path.join(activ_dir, 'weights.npz'))
-        for idx, layer in enumerate(model.layers):
-            # Skip if layer has no parameters
-            if len(layer.get_weights()) == 0:
-                continue
-
-            label = str(idx) + layer.__class__.__name__ if use_simple_label \
-                else layer.name
-            parameters = weights[layer.name]
-            parameters_norm = layer.get_weights()
-            weight_dict = {
-                'weights': parameters[0].flatten(),
-                'weights_norm': parameters_norm[0].flatten()}
-            plot_hist(weight_dict, 'Weight', label, norm_dir)
-
-            # Load activations of model before normalization
-            activations = np.load(os.path.join(activ_dir,
-                                               layer.name + '.npz'))['arr_0']
-            # Compute activations with modified parameters
-            nonzero_activations = activations[np.nonzero(activations)]
-            activations_norm = get_activations_layer(model.input,
-                                                     layer.output, x_norm)
-            activation_dict = {
-                'Activations': nonzero_activations, 'Activations_norm':
-                    activations_norm[np.nonzero(activations_norm)]}
-            scale_fac = scale_facs[layer.name]
-            plot_hist(activation_dict, 'Activation', label, norm_dir,
-                      scale_fac)
-            ax = tuple(np.arange(len(layer.output_shape))[1:])
-            plot_activ_hist({'Activations': nonzero_activations},
-                            'Activation', label, norm_dir, scale_fac)
-            plot_max_activ_hist(
-                {'Activations_max': np.max(activations, axis=ax)},
-                'Maximum Activation', label, norm_dir, scale_fac)
+    # if modified_scale_facs and settings['verbose'] > 2:
+    #     from snntoolbox.io_utils.plotting import plot_hist, plot_activ_hist
+    #     from snntoolbox.io_utils.plotting import plot_max_activ_hist
+    #
+    #     print("Plotting distributions of weights and activations before and "
+    #           "after normalizing...")
+    #
+    #     # Load original parsed model to get parameters before normalization
+    #     weights = np.load(os.path.join(activ_dir, 'weights.npz'))
+    #     for idx, layer in enumerate(model.layers):
+    #         # Skip if layer has no parameters
+    #         if len(layer.get_weights()) == 0:
+    #             continue
+    #
+    #         label = str(idx) + layer.__class__.__name__ if use_simple_label \
+    #             else layer.name
+    #         parameters = weights[layer.name]
+    #         parameters_norm = layer.get_weights()
+    #         weight_dict = {
+    #             'weights': parameters[0].flatten(),
+    #             'weights_norm': parameters_norm[0].flatten()}
+    #         plot_hist(weight_dict, 'Weight', label, norm_dir)
+    #
+    #         # Load activations of model before normalization
+    #         activations = np.load(os.path.join(activ_dir,
+    #                                            layer.name + '.npz'))['arr_0']
+    #         # Compute activations with modified parameters
+    #         nonzero_activations = activations[np.nonzero(activations)]
+    #         activations_norm = get_activations_layer(model.input,
+    #                                                  layer.output, x_norm)
+    #         activation_dict = {
+    #             'Activations': nonzero_activations, 'Activations_norm':
+    #                 activations_norm[np.nonzero(activations_norm)]}
+    #         scale_fac = scale_facs[layer.name]
+    #         plot_hist(activation_dict, 'Activation', label, norm_dir,
+    #                   scale_fac)
+    #         ax = tuple(np.arange(len(layer.output_shape))[1:])
+    #         plot_activ_hist({'Activations': nonzero_activations},
+    #                         'Activation', label, norm_dir, scale_fac)
+    #         plot_max_activ_hist(
+    #             {'Activations_max': np.max(activations, axis=ax)},
+    #             'Maximum Activation', label, norm_dir, scale_fac)
     print()
 
 

@@ -316,6 +316,8 @@ class SNN:
                                         axis=1)
                 else:
                     output += out_spikes.astype('int32')
+                # print([np.mean(layer.var.get_value()) for layer in
+                #        self.snn.layers if hasattr(layer, 'var')])
                 # Get result by comparing the guessed class (i.e. the index
                 # of the neuron in the last layer which spiked most) to the
                 # ground truth.
