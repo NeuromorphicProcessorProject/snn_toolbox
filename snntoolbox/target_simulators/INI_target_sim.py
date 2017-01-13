@@ -73,6 +73,7 @@ class SNN:
 
         if s is None:
             s = settings
+
         self.sim = initialize_simulator(s['simulator'])
         self.snn = None
         self.parsed_model = None
@@ -101,7 +102,7 @@ class SNN:
         self.parsed_model = parsed_model
 
         print("Building spiking model...")
-        # Pass time variable to first layer
+
         input_images = keras.layers.Input(
             batch_shape=parsed_model.layers[0].batch_input_shape)
         spiking_layers = {parsed_model.layers[0].name: input_images}

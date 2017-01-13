@@ -581,6 +581,8 @@ def initialize_simulator(simulator, **kwargs):
         sim = import_module('snntoolbox.core.inisim')
     elif simulator == 'MegaSim':
         sim = import_module('snntoolbox.core.megasim')
+    elif simulator == 'INIed':
+        sim = import_module('snntoolbox.core.inied')
     assert sim, "Simulator {} could not be initialized.".format(simulator)
     print("Initialized {} simulator.\n".format(simulator))
     return sim
