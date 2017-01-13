@@ -122,6 +122,11 @@ class SNN:
         self.snn.compile('sgd', 'categorical_crossentropy',
                          metrics=['accuracy'])
         self.snn.set_weights(parsed_model.get_weights())
+        from snntoolbox.core.inisim import bias_relaxation
+        if bias_relaxation:
+            for layer in self.snn.layers:
+                if hasattr(layer, 'b'):
+                    layer.b0.set_value(layer.b.get_value())
 
     def run(self, x_test=None, y_test=None, dataflow=None, **kwargs):
         """Simulate a SNN with LIF and Poisson input.

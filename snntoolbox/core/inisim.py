@@ -35,6 +35,7 @@ rng = RandomStreams()
 
 floatX = theano.config.floatX
 
+bias_relaxation = False
 clamp = False
 
 
@@ -380,6 +381,16 @@ def init_neurons(self, input_shape, tau_refrac=0.):
         self.var = k.zeros(input_shape)
 
 
+def get_layer_idx(self):
+    """Get index of layer."""
+    l = self.name.split('_')
+    layer_idx = None
+    for i in range(max(4, len(l) - 2)):
+        if l[0][:i].isnumeric():
+            layer_idx = int(l[0][:i])
+    return layer_idx
+
+
 def get_clamp_idx(self):
     """Get time step when to stop clamping membrane potential.
 
@@ -397,11 +408,7 @@ def get_clamp_idx(self):
     """
 
     clamp_idx = np.loadtxt(settings['path_wd'] + '/clamp_idx.txt', 'int')
-    l = self.name.split('_')
-    layer_idx = None
-    for i in range(max(4, len(l) - 2)):
-        if l[0][:i].isnumeric():
-            layer_idx = int(l[0][:i])
+    layer_idx = get_layer_idx(self)
     return clamp_idx[layer_idx]
 
 
@@ -422,6 +429,13 @@ def update_avg_variance(self, spikes):
     var_new = self.var + delta * (spikes - spikerate_new)
     add_updates(self, [(self.var, var_new / (self.time + 1))])
     add_updates(self, [(self.spikerate, spikerate_new)])
+
+
+def update_b(self):
+    """Get a new value for the bias, relaxing it over time to the true value."""
+    i = get_layer_idx(self)
+    return self.b0 * k.minimum(k.maximum(
+        0, 1 - (1 - 2 * self.time / settings['duration']) * i / 50), 1)
 
 
 class SpikeMerge(Merge):
@@ -482,6 +496,8 @@ class SpikeDense(Dense):
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.total_spike_count = self.refrac_until = self.max_spikerate = None
+        if bias_relaxation:
+            self.b0 = None
         if clamp:
             self.clamp_idx = self.spikerate = self.var = None
 
@@ -499,6 +515,9 @@ class SpikeDense(Dense):
 
         super(SpikeDense, self).build(input_shape)
         init_neurons(self, input_shape)
+        if bias_relaxation:
+            self.b0 = k.variable(self.b.get_value())
+            add_updates(self, [(self.b, update_b(self))])
 
     def call(self, x, mask=None):
         """Layer functionality."""
@@ -553,6 +572,8 @@ class SpikeConvolution2D(Convolution2D):
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.total_spike_count = self.refrac_until = self.max_spikerate = None
+        if bias_relaxation:
+            self.b0 = None
         if clamp:
             self.clamp_idx = self.spikerate = self.var = None
 
@@ -570,6 +591,9 @@ class SpikeConvolution2D(Convolution2D):
 
         super(SpikeConvolution2D, self).build(input_shape)
         init_neurons(self, input_shape)
+        if bias_relaxation:
+            self.b0 = k.variable(self.b.get_value())
+            add_updates(self, [(self.b, update_b(self))])
 
     def call(self, x, mask=None):
         """Layer functionality."""

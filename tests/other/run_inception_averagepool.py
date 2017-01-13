@@ -21,11 +21,11 @@ settings = {'path_wd': '/home/rbodo/.snntoolbox/data/imagenet/inception_averagep
             'convert': True,
             'simulate': True,
             'simulator': 'INI',
-            'duration': 200,
+            'duration': 100,
             'batch_size': 1,
             'verbose': 2,
             'num_to_test': 10000,
-            'runlabel': 'clamp_var',
+            'runlabel': 'relax_bias',
             'percentile': 99.999,
             'normalization_schedule': False,
             }
