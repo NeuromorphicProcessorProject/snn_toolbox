@@ -36,7 +36,8 @@ rng = RandomStreams()
 floatX = theano.config.floatX
 
 bias_relaxation = False
-clamp = False
+clamp_var = False
+clamp_delay = False
 
 
 def update_neurons(self):
@@ -152,18 +153,18 @@ def linear_activation(self):
                         0.)
 
     # Add impulse
-    if clamp:
+    if clamp_var:
         # Experimental: Clamp the membrane potential to zero until the
         # presynaptic neurons fire at their steady-state rates. This helps avoid
-        # a transient response. The clamp-duration can be set by a specific
-        # delay from layer to layer, or by defining a rule using a heuristic
-        # like the measured variances of presynaptic spike-rates.
-        # new_mem = theano.ifelse.ifelse(t.lt(self.time, self.clamp_idx),
-        #                                self.mem, self.mem + masked_imp)
+        # a transient response.
         new_mem = theano.ifelse.ifelse(
             t.lt(t.mean(self.var), 1e-4) +
             t.gt(self.time, settings['duration'] / 2),
             self.mem + masked_imp, self.mem)
+    elif clamp_delay:
+        # Set clamp-duration by a specific delay from layer to layer.
+        new_mem = theano.ifelse.ifelse(t.lt(self.time, self.clamp_idx),
+                                       self.mem, self.mem + masked_imp)
     else:
         new_mem = self.mem + masked_imp
 
@@ -349,7 +350,7 @@ def reset_spikevars(self):
     if settings['online_normalization']:
         self.max_spikerate.set_value(0.)
         self.v_thresh.set_value(settings['v_thresh'])
-    if clamp:
+    if clamp_var:
         self.spikerate.set_value(np.zeros(self.input_shape, floatX))
         self.var.set_value(np.zeros(self.input_shape, floatX))
 
@@ -375,10 +376,11 @@ def init_neurons(self, input_shape, tau_refrac=0.):
         self.payloads_sum = k.zeros(output_shape)
     if settings['online_normalization']:
         self.max_spikerate = k.zeros(1)
-    if clamp:
-        # self.clamp_idx = get_clamp_idx(self)
+    if clamp_var:
         self.spikerate = k.zeros(input_shape)
         self.var = k.zeros(input_shape)
+    if clamp_delay:
+        self.clamp_idx = get_clamp_idx(self)
 
 
 def get_layer_idx(self):
@@ -498,8 +500,10 @@ class SpikeDense(Dense):
         self.total_spike_count = self.refrac_until = self.max_spikerate = None
         if bias_relaxation:
             self.b0 = None
-        if clamp:
-            self.clamp_idx = self.spikerate = self.var = None
+        if clamp_var:
+            self.spikerate = self.var = None
+        if clamp_delay:
+            self.clamp_idx = None
 
     def build(self, input_shape):
         """Creates the layer weights.
@@ -522,7 +526,7 @@ class SpikeDense(Dense):
     def call(self, x, mask=None):
         """Layer functionality."""
 
-        if clamp:
+        if clamp_var:
             update_avg_variance(self, x)
 
         inp = x
@@ -574,8 +578,10 @@ class SpikeConvolution2D(Convolution2D):
         self.total_spike_count = self.refrac_until = self.max_spikerate = None
         if bias_relaxation:
             self.b0 = None
-        if clamp:
-            self.clamp_idx = self.spikerate = self.var = None
+        if clamp_var:
+            self.spikerate = self.var = None
+        if clamp_delay:
+            self.clamp_idx = None
 
     def build(self, input_shape):
         """Creates the layer weights.
@@ -598,7 +604,7 @@ class SpikeConvolution2D(Convolution2D):
     def call(self, x, mask=None):
         """Layer functionality."""
 
-        if clamp:
+        if clamp_var:
             update_avg_variance(self, x)
 
         inp = x
@@ -642,8 +648,10 @@ class SpikeAveragePooling2D(AveragePooling2D):
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.total_spike_count = self.refrac_until = self.max_spikerate = None
-        if clamp:
-            self.clamp_idx = self.spikerate = self.var = None
+        if clamp_var:
+            self.spikerate = self.var = None
+        if clamp_delay:
+            self.clamp_idx = None
 
     def build(self, input_shape):
         """Creates the layer weights.
@@ -663,7 +671,7 @@ class SpikeAveragePooling2D(AveragePooling2D):
     def call(self, x, mask=None):
         """Layer functionality."""
 
-        if clamp:
+        if clamp_var:
             update_avg_variance(self, x)
 
         inp = x
@@ -703,11 +711,13 @@ class SpikeMaxPooling2D(MaxPooling2D):
         self.stateful = True
         self.updates = []
         self._per_input_updates = {}
-        self.spikerate_pre = self.time = self.previous_x = self.clamp_idx = None
+        self.spikerate_pre = self.time = self.previous_x = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.total_spike_count = self.refrac_until = self.max_spikerate = None
-        if clamp:
+        if clamp_var:
             self.spikerate = self.var = None
+        if clamp_delay:
+            self.clamp_idx = None
 
     def build(self, input_shape):
         """Creates the layer weights.
@@ -729,7 +739,7 @@ class SpikeMaxPooling2D(MaxPooling2D):
     def call(self, x, mask=None):
         """Layer functionality."""
 
-        if clamp:
+        if clamp_var:
             update_avg_variance(self, x)
 
         inp = x

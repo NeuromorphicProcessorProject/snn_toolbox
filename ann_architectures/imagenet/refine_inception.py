@@ -109,7 +109,7 @@ def inception_b(input_layer, nfilt):
     l2 = bn_conv(l2, num_filters=nfilt[1][1], filter_size=3, pad=1)
     l2 = bn_conv(l2, num_filters=nfilt[1][2], filter_size=3, stride=2)
 
-    l3 = Pool2DLayer(input_layer, pool_size=3, stride=2)
+    l3 = Pool2DLayer(input_layer, pool_size=3, stride=2, mode='average_exc_pad')
 
     return ConcatLayer([l1, l2, l3])
 
@@ -167,7 +167,7 @@ def inception_d(input_layer, nfilt):
     l2 = bn_conv(l2, num_filters=nfilt[1][2], filter_size=(7, 1), pad=(3, 0))
     l2 = bn_conv(l2, num_filters=nfilt[1][3], filter_size=3, stride=2)
 
-    l3 = Pool2DLayer(input_layer, pool_size=3, stride=2)
+    l3 = Pool2DLayer(input_layer, pool_size=3, stride=2, mode='average_exc_pad')
 
     return ConcatLayer([l1, l2, l3])
 
@@ -358,7 +358,7 @@ if __name__ == "__main__":
     # Initialize with pretrained weights.
     from snntoolbox.io_utils.common import load_parameters
     p = load_parameters('/home/rbodo/.snntoolbox/data/imagenet/'
-                        'inception_averagepool/71.72.h5')
+                        'inception_averagepool/72.94_91.22.h5')
     lasagne.layers.set_all_param_values(model, p)
 
     print("Evaluating pre-trained model...")

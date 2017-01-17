@@ -370,7 +370,7 @@ class SNN:
                     "{:.2%}.\n".format(batch_idx + 1, num_batches,
                                        top5acc_moving))
             with open(path_err, 'a') as f_err:
-                f_err.write(str(top1err_vs_time))
+                f_err.write(str([round(i, 2) for i in top1err_vs_time]))
 
             if s['verbose'] > 0:
                 print("\nBatch {} of {} completed ({:.1%})".format(
@@ -385,10 +385,8 @@ class SNN:
                 plot_input_image(x_batch[0], int(np.argmax(y_batch[0])),
                                  log_dir)
                 ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
-                plot_error_vs_time(top1err_vs_time, ann_err=ann_err,
-                                   path=log_dir)
-                plot_spikecount_vs_time(total_spike_count_over_time,
-                                        log_dir)
+                plot_error_vs_time(top1err_vs_time, ann_err, log_dir)
+                plot_spikecount_vs_time(total_spike_count_over_time, log_dir)
                 plot_confusion_matrix(truth, guesses, log_dir)
                 output_graphs(spiketrains_batch, activations_batch, log_dir)
             if s['verbose'] > 2:
