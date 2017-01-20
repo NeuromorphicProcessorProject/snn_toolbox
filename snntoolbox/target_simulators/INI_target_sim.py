@@ -23,6 +23,7 @@ from textwrap import dedent
 import keras
 from future import standard_library
 from snntoolbox.config import settings, initialize_simulator
+from snntoolbox.core.inisim import bias_relaxation
 
 standard_library.install_aliases()
 
@@ -122,10 +123,11 @@ class SNN:
         self.snn.compile('sgd', 'categorical_crossentropy',
                          metrics=['accuracy'])
         self.snn.set_weights(parsed_model.get_weights())
-        from snntoolbox.core.inisim import bias_relaxation
-        if bias_relaxation:
-            for layer in self.snn.layers:
-                if hasattr(layer, 'b'):
+        for layer in self.snn.layers:
+            if hasattr(layer, 'b'):
+                # Adjust biases to time resolution of simulator.
+                layer.b.set_value(layer.b.get_value() * settings['dt'])
+                if bias_relaxation:  # Experimental
                     layer.b0.set_value(layer.b.get_value())
 
     def run(self, x_test=None, y_test=None, dataflow=None, **kwargs):
@@ -228,7 +230,8 @@ class SNN:
             for layer in self.snn.layers:
                 if not hasattr(layer, 'spiketrain'):
                     continue
-                shape = list(layer.output_shape) + [int(s['duration']/s['dt'])]
+                shape = list(layer.output_shape) + \
+                    [int(s['duration'] / s['dt'])]
                 spiketrains_batch.append((np.zeros(shape, 'float32'),
                                           layer.name))
 
@@ -278,10 +281,10 @@ class SNN:
                 # This factor determines the probability threshold for cells in
                 # the input layer to fire a spike. Increasing ``input_rate``
                 # increases the firing rate of the input and subsequent layers.
-                rescale_fac = np.max(x_batch) * 1000 / (s['input_rate']*s['dt'])
+                rescale_fac = np.max(x_batch) * 1000 / s['input_rate'] / s['dt']
             else:
                 # Simply use the analog values of the original data as input.
-                inp = x_batch
+                inp = x_batch * s['dt']
 
             # Reset network variables.
             # Resetting the membrane potential might be undesired when running
@@ -298,7 +301,6 @@ class SNN:
             if s['verbose'] > 1:
                 total_spike_count_over_time = np.zeros((num_timesteps,
                                                         s['batch_size']))
-            total_spike_count = np.zeros(s['batch_size'])
             t_idx = 0
             self.init_debug_vars()
             for t in np.arange(0, s['duration'], s['dt']):
@@ -329,10 +331,12 @@ class SNN:
                 # ground truth.
                 truth_batch = np.argmax(y_batch, axis=1)
                 guesses_batch = np.argmax(output, axis=1)
-                top1err_vs_time.append(np.mean(truth_batch != guesses_batch))
+                top1err_vs_time.append(np.around(
+                    np.mean(truth_batch != guesses_batch), 2))
                 # Record the spiketrains of each neuron in each layer.
                 if s['verbose'] > 1:
                     j = 0
+                    total_spike_count = np.zeros(s['batch_size'])
                     for layer in self.snn.layers:
                         if not hasattr(layer, 'spiketrain'):
                             continue
@@ -344,7 +348,7 @@ class SNN:
                         j += 1
                     total_spike_count_over_time[t_idx] = total_spike_count
                     t_idx += 1
-                if s['verbose'] > 0:
+                if s['verbose'] > 0 and t % 1 == 0:
                     echo('{:.2%}_'.format(1-top1err_vs_time[-1]))
             self.save_debug_vars(log_dir)
 
@@ -526,12 +530,13 @@ class SNN:
     def init_debug_vars(self):
         """Initialize debug variables."""
 
+        t = int(settings['duration'] / settings['dt'])
         self.debug_vars = {
-            'mem8': np.empty(settings['duration']),
-            'mem14': np.empty(settings['duration']),
-            'inputspikes8': np.empty((settings['duration'], 192)),
-            'inputspikes14': np.empty((settings['duration'], 192)),
-            'spikerates02': np.empty((settings['duration'], 10))}
+            'mem8': np.empty(t),
+            'mem14': np.empty(t),
+            'inputspikes8': np.empty((t, 192)),
+            'inputspikes14': np.empty((t, 192)),
+            'spikerates02': np.empty((t, 10))}
 
     def monitor_debug_vars(self, layer, spiketrains_batch, j, t_idx):
         """Monitor debug variables.

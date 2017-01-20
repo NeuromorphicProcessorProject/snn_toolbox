@@ -320,7 +320,7 @@ def plot_layer_correlation(rates, activations, title, path=None):
 
     # Determine percentage of saturated neurons. Need to subtract one time step
     p = np.mean(np.array(rates >= 1000 / settings['dt'] -
-                         1000 / settings['duration']))
+                         1000 / settings['duration'] / settings['dt']))
 
     plt.figure()
     plt.plot(activations, rates, '.')
@@ -438,7 +438,7 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
                 ss = []
                 aa = []
                 for sss, aaa in zip(s, a):
-                    if (sss > 0 or aaa > 0) and aaa < 1./settings['dt']:
+                    if (sss > 0 or aaa > 0) and aaa < 1. / settings['dt']:
                         ss.append(sss)
                         aa.append(aaa)
                 s = ss
@@ -744,8 +744,6 @@ def plot_spiketrains(layer, path=None):
         else:
             y = np.ones_like(spiketrain) * neuron
             plt.plot(spiketrain, y, '.')
-    plt.gca().set_xlim(0, settings['duration'])
-    plt.gca().set_ylim([-0.1, len(spiketrains)])
     plt.title('Spiketrains \n of layer {}'.format(layer[1]))
     plt.xlabel('time [ms]')
     plt.ylabel('neuron index')
@@ -862,7 +860,7 @@ def plot_error_vs_time(err, ann_err=None, path=None):
 
     plt.figure()
 #    plt.title('Error vs simulation time')
-    time = np.arange(len(err))
+    time = np.arange(0, settings['duration'], settings['dt'])
     n = settings['batch_size']
     # Compute confidence intervals of the experiments
     ci = np.array([wilson_score(q, n)*100 for q in err])
@@ -874,7 +872,7 @@ def plot_error_vs_time(err, ann_err=None, path=None):
     plt.legend()
     plt.ylim(0, 100)
     plt.ylabel('Error [%]')
-    plt.xlabel('Timestep')
+    plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(settings['dt']))
     if path is not None:
         filename = 'Error_vs_time'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
@@ -897,12 +895,12 @@ def plot_spikecount_vs_time(spikecounts, path=None):
 
     plt.figure()
     plt.title('SNN Operations')
-    time = np.arange(len(spikecounts))
+    time = np.arange(0, settings['duration'], settings['dt'])
     plt.errorbar(time, np.mean(spikecounts, axis=1),
                  yerr=np.std(spikecounts, axis=1), fmt='.', errorevery=3)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
     plt.ylabel('Total spike count')
-    plt.xlabel('Timestep')
+    plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(settings['dt']))
     if path is not None:
         filename = 'Total_spike_count'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')

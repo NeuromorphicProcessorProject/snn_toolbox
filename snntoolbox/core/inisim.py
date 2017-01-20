@@ -427,9 +427,9 @@ def update_avg_variance(self, spikes):
     """
 
     delta = spikes - self.spikerate
-    spikerate_new = self.spikerate + delta / (self.time + 1)
+    spikerate_new = self.spikerate + delta / (self.time + settings['dt'])
     var_new = self.var + delta * (spikes - spikerate_new)
-    add_updates(self, [(self.var, var_new / (self.time + 1))])
+    add_updates(self, [(self.var, var_new / (self.time + settings['dt']))])
     add_updates(self, [(self.spikerate, spikerate_new)])
 
 

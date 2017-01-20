@@ -339,8 +339,8 @@ def spiketrains_to_rates(spiketrains_batch):
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
                     spikerates_batch[i][0][ii, jj] = (
-                        np.count_nonzero(sp[0][ii][jj]) * 1000 *
-                        settings['dt'] / settings['duration'])
+                        np.count_nonzero(sp[0][ii][jj]) *
+                        1000 / settings['duration'])
                     spikerates_batch[i][0][ii, jj] *= np.sign(
                         np.sum(sp[0][ii, jj]))  # For negative spikes
         elif len(shape) == 4:
@@ -349,8 +349,8 @@ def spiketrains_to_rates(spiketrains_batch):
                     for kk in range(len(sp[0][ii, jj])):
                         for ll in range(len(sp[0][ii, jj, kk])):
                             spikerates_batch[i][0][ii, jj, kk, ll] = (
-                                np.count_nonzero(sp[0][ii, jj, kk, ll]) * 1000 *
-                                settings['dt'] / settings['duration'])
+                                np.count_nonzero(sp[0][ii, jj, kk, ll]) *
+                                1000 / settings['duration'])
                             spikerates_batch[i][0][ii, jj, kk, ll] *= np.sign(
                                 np.sum(sp[0][ii, jj, kk, ll]))
 
@@ -483,14 +483,14 @@ def normalize_parameters(model, **kwargs):
             parameters_norm = [parameters[0]]  # Consider only weights at first
             offset = 0  # Index offset at input filter dimension
             for inb in inbound:
-                scale_fac_inb = scale_facs[inb.name]
                 f_out = inb.W_shape[0]  # Num output features of inbound layer
                 f_in = range(offset, offset + f_out)
                 if parameters[0].ndim == 2:  # Fully-connected Layer
-                    parameters_norm[0][f_in, :] *= scale_fac_inb / scale_fac
+                    parameters_norm[0][f_in, :] *= \
+                        scale_facs[inb.name] / scale_fac
                 else:
                     parameters_norm[0][:, f_in, :, :] *= \
-                        scale_fac_inb / scale_fac
+                        scale_facs[inb.name] / scale_fac
                 offset += f_out
             parameters_norm.append(parameters[1] / scale_fac)  # Append bias
 
