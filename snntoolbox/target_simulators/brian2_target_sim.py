@@ -163,9 +163,9 @@ class SNN:
             dt=settings['dt']*self.sim.ms))
         self.layers[-1].add_attribute('label')
         self.layers[-1].label = layer.name
-        if settings['verbose'] > 1:
+        if 'spiketrains' in settings['plot_vars']:
             self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[-1]))
-        if settings['verbose'] == 3:
+        if 'v_mem' in settings['plot_vars']:
             self.statemonitors.append(self.sim.StateMonitor(self.layers[-1],
                                                             'v', record=True))
 
@@ -369,7 +369,8 @@ class SNN:
                 echo("Moving average accuracy: {:.2%}.\n".format(
                     np.mean(results)))
 
-            if s['verbose'] > 1 and test_num == s['num_to_test'] - 1:
+            if 'spiketrains' in s['plot_vars'] and \
+                    test_num == s['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
                 self.collect_plot_results(x_test[ind:ind+s['batch_size']],
                                           test_num)
@@ -384,7 +385,7 @@ class SNN:
             if s['verbose'] > 1:
                 echo("Done.\n")
 
-        if s['verbose'] > 1:
+        if 'confusion_matrix' in s['plot_vars']:
             plot_confusion_matrix(truth, guesses, log_dir)
 
         total_acc = np.mean(results)
@@ -467,7 +468,7 @@ class SNN:
                 spiketrains_full[k] = spiketrain
             spiketrains_batch[i][0][:] = np.reshape(spiketrains_full, shape)
             # Repeat for membrane potential
-            if settings['verbose'] == 3:
+            if 'v_mem' in settings['plot_vars']:
                 vm = [np.array(v/1e6/self.sim.mV).transpose() for v in
                       self.statemonitors[i-1].v]
                 vmem.append((vm, layer.label))

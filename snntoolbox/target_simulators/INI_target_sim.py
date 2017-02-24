@@ -225,7 +225,7 @@ class SNN:
         # (batch_size, n_chnls, n_rows, n_cols, duration)
         # ``label`` is a string specifying both the layer type and the index,
         # e.g. ``'03Dense'``.
-        if s['verbose'] > 1:
+        if 'spiketrains' in s['log_vars']:
             spiketrains_batch = []
             for layer in self.snn.layers:
                 if not hasattr(layer, 'spiketrain'):
@@ -235,8 +235,9 @@ class SNN:
                 spiketrains_batch.append((np.zeros(shape, 'float32'),
                                           layer.name))
 
+        num_layers_with_spikes = len([1 for l in self.snn.layers
+                                      if hasattr(l, 'spiketrain')])
         inp = None
-        top1err_vs_time = []
         top5score_moving = 0
         truth = []
         guesses = []
@@ -257,9 +258,16 @@ class SNN:
         path_top5acc = os.path.join(log_dir, 'top5accuracy.txt')
         if os.path.isfile(path_top5acc):
             os.remove(path_top5acc)
-        path_err = os.path.join(log_dir, 'err_vs_time.txt')
-        if os.path.isfile(path_err):
-            os.remove(path_err)
+        path_activ = os.path.join(log_dir, 'activations')
+        if not os.path.isdir(path_activ):
+            os.makedirs(path_activ)
+        path_trains = os.path.join(log_dir, 'spiketrains')
+        if not os.path.isdir(path_trains):
+            os.makedirs(path_trains)
+        path_count = os.path.join(log_dir, 'spikecounts')
+        if not os.path.isdir(path_count):
+            os.makedirs(path_count)
+        net_top1err_t = []
 
         for batch_idx in range(num_batches):
             # Get a batch of samples
@@ -285,24 +293,23 @@ class SNN:
             else:
                 # Simply use the analog values of the original data as input.
                 inp = x_batch * s['dt']
+                # inp = np.random.random_sample(x_batch.shape)
 
             # Reset network variables.
-            # Resetting the membrane potential might be undesired when running
-            # the network on video data with little change between frames.
-            # Can turn it off completely here, or reset only first layer
-            # (closest to input and thus most susceptible to spatial variations)
-            # self.snn.layers[1].reset()
             self.reset()
 
             # Loop through simulation time.
             output = np.zeros((s['batch_size'], y_batch.shape[1]),
                               dtype='int32')
             num_timesteps = int(s['duration'] / s['dt'])
-            if s['verbose'] > 1:
-                total_spike_count_over_time = np.zeros((num_timesteps,
-                                                        s['batch_size']))
+            if 'spikecounts' in s['log_vars']:
+                total_spikecount_t = np.zeros((num_timesteps, s['batch_size']))
             t_idx = 0
             self.init_debug_vars()
+            top1err_vs_time = []
+            layer_spikecounts = np.zeros((s['batch_size'],
+                                          num_layers_with_spikes,
+                                          int(s['duration'] / s['dt'])))
             for t in np.arange(0, s['duration'], s['dt']):
                 if s['poisson_input']:
                     # Create poisson input.
@@ -334,20 +341,24 @@ class SNN:
                 top1err_vs_time.append(np.around(
                     np.mean(truth_batch != guesses_batch), 2))
                 # Record the spiketrains of each neuron in each layer.
-                if s['verbose'] > 1:
-                    j = 0
-                    total_spike_count = np.zeros(s['batch_size'])
-                    for layer in self.snn.layers:
-                        if not hasattr(layer, 'spiketrain'):
-                            continue
+                j = 0
+                total_spikecount = np.zeros(s['batch_size'])
+                for layer in self.snn.layers:
+                    if not hasattr(layer, 'spiketrain'):
+                        continue
+                    if 'spiketrains' in s['log_vars']:
                         spiketrains_batch[j][0][Ellipsis, t_idx] = \
                             layer.spiketrain.get_value()
-                        total_spike_count += layer.total_spike_count.get_value()
                         self.monitor_debug_vars(layer, spiketrains_batch, j,
                                                 t_idx)
-                        j += 1
-                    total_spike_count_over_time[t_idx] = total_spike_count
-                    t_idx += 1
+                    if 'spikecounts' in s['log_vars']:
+                        layer_spikecounts[:, j, t_idx] = \
+                            layer.total_spikecount.get_value()
+                        total_spikecount += layer_spikecounts[:, j, t_idx]
+
+                    j += 1
+                total_spikecount_t[t_idx] = total_spikecount
+                t_idx += 1
                 if s['verbose'] > 0 and t % 1 == 0:
                     echo('{:.2%}_'.format(1-top1err_vs_time[-1]))
             self.save_debug_vars(log_dir)
@@ -358,11 +369,12 @@ class SNN:
             top5score_moving += get_top5score(truth_batch, output)
             top5acc_moving = top5score_moving / ((batch_idx + 1) *
                                                  settings['batch_size'])
+            net_top1err_t.append(top1err_vs_time)
             with open(path_pred, 'a') as f_pred:
-                f_pred.write("Predictions of batch {}/{}: {}".format(
+                f_pred.write("Predictions of batch {}/{}: {}\n".format(
                     batch_idx + 1, num_batches, str(guesses)))
             with open(path_target, 'a') as f_target:
-                f_target.write("True classes of batch {}/{}: {}".format(
+                f_target.write("True classes of batch {}/{}: {}\n".format(
                     batch_idx + 1, num_batches, str(truth)))
             with open(path_acc, 'a') as f_acc:
                 f_acc.write(
@@ -373,45 +385,45 @@ class SNN:
                     "Moving average of top-5-accuracy after batch {}/{}: "
                     "{:.2%}.\n".format(batch_idx + 1, num_batches,
                                        top5acc_moving))
-            with open(path_err, 'a') as f_err:
-                f_err.write(str([round(i, 2) for i in top1err_vs_time]))
-
             if s['verbose'] > 0:
                 print("\nBatch {} of {} completed ({:.1%})".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
                 print("Moving average accuracy: {:.2%}.\n".format(
                     top1acc_moving))
                 print("Moving top-5 accuracy: {:.2%}.\n".format(top5acc_moving))
-            if s['verbose'] > 1:
+            if 'activations' in s['log_vars'] + s['plot_vars']:
                 print("Calculating activations...")
                 activations_batch = get_activations_batch(self.parsed_model,
                                                           x_batch)
+            if 'input_image' in s['plot_vars']:
                 plot_input_image(x_batch[0], int(np.argmax(y_batch[0])),
                                  log_dir)
+            if 'error_t' in s['plot_vars']:
                 ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
                 plot_error_vs_time(top1err_vs_time, ann_err, log_dir)
-                plot_spikecount_vs_time(total_spike_count_over_time, log_dir)
+            if 'spikecounts' in s['plot_vars']:
+                plot_spikecount_vs_time(total_spikecount_t, log_dir)
+            if 'confusion_matrix' in s['plot_vars']:
                 plot_confusion_matrix(truth, guesses, log_dir)
-                output_graphs(spiketrains_batch, activations_batch, log_dir)
-            if s['verbose'] > 2:
+            if 'activations' in s['log_vars']:
                 print("Saving batch activations...")
-                path_activ = os.path.join(log_dir, 'activations')
-                if not os.path.isdir(path_activ):
-                    os.makedirs(path_activ)
                 np.savez_compressed(os.path.join(path_activ, str(batch_idx)),
                                     activations=activations_batch)
+            if 'spiketrains' in s['log_vars']:
                 print("Saving batch spiketrains...")
-                path_trains = os.path.join(log_dir, 'spiketrains')
-                if not os.path.isdir(path_trains):
-                    os.makedirs(path_trains)
                 np.savez_compressed(os.path.join(path_trains, str(batch_idx)),
                                     spiketrains=spiketrains_batch)
+            if 'spikecounts' in s['log_vars']:
                 print("Saving batch spikecounts...")
-                path_count = os.path.join(log_dir, 'spikecounts')
-                if not os.path.isdir(path_count):
-                    os.makedirs(path_count)
                 np.savez_compressed(os.path.join(path_count, str(batch_idx)),
-                                    spikecounts=total_spike_count_over_time)
+                                    spikecounts=total_spikecount_t)
+                np.savez_compressed(os.path.join(path_count,
+                                                 str(batch_idx) + '_l'),
+                                    layer_spike_counts=layer_spikecounts)
+            if any(v in s['plot_vars'] for v in
+                   ['activations', 'spiketrains', 'spikecounts', 'spikerates',
+                    'correlation', 'hist_spikerates_activations']):
+                output_graphs(spiketrains_batch, activations_batch, log_dir)
         count = np.zeros(num_classes)
         match = np.zeros(num_classes)
         for gt, p in zip(truth, guesses):
@@ -420,7 +432,9 @@ class SNN:
                 match[gt] += 1
         avg_acc = np.mean(match / count)
         top1acc_total = np.mean(np.array(truth) == np.array(guesses))
-        if s['verbose'] > 1:
+        np.savez_compressed(os.path.join(log_dir, 'net_top1err_t'),
+                            net_top1err_t=np.array(net_top1err_t))
+        if 'confusion_matrix' in s['plot_vars']:
             plot_confusion_matrix(truth, guesses, log_dir)
         print("Simulation finished.\n\n")
         print("Total accuracy: {:.2%} on {} test samples.\n\n".format(

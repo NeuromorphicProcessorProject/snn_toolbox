@@ -32,7 +32,8 @@ layer_dict = {'InnerProduct': 'Dense',
               'MaxPooling2D': 'MaxPooling2D',
               'AveragePooling2D': 'AveragePooling2D',
               'ReLU': 'Activation',
-              'Softmax': 'Activation'}
+              'Softmax': 'Activation',
+              'Concat': 'Merge'}
 
 
 activation_dict = {'ReLU': 'relu',
@@ -120,11 +121,13 @@ def extract(model):
     caffe_model = model[0]
     caffe_layers = model[1].layer
 
-    batch_input_shape = list(model[1].input_dim)
+    batch_input_shape = caffe_layers[0].input_param.shape[0].dim
     batch_input_shape[0] = settings['batch_size']
 
+    name_map = {}
     layers = []
     idx = 0
+    inserted_flatten = False
     for (layer_num, layer) in enumerate(caffe_layers):
 
         # Convert Caffe layer names to our 'standard' names.
@@ -140,10 +143,15 @@ def extract(model):
             bn_parameters = [layer.blobs[0].data,
                              layer.blobs[1].data]
             for k in range(1, 3):
-                prev_layer = layers[-k]
+                prev_layer = get_inbound_layers(layer)[0]
                 if 'parameters' in prev_layer:
                     break
-            parameters = prev_layer['parameters']
+            assert prev_layer, "Could not find layer with parameters " \
+                               "preceeding BatchNorm layer."
+            prev_layer_dict = layers[name_map[str(id(prev_layer))]]
+            parameters = prev_layer_dict['parameters']  # W, b of previous layer
+            if len(parameters) == 1:  # No bias
+                parameters.append(np.zeros_like(bn_parameters[0]))
             print("Absorbing batch-normalization parameters into " +
                   "parameters of previous {}.".format(prev_layer['name']))
             prev_layer['parameters'] = absorb_bn(
@@ -172,12 +180,15 @@ def extract(model):
         if len(output_shape) < len(prev_layer_output_shape) and \
                 layer_type != 'Flatten':
             print("Inserting layer Flatten")
-            # Append layer label
             num_str = str(idx) if idx > 9 else '0' + str(idx)
             shape_string = str(np.prod(output_shape[1:]))
             layers.append({'name': num_str + 'Flatten_' + shape_string,
-                           'layer_type': 'Flatten'})
+                           'layer_type': 'Flatten', 'inbound':
+                               get_inbound_names(layers, layer, name_map,
+                                                 caffe_layers)})
+            name_map[str(id(layer))] = idx
             idx += 1
+            inserted_flatten = True
 
         # Append layer label
         if len(output_shape) == 2:
@@ -193,16 +204,16 @@ def extract(model):
             b = caffe_model.params[layer.name][1].data
             if layer_type == 'Dense':
                 w = np.transpose(w)
+            else:
+                w = w[:, :, ::-1, ::-1]
+                print("Flipped kernels")
             attributes['parameters'] = [w, b]
-            # Get type of nonlinearity if the activation is directly in the
-            # Dense / Conv layer:
-            activation = activation_dict.get(layer.__class__.__name__,
-                                             'linear')
-            # Otherwise, search for the activation layer:
+            # Search for the activation layer to integrate it into Dense / Conv:
+            activation = 'linear'
             for k in range(layer_num+1, min(layer_num+4, len(caffe_layers))):
-                nonlinearity = caffe_layers[k].__class__.__name__
-                if nonlinearity in {'ReLU', 'Softmax'}:
-                    activation = activation_dict.get(nonlinearity, 'linear')
+                if caffe_layers[k].type in {'ReLU', 'Softmax'}:
+                    activation = activation_dict.get(caffe_layers[k].type,
+                                                     'linear')
                     break
             attributes['activation'] = activation
             print("Detected activation {}".format(activation))
@@ -237,11 +248,72 @@ def extract(model):
             attributes.update({'pool_size': pool_size,
                                'strides': strides,
                                'border_mode': border_mode})
+
+        if layer_type == 'Merge':
+            attributes.update({'mode': 'concat',
+                               'concat_axis': layer.concat_param.axis})
+
+        if inserted_flatten:
+            attributes['inbound'] = [layers[-1]['name']]
+            inserted_flatten = False
+        else:
+            attributes['inbound'] = get_inbound_names(layers, layer, name_map,
+                                                      caffe_layers)
+
         # Append layer
         layers.append(attributes)
+        # Map layer index to layer id. Needed for inception modules.
+        name_map[str(id(layer))] = idx
         idx += 1
+    print()
 
     return layers
+
+
+def get_inbound_names(layers, layer, name_map, caffe_layers):
+    """Get names of inbound layers.
+
+    """
+
+    if len(layers) == 0:
+        return ['input_1']
+    else:
+        inbound_labels = get_inbound_layers(layer)
+        inbound = []
+        for il in inbound_labels:
+            for l in caffe_layers:
+                if il == l.name:
+                    inbound.append(l)
+        for ib in range(len(inbound)):
+            ii = 0
+            while ii < 3 and inbound[ib].type in \
+                    ['BatchNorm', 'Dropout', 'ReLU', 'SoftmaxWithLoss']:
+                inbound[ib] = get_inbound_layers(inbound[ib])[0]
+                ii += 1
+        inb_idxs = [name_map[str(id(inb))] for inb in inbound]
+        return [layers[ii]['name'] for ii in inb_idxs]
+
+
+def get_inbound_layers(layer):
+    """Return inbound layers.
+
+    Parameters
+    ----------
+
+    layer: Union[caffe.layers.Layer, caffe.layers.Concat]
+        A Caffe layer.
+
+    Returns
+    -------
+
+    : list[caffe.layers.Layer]
+        List of inbound layers.
+    """
+
+    if layer.type == 'Concat':
+        return layer.bottom
+    else:
+        return layer.bottom
 
 
 def load_ann(path=None, filename=None):
@@ -282,7 +354,7 @@ def load_ann(path=None, filename=None):
 
     prototxt = os.path.join(path, filename + '.prototxt')
     caffemodel = os.path.join(path, filename + '.caffemodel')
-    model = caffe.Net(prototxt, caffemodel, caffe.TEST)
+    model = caffe.Net(prototxt, 1, weights=caffemodel)
     model_protobuf = caffe.proto.caffe_pb2.NetParameter()
     text_format.Merge(open(prototxt).read(), model_protobuf)
 
@@ -305,7 +377,8 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
         dataflow.batch_size = batch_size
         print("Using {} samples to evaluate input model".format(len(x_test)))
 
-    guesses = np.argmax(val_fn(data=x_test)['prob'], axis=1)
+    out = val_fn(data=x_test)
+    guesses = np.argmax([out[key] for key in out.keys()][0], axis=1)
     truth = np.argmax(y_test, axis=1)
     accuracy = np.mean(guesses == truth)
     loss = -1

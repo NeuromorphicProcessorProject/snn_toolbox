@@ -38,6 +38,7 @@ floatX = theano.config.floatX
 bias_relaxation = False
 clamp_var = False
 clamp_delay = False
+v_clip = False
 
 
 def update_neurons(self):
@@ -62,17 +63,19 @@ def update_neurons(self):
             self.time + self.tau_refrac)
         add_updates(self, [(self.refrac_until, new_refractory)])
 
-    if settings['verbose'] > 1 or settings['online_normalization']:
+    if 'spikecounts' in settings['log_vars'] + settings['plot_vars'] or \
+            settings['online_normalization']:
         add_updates(self, [(self.spikecounts,
                             t.add(self.spikecounts, output_spikes))])
 
-    if settings['verbose'] > 1:
-        add_updates(
-            self, [(self.spiketrain,
-                    (self.time + settings['dt']) * output_spikes)])
+    if 'spikecounts' in settings['log_vars'] + settings['plot_vars']:
         reduction_axes = tuple(np.arange(self.mem.ndim)[1:])
-        add_updates(self, [(self.total_spike_count,
+        add_updates(self, [(self.total_spikecount,
                             t.sum(self.spikecounts, reduction_axes))])
+
+    if 'spiketrains' in settings['log_vars'] + settings['plot_vars']:
+        add_updates(self, [(self.spiketrain,
+                            (self.time + settings['dt']) * output_spikes)])
 
     if settings['online_normalization']:
         add_updates(self, [(self.max_spikerate, t.max(self.spikecounts) *
@@ -165,6 +168,9 @@ def linear_activation(self):
         # Set clamp-duration by a specific delay from layer to layer.
         new_mem = theano.ifelse.ifelse(t.lt(self.time, self.clamp_idx),
                                        self.mem, self.mem + masked_imp)
+    elif v_clip:
+        # Clip membrane potential to [-2, 2] to prevent too strong accumulation.
+        new_mem = theano.tensor.clip(self.mem + masked_imp, -2, 2)
     else:
         new_mem = self.mem + masked_imp
 
@@ -334,15 +340,18 @@ def init_membrane_potential(self, mode='zero'):
 
 def reset_spikevars(self):
     """Reset variables present in spiking layers."""
-    self.mem.set_value(init_membrane_potential(self))
+    if settings['reset_between_frames']:
+        self.mem.set_value(init_membrane_potential(self))
     self.time.set_value(np.float32(0))
     if settings['tau_refrac'] > 0:
         self.refrac_until.set_value(np.zeros(self.output_shape, floatX))
-    if settings['verbose'] > 1:
+    if 'spiketrains' in settings['log_vars'] + settings['plot_vars']:
         self.spiketrain.set_value(np.zeros(self.output_shape, floatX))
-        self.total_spike_count.set_value(np.zeros(settings['batch_size'],
-                                                  floatX))
-    if settings['verbose'] > 1 or settings['online_normalization']:
+    if 'spikecounts' in settings['log_vars'] + settings['plot_vars']:
+        self.total_spikecount.set_value(np.zeros(settings['batch_size'],
+                                                 floatX))
+    if 'spikecounts' in settings['log_vars'] + settings['plot_vars'] \
+            or settings['online_normalization']:
         self.spikecounts.set_value(np.zeros(self.output_shape, floatX))
     if settings['payloads']:
         self.payloads.set_value(np.zeros(self.output_shape, floatX))
@@ -366,10 +375,12 @@ def init_neurons(self, input_shape, tau_refrac=0.):
     # To save memory and computations, allocate only where needed:
     if settings['tau_refrac'] > 0:
         self.refrac_until = k.zeros(output_shape)
-    if settings['verbose'] > 1:
+    if 'spiketrains' in settings['log_vars'] + settings['plot_vars']:
         self.spiketrain = k.zeros(output_shape)
-        self.total_spike_count = k.zeros(settings['batch_size'])
-    if settings['verbose'] > 1 or settings['online_normalization']:
+    if 'spikecounts' in settings['log_vars'] + settings['plot_vars']:
+        self.total_spikecount = k.zeros(settings['batch_size'])
+    if 'spikecounts' in settings['log_vars'] + settings['plot_vars'] \
+            or settings['online_normalization']:
         self.spikecounts = k.zeros(output_shape)
     if settings['payloads']:
         self.payloads = k.zeros(output_shape)
@@ -497,7 +508,7 @@ class SpikeDense(Dense):
         self._per_input_updates = {}
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
-        self.total_spike_count = self.refrac_until = self.max_spikerate = None
+        self.total_spikecount = self.refrac_until = self.max_spikerate = None
         if bias_relaxation:
             self.b0 = None
         if clamp_var:
@@ -575,7 +586,7 @@ class SpikeConvolution2D(Convolution2D):
         self._per_input_updates = {}
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
-        self.total_spike_count = self.refrac_until = self.max_spikerate = None
+        self.total_spikecount = self.refrac_until = self.max_spikerate = None
         if bias_relaxation:
             self.b0 = None
         if clamp_var:
@@ -647,7 +658,7 @@ class SpikeAveragePooling2D(AveragePooling2D):
         self._per_input_updates = {}
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
-        self.total_spike_count = self.refrac_until = self.max_spikerate = None
+        self.total_spikecount = self.refrac_until = self.max_spikerate = None
         if clamp_var:
             self.spikerate = self.var = None
         if clamp_delay:
@@ -713,7 +724,7 @@ class SpikeMaxPooling2D(MaxPooling2D):
         self._per_input_updates = {}
         self.spikerate_pre = self.time = self.previous_x = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
-        self.total_spike_count = self.refrac_until = self.max_spikerate = None
+        self.total_spikecount = self.refrac_until = self.max_spikerate = None
         if clamp_var:
             self.spikerate = self.var = None
         if clamp_delay:

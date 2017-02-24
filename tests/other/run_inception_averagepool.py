@@ -21,16 +21,16 @@ settings = {'path_wd': '/home/rbodo/.snntoolbox/data/imagenet/inception_averagep
             'convert': True,
             'simulate': True,
             'simulator': 'INI',
-            'duration': 550,
-            'dt': 0.1,
-            'batch_size': 20,
-            'verbose': 1,
+            'duration': 200,
+            'dt': 1,
+            'batch_size': 1,
+            'verbose': 3,
             'num_to_test': 10000,
-            'runlabel': 'clamp2_dt0.1',
+            'runlabel': 'random_input',
             'percentile': 99.999,
             'normalization_schedule': False,
             'softmax_to_relu': True,
-            'reset': 'reset_to_zero'
+            'reset': 'Reset by subtraction'
             }
 
 update_setup(settings)

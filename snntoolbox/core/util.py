@@ -415,7 +415,6 @@ def normalize_parameters(model, **kwargs):
         return
 
     # If scale factors have not been computed in a previous run, do so now.
-    modified_scale_facs = False
     if len(scale_facs) == 1:
         from snntoolbox.io_utils.common import confirm_overwrite
 
@@ -429,7 +428,8 @@ def normalize_parameters(model, **kwargs):
                 layer.name, layer.output_shape))
             activations = get_activations_layer(model.input, layer.output,
                                                 x_norm)
-            if settings['verbose'] > 2:
+            if 'normalization_activations' in \
+                    settings['log_vars'] + settings['plot_vars']:
                 print("Writing activations to disk...")
                 np.savez_compressed(os.path.join(activ_dir, layer.name),
                                     activations)
@@ -458,7 +458,6 @@ def normalize_parameters(model, **kwargs):
         if confirm_overwrite(filepath):
             with open(filepath, 'w') as f:
                 json.dump(scale_facs, f)
-        modified_scale_facs = True
 
     # Apply scale factors to normalize the parameters.
     for layer in model.layers:
@@ -498,48 +497,48 @@ def normalize_parameters(model, **kwargs):
         layer.set_weights(parameters_norm)
 
     # Plot distributions of weights and activations before and after norm.
-    # if modified_scale_facs and settings['verbose'] > 2:
-    #     from snntoolbox.io_utils.plotting import plot_hist, plot_activ_hist
-    #     from snntoolbox.io_utils.plotting import plot_max_activ_hist
-    #
-    #     print("Plotting distributions of weights and activations before and "
-    #           "after normalizing...")
-    #
-    #     # Load original parsed model to get parameters before normalization
-    #     weights = np.load(os.path.join(activ_dir, 'weights.npz'))
-    #     for idx, layer in enumerate(model.layers):
-    #         # Skip if layer has no parameters
-    #         if len(layer.get_weights()) == 0:
-    #             continue
-    #
-    #         label = str(idx) + layer.__class__.__name__ if use_simple_label \
-    #             else layer.name
-    #         parameters = weights[layer.name]
-    #         parameters_norm = layer.get_weights()
-    #         weight_dict = {
-    #             'weights': parameters[0].flatten(),
-    #             'weights_norm': parameters_norm[0].flatten()}
-    #         plot_hist(weight_dict, 'Weight', label, norm_dir)
-    #
-    #         # Load activations of model before normalization
-    #         activations = np.load(os.path.join(activ_dir,
-    #                                            layer.name + '.npz'))['arr_0']
-    #         # Compute activations with modified parameters
-    #         nonzero_activations = activations[np.nonzero(activations)]
-    #         activations_norm = get_activations_layer(model.input,
-    #                                                  layer.output, x_norm)
-    #         activation_dict = {
-    #             'Activations': nonzero_activations, 'Activations_norm':
-    #                 activations_norm[np.nonzero(activations_norm)]}
-    #         scale_fac = scale_facs[layer.name]
-    #         plot_hist(activation_dict, 'Activation', label, norm_dir,
-    #                   scale_fac)
-    #         ax = tuple(np.arange(len(layer.output_shape))[1:])
-    #         plot_activ_hist({'Activations': nonzero_activations},
-    #                         'Activation', label, norm_dir, scale_fac)
-    #         plot_max_activ_hist(
-    #             {'Activations_max': np.max(activations, axis=ax)},
-    #             'Maximum Activation', label, norm_dir, scale_fac)
+    if 'normalization_activations' in settings['plot_vars']:
+        from snntoolbox.io_utils.plotting import plot_hist, plot_activ_hist
+        from snntoolbox.io_utils.plotting import plot_max_activ_hist
+
+        print("Plotting distributions of weights and activations before and "
+              "after normalizing...")
+
+        # Load original parsed model to get parameters before normalization
+        weights = np.load(os.path.join(activ_dir, 'weights.npz'))
+        for idx, layer in enumerate(model.layers):
+            # Skip if layer has no parameters
+            if len(layer.get_weights()) == 0:
+                continue
+
+            label = str(idx) + layer.__class__.__name__ if use_simple_label \
+                else layer.name
+            parameters = weights[layer.name]
+            parameters_norm = layer.get_weights()
+            weight_dict = {
+                'weights': parameters[0].flatten(),
+                'weights_norm': parameters_norm[0].flatten()}
+            plot_hist(weight_dict, 'Weight', label, norm_dir)
+
+            # Load activations of model before normalization
+            activations = np.load(os.path.join(activ_dir,
+                                               layer.name + '.npz'))['arr_0']
+            # Compute activations with modified parameters
+            nonzero_activations = activations[np.nonzero(activations)]
+            activations_norm = get_activations_layer(model.input,
+                                                     layer.output, x_norm)
+            activation_dict = {
+                'Activations': nonzero_activations, 'Activations_norm':
+                    activations_norm[np.nonzero(activations_norm)]}
+            scale_fac = scale_facs[layer.name]
+            plot_hist(activation_dict, 'Activation', label, norm_dir,
+                      scale_fac)
+            ax = tuple(np.arange(len(layer.output_shape))[1:])
+            plot_activ_hist({'Activations': nonzero_activations},
+                            'Activation', label, norm_dir, scale_fac)
+            plot_max_activ_hist(
+                {'Activations_max': np.max(activations, axis=ax)},
+                'Maximum Activation', label, norm_dir, scale_fac)
     print()
 
 
@@ -797,11 +796,12 @@ def get_top5score(truth, output):
 
     score = 0
     for t, o in zip(truth, output):
+        o = np.array(o, 'float32')
         top5pred = []
         for i in range(5):
             top = np.argmax(o)
             top5pred.append(top)
-            o[top] = 0
+            o[top] = -np.infty
         if t in top5pred:
             score += 1
     return score

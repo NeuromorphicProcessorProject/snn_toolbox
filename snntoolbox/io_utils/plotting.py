@@ -56,27 +56,36 @@ def output_graphs(spiketrains_batch, activations_batch, path=None, idx=0):
 
     print("Saving plots of one sample to {}...\n".format(path))
 
-    spikerates_batch = spiketrains_to_rates(spiketrains_batch)
-    spikerates = get_sample_activity_from_batch(spikerates_batch, idx)
-    activations = get_sample_activity_from_batch(activations_batch, idx)
-#    spiketrains = get_sample_activity_from_batch(spiketrains_batch, idx)
-    spiketrains = None  # Too costly
+    spikerates_batch = spikerates = activations = spiketrains = None
 
-    plot_layer_summaries(spikerates, activations, spiketrains, path)
+    if 'spikerates' in settings['plot_vars'] \
+            or 'correlation' in settings['plot_vars']:
+        spikerates_batch = spiketrains_to_rates(spiketrains_batch)
+        spikerates = get_sample_activity_from_batch(spikerates_batch, idx)
+    if 'activations' in settings['plot_vars']:
+        activations = get_sample_activity_from_batch(activations_batch, idx)
+    if 'spiketrains' in settings['plot_vars']:
+        spiketrains = get_sample_activity_from_batch(spiketrains_batch, idx)
+
+    if any([st in settings['log_vars'] for st in
+            ['activations', 'spiketrains', 'spikerates', 'correlation']]):
+        plot_layer_summaries(spikerates, activations, spiketrains, path)
 
     print("Plotting Pearson Coefficients and spikerate/activation "
           "distributions")
-    plot_pearson_coefficients(spikerates_batch, activations_batch, path)
-    s = []
-    a = []
-    for ss, aa in zip(spikerates_batch, activations_batch):
-        s += list(np.divide(np.ndarray.flatten(ss[0]), 1000.))
-        a += list(np.ndarray.flatten(aa[0]))
-    plot_hist({'Spikerates': s, 'Activations': a}, path=path)
+    if 'correlation' in settings['plot_vars']:
+        plot_pearson_coefficients(spikerates_batch, activations_batch, path)
+    if 'hist_spikerates_activations' in settings['plot_vars']:
+        s = []
+        a = []
+        for ss, aa in zip(spikerates_batch, activations_batch):
+            s += list(np.divide(np.ndarray.flatten(ss[0]), 1000.))
+            a += list(np.ndarray.flatten(aa[0]))
+        plot_hist({'Spikerates': s, 'Activations': a}, path=path)
     print("Done.\n")
 
 
-def plot_layer_summaries(spikerates, activations, spiketrains=None, path=None):
+def plot_layer_summaries(spikerates, activations, spiketrains, path=None):
     """Display or save a number of plots for a specific layer.
 
     Parameters
@@ -97,7 +106,7 @@ def plot_layer_summaries(spikerates, activations, spiketrains=None, path=None):
     activations: list[tuple[np.array, str]]
         Contains the activations of a net. Same structure as ``spikerates``.
 
-    spiketrains: Optional[list[tuple[np.array, str]]]
+    spiketrains: list[tuple[np.array, str]]
         Each entry in ``spiketrains`` contains a tuple
         ``(spiketimes, label)`` for each layer of the network (for the first
         batch only, and excluding ``Flatten`` layers).
@@ -122,18 +131,23 @@ def plot_layer_summaries(spikerates, activations, spiketrains=None, path=None):
         newpath = os.path.join(path, label)
         if not os.path.exists(newpath):
             os.makedirs(newpath)
-        if spiketrains:
-            plot_spiketrains(spiketrains[i], newpath)  # t=75.5%
-        plot_layer_activity(spikerates[i], 'Spikerates', newpath)  # t=7.8%
-        plot_layer_activity(activations[i], 'Activations', newpath)  # t=6.5%
-        plot_activations_minus_rates(spikerates[i][0], activations[i][0],
-                                     name, newpath)  # t=6.7%
-        plot_layer_correlation(spikerates[i][0].flatten(),
-                               activations[i][0].flatten(),
-                               'ANN-SNN correlations\n of layer ' + name,
-                               newpath)  # t=0.8%
-        plot_hist({'Spikerates': spikerates[i][0].flatten()}, 'Spikerates',
-                  name, newpath)  # t=2.7%
+        if 'spiketrains' in settings['plot_vars']:
+            plot_spiketrains(spiketrains[i], newpath)
+        if 'spikerates' in settings['plot_vars']:
+            plot_layer_activity(spikerates[i], 'Spikerates', newpath)
+            plot_hist({'Spikerates': spikerates[i][0].flatten()}, 'Spikerates',
+                      name, newpath)
+        if 'activations' in settings['plot_vars']:
+            plot_layer_activity(activations[i], 'Activations', newpath)
+        if 'spikerates' in settings['plot_vars'] and \
+                'activations' in settings['plot_vars']:
+            plot_activations_minus_rates(spikerates[i][0], activations[i][0],
+                                         name, newpath)
+        if 'correlation' in settings['plot_vars']:
+            plot_layer_correlation(spikerates[i][0].flatten(),
+                                   activations[i][0].flatten(),
+                                   'ANN-SNN correlations\n of layer ' + name,
+                                   newpath)
 
 
 def plot_layer_activity(layer, title, path=None, limits=None):

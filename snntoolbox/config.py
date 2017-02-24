@@ -233,6 +233,15 @@ maxpool_type: string
     avg_max: moving average of firing rate
 binarize_weights: boolean, optional
     If ``True``, the weights are binarized.
+log_vars: list, optional
+    Specify the variables to monitor and save to disk. Possible values:
+    'activations', 'spiketrains', 'spikecounts', 'all'.
+plot_vars: list, optional
+    Specify the variables to monitor and plot. Possible values:
+    'activations', 'spiketrains', 'spikecounts', 'spikerates', 'input_image',
+     'error_t', 'confusion_matrix', 'correlation',
+     'hist_spikerates_activations', 'v_mem', 'all'.
+
 
 Default values
 ..............
@@ -281,7 +290,9 @@ Default values
                  'diff_to_max_rate': 200,
                  'num_to_test': 1000,
                  'diff_to_min_rate': 100,
-                 'binarize_weights': False}
+                 'binarize_weights': False,
+                 'log_vars': [],
+                 'plot_vars': []}
 """
 
 import matplotlib as mpl
@@ -355,7 +366,18 @@ settings = OrderedDict({
     'scaling_factor': 10000000,
     'maxpool_type': 'fir_max',
     'binarize_weights': False,
-    'runlabel': 'test'})
+    'runlabel': 'test',
+    'reset_between_frames': True,
+    'log_vars': [],
+    'plot_vars': []})
+
+# Possible variables to monitor and save / plot:
+log_vars = ['activations', 'spiketrains', 'spikecounts',
+            'normalization_activations', 'all']
+plot_vars = ['activations', 'spiketrains', 'spikecounts', 'spikerates',
+             'input_image', 'error_t', 'confusion_matrix', 'correlation',
+             'hist_spikerates_activations', 'v_mem',
+             'normalization_activations', 'all']
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,
@@ -545,11 +567,25 @@ def update_setup(s):
         settings['num_to_test'] = settings['batch_size']
 
     if not settings['convert']:
-        print("WARNING: You have restored a previously converted SNN from "
-              "disk. If this net uses an activation function unknown to Keras, "
-              "this custom function will not have been saved and reloaded, but "
-              "replaced by default 'linear'. Convert from scratch before "
-              "simulating to use custom function.")
+        print("SNN toolbox Warning: You have restored a previously converted "
+              "SNN from disk. If this net uses an activation function unknown "
+              "to Keras, this custom function will not have been saved and "
+              "reloaded, but replaced by default 'linear'. Convert from "
+              "scratch before simulating to use custom function.")
+
+    assert all([v in plot_vars for v in settings['plot_vars']]), \
+        "Plot variable(s) {} not understood.".format(
+            [v for v in settings['plot_vars'] if v not in plot_vars])
+
+    assert all([v in log_vars for v in settings['log_vars']]), \
+        "Log variable(s) {} not understood.".format(
+            [v for v in settings['log_vars'] if v not in log_vars])
+
+    if 'all' in settings['log_vars']:
+        settings['log_vars'] = log_vars
+
+    if 'all' in settings['plot_vars']:
+        settings['plot_vars'] = plot_vars
 
     return True
 

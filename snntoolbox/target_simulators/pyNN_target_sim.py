@@ -351,7 +351,8 @@ class SNN:
             # spikes and potential only for the last test sample. Have to
             # reload network in order to tell the layers to record new
             # variables.
-            if s['verbose'] > 1 and test_num == s['num_to_test'] - 1:
+            if 'spiketrains' in s['plot_vars'] and \
+                    test_num == s['num_to_test'] - 1:
                 if s['num_to_test'] > 1:
                     echo("For last run, record spike rates and membrane " +
                          "potential of all layers.\n")
@@ -360,7 +361,7 @@ class SNN:
                 for layer in self.layers[1:]:
                     layer.set(**self.cellparams)
                     layer.initialize(v=self.layers[1].get('v_rest'))
-                    if s['verbose'] == 3:
+                    if 'v_mem' in s['plot_vars']:
                         layer.record(['spikes', 'v'])
                     else:
                         layer.record(['spikes'])
@@ -397,7 +398,8 @@ class SNN:
                 echo("Moving average accuracy: {:.2%}.\n".format(
                     np.mean(results)))
 
-            if s['verbose'] > 1 and test_num == s['num_to_test'] - 1:
+            if 'spiketrains' in s['plot_vars'] and \
+                    test_num == s['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
                 self.collect_plot_results(x_test[ind:ind+s['batch_size']],
                                           test_num)
@@ -409,7 +411,7 @@ class SNN:
             if s['verbose'] > 1:
                 echo("Done.\n")
 
-        if s['verbose'] > 1:
+        if 'confusion_matrix' in s['plot_vars']:
             plot_confusion_matrix(truth, guesses, log_dir)
 
         total_acc = np.mean(results)
@@ -680,7 +682,7 @@ class SNN:
                 spiketrains_full[k] = spiketrain
             spiketrains_batch[i][0][:] = np.reshape(spiketrains_full, shape)
             # Repeat for membrane potential
-            if settings['verbose'] == 3:
+            if 'v_mem' in settings['plot_vars']:
                 vm = [np.array(v) for v in
                       layer.get_data().segments[-1].analogsignalarrays]
                 vmem.append((vm, layer.label))
