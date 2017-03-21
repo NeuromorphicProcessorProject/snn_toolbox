@@ -121,8 +121,8 @@ def extract(model):
     caffe_model = model[0]
     caffe_layers = model[1].layer
 
-    batch_input_shape = caffe_layers[0].input_param.shape[0].dim
-    batch_input_shape[0] = settings['batch_size']
+    batch_input_shape = list(caffe_layers[0].input_param.shape[0].dim)
+    batch_input_shape[0] = None  # For flexibility; else: settings['batch_size']
 
     name_map = {}
     layers = []
@@ -369,18 +369,28 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
     (``Keras.ImageDataGenerator.flow_from_directory`` object).
     """
 
-    if x_test is None:
-        # Get samples from Keras.ImageDataGenerator
-        batch_size = dataflow.batch_size
-        dataflow.batch_size = settings['num_to_test']
-        x_test, y_test = dataflow.next()
-        dataflow.batch_size = batch_size
-        print("Using {} samples to evaluate input model".format(len(x_test)))
-
-    out = val_fn(data=x_test)
-    guesses = np.argmax([out[key] for key in out.keys()][0], axis=1)
-    truth = np.argmax(y_test, axis=1)
-    accuracy = np.mean(guesses == truth)
+    if x_test is not None:
+        out = val_fn(data=x_test)
+        guesses = np.argmax([out[key] for key in out.keys()][0], axis=1)
+        truth = np.argmax(y_test, axis=1)
+        accuracy = np.mean(guesses == truth)
+    else:
+        print("Using {} samples to evaluate input model".format(
+            settings['num_to_test']))
+        accuracy = 0
+        batches = int(settings['num_to_test'] / settings['batch_size'])
+        for i in range(batches):
+            # Get samples from Keras.ImageDataGenerator
+            x_batch, y_batch = dataflow.next()
+            if True:  # Only for imagenet!
+                print("Preprocessing input for ImageNet")
+                x_batch = np.add(np.multiply(x_batch, 2. / 255.), - 1.).astype(
+                    'float32')
+            out = val_fn(data=x_batch)
+            guesses = np.argmax([out[key] for key in out.keys()][0], axis=1)
+            truth = np.argmax(y_batch, axis=1)
+            accuracy += np.mean(guesses == truth)
+        accuracy /= batches
     loss = -1
 
     print('\n' + "Test loss: {:.2f}".format(loss))

@@ -24,6 +24,7 @@ import keras
 from future import standard_library
 from snntoolbox.config import settings, initialize_simulator
 from snntoolbox.core.inisim import bias_relaxation
+from typing import Optional
 
 standard_library.install_aliases()
 
@@ -31,6 +32,9 @@ if settings['online_normalization']:
     lidx = 0
 
 remove_classifier = False
+use_dvs_input = False
+nb_events_per_sample = 2000
+labeldict = {'paper': '0', 'scissors': '1', 'rock': '2', 'background': '3'}
 
 
 class SNN:
@@ -81,7 +85,7 @@ class SNN:
         self.debug_vars = None
 
     # noinspection PyUnusedLocal
-    def build(self, parsed_model, **kwargs):
+    def build(self, parsed_model, verbose=True, **kwargs):
         """Compile a SNN to prepare for simulation with INI simulator.
 
         Convert an ANN to a spiking neural network, using layers derived from
@@ -98,26 +102,38 @@ class SNN:
         parsed_model: Keras model
             Parsed input model; result of applying
             ``model_lib.extract(input_model)`` to the ``input model``.
+        verbose: Optional[bool]
+            Whether or not to print status messages.
         """
+
+        if verbose:
+            print("Building spiking model...")
 
         self.parsed_model = parsed_model
 
-        print("Building spiking model...")
+        if 'batch_size' in kwargs:
+            batch_shape = [kwargs['batch_size']] + \
+                          list(parsed_model.layers[0].batch_input_shape)[1:]
+        else:
+            batch_shape = list(parsed_model.layers[0].batch_input_shape)
+        if batch_shape[0] is None:
+            batch_shape[0] = settings['batch_size']
 
-        input_images = keras.layers.Input(
-            batch_shape=parsed_model.layers[0].batch_input_shape)
+        input_images = keras.layers.Input(batch_shape=batch_shape)
         spiking_layers = {parsed_model.layers[0].name: input_images}
 
         # Iterate over layers to create spiking neurons and connections.
         for layer in parsed_model.layers[1:]:  # Skip input layer
-            print("Building layer: {}".format(layer.name))
+            if verbose:
+                print("Building layer: {}".format(layer.name))
             spike_layer = getattr(self.sim, 'Spike' + layer.__class__.__name__)
             inbound = [spiking_layers[inb.name] for inb in
                        layer.inbound_nodes[0].inbound_layers]
             spiking_layers[layer.name] = \
                 spike_layer.from_config(layer.get_config())(inbound)
 
-        print("Compiling spiking model...\n")
+        if verbose:
+            print("Compiling spiking model...\n")
         self.snn = keras.models.Model(
             input_images, spiking_layers[parsed_model.layers[-1].name])
         self.snn.compile('sgd', 'categorical_crossentropy',
@@ -173,7 +189,7 @@ class SNN:
             test samples.
         """
 
-        from ann_architectures.imagenet.utils import preprocess_input
+        # from ann_architectures.imagenet.utils import preprocess_input
         from snntoolbox.core.util import get_activations_batch, get_top5score
         from snntoolbox.core.util import echo
         from snntoolbox.io_utils.plotting import output_graphs
@@ -212,9 +228,9 @@ class SNN:
 
         # Divide the test set into batches and run all samples in a batch in
         # parallel.
-        num_batches = int(np.floor(s['num_to_test'] / s['batch_size']))
-
-        print("Starting new simulation...\n")
+        num_batches = int(1e9) if use_dvs_input else \
+            int(np.floor(s['num_to_test'] / s['batch_size']))
+        num_timesteps = int(s['duration'] / s['dt'])
         # Allocate a list 'spiketrains_batch' with the following specification:
         # Each entry in ``spiketrains_batch`` contains a tuple
         # ``(spiketimes, label)`` for each layer of the network (for the first
@@ -230,21 +246,29 @@ class SNN:
             for layer in self.snn.layers:
                 if not hasattr(layer, 'spiketrain'):
                     continue
-                shape = list(layer.output_shape) + \
-                    [int(s['duration'] / s['dt'])]
+                shape = list(layer.output_shape) + [num_timesteps]
                 spiketrains_batch.append((np.zeros(shape, 'float32'),
                                           layer.name))
 
         num_layers_with_spikes = len([1 for l in self.snn.layers
                                       if hasattr(l, 'spiketrain')])
         inp = None
+        input_t = None
         top5score_moving = 0
         truth = []
         guesses = []
         guesses_batch = None
         rescale_fac = 1
-        num_classes = 0
         activations_batch = None
+        x_batch_xaddr = x_batch_yaddr = x_batch_ts = None
+        x_batch = y_batch = None
+        dvs_gen = None
+        num_classes = None
+        if use_dvs_input:
+            dvs_gen = DVSIterator(os.path.join(s['dataset_path'], 'DVS'),
+                                  s['batch_size'], labeldict,
+                                  (239 / 63, 179 / 63), nb_events_per_sample)
+
         # Prepare files to write moving accuracy and error to.
         path_pred = os.path.join(log_dir, 'predictions')
         if os.path.isfile(path_pred):
@@ -267,20 +291,32 @@ class SNN:
         path_count = os.path.join(log_dir, 'spikecounts')
         if not os.path.isdir(path_count):
             os.makedirs(path_count)
+        path_input = os.path.join(log_dir, 'input_t')
+        if not os.path.isdir(path_input):
+            os.makedirs(path_input)
         net_top1err_t = []
 
         for batch_idx in range(num_batches):
             # Get a batch of samples
             if x_test is None:
                 x_batch, y_batch = dataflow.next()
-                imagenet = False
+                imagenet = True
                 if imagenet:  # Only for imagenet!
-                    x_batch = preprocess_input(x_batch)
-            else:
+                    print("Preprocessing input for ImageNet")
+                    x_batch = np.add(np.multiply(x_batch, 2. / 255.), - 1.)
+                    # x_batch = preprocess_input(x_batch)
+            elif not use_dvs_input:
                 batch_idxs = range(s['batch_size'] * batch_idx,
                                    s['batch_size'] * (batch_idx + 1))
                 x_batch = x_test[batch_idxs, :]
                 y_batch = y_test[batch_idxs, :]
+            if use_dvs_input:
+                try:
+                    x_batch_xaddr, x_batch_yaddr, x_batch_ts, y_batch = \
+                        dvs_gen.__next__()
+                except StopIteration:
+                    break
+            truth_batch = np.argmax(y_batch, axis=1)
             num_classes = y_batch.shape[1]
 
             # Either use Poisson spiketrains as inputs to the SNN, or take the
@@ -290,6 +326,8 @@ class SNN:
                 # the input layer to fire a spike. Increasing ``input_rate``
                 # increases the firing rate of the input and subsequent layers.
                 rescale_fac = np.max(x_batch) * 1000 / s['input_rate'] / s['dt']
+            elif use_dvs_input:
+                pass
             else:
                 # Simply use the analog values of the original data as input.
                 inp = x_batch * s['dt']
@@ -298,32 +336,63 @@ class SNN:
             # Reset network variables.
             self.reset()
 
-            # Loop through simulation time.
-            output = np.zeros((s['batch_size'], y_batch.shape[1]),
-                              dtype='int32')
-            num_timesteps = int(s['duration'] / s['dt'])
-            if 'spikecounts' in s['log_vars']:
+            # Allocate variables to monitor during simulation
+            output = np.zeros((s['batch_size'], num_classes), 'int32')
+            if 'spikecounts' in s['plot_vars'] + s['log_vars']:
                 total_spikecount_t = np.zeros((num_timesteps, s['batch_size']))
-            t_idx = 0
             self.init_debug_vars()
             top1err_vs_time = []
-            layer_spikecounts = np.zeros((s['batch_size'],
-                                          num_layers_with_spikes,
-                                          int(s['duration'] / s['dt'])))
-            for t in np.arange(0, s['duration'], s['dt']):
+            if 'input_t' in s['log_vars']:
+                input_t = np.empty([num_timesteps] +
+                                   list(self.snn.input_shape), 'int32')
+            total_spikecount = None
+            input_spikecount = 0
+            layer_spikecounts = np.zeros(
+                (s['batch_size'], num_layers_with_spikes, num_timesteps))
+            sim_step_int = 0
+            print("Starting new simulation...\n")
+            # Loop through simulation time.
+            for sim_step in range(0, s['duration'], s['dt']):
+                # Generate input, in case it changes with each simulation step:
                 if s['poisson_input']:
-                    # Create poisson input.
-                    spike_snapshot = \
-                        np.random.random_sample(x_batch.shape) * rescale_fac
-                    inp = (spike_snapshot <= np.abs(x_batch)).astype('float32')
-                    # For BinaryNets, with input that is not normalized and not
-                    # all positive, we stimulate with spikes of the same size
-                    # as the maximum activation, and the same sign as the
-                    # corresponding activation. Is there a better solution?
-                    # inp *= np.max(x_batch) * np.sign(x_batch)
+                    if True:  # input_spikecount < nb_events_per_sample:
+                        spike_snapshot = \
+                            np.random.random_sample(x_batch.shape) * rescale_fac
+                        inp = (spike_snapshot <= np.abs(x_batch)).astype(
+                            'float32')
+                        input_spikecount += np.count_nonzero(inp) / len(x_batch)
+                        # For BinaryNets, with input that is not normalized and
+                        # not all positive, we stimulate with spikes of the same
+                        # size as the maximum activation, and the same sign as
+                        # the corresponding activation. Is there a better
+                        # solution?
+                        # inp *= np.max(x_batch) * np.sign(x_batch)
+                    else:
+                        inp = np.zeros(x_batch.shape)
+                elif use_dvs_input:
+                    # print("Generating a batch of even-frames...")
+                    inp = np.zeros(self.snn.layers[0].batch_input_shape,
+                                   'float32')
+                    for sample_idx in range(s['batch_size']):
+                        # Buffer event sequence because we will be removing
+                        # elements from original list:
+                        xaddr_sample = list(x_batch_xaddr[sample_idx])
+                        yaddr_sample = list(x_batch_yaddr[sample_idx])
+                        ts_sample = list(x_batch_ts[sample_idx])
+                        first_ts_of_frame = ts_sample[0] if ts_sample else 0
+                        for x, y, ts in zip(xaddr_sample, yaddr_sample,
+                                            ts_sample):
+                            if inp[sample_idx, 0, y, x] == 0:
+                                inp[sample_idx, 0, y, x] = 1
+                                # Can't use .popleft()
+                                x_batch_xaddr[sample_idx].remove(x)
+                                x_batch_yaddr[sample_idx].remove(y)
+                                x_batch_ts[sample_idx].remove(ts)
+                            if ts - first_ts_of_frame > 1000:
+                                break
                 # Main step: Propagate input through network and record output
                 # spikes.
-                self.set_time(t)
+                self.set_time(sim_step)
                 out_spikes = self.snn.predict_on_batch(inp)
                 if remove_classifier:
                     output += np.argmax(np.reshape(out_spikes.astype('int32'),
@@ -331,44 +400,51 @@ class SNN:
                                         axis=1)
                 else:
                     output += out_spikes.astype('int32')
-                # print([np.mean(layer.var.get_value()) for layer in
-                #        self.snn.layers if hasattr(layer, 'var')])
                 # Get result by comparing the guessed class (i.e. the index
                 # of the neuron in the last layer which spiked most) to the
                 # ground truth.
-                truth_batch = np.argmax(y_batch, axis=1)
                 guesses_batch = np.argmax(output, axis=1)
+                # Find sample indices for which there was no output spike yet
+                undecided = np.where(np.sum(output != 0, axis=1) == 0)
+                # Assign negative value such that undecided samples count as
+                # wrongly classified.
+                guesses_batch[undecided] = -1
                 top1err_vs_time.append(np.around(
-                    np.mean(truth_batch != guesses_batch), 2))
+                    np.mean(truth_batch != guesses_batch), 4))
                 # Record the spiketrains of each neuron in each layer.
                 j = 0
-                total_spikecount = np.zeros(s['batch_size'])
+                if 'spikecounts' in s['plot_vars'] + s['log_vars']:
+                    total_spikecount = np.zeros(s['batch_size'])
                 for layer in self.snn.layers:
                     if not hasattr(layer, 'spiketrain'):
                         continue
                     if 'spiketrains' in s['log_vars']:
-                        spiketrains_batch[j][0][Ellipsis, t_idx] = \
+                        spiketrains_batch[j][0][Ellipsis, sim_step_int] = \
                             layer.spiketrain.get_value()
-                        self.monitor_debug_vars(layer, spiketrains_batch, j,
-                                                t_idx)
-                    if 'spikecounts' in s['log_vars']:
-                        layer_spikecounts[:, j, t_idx] = \
+                    if 'spikecounts' in s['plot_vars'] + s['log_vars']:
+                        layer_spikecounts[:, j, sim_step_int] = \
                             layer.total_spikecount.get_value()
-                        total_spikecount += layer_spikecounts[:, j, t_idx]
-
+                        total_spikecount += \
+                            layer_spikecounts[:, j, sim_step_int]
                     j += 1
-                total_spikecount_t[t_idx] = total_spikecount
-                t_idx += 1
-                if s['verbose'] > 0 and t % 1 == 0:
+                if 'spiketrains' in s['log_vars'] and False:
+                    self.monitor_debug_vars(sim_step_int, inp)
+                if 'spikecounts' in s['plot_vars'] + s['log_vars']:
+                    total_spikecount_t[sim_step_int] = total_spikecount
+                if 'input_t' in s['log_vars']:
+                    input_t[sim_step_int] = inp
+                sim_step_int += 1
+                if s['verbose'] > 0 and sim_step % 1 == 0:
                     echo('{:.2%}_'.format(1-top1err_vs_time[-1]))
-            self.save_debug_vars(log_dir)
+            if 'spiketrains' in s['log_vars'] and False:
+                self.save_debug_vars(log_dir, spiketrains_batch)
 
             truth += list(truth_batch)
             guesses += list(guesses_batch)
             top1acc_moving = np.mean(np.array(truth) == np.array(guesses))
             top5score_moving += get_top5score(truth_batch, output)
             top5acc_moving = top5score_moving / ((batch_idx + 1) *
-                                                 settings['batch_size'])
+                                                 s['batch_size'])
             net_top1err_t.append(top1err_vs_time)
             with open(path_pred, 'a') as f_pred:
                 f_pred.write("Predictions of batch {}/{}: {}\n".format(
@@ -395,16 +471,21 @@ class SNN:
                 print("Calculating activations...")
                 activations_batch = get_activations_batch(self.parsed_model,
                                                           x_batch)
-            if 'input_image' in s['plot_vars']:
-                plot_input_image(x_batch[0], int(np.argmax(y_batch[0])),
-                                 log_dir)
+            if 'input_image' in s['plot_vars'] and x_batch is not None:
+                plot_input_image(x_batch[0], int(truth_batch[0]), log_dir)
+            if 'input_t' in s['log_vars']:
+                print("Saving batch input vs time...")
+                np.savez_compressed(os.path.join(path_input, str(batch_idx)),
+                                    input_t=input_t)
             if 'error_t' in s['plot_vars']:
                 ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
-                plot_error_vs_time(top1err_vs_time, ann_err, log_dir)
+                plot_error_vs_time(top1err_vs_time, ann_err, log_dir,
+                                   s['batch_size'])
             if 'spikecounts' in s['plot_vars']:
                 plot_spikecount_vs_time(total_spikecount_t, log_dir)
             if 'confusion_matrix' in s['plot_vars']:
-                plot_confusion_matrix(truth, guesses, log_dir)
+                plot_confusion_matrix(truth, guesses, log_dir,
+                                      list(np.arange(num_classes)))
             if 'activations' in s['log_vars']:
                 print("Saving batch activations...")
                 np.savez_compressed(os.path.join(path_activ, str(batch_idx)),
@@ -421,9 +502,9 @@ class SNN:
                                                  str(batch_idx) + '_l'),
                                     layer_spike_counts=layer_spikecounts)
             if any(v in s['plot_vars'] for v in
-                   ['activations', 'spiketrains', 'spikecounts', 'spikerates',
+                   ['activations', 'spiketrains', 'spikerates',
                     'correlation', 'hist_spikerates_activations']):
-                output_graphs(spiketrains_batch, activations_batch, log_dir)
+                output_graphs(spiketrains_batch, activations_batch, log_dir, 0)
         count = np.zeros(num_classes)
         match = np.zeros(num_classes)
         for gt, p in zip(truth, guesses):
@@ -435,7 +516,8 @@ class SNN:
         np.savez_compressed(os.path.join(log_dir, 'net_top1err_t'),
                             net_top1err_t=np.array(net_top1err_t))
         if 'confusion_matrix' in s['plot_vars']:
-            plot_confusion_matrix(truth, guesses, log_dir)
+            plot_confusion_matrix(truth, guesses, log_dir,
+                                  list(np.arange(num_classes)))
         print("Simulation finished.\n\n")
         print("Total accuracy: {:.2%} on {} test samples.\n\n".format(
             top1acc_total, len(guesses)))
@@ -493,7 +575,6 @@ class SNN:
         filepath = os.path.join(path, filename + '.h5')
 
         self.snn = keras.models.load_model(filepath, custom_layers)
-        self.assert_batch_size(self.snn.layers[0].batch_input_shape[0])
 
     @staticmethod
     def assert_batch_size(batch_size):
@@ -546,50 +627,302 @@ class SNN:
 
         t = int(settings['duration'] / settings['dt'])
         self.debug_vars = {
+            'mem4': np.empty(t),
             'mem8': np.empty(t),
             'mem14': np.empty(t),
-            'inputspikes8': np.empty((t, 192)),
-            'inputspikes14': np.empty((t, 192)),
-            'spikerates02': np.empty((t, 10))}
+            'inp_t': np.zeros(t),
+            # 'mem_l_t': np.empty((14, t)),
+            # 'spikes_l_t': np.zeros((14, t))
+        }
 
-    def monitor_debug_vars(self, layer, spiketrains_batch, j, t_idx):
+    def monitor_debug_vars(self, t_idx, inp):
         """Monitor debug variables.
 
         Parameters
         ----------
 
-        layer: Subclass[keras.layers.core.Layer]
-        spiketrains_batch: list[np.array]
-        j: int
         t_idx: int
+        inp:
         """
 
-        if '08Convolution2D_48' in layer.name:
-            self.debug_vars['mem8'][t_idx] = layer.mem.get_value()[0, 0, 0, 0]
-            self.debug_vars['inputspikes8'][t_idx] = \
-                spiketrains_batch[j - 2][0][0, :, 0, 0, t_idx]
-            self.debug_vars['weights8'] = \
-                self.snn.layers[9].get_weights()[0][0, :, 0, 0]
-            self.debug_vars['bias8'] = self.snn.layers[9].get_weights()[1][0]
-        if '14Convolution2D_32' in layer.name:
-            self.debug_vars['mem14'][t_idx] = layer.mem.get_value()[0, 4, 0, 34]
-            self.debug_vars['inputspikes14'][t_idx] = \
-                spiketrains_batch[j - 4][0][0, :, 0, 34, t_idx]
-            self.debug_vars['weights14'] = \
-                self.snn.layers[15].get_weights()[0][4, :, 0, 0]
-            self.debug_vars['bias14'] = self.snn.layers[15].get_weights()[1][4]
-        if '03MaxPooling2D_64' in layer.name:
-            self.debug_vars['spikerates02'][t_idx] = \
-                layer.spikerate.get_value()[0, 0, 0, :10]
+        self.debug_vars['mem4'][t_idx] = \
+            self.snn.layers[5].mem.get_value()[0, 6, 3, 30]
+        self.debug_vars['mem8'][t_idx] = \
+            self.snn.layers[9].mem.get_value()[0, 0, 0, 0]
+        self.debug_vars['mem14'][t_idx] = \
+            self.snn.layers[15].mem.get_value()[0, 4, 0, 34]
+        self.debug_vars['inp_t'][t_idx] = inp[0, 0, 32, 32]
+        # k = -1
+        # self.debug_vars['mem_l_t'][0][t_idx] = \
+        #     self.snn.layers[1].mem.get_value()[k, 0, 30, 30]
+        # self.debug_vars['mem_l_t'][1][t_idx] = \
+        #     self.snn.layers[2].mem.get_value()[k, 0, 15, 15]
+        # self.debug_vars['mem_l_t'][2][t_idx] = \
+        #     self.snn.layers[3].mem.get_value()[k, 0, 14, 14]
+        # self.debug_vars['mem_l_t'][3][t_idx] = \
+        #     self.snn.layers[4].mem.get_value()[k, 0, 7, 7]
+        # self.debug_vars['mem_l_t'][4][t_idx] = \
+        #     self.snn.layers[5].mem.get_value()[k, 0, 6, 6]
+        # self.debug_vars['mem_l_t'][5][t_idx] = \
+        #     self.snn.layers[6].mem.get_value()[k, 0, 3, 3]
+        # self.debug_vars['mem_l_t'][6][t_idx] = \
+        #     self.snn.layers[7].mem.get_value()[k, 0, 2, 2]
+        # self.debug_vars['mem_l_t'][7][t_idx] = \
+        #     self.snn.layers[8].mem.get_value()[k, 0, 1, 1]
+        # self.debug_vars['mem_l_t'][8][t_idx] = \
+        #     self.snn.layers[9].mem.get_value()[k, 0, 1, 1]
+        # self.debug_vars['mem_l_t'][9][t_idx] = \
+        #     self.snn.layers[10].mem.get_value()[k, 0, 0, 0]
+        # self.debug_vars['mem_l_t'][10][t_idx] = \
+        #     self.snn.layers[12].mem.get_value()[k, 0]  # All 4 output classes
+        # self.debug_vars['mem_l_t'][11][t_idx] = \
+        #     self.snn.layers[12].mem.get_value()[k, 1]
+        # self.debug_vars['mem_l_t'][12][t_idx] = \
+        #     self.snn.layers[12].mem.get_value()[k, 2]
+        # self.debug_vars['mem_l_t'][13][t_idx] = \
+        #     self.snn.layers[12].mem.get_value()[k, 3]
+        # self.debug_vars['spikes_l_t'][0][t_idx] = \
+        #     self.snn.layers[1].spiketrain.get_value()[k, 0, 30, 30]
+        # self.debug_vars['spikes_l_t'][1][t_idx] = \
+        #     self.snn.layers[2].spiketrain.get_value()[k, 0, 15, 15]
+        # self.debug_vars['spikes_l_t'][2][t_idx] = \
+        #     self.snn.layers[3].spiketrain.get_value()[k, 0, 14, 14]
+        # self.debug_vars['spikes_l_t'][3][t_idx] = \
+        #     self.snn.layers[4].spiketrain.get_value()[k, 0, 7, 7]
+        # self.debug_vars['spikes_l_t'][4][t_idx] = \
+        #     self.snn.layers[5].spiketrain.get_value()[k, 0, 6, 6]
+        # self.debug_vars['spikes_l_t'][5][t_idx] = \
+        #     self.snn.layers[6].spiketrain.get_value()[k, 0, 3, 3]
+        # self.debug_vars['spikes_l_t'][6][t_idx] = \
+        #     self.snn.layers[7].spiketrain.get_value()[k, 0, 2, 2]
+        # self.debug_vars['spikes_l_t'][7][t_idx] = \
+        #     self.snn.layers[8].spiketrain.get_value()[k, 0, 1, 1]
+        # self.debug_vars['spikes_l_t'][8][t_idx] = \
+        #     self.snn.layers[9].spiketrain.get_value()[k, 0, 1, 1]
+        # self.debug_vars['spikes_l_t'][9][t_idx] = \
+        #     self.snn.layers[10].spiketrain.get_value()[k, 0, 0, 0]
+        # self.debug_vars['spikes_l_t'][10][t_idx] = \
+        #     self.snn.layers[12].spiketrain.get_value()[k, 0]
+        # self.debug_vars['spikes_l_t'][11][t_idx] = \
+        #     self.snn.layers[12].spiketrain.get_value()[k, 1]
+        # self.debug_vars['spikes_l_t'][12][t_idx] = \
+        #     self.snn.layers[12].spiketrain.get_value()[k, 2]
+        # self.debug_vars['spikes_l_t'][13][t_idx] = \
+        #     self.snn.layers[12].spiketrain.get_value()[k, 3]
 
-    def save_debug_vars(self, path):
+    def save_debug_vars(self, path, spiketrains_batch):
         """Save debug variables.
 
         Parameters
         ----------
 
+        spiketrains_batch :
         path: str
             Destination path.
         """
 
+        for sb, label in spiketrains_batch:
+            if '03AveragePooling2D_64' in label:
+                self.debug_vars['inputspikes4'] = sb[0, :, 3, 30, :]
+            if '06AveragePooling2D_192' in label:
+                self.debug_vars['inputspikes8'] = sb[0, :, 0, 0, :]
+            if '13AveragePooling2D_192' in label:
+                self.debug_vars['inputspikes14'] = sb[0, :, 0, 34, :]
+
+        self.debug_vars['weights4'] = \
+            self.snn.layers[5].get_weights()[0][6, :, 0, 0]
+        self.debug_vars['bias4'] = self.snn.layers[5].get_weights()[1][6]
+        self.debug_vars['weights8'] = \
+            self.snn.layers[9].get_weights()[0][0, :, 0, 0]
+        self.debug_vars['bias8'] = self.snn.layers[9].get_weights()[1][0]
+        self.debug_vars['weights14'] = \
+            self.snn.layers[15].get_weights()[0][4, :, 0, 0]
+        self.debug_vars['bias14'] = self.snn.layers[15].get_weights()[1][4]
+
         np.savez_compressed(os.path.join(path, 'debug_vars'), **self.debug_vars)
+
+
+def remove_outliers(timestamps, xaddr, yaddr, pol, x_max=240, y_max=180):
+    """Remove outliers from DVS data.
+
+    Parameters
+    ----------
+    timestamps :
+    xaddr :
+    yaddr :
+    pol :
+    x_max :
+    y_max :
+
+    Returns
+    -------
+
+    """
+
+    len_orig = len(timestamps)
+    xaddr_valid = np.where(np.array(xaddr) < x_max)
+    yaddr_valid = np.where(np.array(yaddr) < y_max)
+    xy_valid = np.intersect1d(xaddr_valid[0], yaddr_valid[0], True)
+    xaddr = np.array(xaddr)[xy_valid]
+    yaddr = np.array(yaddr)[xy_valid]
+    timestamps = np.array(timestamps)[xy_valid]
+    pol = np.array(pol)[xy_valid]
+    num_outliers = len_orig - len(timestamps)
+    if num_outliers:
+        print("Removed {} outliers.".format(num_outliers))
+    return timestamps, xaddr, yaddr, pol
+
+
+def load_dvs_sequence(filename, xyrange=None):
+    """
+
+    Parameters
+    ----------
+
+    filename:
+    xyrange:
+
+    Returns
+    -------
+
+    """
+
+    from snntoolbox.io_utils.AedatTools import ImportAedat
+
+    print("Loading DVS sample {}...".format(filename))
+    events = ImportAedat.import_aedat({'filePathAndName':
+                                       filename})['data']['polarity']
+    timestamps = events['timeStamp']
+    xaddr = events['x']
+    yaddr = events['y']
+    pol = events['polarity']
+
+    # Remove events with addresses outside valid range
+    if xyrange:
+        timestamps, xaddr, yaddr, pol = remove_outliers(
+            timestamps, xaddr, yaddr, pol, xyrange[0], xyrange[1])
+
+    return xaddr, yaddr, timestamps
+
+
+class DVSIterator(object):
+    """
+
+    Parameters
+    ----------
+    dataset_path :
+    batch_size :
+    scale:
+
+    Returns
+    -------
+
+    """
+
+    def __init__(self, dataset_path, batch_size, label_dict=None,
+                 scale=None, num_events_per_sample=1000):
+        self.dataset_path = dataset_path
+        self.batch_size = batch_size
+        self.batch_idx = 0
+        self.scale = scale
+        self.xaddr_sequence = None
+        self.yaddr_sequence = None
+        self.dvs_sample = None
+        self.num_events_of_sample = 0
+        self.dvs_sample_idx = -1
+        self.num_events_per_sample = num_events_per_sample
+        self.num_events_per_batch = batch_size * num_events_per_sample
+
+        # Count the number of samples and classes
+        classes = [subdir for subdir in sorted(os.listdir(dataset_path))
+                   if os.path.isdir(os.path.join(dataset_path, subdir))]
+
+        self.label_dict = dict(zip(classes, range(len(classes)))) \
+            if not label_dict else label_dict
+        self.num_classes = len(label_dict)
+        assert self.num_classes == len(classes), \
+            "The number of classes provided by label_dict {} does not match " \
+            "the number of subdirectories found in dataset_path {}.".format(
+                self.label_dict, self.dataset_path)
+
+        self.filenames = []
+        labels = []
+        self.num_samples = 0
+        for subdir in classes:
+            for fname in sorted(os.listdir(os.path.join(dataset_path, subdir))):
+                is_valid = False
+                for extension in {'aedat'}:
+                    if fname.lower().endswith('.' + extension):
+                        is_valid = True
+                        break
+                if is_valid:
+                    labels.append(self.label_dict[subdir])
+                    self.filenames.append(os.path.join(subdir, fname))
+                    self.num_samples += 1
+        self.labels = np.array(labels, 'int32')
+        print("Found {} samples belonging to {} classes.".format(
+            self.num_samples, self.num_classes))
+
+    def __next__(self):
+        from snntoolbox.io_utils.common import to_categorical
+        from collections import deque
+
+        while self.num_events_per_batch * (self.batch_idx + 1) >= \
+                self.num_events_of_sample:
+            self.dvs_sample_idx += 1
+            if self.dvs_sample_idx == len(self.filenames):
+                raise StopIteration()
+            filepath = os.path.join(self.dataset_path,
+                                    self.filenames[self.dvs_sample_idx])
+            self.dvs_sample = load_dvs_sequence(filepath, (240, 180))
+            self.num_events_of_sample = len(self.dvs_sample[0])
+            self.batch_idx = 0
+            print("Total number of events of this sample: {}.".format(
+                self.num_events_of_sample))
+            print("Number of batches: {:d}.".format(
+                int(self.num_events_of_sample / self.num_events_per_batch)))
+
+        print("Extracting batch of samples à {} events from DVS sequence..."
+              "".format(self.num_events_per_sample))
+        x_batch_xaddr = [deque() for _ in range(self.batch_size)]
+        x_batch_yaddr = [deque() for _ in range(self.batch_size)]
+        x_batch_ts = [deque() for _ in range(self.batch_size)]
+        for sample_idx in range(self.batch_size):
+            start_event = self.num_events_per_batch * self.batch_idx + \
+                          self.num_events_per_sample * sample_idx
+            event_idxs = range(start_event,
+                               start_event + self.num_events_per_sample)
+            event_sums = np.zeros((64, 64), 'int32')
+            xaddr_sub = []
+            yaddr_sub = []
+            for x, y in zip(self.dvs_sample[0][event_idxs],
+                            self.dvs_sample[1][event_idxs]):
+                if self.scale:
+                    # Subsample from 240x180 to e.g. 64x64
+                    x = int(x / self.scale[0])
+                    y = int(y / self.scale[1])
+                event_sums[y, x] += 1
+                xaddr_sub.append(x)
+                yaddr_sub.append(y)
+            sigma = np.std(event_sums)
+            # Clip number of events per pixel to three-sigma
+            np.clip(event_sums, 0, 3*sigma, event_sums)
+            print("Discarded {} events during 3-sigma standardization.".format(
+                self.num_events_per_sample - np.sum(event_sums)))
+            ts_sample = self.dvs_sample[2][event_idxs]
+            for x, y, ts in zip(xaddr_sub, yaddr_sub, ts_sample):
+                if event_sums[y, x] > 0:
+                    x_batch_xaddr[sample_idx].append(x)
+                    x_batch_yaddr[sample_idx].append(y)
+                    x_batch_ts[sample_idx].append(ts)
+                    event_sums[y, x] -= 1
+
+        # Each sample in the batch has the same label because it is generated
+        # from the same DVS sequence.
+        y_batch = np.broadcast_to(to_categorical(
+            [self.labels[self.dvs_sample_idx]], self.num_classes),
+            (self.batch_size, self.num_classes))
+
+        self.batch_idx += 1
+
+        return x_batch_xaddr, x_batch_yaddr, x_batch_ts, y_batch

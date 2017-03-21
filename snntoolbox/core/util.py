@@ -192,7 +192,8 @@ def get_dataset(s):
         datagen_kwargs = ast.literal_eval(s['datagen_kwargs'])
         dataflow_kwargs = ast.literal_eval(s['dataflow_kwargs'])
         dataflow_kwargs['directory'] = s['dataset_path']
-        dataflow_kwargs['batch_size'] = s['num_to_test']
+        if 'batch_size' not in dataflow_kwargs:
+            dataflow_kwargs['batch_size'] = s['batch_size']
         datagen = ImageDataGenerator(**datagen_kwargs)
         # Compute quantities required for featurewise normalization
         # (std, mean, and principal components if ZCA whitening is applied)
@@ -205,16 +206,12 @@ def get_dataset(s):
                 'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
             assert evalset, "Evaluation set empty."
         if s['normalize'] and normset is None:
-            batchflow_kwargs = dataflow_kwargs.copy()
-            batchflow_kwargs['batch_size'] = s['batch_size']
             normset = {
-                'dataflow': datagen.flow_from_directory(**batchflow_kwargs)}
+                'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
             assert normset, "Normalization set empty."
         if s['simulate']:
-            batchflow_kwargs = dataflow_kwargs.copy()
-            batchflow_kwargs['batch_size'] = s['batch_size']
             testset = {
-                'dataflow': datagen.flow_from_directory(**batchflow_kwargs)}
+                'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
             assert testset, "Test set empty."
     return evalset, normset, testset
 
@@ -231,21 +228,29 @@ def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
         x_test is not None and y_test is not None or dataflow is not None), \
         "No testsamples provided."
 
-    if dataflow:
-        batch_size = dataflow.batch_size
-        dataflow.batch_size = settings['num_to_test']
-        score = model.evaluate_generator(dataflow, settings['num_to_test'])
-        dataflow.batch_size = batch_size
-        print('\n' + "Test loss: {:.2f}".format(score[0]))
-        print("Test accuracy: {:.2%}\n".format(score[1]))
-    else:
-        score = []
+    score = [0, 0]
+    if x_test is not None:
         truth = np.argmax(y_test, axis=1)
         preds = model.predict(x_test, settings['batch_size'], verbose=0)
-        score.append(np.mean(np.argmax(preds, axis=1) == truth))
-        score.append(get_top5score(truth, preds) / len(y_test))
-        print('\n' + "Top-1 accuracy: {:.2%}".format(score[0]))
-        print("Top-5 accuracy: {:.2%}\n".format(score[1]))
+        score[0] = np.mean(np.argmax(preds, axis=1) == truth)
+        score[1] = get_top5score(truth, preds) / len(truth)
+    else:
+        batches = int(settings['num_to_test'] / settings['batch_size'])
+        for i in range(batches):
+            # Get samples from Keras.ImageDataGenerator
+            x_batch, y_batch = dataflow.next()
+            if True:  # Only for imagenet!
+                print("Preprocessing input for ImageNet")
+                x_batch = np.add(np.multiply(x_batch, 2. / 255.), - 1.).astype(
+                    'float32')
+            truth = np.argmax(y_batch, axis=1)
+            preds = model.predict_on_batch(x_batch)
+            score[0] += np.mean(np.argmax(preds, axis=1) == truth)
+            score[1] += get_top5score(truth, preds) / len(truth)
+        score[0] /= batches
+        score[1] /= batches
+    print('\n' + "Top-1 accuracy: {:.2%}".format(score[0]))
+    print("Top-5 accuracy: {:.2%}\n".format(score[1]))
 
 
 def get_range(start=0.0, stop=1.0, num=5, method='linear'):
@@ -401,6 +406,9 @@ def normalize_parameters(model, **kwargs):
             x_norm = kwargs['x_norm']
         elif 'dataflow' in kwargs:
             x_norm, y = kwargs['dataflow'].next()
+            if True:  # Only for imagenet!
+                print("Preprocessing input for ImageNet")
+                x_norm = np.add(np.multiply(x_norm, 2. / 255.), - 1.)
         print("Using {} samples for normalization.".format(len(x_norm)))
         sizes = [
             len(x_norm) * np.array(layer.output_shape[1:]).prod() * 32 /

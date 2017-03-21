@@ -82,19 +82,18 @@ def get_imagenet(train_path, test_path, save_path, filename=None,
                                                 target_size=target_size,
                                                 classes=classes,
                                                 batch_size=num_test_samples)
-    x_test, y_test = test_dataflow.next()
+    for i, x_test, y_test in enumerate(test_dataflow):
 
-    x_test /= 255.
-    x_test -= 0.5
-    x_test *= 2.
+        x_test = np.add(np.multiply(x_test, 2. / 255.), - 1.)
 
-    if filename is None:
-        filename = ''
-    filepath = os.path.join(save_path, filename)
-    step = int(len(x_test) / num_norm_samples)
-    np.savez_compressed(filepath + 'x_norm', x_test[::step].astype('float32'))
-    np.savez_compressed(filepath + 'x_test', x_test.astype('float32'))
-    np.savez_compressed(filepath + 'y_test', y_test.astype('float32'))
+        if filename is None:
+            filename = ''
+        filepath = os.path.join(save_path, filename)
+        step = int(len(x_test) / num_norm_samples)
+        np.savez_compressed(filepath + 'x_test' + str(i), x_test.astype('float32'))
+        np.savez_compressed(filepath + 'y_test' + str(i), y_test.astype('float32'))
+        if i == 0:
+            np.savez_compressed(filepath + 'x_norm', x_test[::step].astype('float32'))
 
 if __name__ == '__main__':
     path = '/home/rbodo/.snntoolbox/Datasets/imagenet'

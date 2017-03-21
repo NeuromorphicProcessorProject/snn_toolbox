@@ -170,7 +170,8 @@ def test_full(queue=None, params=None, param_name='v_thresh',
     # Number of samples used in one run:
     n = settings['num_to_test']
     # Plot and return results of parameter sweep.
-    plot_param_sweep(results, n, params, param_name, param_logscale)
+    if results:
+        plot_param_sweep(results, n, params, param_name, param_logscale)
 
     # Add results to queue to be displayed in GUI.
     if queue:

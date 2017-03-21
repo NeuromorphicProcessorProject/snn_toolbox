@@ -122,7 +122,9 @@ def extract(model):
         # Pass on batch_input_shape (also in case the first layer is skipped)
         if layer_num == 0:
             batch_input_shape = list(layer.batch_input_shape)
-            batch_input_shape[0] = settings['batch_size']
+            # For flexibility, leave batch size free; else, set to
+            # settings['batch_size']
+            batch_input_shape[0] = None
             if layer_type in spiking_layers:
                 layer.batch_input_shape = tuple(batch_input_shape)
             else:
@@ -248,12 +250,28 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
     (``Keras.ImageDataGenerator.flow_from_directory`` object).
     """
 
-    if x_test is None:
-        # Get samples from Keras ImageDataGenerator
-        x_test, y_test = dataflow.next()
-        print("Using {} samples to evaluate input model".format(len(x_test)))
+    import numpy as np
 
-    score = val_fn(x_test, y_test, verbose=0)
+    if x_test is not None:
+        score = val_fn(x_test, y_test, verbose=0)
+    else:
+        print("Using {} samples to evaluate input model".format(
+            settings['num_to_test']))
+        score = [0, 0]
+        batches = int(settings['num_to_test'] / settings['batch_size'])
+        for i in range(batches):
+            # Get samples from Keras.ImageDataGenerator
+            x_batch, y_batch = dataflow.next()
+            if True:  # Only for imagenet!
+                print("Preprocessing input for ImageNet")
+                x_batch = np.add(np.multiply(x_batch, 2. / 255.), - 1.).astype(
+                    'float32')
+            loss, acc = val_fn(x_batch, y_batch, verbose=0)
+            score[0] += loss
+            score[1] += acc
+        score[0] /= batches
+        score[1] /= batches
+
     print('\n' + "Test loss: {:.2f}".format(score[0]))
     print("Test accuracy: {:.2%}\n".format(score[1]))
     return score

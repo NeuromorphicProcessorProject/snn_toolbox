@@ -69,7 +69,7 @@ def update_neurons(self):
                             t.add(self.spikecounts, output_spikes))])
 
     if 'spikecounts' in settings['log_vars'] + settings['plot_vars']:
-        reduction_axes = tuple(np.arange(self.mem.ndim)[1:])
+        reduction_axes = tuple(np.arange(1, self.mem.ndim))
         add_updates(self, [(self.total_spikecount,
                             t.sum(self.spikecounts, reduction_axes))])
 
@@ -348,8 +348,7 @@ def reset_spikevars(self):
     if 'spiketrains' in settings['log_vars'] + settings['plot_vars']:
         self.spiketrain.set_value(np.zeros(self.output_shape, floatX))
     if 'spikecounts' in settings['log_vars'] + settings['plot_vars']:
-        self.total_spikecount.set_value(np.zeros(settings['batch_size'],
-                                                 floatX))
+        self.total_spikecount.set_value(np.zeros(self.output_shape[0], floatX))
     if 'spikecounts' in settings['log_vars'] + settings['plot_vars'] \
             or settings['online_normalization']:
         self.spikecounts.set_value(np.zeros(self.output_shape, floatX))
@@ -378,7 +377,7 @@ def init_neurons(self, input_shape, tau_refrac=0.):
     if 'spiketrains' in settings['log_vars'] + settings['plot_vars']:
         self.spiketrain = k.zeros(output_shape)
     if 'spikecounts' in settings['log_vars'] + settings['plot_vars']:
-        self.total_spikecount = k.zeros(settings['batch_size'])
+        self.total_spikecount = k.zeros(output_shape[0])
     if 'spikecounts' in settings['log_vars'] + settings['plot_vars'] \
             or settings['online_normalization']:
         self.spikecounts = k.zeros(output_shape)

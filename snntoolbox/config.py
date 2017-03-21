@@ -373,7 +373,7 @@ settings = OrderedDict({
 
 # Possible variables to monitor and save / plot:
 log_vars = ['activations', 'spiketrains', 'spikecounts',
-            'normalization_activations', 'all']
+            'normalization_activations', 'input_t', 'all']
 plot_vars = ['activations', 'spiketrains', 'spikecounts', 'spikerates',
              'input_image', 'error_t', 'confusion_matrix', 'correlation',
              'hist_spikerates_activations', 'v_mem',

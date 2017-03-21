@@ -21,22 +21,21 @@ settings = {'path_wd': '/home/rbodo/.snntoolbox/data/roshambo',
             'convert': True,
             'simulate': True,
             'simulator': 'INI',
-            'duration': 10,
+            'duration': 150,
             'dt': 1,
-            'batch_size': 2,
+            'batch_size': 20,
             'verbose': 1,
-            'num_to_test': 4,
-            'runlabel': '05',
+            'num_to_test': 15850,
+            'runlabel': '22',
             'percentile': 100,
-            'reset': 'Reset by subtraction',
+            'reset': 'Reset by subtraction',  # 'Reset to zero',
             'softmax_to_relu': False,
             'reset_between_frames': True,
-            'poisson_input': False,
-            'log_vars': ['activations', 'spiketrains', 'spikecounts'],
-            'plot_vars': ['activations', 'spikecounts', 'spikerates',
-             'input_image', 'error_t', 'confusion_matrix', 'correlation',
-             'hist_spikerates_activations', 'v_mem']
-            }
+            'poisson_input': True,
+            'input_rate': 1000,
+            'log_vars': ['spikecounts', 'spiketrains'],
+            'plot_vars': ['spikecounts', 'error_t']
+}
 
 update_setup(settings)
 

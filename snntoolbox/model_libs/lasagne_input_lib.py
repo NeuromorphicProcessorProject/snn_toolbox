@@ -184,7 +184,9 @@ def extract(model):
 
         if idx == 0:
             batch_input_shape = list(layer.input_shape)
-            batch_input_shape[0] = settings['batch_size']
+            # For flexibility, leave batch size free; else, set to
+            # settings['batch_size']
+            batch_input_shape[0] = None
             attributes['batch_input_shape'] = tuple(batch_input_shape)
 
         # Insert Flatten layer
@@ -457,23 +459,28 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
     (``Keras.ImageDataGenerator.flow_from_directory`` object).
     """
 
+    if x_test is None:
+        print("Using {} samples to evaluate input model".format(
+            settings['num_to_test']))
+
     err = 0
     loss = 0
-
-    if x_test is None:
-        # Get samples from Keras.ImageDataGenerator
-        batch_size = dataflow.batch_size
-        dataflow.batch_size = settings['num_to_test']
-        x_test, y_test = dataflow.next()
-        dataflow.batch_size = batch_size
-        print("Using {} samples to evaluate input model".format(len(x_test)))
-
     batch_size = settings['batch_size']
-    batches = int(len(x_test) / batch_size)
+    batches = int(len(x_test) / batch_size) if x_test else \
+        int(settings['num_to_test'] / batch_size)
 
     for i in range(batches):
-        new_loss, new_err = val_fn(x_test[i*batch_size: (i+1)*batch_size],
-                                   y_test[i*batch_size: (i+1)*batch_size])
+        if x_test:
+            x_batch = x_test[i*batch_size: (i+1)*batch_size]
+            y_batch = y_test[i*batch_size: (i+1)*batch_size]
+        else:
+            # Get samples from Keras.ImageDataGenerator
+            x_batch, y_batch = dataflow.next()
+            if True:  # Only for imagenet!
+                print("Preprocessing input for ImageNet")
+                x_batch = np.add(np.multiply(x_batch, 2. / 255.), - 1.).astype(
+                    'float32')
+        new_loss, new_err = val_fn(x_batch, y_batch)
         err += new_err
         loss += new_loss
 

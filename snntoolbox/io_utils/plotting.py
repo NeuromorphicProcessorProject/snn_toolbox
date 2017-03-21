@@ -836,14 +836,14 @@ def plot_confusion_matrix(y_test, y_pred, path=None, class_labels=None):
 
     from sklearn.metrics import confusion_matrix
 
-    cm = confusion_matrix(y_test, y_pred)
+    cm = confusion_matrix(y_test, y_pred, class_labels)
     plt.figure()
     plt.imshow(cm, interpolation='nearest')
     plt.title('Confusion Matrix')
     plt.colorbar()
     if class_labels:
         tick_marks = np.arange(len(class_labels))
-        plt.xticks(tick_marks, class_labels, rotation=45)
+        plt.xticks(tick_marks, class_labels)
         plt.yticks(tick_marks, class_labels)
     plt.tight_layout()
     plt.ylabel('True label')
@@ -856,7 +856,7 @@ def plot_confusion_matrix(y_test, y_pred, path=None, class_labels=None):
     plt.close()
 
 
-def plot_error_vs_time(err, ann_err=None, path=None):
+def plot_error_vs_time(err, ann_err=None, path=None, n=None):
     """Plot classification error over time.
 
     Parameters
@@ -868,6 +868,9 @@ def plot_error_vs_time(err, ann_err=None, path=None):
         The error of the ANN.
     path: Optional[str]
         Where to save the output.
+    n: Optional[int]
+        The number of samples over which ``err`` was averaged.
+        Default: batch size.
     """
 
     from snntoolbox.core.util import wilson_score
@@ -875,7 +878,8 @@ def plot_error_vs_time(err, ann_err=None, path=None):
     plt.figure()
 #    plt.title('Error vs simulation time')
     time = np.arange(0, settings['duration'], settings['dt'])
-    n = settings['batch_size']
+    if n is None:
+        n = settings['batch_size']
     # Compute confidence intervals of the experiments
     ci = np.array([wilson_score(q, n)*100 for q in err])
     y = np.array([e*100 for e in err])
@@ -908,12 +912,12 @@ def plot_spikecount_vs_time(spikecounts, path=None):
     """
 
     plt.figure()
-    plt.title('SNN Operations')
+    plt.title('SNN spike count')
     time = np.arange(0, settings['duration'], settings['dt'])
     plt.errorbar(time, np.mean(spikecounts, axis=1),
                  yerr=np.std(spikecounts, axis=1), fmt='.', errorevery=3)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
-    plt.ylabel('Total spike count')
+    plt.ylabel('# spikes')
     plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(settings['dt']))
     if path is not None:
         filename = 'Total_spike_count'
