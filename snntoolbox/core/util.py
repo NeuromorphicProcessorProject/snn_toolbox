@@ -312,6 +312,29 @@ def print_description(log=True):
     print(settings, file=f)
 
 
+def spikecounts_to_rates(spikecounts_n_b_l_t):
+    """Convert spiketrains to spikerates.
+
+        The output will have the same shape as the input except for the last
+        dimension, which is removed by replacing a sequence of spiketimes by a
+        single rate value.
+
+        Parameters
+        ----------
+
+        spikecounts_n_b_l_t: list[tuple[np.array, str]]
+
+        Returns
+        -------
+
+        : list[tuple[np.array, str]]
+            spikerates_n_b_l
+        """
+
+    return [(np.mean(spikecounts_b_l_t, -1), name)
+            for (spikecounts_b_l_t, name) in spikecounts_n_b_l_t]
+
+
 def spiketrains_to_rates(spiketrains_batch):
     """Convert spiketrains to spikerates.
 
@@ -436,8 +459,7 @@ def normalize_parameters(model, **kwargs):
                 layer.name, layer.output_shape))
             activations = get_activations_layer(model.input, layer.output,
                                                 x_norm)
-            if 'normalization_activations' in \
-                    settings['log_vars'] + settings['plot_vars']:
+            if 'normalization_activations' in settings['plot_vars']:
                 print("Writing activations to disk...")
                 np.savez_compressed(os.path.join(activ_dir, layer.name),
                                     activations)

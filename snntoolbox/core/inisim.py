@@ -68,11 +68,6 @@ def update_neurons(self):
         add_updates(self, [(self.spikecounts,
                             t.add(self.spikecounts, output_spikes))])
 
-    if 'spikecounts' in settings['log_vars'] + settings['plot_vars']:
-        reduction_axes = tuple(np.arange(1, self.mem.ndim))
-        add_updates(self, [(self.total_spikecount,
-                            t.sum(self.spikecounts, reduction_axes))])
-
     if 'spiketrains' in settings['log_vars'] + settings['plot_vars']:
         add_updates(self, [(self.spiketrain,
                             (self.time + settings['dt']) * output_spikes)])
@@ -347,8 +342,6 @@ def reset_spikevars(self):
         self.refrac_until.set_value(np.zeros(self.output_shape, floatX))
     if 'spiketrains' in settings['log_vars'] + settings['plot_vars']:
         self.spiketrain.set_value(np.zeros(self.output_shape, floatX))
-    if 'spikecounts' in settings['log_vars'] + settings['plot_vars']:
-        self.total_spikecount.set_value(np.zeros(self.output_shape[0], floatX))
     if 'spikecounts' in settings['log_vars'] + settings['plot_vars'] \
             or settings['online_normalization']:
         self.spikecounts.set_value(np.zeros(self.output_shape, floatX))
@@ -376,8 +369,6 @@ def init_neurons(self, input_shape, tau_refrac=0.):
         self.refrac_until = k.zeros(output_shape)
     if 'spiketrains' in settings['log_vars'] + settings['plot_vars']:
         self.spiketrain = k.zeros(output_shape)
-    if 'spikecounts' in settings['log_vars'] + settings['plot_vars']:
-        self.total_spikecount = k.zeros(output_shape[0])
     if 'spikecounts' in settings['log_vars'] + settings['plot_vars'] \
             or settings['online_normalization']:
         self.spikecounts = k.zeros(output_shape)
@@ -507,7 +498,7 @@ class SpikeDense(Dense):
         self._per_input_updates = {}
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
-        self.total_spikecount = self.refrac_until = self.max_spikerate = None
+        self.refrac_until = self.max_spikerate = None
         if bias_relaxation:
             self.b0 = None
         if clamp_var:
@@ -585,7 +576,7 @@ class SpikeConvolution2D(Convolution2D):
         self._per_input_updates = {}
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
-        self.total_spikecount = self.refrac_until = self.max_spikerate = None
+        self.refrac_until = self.max_spikerate = None
         if bias_relaxation:
             self.b0 = None
         if clamp_var:
@@ -657,7 +648,7 @@ class SpikeAveragePooling2D(AveragePooling2D):
         self._per_input_updates = {}
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
-        self.total_spikecount = self.refrac_until = self.max_spikerate = None
+        self.refrac_until = self.max_spikerate = None
         if clamp_var:
             self.spikerate = self.var = None
         if clamp_delay:
@@ -723,7 +714,7 @@ class SpikeMaxPooling2D(MaxPooling2D):
         self._per_input_updates = {}
         self.spikerate_pre = self.time = self.previous_x = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
-        self.total_spikecount = self.refrac_until = self.max_spikerate = None
+        self.refrac_until = self.max_spikerate = None
         if clamp_var:
             self.spikerate = self.var = None
         if clamp_delay:

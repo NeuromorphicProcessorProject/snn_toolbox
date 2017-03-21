@@ -355,6 +355,11 @@ settings = OrderedDict({
     'dt': 1,
     'num_to_test': 1000,
     'poisson_input': False,
+    'num_poisson_events_per_sample': -1,
+    'dvs_input': False,
+    'num_dvs_events_per_sample': 2000,
+    'label_dict': {},
+    'subsample_facs': (1, 1),
     'reset': 'Reset by subtraction',
     'input_rate': 1000,
     'normalization_schedule': False,
@@ -372,12 +377,12 @@ settings = OrderedDict({
     'plot_vars': []})
 
 # Possible variables to monitor and save / plot:
-log_vars = ['activations', 'spiketrains', 'spikecounts',
-            'normalization_activations', 'input_t', 'all']
-plot_vars = ['activations', 'spiketrains', 'spikecounts', 'spikerates',
+log_vars = {'activations_n_b_l', 'spiketrains_n_b_l_t', 'spikecounts_n_b_l_t',
+            'input_b_l_t', 'mem_n_b_l_t', 'all'}
+plot_vars = {'activations', 'spiketrains', 'spikecounts', 'spikerates',
              'input_image', 'error_t', 'confusion_matrix', 'correlation',
              'hist_spikerates_activations', 'v_mem',
-             'normalization_activations', 'all']
+             'normalization_activations', 'all'}
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,
@@ -583,9 +588,11 @@ def update_setup(s):
 
     if 'all' in settings['log_vars']:
         settings['log_vars'] = log_vars
+        settings['log_vars'].pop('all')
 
     if 'all' in settings['plot_vars']:
         settings['plot_vars'] = plot_vars
+        settings['plot_vars'].pop('all')
 
     return True
 
