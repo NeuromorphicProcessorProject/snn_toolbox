@@ -331,11 +331,13 @@ def spikecounts_to_rates(spikecounts_n_b_l_t):
             spikerates_n_b_l
         """
 
-    return [(np.mean(spikecounts_b_l_t, -1), name)
+    t = spikecounts_n_b_l_t[0][0].shape[-1] + 1
+
+    return [(np.true_divide(spikecounts_b_l_t[Ellipsis, -1], t), name)
             for (spikecounts_b_l_t, name) in spikecounts_n_b_l_t]
 
 
-def spiketrains_to_rates(spiketrains_batch):
+def spiketrains_to_rates(spiketrains_n_b_l_t):
     """Convert spiketrains to spikerates.
 
     The output will have the same shape as the input except for the last
@@ -345,44 +347,42 @@ def spiketrains_to_rates(spiketrains_batch):
     Parameters
     ----------
 
-    spiketrains_batch: list[tuple[np.array, str]]
+    spiketrains_n_b_l_t: list[tuple[np.array, str]]
 
     Returns
     -------
 
-    spikerates_batch: list[tuple[np.array, str]]
+    spikerates_n_b_l: list[tuple[np.array, str]]
     """
 
-    spikerates_batch = []
-    for (i, sp) in enumerate(spiketrains_batch):
+    spikerates_n_b_l = []
+    for (i, sp) in enumerate(spiketrains_n_b_l_t):
         shape = sp[0].shape[:-1]  # output_shape of layer
         # Allocate list containing an empty array of shape
         # 'output_shape' for each layer of the network, which will
         # hold the spikerates of a mini-batch.
-        spikerates_batch.append((np.empty(shape), sp[1]))
+        spikerates_n_b_l.append((np.empty(shape), sp[1]))
         # Count number of spikes fired in the layer and divide by the
-        # simulation time in seconds to get the mean firing rate of each
-        # neuron in Hertz.
+        # simulation time to get the mean firing rate of each neuron.
         if len(shape) == 2:
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
-                    spikerates_batch[i][0][ii, jj] = (
-                        np.count_nonzero(sp[0][ii][jj]) *
-                        1000 / settings['duration'])
-                    spikerates_batch[i][0][ii, jj] *= np.sign(
+                    spikerates_n_b_l[i][0][ii, jj] = (
+                        np.count_nonzero(sp[0][ii, jj]) / settings['duration'])
+                    spikerates_n_b_l[i][0][ii, jj] *= np.sign(
                         np.sum(sp[0][ii, jj]))  # For negative spikes
         elif len(shape) == 4:
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
                     for kk in range(len(sp[0][ii, jj])):
                         for ll in range(len(sp[0][ii, jj, kk])):
-                            spikerates_batch[i][0][ii, jj, kk, ll] = (
-                                np.count_nonzero(sp[0][ii, jj, kk, ll]) *
-                                1000 / settings['duration'])
-                            spikerates_batch[i][0][ii, jj, kk, ll] *= np.sign(
+                            spikerates_n_b_l[i][0][ii, jj, kk, ll] = (
+                                np.count_nonzero(sp[0][ii, jj, kk, ll]) /
+                                settings['duration'])
+                            spikerates_n_b_l[i][0][ii, jj, kk, ll] *= np.sign(
                                 np.sum(sp[0][ii, jj, kk, ll]))
 
-    return spikerates_batch
+    return spikerates_n_b_l
 
 
 def get_sample_activity_from_batch(activity_batch, idx=0):

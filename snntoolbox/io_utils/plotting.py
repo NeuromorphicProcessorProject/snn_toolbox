@@ -14,7 +14,6 @@ from __future__ import print_function, unicode_literals
 
 import os
 from typing import Optional, Sequence
-import json
 import matplotlib.pyplot as plt
 import numpy as np
 from future import standard_library
@@ -59,7 +58,7 @@ def output_graphs(plot_vars, path=None, idx=0):
         The index of the sample to display. Defaults to 0.
     """
 
-    from snntoolbox.core.util import spikecounts_to_rates
+    from snntoolbox.core.util import spiketrains_to_rates
     from snntoolbox.core.util import get_sample_activity_from_batch
 
     if plot_vars == {}:
@@ -67,23 +66,26 @@ def output_graphs(plot_vars, path=None, idx=0):
 
     print("Saving plots of one sample to {}...\n".format(path))
 
-    if 'spikecounts_n_b_l_t' in plot_vars:
-        plot_vars['spikerates_n_b_l_t'] = \
-            spikecounts_to_rates(plot_vars['spikecounts_n_b_l_t'])
-        plot_vars['spikerates_n_l_t'] = \
-            get_sample_activity_from_batch(plot_vars['spikerates_n_b_l_t'], idx)
     if 'activations_n_b_l' in plot_vars:
-        plot_vars['activations_n_l_t'] = \
+        plot_vars['activations_n_l'] = \
             get_sample_activity_from_batch(plot_vars['activations_n_b_l'], idx)
     if 'spiketrains_n_b_l_t' in plot_vars:
         plot_vars['spiketrains_n_l_t'] = \
             get_sample_activity_from_batch(plot_vars['spiketrains_n_b_l_t'],
                                            idx)
+        if any({'spikerates', 'correlation', 'hist_spikerates_activations'}
+               & settings['plot_vars']):
+            plot_vars['spikerates_n_b_l'] = \
+                spiketrains_to_rates(plot_vars['spiketrains_n_b_l_t'])
+            plot_vars['spikerates_n_l'] = \
+                get_sample_activity_from_batch(plot_vars['spikerates_n_b_l'],
+                                               idx)
 
     plot_layer_summaries(plot_vars, path)
 
-    print("Plotting Pearson coefficients and spikerate/activation "
-          "distributions")
+    print("Plotting batch run statistics...")
+    if 'spikecounts' in settings['plot_vars']:
+        plot_spikecount_vs_time(plot_vars['spiketrains_n_b_l_t'], path)
     if 'correlation' in settings['plot_vars']:
         plot_pearson_coefficients(plot_vars['spikerates_n_b_l'],
                                   plot_vars['activations_n_b_l'], path)
@@ -153,25 +155,25 @@ def plot_layer_summaries(plot_vars, path=None):
         newpath = os.path.join(path, label)
         if not os.path.exists(newpath):
             os.makedirs(newpath)
-        if 'spiketrains_n_b_l_t' in plot_vars:
-            plot_spiketrains(plot_vars['spiketrains_n_b_l_t'][i], newpath)
-        if 'spikerates_n_b_l' in plot_vars:
-            plot_layer_activity(plot_vars['spikerates_n_b_l'][i],
-                                'Spikerates', newpath)
+        if 'spiketrains' in settings['plot_vars']:
+            plot_spiketrains(plot_vars['spiketrains_n_l_t'][i], newpath)
+        if 'spikerates' in settings['plot_vars']:
+            plot_layer_activity(plot_vars['spikerates_n_l'][i], 'Spikerates',
+                                newpath)
             plot_hist(
-                {'Spikerates': plot_vars['spikerates_n_b_l'][i][0].flatten()},
+                {'Spikerates': plot_vars['spikerates_n_l'][i][0].flatten()},
                 'Spikerates', name, newpath)
-        if 'activations_n_b_l' in plot_vars:
-            plot_layer_activity(plot_vars['activations_n_b_l'][i],
+        if 'activations' in settings['plot_vars']:
+            plot_layer_activity(plot_vars['activations_n_l'][i],
                                 'Activations', newpath)
-        if 'spikerates_n_b_l' in plot_vars and 'activations_n_b_l' in plot_vars:
-            plot_activations_minus_rates(plot_vars['spikerates_n_b_l'][i][0],
-                                         plot_vars['activations_n_b_l'][i][0],
+        if 'spikerates_n_l' in plot_vars and 'activations_n_l' in plot_vars:
+            plot_activations_minus_rates(plot_vars['spikerates_n_l'][i][0],
+                                         plot_vars['activations_n_l'][i][0],
                                          name, newpath)
         if 'correlation' in settings['plot_vars']:
             plot_layer_correlation(
-                plot_vars['spikerates_n_b_l'][i][0].flatten(),
-                plot_vars['activations_n_b_l'][i][0].flatten(),
+                plot_vars['spikerates_n_l'][i][0].flatten(),
+                plot_vars['activations_n_l'][i][0].flatten(),
                 'ANN-SNN correlations\n of layer ' + name, newpath)
 
 
@@ -507,8 +509,6 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
     if path is not None:
         filename = 'Pearson'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
-        with open(os.path.join(path, filename + '.json'), 'w') as f:
-            json.dump({'corr': list(corr), 'std': list(std)}, f)
     else:
         plt.show()
     plt.close()
@@ -786,6 +786,7 @@ def plot_spiketrains(layer, path=None):
     plt.title('Spiketrains \n of layer {}'.format(layer[1]))
     plt.xlabel('time [ms]')
     plt.ylabel('neuron index')
+    plt.xlim(1, shape[-1]+1)
     if path is not None:
         filename = '7Spiketrains'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
@@ -902,7 +903,7 @@ def plot_error_vs_time(err_d_t, ann_err=None, path=None):
     plt.figure()
 #    plt.title('Error vs simulation time')
     time = np.arange(0, settings['duration'], settings['dt'])
-    plt.plot(time, err_t, 'k', color='blue', label='SNN')
+    plt.plot(time, err_t, '.b', label='SNN')
     plt.fill_between(time, err_t-std_t, err_t+std_t, alpha=0.1, color='blue')
     if ann_err:
         plt.hlines(ann_err*100, 0, time[-1], label='ANN', linestyle='dashed')
@@ -918,35 +919,35 @@ def plot_error_vs_time(err_d_t, ann_err=None, path=None):
     plt.close()
 
 
-def plot_spikecount_vs_time(spikecounts_n_b_l_t, path=None):
+def plot_spikecount_vs_time(spiketrains_n_b_l_t, path=None):
     """Plot total spikenumber over time.
 
     Parameters
     ----------
 
-    spikecounts_n_b_l_t: np.array
-        Other data to plot.
+    spiketrains_n_b_l_t:
     path: Optional[str]
         Where to save the output.
     """
 
     # batch time dimensions
-    b_t_shape = (spikecounts_n_b_l_t[0][0].shape[0],
-                 spikecounts_n_b_l_t[0][0].shape[-1])
+    b_t_shape = (spiketrains_n_b_l_t[0][0].shape[0],
+                 spiketrains_n_b_l_t[0][0].shape[-1])
     spikecounts_b_t = np.zeros(b_t_shape)
-    for n in range(len(spikecounts_n_b_l_t)):  # Loop over layers
-        spikecounts_b_l_t = spikecounts_n_b_l_t[n][0]
-        reduction_axes = np.arange(1, spikecounts_b_l_t.ndim-1)
-        spikecounts_b_t += np.sum(spikecounts_b_l_t, reduction_axes)
+    for n in range(len(spiketrains_n_b_l_t)):  # Loop over layers
+        spiketrains_b_l_t = np.greater(spiketrains_n_b_l_t[n][0], 0)
+        reduction_axes = tuple(np.arange(1, spiketrains_b_l_t.ndim-1))
+        spikecounts_b_t += np.sum(spiketrains_b_l_t, reduction_axes)
+    cum_spikecounts_b_t = np.cumsum(spikecounts_b_t, 1)
 
     plt.figure()
     plt.title('SNN spike count')
     time = np.arange(0, settings['duration'], settings['dt'])
-    spikecounts_t = np.mean(spikecounts_b_t, 0)
-    std_t = np.std(spikecounts_b_t, 0)
-    plt.plot(time, spikecounts_t, '.b')
-    plt.fill_between(time, spikecounts_t-std_t, spikecounts_t+std_t, alpha=0.1,
-                     color='b')
+    cum_spikecounts_t = np.mean(cum_spikecounts_b_t, 0)
+    std_t = np.std(cum_spikecounts_b_t, 0)
+    plt.plot(time, cum_spikecounts_t, '.b')
+    plt.fill_between(time, cum_spikecounts_t-std_t, cum_spikecounts_t+std_t,
+                     alpha=0.1, color='b')
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
     plt.ylabel('# spikes')
     plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(settings['dt']))

@@ -80,9 +80,8 @@ class SNN:
         self.snn = None
         self.parsed_model = None
         # Logging variables
-        self.spiketrains_n_b_l_t = self.spikecounts_n_b_l_t = None
-        self.activations_n_b_l = self.input_b_l_t = self.mem_n_b_l_t = None
-        self.top1err_d_t = None
+        self.spiketrains_n_b_l_t = self.activations_n_b_l = None
+        self.input_b_l_t = self.mem_n_b_l_t = self.top1err_b_t = None
         # ``rescale_fac`` globally scales spike probability when using Poisson
         # input.
         self.rescale_fac = 1
@@ -200,7 +199,6 @@ class SNN:
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
         from snntoolbox.io_utils.plotting import plot_error_vs_time
         from snntoolbox.io_utils.plotting import plot_input_image
-        from snntoolbox.io_utils.plotting import plot_spikecount_vs_time
 
         s = kwargs['settings'] if 'settings' in kwargs else settings
         log_dir = kwargs['path'] if 'path' in kwargs \
@@ -234,7 +232,6 @@ class SNN:
         # parallel.
         num_batches = int(1e9) if s['dvs_input'] else \
             int(np.floor(s['num_to_test'] / s['batch_size']))
-        num_timesteps = int(s['duration'] / s['dt'])
 
         top5score_moving = 0
         truth_d = []  # Filled up with correct classes of all test samples.
@@ -251,12 +248,13 @@ class SNN:
 
         # Prepare files to write moving accuracy and error to.
         path_log_vars = os.path.join(log_dir, 'log_vars')
+        if not os.path.isdir(path_log_vars):
+            os.makedirs(path_log_vars)
         path_acc = os.path.join(log_dir, 'accuracy.txt')
         if os.path.isfile(path_acc):
             os.remove(path_acc)
 
         self.init_log_vars()
-        self.top1err_d_t = []
         self.num_classes = self.snn.layers[-1].output_shape[-1]
 
         for batch_idx in range(num_batches):
@@ -273,7 +271,7 @@ class SNN:
                                    s['batch_size'] * (batch_idx + 1))
                 x_b = x_test[batch_idxs, :]
                 y_b = y_test[batch_idxs, :]
-            if ['dvs_input']:
+            if s['dvs_input']:
                 try:
                     x_b_xaddr, x_b_yaddr, x_b_ts, y_b = dvs_gen.__next__()
                 except StopIteration:
@@ -299,13 +297,12 @@ class SNN:
 
             # Allocate variables to monitor during simulation
             output_b_l = np.zeros((s['batch_size'], self.num_classes), 'int32')
-            self.top1err_d_t.append(np.empty((s['batch_size'], num_timesteps),
-                                             np.bool))
+
             input_spikecount = 0
             sim_step_int = 0
             print("Starting new simulation...\n")
             # Loop through simulation time.
-            for sim_step in range(0, s['duration'], s['dt']):
+            for sim_step in range(s['dt'], s['duration']+s['dt'], s['dt']):
                 # Generate input, in case it changes with each simulation step:
                 if s['poisson_input']:
                     if input_spikecount < s['num_poisson_events_per_sample'] \
@@ -363,28 +360,24 @@ class SNN:
                 # Assign negative value such that undecided samples count as
                 # wrongly classified.
                 guesses_b[undecided] = -1
-                self.top1err_d_t[batch_idx][:, sim_step_int] = \
-                    truth_b != guesses_b
+                self.top1err_b_t[:, sim_step_int] = truth_b != guesses_b
                 # Record neuron variables.
-                i = j = k = 0
+                i = j = 0
                 for layer in self.snn.layers:
-                    if hasattr(layer, 'spiketrain'):
+                    if hasattr(layer, 'spiketrain') \
+                            and self.spiketrains_n_b_l_t is not None:
                         self.spiketrains_n_b_l_t[i][0][..., sim_step_int] = \
                             layer.spiketrain.get_value()
                         i += 1
-                    if hasattr(layer, 'spikecounts'):
-                        self.spikecounts_n_b_l_t[j][0][..., sim_step_int] = \
-                            layer.spikecounts.get_value()
-                        j += 1
-                    if hasattr(layer, 'mem'):
-                        self.mem_n_b_l_t[k][0][..., sim_step_int] = \
+                    if hasattr(layer, 'mem') and self.mem_n_b_l_t is not None:
+                        self.mem_n_b_l_t[j][0][..., sim_step_int] = \
                             layer.mem.get_value()
-                        k += 1
+                        j += 1
                 if 'input_b_l_t' in s['log_vars']:
                     self.input_b_l_t[Ellipsis, sim_step_int] = inp
+                top1err = np.around(np.mean(self.top1err_b_t[:, sim_step_int]),
+                                    4)
                 sim_step_int += 1
-                top1err = np.around(np.mean(
-                    self.top1err_d_t[batch_idx][:, sim_step_int]), 4)
                 if s['verbose'] > 0 and sim_step % 1 == 0:
                     echo('{:.2%}_'.format(1-top1err))
 
@@ -406,32 +399,29 @@ class SNN:
                 plot_input_image(x_b[0], int(truth_b[0]), log_dir)
             if 'error_t' in s['plot_vars']:
                 ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
-                plot_error_vs_time(self.top1err_d_t[batch_idx], ann_err,
-                                   log_dir)
-            if 'spikecounts' in s['plot_vars']:
-                plot_spikecount_vs_time(self.spikecounts_n_b_l_t, log_dir)
+                plot_error_vs_time(self.top1err_b_t, ann_err, log_dir)
             if 'confusion_matrix' in s['plot_vars']:
                 plot_confusion_matrix(truth_d, guesses_d, log_dir,
                                       list(np.arange(self.num_classes)))
-            if any({'activations_n_b_l', 'activations', 'correlation',
-                    'hist_spikerates_activations'}
-                   & s['log_vars'] + s['plot_vars']):
+            if any({'activations', 'correlation', 'hist_spikerates_activations'}
+                   & s['plot_vars']) or 'activations_n_b_l' in s['log_vars']:
                 print("Calculating activations...")
                 self.activations_n_b_l = get_activations_batch(
                     self.parsed_model, x_b)
             log_vars = {key: getattr(self, key) for key in s['log_vars']}
+            log_vars['top1err_b_t'] = self.top1err_b_t
             np.savez_compressed(os.path.join(path_log_vars, str(batch_idx)),
                                 **log_vars)
             plot_vars = {}
-            if any({'spikerates', 'correlation',
-                    'hist_spikerates_activations'} & s['plot_vars']):
-                plot_vars['spikecounts_n_b_l_t'] = self.spikecounts_n_b_l_t
             if any({'activations', 'correlation',
                     'hist_spikerates_activations'} & s['plot_vars']):
                 plot_vars['activations_n_b_l'] = self.activations_n_b_l
-            if 'spiketrains' in s['plot_vars']:
+            if any({'spiketrains', 'spikerates', 'correlation',
+                    'hist_spikerates_activations'} & s['plot_vars']):
                 plot_vars['spiketrains_n_b_l_t'] = self.spiketrains_n_b_l_t
             output_graphs(plot_vars, log_dir, 0)
+        # Compute average accuracy, taking into account number of samples per
+        # class
         count = np.zeros(self.num_classes)
         match = np.zeros(self.num_classes)
         for gt, p in zip(truth_d, guesses_d):
@@ -440,8 +430,6 @@ class SNN:
                 match[gt] += 1
         avg_acc = np.mean(match / count)
         top1acc_total = np.mean(np.array(truth_d) == np.array(guesses_d))
-        np.savez_compressed(os.path.join(log_dir, 'top1err_d_t'),
-                            top1err_d_t=np.concatenate(self.top1err_d_t))
         if 'confusion_matrix' in s['plot_vars']:
             plot_confusion_matrix(truth_d, guesses_d, log_dir,
                                   list(np.arange(self.num_classes)))
@@ -558,8 +546,9 @@ class SNN:
             self.input_b_l_t = np.empty(
                 list(self.snn.input_shape) + [num_timesteps], 'int32')
 
-        if 'spiketrains_n_b_l_t' in settings['log_vars'] or 'spiketrains' in \
-                settings['plot_vars']:
+        if any({'spiketrains', 'spikerates', 'correlation',
+                'hist_spikerates_activations'} & settings['plot_vars']) \
+                or 'spiketrains_n_b_l_t' in settings['log_vars']:
             self.spiketrains_n_b_l_t = []
             for layer in self.snn.layers:
                 if not hasattr(layer, 'spiketrain'):
@@ -568,17 +557,8 @@ class SNN:
                 self.spiketrains_n_b_l_t.append((np.zeros(shape, 'float32'),
                                                  layer.name))
 
-        if 'spikecounts_n_b_l_t' in settings['log_vars'] or 'spikecounts' in \
-                settings['plot_vars']:
-            self.spikecounts_n_b_l_t = []
-            for layer in self.snn.layers:
-                if not hasattr(layer, 'spikecounts'):
-                    continue
-                shape = list(layer.output_shape) + [num_timesteps]
-                self.spikecounts_n_b_l_t.append((np.zeros(shape, 'float32'),
-                                                 layer.name))
-
-        if 'mem_n_b_l_t' in settings['log_vars']:
+        if 'mem_n_b_l_t' in settings['log_vars'] \
+                or 'mem' in settings['plot_vars']:
             self.mem_n_b_l_t = []
             for layer in self.snn.layers:
                 if not hasattr(layer, 'mem'):
@@ -587,8 +567,11 @@ class SNN:
                 self.mem_n_b_l_t.append((np.zeros(shape, 'float32'),
                                          layer.name))
 
+        self.top1err_b_t = np.empty((settings['batch_size'], num_timesteps),
+                                    np.bool)
 
-def remove_outliers(timestamps, xaddr, yaddr, pol, x_max=240, y_max=180):
+
+def remove_outliers(timestamps, xaddr, yaddr, pol, x_max=239, y_max=179):
     """Remove outliers from DVS data.
 
     Parameters
@@ -606,8 +589,8 @@ def remove_outliers(timestamps, xaddr, yaddr, pol, x_max=240, y_max=180):
     """
 
     len_orig = len(timestamps)
-    xaddr_valid = np.where(np.array(xaddr) < x_max)
-    yaddr_valid = np.where(np.array(yaddr) < y_max)
+    xaddr_valid = np.where(np.array(xaddr) <= x_max)
+    yaddr_valid = np.where(np.array(yaddr) <= y_max)
     xy_valid = np.intersect1d(xaddr_valid[0], yaddr_valid[0], True)
     xaddr = np.array(xaddr)[xy_valid]
     yaddr = np.array(yaddr)[xy_valid]
@@ -647,6 +630,9 @@ def load_dvs_sequence(filename, xyrange=None):
     if xyrange:
         timestamps, xaddr, yaddr, pol = remove_outliers(
             timestamps, xaddr, yaddr, pol, xyrange[0], xyrange[1])
+
+    xaddr = xyrange[0] - xaddr
+    yaddr = xyrange[1] - yaddr
 
     return xaddr, yaddr, timestamps
 
@@ -720,7 +706,7 @@ class DVSIterator(object):
                 raise StopIteration()
             filepath = os.path.join(self.dataset_path,
                                     self.filenames[self.dvs_sample_idx])
-            self.dvs_sample = load_dvs_sequence(filepath, (240, 180))
+            self.dvs_sample = load_dvs_sequence(filepath, (239, 179))
             self.num_events_of_sample = len(self.dvs_sample[0])
             self.batch_idx = 0
             print("Total number of events of this sample: {}.".format(

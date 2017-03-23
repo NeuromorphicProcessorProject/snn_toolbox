@@ -63,18 +63,14 @@ def update_neurons(self):
             self.time + self.tau_refrac)
         add_updates(self, [(self.refrac_until, new_refractory)])
 
-    if 'spikecounts' in settings['log_vars'] + settings['plot_vars'] or \
-            settings['online_normalization']:
+    if settings['online_normalization']:
         add_updates(self, [(self.spikecounts,
                             t.add(self.spikecounts, output_spikes))])
-
-    if 'spiketrains' in settings['log_vars'] + settings['plot_vars']:
-        add_updates(self, [(self.spiketrain,
-                            (self.time + settings['dt']) * output_spikes)])
-
-    if settings['online_normalization']:
         add_updates(self, [(self.max_spikerate, t.max(self.spikecounts) *
-                            settings['dt'] / (self.time + settings['dt']))])
+                            settings['dt'] / self.time)])
+
+    if self.spiketrain is not None:
+        add_updates(self, [(self.spiketrain, self.time * output_spikes)])
 
     return t.cast(output_spikes, floatX)
 
@@ -337,13 +333,12 @@ def reset_spikevars(self):
     """Reset variables present in spiking layers."""
     if settings['reset_between_frames']:
         self.mem.set_value(init_membrane_potential(self))
-    self.time.set_value(np.float32(0))
+    self.time.set_value(np.float32(settings['dt']))
     if settings['tau_refrac'] > 0:
         self.refrac_until.set_value(np.zeros(self.output_shape, floatX))
-    if 'spiketrains' in settings['log_vars'] + settings['plot_vars']:
+    if self.spiketrain is not None:
         self.spiketrain.set_value(np.zeros(self.output_shape, floatX))
-    if 'spikecounts' in settings['log_vars'] + settings['plot_vars'] \
-            or settings['online_normalization']:
+    if settings['online_normalization']:
         self.spikecounts.set_value(np.zeros(self.output_shape, floatX))
     if settings['payloads']:
         self.payloads.set_value(np.zeros(self.output_shape, floatX))
@@ -363,14 +358,15 @@ def init_neurons(self, input_shape, tau_refrac=0.):
     self.v_thresh = theano.shared(settings['v_thresh'])
     self.tau_refrac = tau_refrac
     self.mem = k.zeros(output_shape)
-    self.time = theano.shared(np.float32(0))
+    self.time = theano.shared(np.float32(settings['dt']))
     # To save memory and computations, allocate only where needed:
     if settings['tau_refrac'] > 0:
         self.refrac_until = k.zeros(output_shape)
-    if 'spiketrains' in settings['log_vars'] + settings['plot_vars']:
+    if any({'spiketrains', 'spikerates', 'correlation',
+            'hist_spikerates_activations'} & settings['plot_vars']) \
+            or 'spiketrains_n_b_l_t' in settings['log_vars']:
         self.spiketrain = k.zeros(output_shape)
-    if 'spikecounts' in settings['log_vars'] + settings['plot_vars'] \
-            or settings['online_normalization']:
+    if settings['online_normalization']:
         self.spikecounts = k.zeros(output_shape)
     if settings['payloads']:
         self.payloads = k.zeros(output_shape)
@@ -428,9 +424,9 @@ def update_avg_variance(self, spikes):
     """
 
     delta = spikes - self.spikerate
-    spikerate_new = self.spikerate + delta / (self.time + settings['dt'])
+    spikerate_new = self.spikerate + delta / self.time
     var_new = self.var + delta * (spikes - spikerate_new)
-    add_updates(self, [(self.var, var_new / (self.time + settings['dt']))])
+    add_updates(self, [(self.var, var_new / self.time)])
     add_updates(self, [(self.spikerate, spikerate_new)])
 
 
@@ -752,15 +748,16 @@ class SpikeMaxPooling2D(MaxPooling2D):
         if 'binary' in settings['maxpool_type']:
             self.impulse = super(SpikeMaxPooling2D, self).call(inp)
         elif settings['maxpool_type'] in ['avg_max', 'fir_max', 'exp_max']:
-            t_inv = settings['dt'] / (self.time + settings['dt'])
             if settings['maxpool_type'] == 'avg_max':
                 update_rule = self.spikerate_pre + \
-                              (x - self.spikerate_pre) * t_inv
+                              (x - self.spikerate_pre) * \
+                              settings['dt'] / self.time
             elif settings['maxpool_type'] == 'exp_max':
                 # update_rule = self.spikerate_pre + x / 2. ** (1 / t_inv)
                 update_rule = self.spikerate_pre * 1.005 + x * 0.995
             else:  # settings['maxpool_type'] == 'fir_max':
-                update_rule = self.spikerate_pre + x * t_inv
+                update_rule = self.spikerate_pre + \
+                              x * settings['dt'] / self.time
             add_updates(self, [(self.spikerate_pre, update_rule)])
             add_updates(self, [(self.previous_x, x)])
             self.impulse = self._pooling_function(

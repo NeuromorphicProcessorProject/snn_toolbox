@@ -377,12 +377,11 @@ settings = OrderedDict({
     'plot_vars': []})
 
 # Possible variables to monitor and save / plot:
-log_vars = {'activations_n_b_l', 'spiketrains_n_b_l_t', 'spikecounts_n_b_l_t',
-            'input_b_l_t', 'mem_n_b_l_t', 'all'}
+log_vars = {'activations_n_b_l', 'spiketrains_n_b_l_t', 'input_b_l_t',
+            'mem_n_b_l_t', 'all'}
 plot_vars = {'activations', 'spiketrains', 'spikecounts', 'spikerates',
              'input_image', 'error_t', 'confusion_matrix', 'correlation',
-             'hist_spikerates_activations', 'v_mem',
-             'normalization_activations', 'all'}
+             'hist_spikerates_activations', 'normalization_activations', 'all'}
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,
