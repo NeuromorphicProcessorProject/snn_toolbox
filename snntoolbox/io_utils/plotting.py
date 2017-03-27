@@ -13,7 +13,7 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 import os
-from typing import Optional, Sequence
+from typing import Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 from future import standard_library
@@ -360,8 +360,8 @@ def plot_layer_correlation(rates, activations, title, path=None):
     """
 
     # Determine percentage of saturated neurons. Need to subtract one time step
-    p = np.mean(np.array(rates >= 1000 / settings['dt'] -
-                         1000 / settings['duration'] / settings['dt']))
+    p = np.mean(np.greater_equal(rates, 1000 / settings['dt'] -
+                                 1000 / settings['duration'] / settings['dt']))
 
     plt.figure()
     plt.plot(activations, rates, '.')

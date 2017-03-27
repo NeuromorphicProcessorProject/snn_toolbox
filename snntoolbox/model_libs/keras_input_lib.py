@@ -110,7 +110,7 @@ def extract(model):
                     break
             assert prev_layer, "Could not find layer with parameters " \
                                "preceeding BatchNorm layer."
-            prev_layer_dict = layers[name_map[str(id(prev_layer))]]
+            prev_layer_dict = dict(layers[name_map[str(id(prev_layer))]])
             parameters = prev_layer_dict['parameters']  # W, b of previous layer
             print("Absorbing batch-normalization parameters into " +
                   "parameters of previous {}.".format(prev_layer_dict['name']))

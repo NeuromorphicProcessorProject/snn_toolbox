@@ -45,8 +45,8 @@ Created on Mon Mar  7 15:30:28 2016
 """
 
 from snntoolbox.config import update_setup
-from snntoolbox.core.util import get_range
 from snntoolbox.core.pipeline import test_full
+from snntoolbox.core.util import get_range
 
 
 def main():
@@ -68,7 +68,7 @@ def main():
     update_setup(settings)
 
     # Download and save dataset in npy format which the toolbox can load later.
-    from snntoolbox.io_utils.cifar10_load import get_cifar10
+    from snntoolbox.io_utils.load_dataset.cifar10_load import get_cifar10
     get_cifar10(settings['dataset_path'])
 
     # Run network (including loading the model, parameter normalization,

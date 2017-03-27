@@ -110,8 +110,8 @@ def import_aedat_dataversion1or2(info):
             np.bitwise_and(all_addr[polarity_logical], x_mask), x_shift_bits),
             'int32')
         # Polarity bit
-        output['data']['polarity']['polarity'] = np.array(np.right_shift(
-            all_addr[polarity_logical], 11) % 2 == 1, 'int32')
+        output['data']['polarity']['polarity'] = np.array(np.equal(
+            np.right_shift(all_addr[polarity_logical], 11) % 2, 1), 'int32')
 
     output['info'] = info
 
@@ -122,12 +122,16 @@ def import_aedat_dataversion1or2(info):
     if 'polarity' in output['data']:
         output['data']['polarity']['numEvents'] = \
             len(output['data']['polarity']['timeStamp'])
+        # noinspection PyTypeChecker
         if output['data']['polarity']['timeStamp'][0] < \
                 output['info']['firstTimeStamp']:
+            # noinspection PyTypeChecker
             output['info']['firstTimeStamp'] = \
                 output['data']['polarity']['timeStamp'][0]
+        # noinspection PyTypeChecker
         if output['data']['polarity']['timeStamp'][-1] > \
                 output['info']['lastTimeStamp']:
+            # noinspection PyTypeChecker
             output['info']['lastTimeStamp'] = \
                 output['data']['polarity']['timeStamp'][-1]
 

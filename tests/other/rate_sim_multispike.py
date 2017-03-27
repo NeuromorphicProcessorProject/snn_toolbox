@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 
 # Fully-connected layer
-class Layer():
+class Layer:
     def __init__(self, input_shape, output_shape, name, thr, W, b, reset,
                  apply_payload, V0=0, in_layer=None):
         self.input_shape = input_shape  # Number of units in previous layer
@@ -39,7 +39,7 @@ class Layer():
     def weighted_sum(self, x):
         return np.dot(self.W, x) + self.b
 
-    def update_payload(self, spikes, t, t_ind):
+    def update_payload(self, spikes):
         v_error = self.V[spikes] - self.V0 
         self.payload[spikes] = v_error - self.payload_sum[spikes]
         self.payload_sum[spikes]+=self.payload[spikes]
@@ -63,7 +63,7 @@ class Layer():
             self.V[spikes_idx] = 0  # Reset to zero after spike
         elif self.reset == 'subtract':
             self.V[spikes_idx] %= self.thr
-            self.update_payload(spikes_idx, t, t_ind)
+            self.update_payload(spikes_idx)
             
         self.Vt[:, t_ind] = self.V  # Write out V for plotting
         # Compute the rates predicted by theory
@@ -124,8 +124,7 @@ class Layer():
                  label='threshold', color='black')
         plt.plot(times, np.zeros_like(times), color='black')
         for i in range(self.output_shape):
-            p, = plt.plot(times, self.Vt[i], '.', label='V'+str(i),
-                          color=colors[i])
+            plt.plot(times, self.Vt[i], '.', label='V'+str(i), color=colors[i])
             spiketimes = (self.spiketrain[i].nonzero()[0] + 1) * dt + i/5
             plt.plot(spiketimes, np.zeros_like(spiketimes), '|',
                      label='spikes'+str(i), color=colors[i], markersize=10,
@@ -218,8 +217,9 @@ if __name__ == "__main__":
     W3, b3 = init_params(L3_insize, L3_outsize, low_lim, high_lim)
 
     # Create two layers
-    layers = [Layer(L1_insize, L1_outsize, 'L1', thr, W1, b1, reset,
-                    apply_payload)]
+    layers = []
+    layers.append(Layer(L1_insize, L1_outsize, 'L1', thr, W1, b1, reset,
+                        apply_payload))
     layers.append(Layer(L2_insize, L2_outsize, 'L2', thr, W2, b2, reset,
                         apply_payload, in_layer=layers[-1]))
     layers.append(Layer(L3_insize, L3_outsize, 'L3', thr, W3, b3, reset,
@@ -278,6 +278,6 @@ if __name__ == "__main__":
     print (sp3)
     # Display results
     for l in layers:
-        #l.plot_V()
+        #l.plot_v()
         l.plot_r()
         #l.plot_rate_report()

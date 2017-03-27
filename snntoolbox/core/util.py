@@ -665,7 +665,7 @@ def get_scale_fac(activations, idx=0):
         Parameters of the respective layer are scaled by this value.
     """
 
-    scale_fac = np.percentile(activations, settings['percentile'] - idx * 0.02)
+    scale_fac = np.percentile(activations, int(settings['percentile']-idx*0.02))
     print("Scale factor: {:.2f}.".format(scale_fac))
 
     return scale_fac
@@ -860,3 +860,100 @@ def to_list(x):
     """
 
     return x if type(x) is list else [x]
+
+
+def compute_ops_ann(parsed_model):
+    """
+    Computes the number of operations (1 MACC = 2 ops) performed in the network.
+    """
+
+    ops = 0
+    for l, layer in enumerate(parsed_model.layers):
+        if "Convolution" in layer.name:
+            kernel_width = layer.nb_col
+            kernel_height = layer.nb_row
+            num_input_maps = layer.input_shape[1]
+            num_output_maps = layer.nb_filter
+            output_width = layer.output_shape[2]
+            output_height = layer.output_shape[3]
+            bias_ops = num_output_maps * output_width * output_height
+            ops += 2 * (kernel_width * kernel_height * num_input_maps *
+                        num_output_maps * output_width * output_height) + \
+                bias_ops
+        elif "Dense" in layer.name:
+            input_shape = np.prod(layer.input_shape[1:])
+            layer_dim = layer.output_shape[1]
+            bias_ops = layer.output_shape[1]
+            ops += 2 * (layer_dim * input_shape) + bias_ops
+
+    np.save(os.path.join(settings['path_wd'], "ANN_total_ops"), ops)
+    return ops
+
+
+def compute_ops_snn(spiketrains_batch):
+    """
+    Computes the number of operations performed in a spiking network,
+    layerwise, for convolutional, pooling and dense layers.
+    
+    Parameters
+    ----------
+    
+    spiketrains_batch: list[tuple]
+        First dimension contains the spiketrains for each layer in the network.
+        Second dimension contains the layer objects.
+    
+    Returns
+    -------
+    
+    layer_spikes_per_time: total spikes fired in each layer at each time point
+    network_ops_per_time: total number of operations in the network, at each
+                          time point
+    accum_ops_per_time: total number of operations in the network, accumulated
+                        over time
+    """
+
+    num_timesteps = int(settings['duration']/settings['dt'])
+    # total number of spikes, excluding the flatten layers, at each time step
+    network_spikes_per_time = np.zeros(num_timesteps)
+    # spike numbers for each layer, at each time point
+    layer_spikes_per_time = np.zeros((len(spiketrains_batch), num_timesteps))
+    # total number of ops for convolution and dense layers, for each time step
+    network_ops_per_time = np.zeros(num_timesteps)
+
+    for idx, l in enumerate(spiketrains_batch):
+        layer = l[1]
+        spiketrain = l[0]
+        # average over batch items
+        layer_spikes = np.sum(np.mean(spiketrain, axis=0),
+                              axis=tuple(range(0, spiketrain.ndim - 2)))
+        network_spikes_per_time += layer_spikes
+        layer_spikes_per_time[idx] = layer_spikes
+        if (idx < len(spiketrains_batch)-1) and \
+                any(name in layer.name for name in
+                    ['Convolution', 'Dense', 'Pool']):
+            next_layer = spiketrains_batch[idx+1][1]
+            bias_ops = np.prod(next_layer.output_shape[1:])
+            if 'Convolution' in next_layer.name:
+                network_ops_per_time += (layer_spikes *
+                                         next_layer.output_shape[1] *
+                                         next_layer.nb_col *
+                                         next_layer.nb_row +
+                                         bias_ops)
+            elif 'Dense' in next_layer.name:
+                network_ops_per_time += (layer_spikes *
+                                         next_layer.output_shape[1] + bias_ops)
+
+    inp_conv = spiketrains_batch[0][1]
+    kernel_width = inp_conv.nb_col
+    kernel_height = inp_conv.nb_row
+    num_input_maps = inp_conv.input_shape[1]
+    num_output_maps = inp_conv.nb_filter
+    output_width = inp_conv.output_shape[2]
+    output_height = inp_conv.output_shape[3]
+    input_ops = (kernel_width * kernel_height * num_input_maps *
+                 num_output_maps * output_width * output_height)
+    bias_ops = np.prod(inp_conv.output_shape[1:])
+
+    network_ops_per_time += (input_ops + bias_ops)
+    accum_ops_per_time = np.cumsum(network_ops_per_time)
+    return layer_spikes_per_time, network_ops_per_time, accum_ops_per_time

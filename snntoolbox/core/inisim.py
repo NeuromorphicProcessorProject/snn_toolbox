@@ -27,7 +27,6 @@ from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D
 from snntoolbox.config import settings
 from theano.tensor.shared_randomstreams import RandomStreams
 from theano.tensor.signal import pool
-from typing import Union
 
 standard_library.install_aliases()
 

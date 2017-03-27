@@ -148,7 +148,7 @@ def extract(model):
                     break
             assert prev_layer, "Could not find layer with parameters " \
                                "preceeding BatchNorm layer."
-            prev_layer_dict = layers[name_map[str(id(prev_layer))]]
+            prev_layer_dict = dict(layers[name_map[str(id(prev_layer))]])
             parameters = prev_layer_dict['parameters']  # W, b of previous layer
             if len(parameters) == 1:  # No bias
                 parameters.append(np.zeros_like(bn_parameters[0]))

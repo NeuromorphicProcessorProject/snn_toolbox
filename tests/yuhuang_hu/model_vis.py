@@ -32,25 +32,25 @@ def visualize_model(model_name):
     print ("===================================================")
     for layer in model.layers:
         if layer.__class__.__name__ == "Convolution2D":
-            print ("Layer Type: %s" % (layer.__class__.__name__))
+            print ("Layer Type: %s" % layer.__class__.__name__)
             print ("Filters shape: %d x %d x %d" %
                    (layer.nb_filter, layer.nb_row, layer.nb_col))
             print ("Stride: ", layer.subsample)
-            print ("Border mode: %s" % (layer.border_mode))
+            print ("Border mode: %s" % layer.border_mode)
         elif layer.__class__.__name__ == "Activation":
-            print ("Activation type: %s" % (layer.activation.__name__))
+            print ("Activation type: %s" % layer.activation.__name__)
         elif layer.__class__.__name__ == "Dropout":
-            print ("Dropout rate: %.2f" % (layer.p))
+            print ("Dropout rate: %.2f" % layer.p)
         elif layer.__class__.__name__ == "Flatten":
             print ("Flatten layer")
         elif layer.__class__.__name__ == "Dense":
-            print ("Layer Type: %s" % (layer.__class__.__name__))
-            print ("Output dimension: %d" % (layer.output_dim))
+            print ("Layer Type: %s" % layer.__class__.__name__)
+            print ("Output dimension: %d" % layer.output_dim)
         elif layer.__class__.__name__ in ["MaxPooling2D", "AveragePooling2D"]:
-            print ("Layer Type: %s" % (layer.__class__.__name__))
+            print ("Layer Type: %s" % layer.__class__.__name__)
             print ("Pooling size: ", layer.pool_size)
             print ("Stride: ", layer.strides)
-            print ("Border mode: %s" % (layer.border_mode))
+            print ("Border mode: %s" % layer.border_mode)
 
         print ("---------------------------------------------------")
     print ("===================================================")

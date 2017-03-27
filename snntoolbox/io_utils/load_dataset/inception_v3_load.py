@@ -12,7 +12,6 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 import os
-from typing import Optional
 
 import numpy as np
 from future import standard_library
@@ -90,10 +89,13 @@ def get_imagenet(train_path, test_path, save_path, filename=None,
             filename = ''
         filepath = os.path.join(save_path, filename)
         step = int(len(x_test) / num_norm_samples)
-        np.savez_compressed(filepath + 'x_test' + str(i), x_test.astype('float32'))
-        np.savez_compressed(filepath + 'y_test' + str(i), y_test.astype('float32'))
+        np.savez_compressed(filepath + 'x_test' + str(i),
+                            x_test.astype('float32'))
+        np.savez_compressed(filepath + 'y_test' + str(i),
+                            y_test.astype('float32'))
         if i == 0:
-            np.savez_compressed(filepath + 'x_norm', x_test[::step].astype('float32'))
+            np.savez_compressed(filepath + 'x_norm',
+                                x_test[::step].astype('float32'))
 
 if __name__ == '__main__':
     path = '/home/rbodo/.snntoolbox/Datasets/imagenet'

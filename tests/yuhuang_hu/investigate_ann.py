@@ -47,7 +47,7 @@ def plot_weights(model, filename, num_cols=8, num_rows=4):
 
     plt.savefig(filename, bbox_inches='tight')
 
-    print ("[MESSAGE] The filters are saved at %s" % (filename))
+    print ("[MESSAGE] The filters are saved at %s" % filename)
 
     return W[8], b[8]
 
@@ -99,7 +99,7 @@ plt.figure()
 plt.imshow(image[0].transpose(1, 2, 0))
 plt.title(cifar10_label[np.argmax(label[image_id])])
 plt.savefig(image_path, bbox_inches='tight')
-print ("[MESSAGE] sample image is saved at %s" % (image_path))
+print ("[MESSAGE] sample image is saved at %s" % image_path)
 
 # print (image[0].transpose(1, 2, 0)[30:])
 

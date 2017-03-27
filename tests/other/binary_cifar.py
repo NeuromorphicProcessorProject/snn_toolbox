@@ -23,13 +23,13 @@ model_lib = import_module('snntoolbox.model_libs.lasagne_input_lib')
 input_model = model_lib.load_ann(path_to_model, filename_model)
 
 # Test accuracy with full precision parameters
-score = model_lib.evaluate(input_model['val_fn'], X_test, Y_test)
+model_lib.evaluate(input_model['val_fn'], X_test, Y_test)
 
 # Converted model to simplifed Keras with BatchNormalization layers integrated.
 model_parsed = parse(input_model['model'])
 
 # Test parsed model
-score = evaluate_keras(model_parsed, X_test, Y_test)
+evaluate_keras(model_parsed, X_test, Y_test)
 
 parameters = model_parsed.get_weights()
 

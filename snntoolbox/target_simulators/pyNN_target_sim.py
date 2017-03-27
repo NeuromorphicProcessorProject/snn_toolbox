@@ -24,12 +24,10 @@ from random import randint
 
 import numpy as np
 from future import standard_library
-# noinspection PyUnresolvedReferences
 from six.moves import cPickle
 from snntoolbox.core.util import echo
 from snntoolbox.config import settings, initialize_simulator
 from snntoolbox.io_utils.common import confirm_overwrite
-from typing import Optional
 
 standard_library.install_aliases()
 
@@ -155,16 +153,16 @@ class SNN:
     def add_input_layer(self, input_shape):
         """Configure input layer."""
 
-        self.layers.append(self.sim.Population(int(np.prod(input_shape[1:])),
-                                               self.sim.SpikeSourcePoisson(),
-                                               label='InputLayer'))
+        self.layers.append(self.sim.Population(
+            np.prod(input_shape[1:], dtype=np.int),
+            self.sim.SpikeSourcePoisson(), label='InputLayer'))
 
     def add_layer(self, layer):
         """Add empty layer."""
 
         self.conns = []
         self.layers.append(self.sim.Population(
-            int(np.prod(layer.output_shape[1:])), self.sim.IF_cond_exp,
+            np.prod(layer.output_shape[1:], dtype=np.int), self.sim.IF_cond_exp,
             self.cellparams, label=layer.name))
         if hasattr(layer, 'activation') and layer.activation == 'softmax':
             echo("WARNING: Activation 'softmax' not implemented. " +
@@ -401,8 +399,8 @@ class SNN:
             if 'spiketrains' in s['plot_vars'] and \
                     test_num == s['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
-                self.collect_plot_results(x_test[ind:ind+s['batch_size']],
-                                          test_num)
+                # self.collect_plot_results(x_test[ind:ind+s['batch_size']],
+                #                           test_num)
 
             # Reset simulation time and recorded network variables for next run
             if s['verbose'] > 1:
@@ -626,7 +624,7 @@ class SNN:
                 self.sim.Projection(self.layers[i], self.layers[i+1],
                                     self.sim.FromFileConnector(filepath))
 
-    def collect_plot_results(self, x_batch, idx=0):
+    def collect_plot_results(self):
         """Collect spiketrains of all ``layers`` of a net.
 
         Collect spiketrains of all ``layers`` of a net from one simulation run,
@@ -646,8 +644,7 @@ class SNN:
         specific sample to plot.
         """
 
-        from snntoolbox.io_utils.plotting import output_graphs, plot_potential
-        from snntoolbox.core.util import get_activations_batch
+        from snntoolbox.io_utils.plotting import plot_potential
 
         # Collect spiketrains of all layers, for the last test sample.
         vmem = []
@@ -692,6 +689,10 @@ class SNN:
                 plot_potential(times, vmem[-1], show_legend,
                                settings['log_dir_of_current_run'])
 
-        activations_batch = get_activations_batch(self.parsed_model, x_batch)
-        output_graphs(spiketrains_batch, activations_batch,
-                      settings['log_dir_of_current_run'], idx)
+        # The following call to output_graphs needs to be adapted to the new
+        # input format.
+        # from snntoolbox.core.util import get_activations_batch
+        # activations_batch = get_activations_batch(self.parsed_model, x_batch)
+        # from snntoolbox.io_utils.plotting import output_graphs
+        # output_graphs(spiketrains_batch, activations_batch,
+        #               settings['log_dir_of_current_run'], idx)

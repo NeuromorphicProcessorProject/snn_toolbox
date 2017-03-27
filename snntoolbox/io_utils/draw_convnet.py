@@ -38,7 +38,6 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 from matplotlib.collections import PatchCollection
-from typing import Optional
 plt.rcdefaults()
 
 

@@ -24,7 +24,6 @@ import keras
 from future import standard_library
 from snntoolbox.config import settings, initialize_simulator
 from snntoolbox.core.inisim import bias_relaxation
-from typing import Optional
 
 standard_library.install_aliases()
 
@@ -339,7 +338,7 @@ class SNN:
                                 x_b_xaddr[sample_idx].remove(x)
                                 x_b_yaddr[sample_idx].remove(y)
                                 x_b_ts[sample_idx].remove(ts)
-                            if ts - first_ts_of_frame > 1000:
+                            if ts - first_ts_of_frame > s['eventframe_width']:
                                 break
                 # Main step: Propagate input through network and record output
                 # spikes.
@@ -416,7 +415,7 @@ class SNN:
             if any({'activations', 'correlation',
                     'hist_spikerates_activations'} & s['plot_vars']):
                 plot_vars['activations_n_b_l'] = self.activations_n_b_l
-            if any({'spiketrains', 'spikerates', 'correlation',
+            if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
                     'hist_spikerates_activations'} & s['plot_vars']):
                 plot_vars['spiketrains_n_b_l_t'] = self.spiketrains_n_b_l_t
             output_graphs(plot_vars, log_dir, 0)

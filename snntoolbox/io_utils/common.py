@@ -19,7 +19,6 @@ import h5py
 import numpy as np
 from future import standard_library
 from snntoolbox.config import settings
-from typing import Optional
 
 standard_library.install_aliases()
 
@@ -127,7 +126,7 @@ def download_dataset(fname, origin, untar=False):
 
     import tarfile
     import shutil
-    from six.moves.urllib.error import URLError, HTTPError
+    from six.moves.urllib.error import URLError
     # Under Python 2, 'urlretrieve' relies on FancyURLopener from legacy
     # urllib module, known to have issues with proxy management
     from six.moves.urllib.request import urlretrieve
@@ -154,8 +153,6 @@ def download_dataset(fname, origin, untar=False):
                 urlretrieve(origin, fpath)
             except URLError as e:
                 raise Exception(error_msg.format(origin, e.errno, e.reason))
-            except HTTPError as e:
-                raise Exception(error_msg.format(origin, e.code, e.msg))
         except (Exception, KeyboardInterrupt) as e:
             if os.path.exists(fpath):
                 os.remove(fpath)

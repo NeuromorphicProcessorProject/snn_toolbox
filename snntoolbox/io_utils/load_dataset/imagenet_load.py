@@ -16,7 +16,6 @@ import os
 import random
 import shutil
 from os.path import join
-from typing import Optional
 from collections import OrderedDict
 
 import numpy as np

@@ -69,12 +69,12 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
 
     if not os.path.exists(pref_path):
         raise ValueError("[MESSAGE] The target preference "
-                         "file %s is not existed!" % (pref_path))
+                         "file %s is not existed!" % pref_path)
 
     if not os.path.isdir(log_path):
         os.makedirs(log_path)
 
-    print ("[MESSAGE] Running experiment %s." % (exp_name))
+    print ("[MESSAGE] Running experiment %s." % exp_name)
     print ("[MESSAGE] Loading Experiment settings.")
     settings = json.load(open(pref_path))
 
@@ -104,11 +104,11 @@ def maxpool_exp(exp_name, model_name, pref_name, dataset,
 
     snntoolbox.test_full()
 
-    end_message = "[MESSAGE] The experiment result is saved at %s" % (log_path)
+    end_message = "[MESSAGE] The experiment result is saved at %s" % log_path
 
     print (end_message)
     if NOTIFICATION is True:
-        pb.push_note("Experiment %s Finished" % (exp_name), end_message)
+        pb.push_note("Experiment %s Finished" % exp_name, end_message)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Running Max-Pooling \

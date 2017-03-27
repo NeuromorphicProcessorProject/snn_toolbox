@@ -358,6 +358,7 @@ settings = OrderedDict({
     'num_poisson_events_per_sample': -1,
     'dvs_input': False,
     'num_dvs_events_per_sample': 2000,
+    'eventframe_width': 1000,
     'label_dict': {},
     'subsample_facs': (1, 1),
     'reset': 'Reset by subtraction',

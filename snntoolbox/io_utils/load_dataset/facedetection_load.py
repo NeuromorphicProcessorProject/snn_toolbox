@@ -17,7 +17,6 @@ import numpy as np
 from PIL import Image
 from future import standard_library
 from snntoolbox.io_utils.common import to_categorical
-from typing import Optional
 
 standard_library.install_aliases()
 

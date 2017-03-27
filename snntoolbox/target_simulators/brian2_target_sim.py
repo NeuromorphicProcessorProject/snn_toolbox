@@ -372,8 +372,8 @@ class SNN:
             if 'spiketrains' in s['plot_vars'] and \
                     test_num == s['num_to_test'] - 1:
                 echo("Simulation finished. Collecting results...\n")
-                self.collect_plot_results(x_test[ind:ind+s['batch_size']],
-                                          test_num)
+                # self.collect_plot_results(x_test[ind:ind+s['batch_size']],
+                #                           test_num)
 
             # Reset simulation time and recorded network variables for next
             # run.
@@ -409,7 +409,7 @@ class SNN:
 
         pass
 
-    def collect_plot_results(self, x_batch, idx=0):
+    def collect_plot_results(self):
         """Collect spiketrains of all ``layers`` of a net.
 
         Collect spiketrains of all ``layers`` of a net from one simulation run,
@@ -429,8 +429,7 @@ class SNN:
         specific sample to plot.
         """
 
-        from snntoolbox.io_utils.plotting import output_graphs, plot_potential
-        from snntoolbox.core.util import get_activations_batch
+        from snntoolbox.io_utils.plotting import plot_potential
 
         # Collect spiketrains of all layers, for the last test sample.
         vmem = []
@@ -469,7 +468,7 @@ class SNN:
             spiketrains_batch[i][0][:] = np.reshape(spiketrains_full, shape)
             # Repeat for membrane potential
             if 'v_mem' in settings['plot_vars']:
-                vm = [np.array(v/1e6/self.sim.mV).transpose() for v in
+                vm = [np.divide(v, 1e6/self.sim.mV).transpose() for v in
                       self.statemonitors[i-1].v]
                 vmem.append((vm, layer.label))
                 times = self.statemonitors[0].t / self.sim.ms
@@ -478,6 +477,10 @@ class SNN:
                 plot_potential(times, vmem[-1], show_legend,
                                settings['log_dir_of_current_run'])
 
-        activations_batch = get_activations_batch(self.parsed_model, x_batch)
-        output_graphs(spiketrains_batch, activations_batch,
-                      settings['log_dir_of_current_run'], idx)
+        # The following call to output_graphs needs to be adapted to the new
+        # input format.
+        # from snntoolbox.core.util import get_activations_batch
+        # activations_batch = get_activations_batch(self.parsed_model, x_batch)
+        # from snntoolbox.io_utils.plotting import output_graphs
+        # output_graphs(spiketrains_batch, activations_batch,
+        #               settings['log_dir_of_current_run'], idx)

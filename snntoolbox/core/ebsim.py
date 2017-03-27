@@ -9,6 +9,7 @@ import sys
 import h5py
 import numpy as np
 from snntoolbox.config import settings, initialize_simulator
+
 if sys.version_info[0] < 3:
     # noinspection PyCompatibility
     from Queue import Queue
@@ -20,6 +21,17 @@ queue = Queue()
 
 
 def create_connection_file(path):
+    """
+    
+    Parameters
+    ----------
+    path : 
+
+    Returns
+    -------
+
+    """
+
     f = h5py.File(os.path.join(path, 'connections'), 'w')
     index_group = f.create_group('fanout_indices')
     weight_group = f.create_group('fanout_weights')
@@ -30,21 +42,33 @@ def create_connection_file(path):
 
 
 class Event:
+    """
+    Event
+    """
+
     def __init__(self, source_index, timestamp):
         self.source_index = source_index
         self.timestamp = timestamp
 
 
 class Population:
+    """
+    Population
+    """
+
     def __init__(self, size, name):
         self.v = np.zeros(size)
         self.name = name
 
 
-
-
-
 def reset_mem(method='reset_to_zero'):
+    """
+
+    Parameters
+    ----------
+    method : 
+    """
+
     if method == 'reset_by_subtraction':
         v -= settings['v_thresh']
     else:
@@ -52,6 +76,15 @@ def reset_mem(method='reset_to_zero'):
 
 
 def update_neuron(idx, input, t):
+    """
+
+    Parameters
+    ----------
+    idx : 
+    input : 
+    t : 
+    """
+
     v[idx] += input
     if v[idx] >= settings['v_thresh']:
         queue.put(Event(idx, t))
@@ -59,6 +92,10 @@ def update_neuron(idx, input, t):
 
 
 def run():
+    """
+    Run
+    """
+
     f = h5py.File(os.path.join(path, 'connections.h5'), 'r')
     fanout_index_group = f['fanout_indices']
     fanout_weight_group = f['fanout_weights']
@@ -73,6 +110,3 @@ def run():
         fanout_weights = fanout_weight_group[source_index_string]
         for i, w in zip(fanout_indices, fanout_weights):
             update_neuron(i, w, t)
-
-
-

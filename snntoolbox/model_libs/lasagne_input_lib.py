@@ -19,8 +19,6 @@ Created on Thu Jun  9 08:11:09 2016
 """
 
 import os
-from typing import Optional, Union
-
 import lasagne
 import numpy as np
 import theano
@@ -145,7 +143,7 @@ def extract(model):
                     break
             assert prev_layer, "Could not find layer with parameters " \
                                "preceeding BatchNorm layer."
-            prev_layer_dict = layers[name_map[str(id(prev_layer))]]
+            prev_layer_dict = dict(layers[name_map[str(id(prev_layer))]])
             parameters = prev_layer_dict['parameters']  # W, b of previous layer
             if len(parameters) == 1:  # No bias
                 parameters.append(np.zeros_like(bn_parameters[0]))
@@ -190,7 +188,7 @@ def extract(model):
             attributes['batch_input_shape'] = tuple(batch_input_shape)
 
         # Insert Flatten layer
-        output_shape = lasagne_layers[layer_num].output_shape
+        output_shape = lasagne_layers[int(layer_num)].output_shape
         prev_layer_output_shape = lasagne_layers[layer_num-1].output_shape
         if len(output_shape) < len(prev_layer_output_shape) and \
                 layer_type != 'Flatten':
