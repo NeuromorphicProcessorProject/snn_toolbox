@@ -361,9 +361,10 @@ def init_neurons(self, input_shape, tau_refrac=0.):
     # To save memory and computations, allocate only where needed:
     if settings['tau_refrac'] > 0:
         self.refrac_until = k.zeros(output_shape)
-    if any({'spiketrains', 'spikerates', 'correlation',
-            'hist_spikerates_activations'} & settings['plot_vars']) \
-            or 'spiketrains_n_b_l_t' in settings['log_vars']:
+    if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
+            'hist_spikerates_activations', 'operations', 'operations_b_t',
+            'spiketrains_n_b_l_t'}
+           & (settings['plot_vars'] | settings['log_vars'])):
         self.spiketrain = k.zeros(output_shape)
     if settings['online_normalization']:
         self.spikecounts = k.zeros(output_shape)

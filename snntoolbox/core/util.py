@@ -151,6 +151,8 @@ def get_dataset(s):
     TODO: Docstring
     """
 
+    from snntoolbox.io_utils.common import load_dataset
+
     evalset = normset = testset = None
     # Instead of loading a normalization set, try to get the scale-factors from
     # a previous run, stored on disk.
@@ -165,11 +167,9 @@ def get_dataset(s):
     if s['dataset_format'] == 'npz':
         print("Loading data set from '.npz' files in {}.\n".format(
             s['dataset_path']))
-        from snntoolbox.io_utils.common import load_dataset
         if s['evaluateANN'] or s['simulate']:
-            evalset = {
-                'x_test': load_dataset(s['dataset_path'], 'x_test.npz'),
-                'y_test': load_dataset(s['dataset_path'], 'y_test.npz')}
+            evalset = {'x_test': load_dataset(s['dataset_path'], 'x_test.npz'),
+                       'y_test': load_dataset(s['dataset_path'], 'y_test.npz')}
 #            # Binarize the input. Hack: Should be independent of maxpool type
 #            if s['maxpool_type'] == 'binary_tanh':
 #                evalset['x_test'] = np.sign(evalset['x_test'])
@@ -178,8 +178,7 @@ def get_dataset(s):
 #                np.round(evalset['x_test'], out=evalset['x_test'])
             assert evalset, "Evaluation set empty."
         if s['normalize'] and normset is None:
-            normset = {
-                'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
+            normset = {'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
             assert normset, "Normalization set empty."
         if s['simulate']:
             testset = evalset
@@ -213,6 +212,12 @@ def get_dataset(s):
             testset = {
                 'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
             assert testset, "Test set empty."
+    elif s['dataset_format'] == 'aedat':
+        if s['normalize'] and normset is None:
+            normset = {'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
+            assert normset, "Normalization set empty."
+        evalset = testset = {}
+
     return evalset, normset, testset
 
 
@@ -644,6 +649,58 @@ def get_inbound_layers(layer):
     return layer.inbound_nodes[0].inbound_layers
 
 
+def get_outbound_layers(layer):
+    """Return outbound layers.
+
+    Parameters
+    ----------
+
+    layer: Keras.layers
+        A Keras layer.
+
+    Returns
+    -------
+
+    : list[Keras.layers]
+        List of outbound layers.
+    """
+
+    return [on.outbound_layer for on in layer.outbound_nodes]
+
+
+def get_spiking_outbound_layers(layer):
+    """Iterate until spiking outbound layers are found.
+
+    Parameters
+    ----------
+
+    layer: keras.layers.Layer
+        Layer
+
+    Returns
+    -------
+
+    : list
+        List of outbound layers.
+    """
+
+    outbound = layer
+    while True:
+        outbound = get_outbound_layers(outbound)
+        if len(outbound) == 1:
+            outbound = outbound[0]
+            if hasattr(outbound, 'spiketrain'):
+                return [outbound]
+        else:
+            result = []
+            for outb in outbound:
+                if hasattr(outb, 'spiketrain'):
+                    result.append(outb)
+                else:
+                    result += get_spiking_outbound_layers(outb)
+            return result
+
+
 def get_scale_fac(activations, idx=0):
     """Determine the maximum activation of a layer.
 
@@ -890,70 +947,20 @@ def compute_ops_ann(parsed_model):
     return ops
 
 
-def compute_ops_snn(spiketrains_batch):
+def get_layer_ops(spiketrains_b_l, fanout, num_neurons_with_bias=0):
     """
-    Computes the number of operations performed in a spiking network,
-    layerwise, for convolutional, pooling and dense layers.
-    
+    Return total number of operations in the layer for a batch of samples.  
+
     Parameters
     ----------
-    
-    spiketrains_batch: list[tuple]
-        First dimension contains the spiketrains for each layer in the network.
-        Second dimension contains the layer objects.
-    
-    Returns
-    -------
-    
-    layer_spikes_per_time: total spikes fired in each layer at each time point
-    network_ops_per_time: total number of operations in the network, at each
-                          time point
-    accum_ops_per_time: total number of operations in the network, accumulated
-                        over time
+
+    spiketrains_b_l: ndarray
+        Batch of spiketrains of a layer. Shape: (batch_size, layer_shape)
+    fanout: int
+        Number of outgoing connections per neuron.
+    num_neurons_with_bias: int
+        Number of neurons with bias.
     """
 
-    num_timesteps = int(settings['duration']/settings['dt'])
-    # total number of spikes, excluding the flatten layers, at each time step
-    network_spikes_per_time = np.zeros(num_timesteps)
-    # spike numbers for each layer, at each time point
-    layer_spikes_per_time = np.zeros((len(spiketrains_batch), num_timesteps))
-    # total number of ops for convolution and dense layers, for each time step
-    network_ops_per_time = np.zeros(num_timesteps)
-
-    for idx, l in enumerate(spiketrains_batch):
-        layer = l[1]
-        spiketrain = l[0]
-        # average over batch items
-        layer_spikes = np.sum(np.mean(spiketrain, axis=0),
-                              axis=tuple(range(0, spiketrain.ndim - 2)))
-        network_spikes_per_time += layer_spikes
-        layer_spikes_per_time[idx] = layer_spikes
-        if (idx < len(spiketrains_batch)-1) and \
-                any(name in layer.name for name in
-                    ['Convolution', 'Dense', 'Pool']):
-            next_layer = spiketrains_batch[idx+1][1]
-            bias_ops = np.prod(next_layer.output_shape[1:])
-            if 'Convolution' in next_layer.name:
-                network_ops_per_time += (layer_spikes *
-                                         next_layer.output_shape[1] *
-                                         next_layer.nb_col *
-                                         next_layer.nb_row +
-                                         bias_ops)
-            elif 'Dense' in next_layer.name:
-                network_ops_per_time += (layer_spikes *
-                                         next_layer.output_shape[1] + bias_ops)
-
-    inp_conv = spiketrains_batch[0][1]
-    kernel_width = inp_conv.nb_col
-    kernel_height = inp_conv.nb_row
-    num_input_maps = inp_conv.input_shape[1]
-    num_output_maps = inp_conv.nb_filter
-    output_width = inp_conv.output_shape[2]
-    output_height = inp_conv.output_shape[3]
-    input_ops = (kernel_width * kernel_height * num_input_maps *
-                 num_output_maps * output_width * output_height)
-    bias_ops = np.prod(inp_conv.output_shape[1:])
-
-    network_ops_per_time += (input_ops + bias_ops)
-    accum_ops_per_time = np.cumsum(network_ops_per_time)
-    return layer_spikes_per_time, network_ops_per_time, accum_ops_per_time
+    return np.array([np.count_nonzero(s) for s in spiketrains_b_l]) * fanout + \
+        num_neurons_with_bias

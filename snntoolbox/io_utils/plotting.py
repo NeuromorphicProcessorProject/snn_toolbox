@@ -919,6 +919,38 @@ def plot_error_vs_time(err_d_t, ann_err=None, path=None):
     plt.close()
 
 
+def plot_ops_vs_time(operations_b_t, path=None):
+    """Plot total number of operations over time.
+
+    Parameters
+    ----------
+
+    operations_b_t : ndarray
+        Number of operations. Shape: (batch_size, num_timesteps)
+    path: Optional[str]
+        Where to save the output.
+    """
+
+    plt.figure()
+    plt.title('SNN operations')
+    time = np.arange(0, settings['duration'], settings['dt'])
+    mean_ops_t = np.mean(operations_b_t, 0)
+    std_ops_t = np.std(operations_b_t, 0)
+    plt.plot(time, mean_ops_t, '.b')
+    plt.fill_between(time, mean_ops_t-std_ops_t, mean_ops_t+std_ops_t,
+                     alpha=0.1, color='b')
+    plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
+    plt.ylim(0, None)
+    plt.ylabel('MOps')
+    plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(settings['dt']))
+    if path is not None:
+        filename = 'operations_t'
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
 def plot_spikecount_vs_time(spiketrains_n_b_l_t, path=None):
     """Plot total spikenumber over time.
 
@@ -949,6 +981,7 @@ def plot_spikecount_vs_time(spiketrains_n_b_l_t, path=None):
     plt.fill_between(time, cum_spikecounts_t-std_t, cum_spikecounts_t+std_t,
                      alpha=0.1, color='b')
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
+    plt.ylim(0, None)
     plt.ylabel('# spikes')
     plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(settings['dt']))
     if path is not None:
