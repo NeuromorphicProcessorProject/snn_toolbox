@@ -919,34 +919,6 @@ def to_list(x):
     return x if type(x) is list else [x]
 
 
-def compute_ops_ann(parsed_model):
-    """
-    Computes the number of operations (1 MACC = 2 ops) performed in the network.
-    """
-
-    ops = 0
-    for l, layer in enumerate(parsed_model.layers):
-        if "Convolution" in layer.name:
-            kernel_width = layer.nb_col
-            kernel_height = layer.nb_row
-            num_input_maps = layer.input_shape[1]
-            num_output_maps = layer.nb_filter
-            output_width = layer.output_shape[2]
-            output_height = layer.output_shape[3]
-            bias_ops = num_output_maps * output_width * output_height
-            ops += 2 * (kernel_width * kernel_height * num_input_maps *
-                        num_output_maps * output_width * output_height) + \
-                bias_ops
-        elif "Dense" in layer.name:
-            input_shape = np.prod(layer.input_shape[1:])
-            layer_dim = layer.output_shape[1]
-            bias_ops = layer.output_shape[1]
-            ops += 2 * (layer_dim * input_shape) + bias_ops
-
-    np.save(os.path.join(settings['path_wd'], "ANN_total_ops"), ops)
-    return ops
-
-
 def get_layer_ops(spiketrains_b_l, fanout, num_neurons_with_bias=0):
     """
     Return total number of operations in the layer for a batch of samples.  
@@ -964,3 +936,96 @@ def get_layer_ops(spiketrains_b_l, fanout, num_neurons_with_bias=0):
 
     return np.array([np.count_nonzero(s) for s in spiketrains_b_l]) * fanout + \
         num_neurons_with_bias
+
+
+def get_fanin(layer):
+    """
+    Return fan-in of a neuron in ``layer``.
+
+    Parameters
+    ----------
+
+    layer: Subclass[keras.layers.Layer] 
+         Layer.
+
+    Returns
+    -------
+
+    fanin: int
+        Fan-in.
+
+    """
+
+    if 'Conv' in layer.name:
+        fanin = layer.nb_col * layer.nb_row * layer.input_shape[1]
+    elif 'Dense' in layer.name:
+        fanin = layer.input_shape[1]
+    elif 'Pool' in layer.name:
+        fanin = 0
+    else:
+        fanin = 0
+
+    return fanin
+
+
+def get_fanout(layer):
+    """
+    Return fan-out of a neuron in ``layer``.
+
+    Parameters
+    ----------
+
+    layer: Subclass[keras.layers.Layer] 
+         Layer.
+
+    Returns
+    -------
+
+    fanout: int
+        Fan-out.
+
+    """
+
+    fanout = 0
+    next_layers = get_spiking_outbound_layers(layer)
+    for next_layer in next_layers:
+        if 'Conv' in layer.name and 'Pool' in next_layer.name:
+            fanout += 1
+        elif 'Dense' in layer.name:
+            fanout += next_layer.output_dim
+        elif 'Pool' in layer.name and 'Conv' in next_layer.name:
+            fanout += next_layer.nb_col * next_layer.nb_row * \
+                      next_layer.nb_filter
+        elif 'Pool' in layer.name and 'Dense' in next_layer.name:
+            fanout += next_layer.output_dim
+        else:
+            fanout += 0
+
+    return fanout
+
+
+def get_ann_ops(num_neurons, num_neurons_with_bias, fanin):
+    """
+    Compute number of operations performed by an ANN in one forward pass.
+
+    Parameters
+    ----------
+
+    num_neurons: list[int]
+        Number of neurons per layer, starting with input layer.
+    num_neurons_with_bias: list[int]
+        Number of neurons with bias.
+    fanin: list[int]
+        List of fan-in of neurons in Conv, Dense and Pool layers. Input and Pool
+        layers have fan-in 0 so they are not counted.
+
+
+    Returns
+    -------
+
+    : int
+        Number of operations.
+
+    """
+
+    return 2 * np.dot(num_neurons, fanin) + np.sum(num_neurons_with_bias)

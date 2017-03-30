@@ -81,7 +81,7 @@ class SNN:
         # Logging variables
         self.spiketrains_n_b_l_t = self.activations_n_b_l = None
         self.input_b_l_t = self.mem_n_b_l_t = self.top1err_b_t = None
-        self.operations_b_t = None
+        self.operations_b_t = self.ann_ops = None
         self.num_neurons = self.num_neurons_with_bias = None
         self.fanin = self.fanout = None
         # ``rescale_fac`` globally scales spike probability when using Poisson
@@ -152,7 +152,10 @@ class SNN:
                     layer.b0.set_value(layer.b.get_value())
 
         if self.fanin is None:
-            self.set_connectivity()
+            from snntoolbox.core.util import get_ann_ops
+            num_neurons, num_neurons_with_bias, fanin = self.set_connectivity()
+            self.ann_ops = get_ann_ops(num_neurons, num_neurons_with_bias,
+                                       fanin)
 
     def run(self, x_test=None, y_test=None, dataflow=None, **kwargs):
         """Simulate a SNN with LIF and Poisson input.
@@ -377,8 +380,6 @@ class SNN:
                                                            sim_step_int] = \
                                 layer.spiketrain.get_value()
                         if self.operations_b_t is not None:
-                            if layer.name == self.snn.layers[-1].name:
-                                continue  # No ops to count for output layer
                             self.operations_b_t[:, sim_step_int] += \
                                 get_layer_ops(layer.spiketrain.get_value(),
                                               self.fanout[i+1],
@@ -612,6 +613,8 @@ class SNN:
         number_of_neurons_with_bias.
         """
 
+        from snntoolbox.core.util import get_fanin, get_fanout
+
         self.fanin = [0]
         self.fanout = [self.snn.layers[1].nb_col * self.snn.layers[1].nb_col *
                        self.snn.layers[1].nb_filter]
@@ -629,70 +632,4 @@ class SNN:
                 else:
                     self.num_neurons_with_bias.append(0)
 
-
-def get_fanin(layer):
-    """
-    Return fan-in of a neuron in ``layer``.
-
-    Parameters
-    ----------
-
-    layer: Subclass[keras.layers.Layer] 
-         Layer.
-
-    Returns
-    -------
-
-    fanin: int
-        Fan-in.
-
-    """
-
-    if 'Conv' in layer.name:
-        fanin = layer.nb_col * layer.nb_row * layer.input_shape[1]
-    elif 'Dense' in layer.name:
-        fanin = layer.input_shape[1]
-    elif 'Pool' in layer.name:
-        fanin = 0
-    else:
-        fanin = 0
-
-    return fanin
-
-
-def get_fanout(layer):
-    """
-    Return fan-out of a neuron in ``layer``.
-
-    Parameters
-    ----------
-
-    layer: Subclass[keras.layers.Layer] 
-         Layer.
-
-    Returns
-    -------
-    
-    fanout: int
-        Fan-out.
-
-    """
-
-    from snntoolbox.core.util import get_spiking_outbound_layers
-
-    fanout = 0
-    next_layers = get_spiking_outbound_layers(layer)
-    for next_layer in next_layers:
-        if 'Conv' in layer.name and 'Pool' in next_layer.name:
-            fanout += 1
-        elif 'Dense' in layer.name:
-            fanout += next_layer.output_dim
-        elif 'Pool' in layer.name and 'Conv' in next_layer.name:
-            fanout += next_layer.nb_col * next_layer.nb_row * \
-                      next_layer.nb_filter
-        elif 'Pool' in layer.name and 'Dense' in next_layer.name:
-            fanout += next_layer.output_dim
-        else:
-            fanout += 0
-
-    return fanout
+        return self.num_neurons, self.num_neurons_with_bias, self.fanin

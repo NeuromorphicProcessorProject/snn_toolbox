@@ -939,7 +939,6 @@ def plot_ops_vs_time(operations_b_t, path=None):
     plt.plot(time, mean_ops_t, '.b')
     plt.fill_between(time, mean_ops_t-std_ops_t, mean_ops_t+std_ops_t,
                      alpha=0.1, color='b')
-    plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
     plt.ylim(0, None)
     plt.ylabel('MOps')
     plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(settings['dt']))

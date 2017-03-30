@@ -160,7 +160,7 @@ def linear_activation(self):
                                        self.mem, self.mem + masked_imp)
     elif v_clip:
         # Clip membrane potential to [-2, 2] to prevent too strong accumulation.
-        new_mem = theano.tensor.clip(self.mem + masked_imp, -2, 2)
+        new_mem = theano.tensor.clip(self.mem + masked_imp, -2, 100)
     else:
         new_mem = self.mem + masked_imp
 
@@ -337,15 +337,14 @@ def reset_spikevars(self):
         self.refrac_until.set_value(np.zeros(self.output_shape, floatX))
     if self.spiketrain is not None:
         self.spiketrain.set_value(np.zeros(self.output_shape, floatX))
-    if settings['online_normalization']:
-        self.spikecounts.set_value(np.zeros(self.output_shape, floatX))
     if settings['payloads']:
         self.payloads.set_value(np.zeros(self.output_shape, floatX))
         self.payloads_sum.set_value(np.zeros(self.output_shape, floatX))
-    if settings['online_normalization']:
+    if settings['online_normalization'] and settings['reset_between_frames']:
+        self.spikecounts.set_value(np.zeros(self.output_shape, floatX))
         self.max_spikerate.set_value(0.)
         self.v_thresh.set_value(settings['v_thresh'])
-    if clamp_var:
+    if clamp_var and settings['reset_between_frames']:
         self.spikerate.set_value(np.zeros(self.input_shape, floatX))
         self.var.set_value(np.zeros(self.input_shape, floatX))
 
@@ -779,7 +778,8 @@ class SpikeMaxPooling2D(MaxPooling2D):
         """Reset layer variables."""
 
         reset_spikevars(self)
-        self.spikerate_pre.set_value(np.zeros(self.input_shape, floatX))
+        if settings['reset_between_frames']:
+            self.spikerate_pre.set_value(np.zeros(self.input_shape, floatX))
 
     @property
     def class_name(self):
