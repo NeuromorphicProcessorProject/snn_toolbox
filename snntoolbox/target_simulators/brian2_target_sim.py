@@ -126,7 +126,7 @@ class SNN:
             self.add_layer(layer)
             if layer_type == 'Dense':
                 self.build_dense(layer)
-            elif layer_type == 'Convolution2D':
+            elif layer_type == 'Conv2D':
                 self.build_convolution(layer)
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
                 self.build_pooling(layer)
@@ -182,25 +182,24 @@ class SNN:
         weights = layer.get_weights()[0]  # [W, b][0]
         nx = layer.input_shape[3]  # Width of feature map
         ny = layer.input_shape[2]  # Hight of feature map
-        kx = layer.nb_col  # Width of kernel
-        ky = layer.nb_row  # Hight of kernel
+        kx, ky = layer.kernel_size  # Width and height of kernel
         px = int((kx - 1) / 2)  # Zero-padding columns
         py = int((ky - 1) / 2)  # Zero-padding rows
-        if layer.border_mode == 'valid':
-            # In border_mode 'valid', the original sidelength is
+        if layer.padding == 'valid':
+            # In padding 'valid', the original sidelength is
             # reduced by one less than the kernel size.
             mx = nx - kx + 1  # Number of columns in output filters
             my = ny - ky + 1  # Number of rows in output filters
             x0 = px
             y0 = py
-        elif layer.border_mode == 'same':
+        elif layer.padding == 'same':
             mx = nx
             my = ny
             x0 = 0
             y0 = 0
         else:
             raise Exception("Border_mode {} not supported".format(
-                layer.border_mode))
+                layer.padding))
         # Loop over output filters 'fout'
         for fout in range(weights.shape[0]):
             for y in range(y0, ny - y0):

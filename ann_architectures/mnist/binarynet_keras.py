@@ -18,7 +18,7 @@ from __future__ import print_function
 from keras.models import Sequential
 from keras.callbacks import EarlyStopping
 from keras.layers import MaxPooling2D, Dropout, Flatten
-from ann_architectures.BinaryConnect.binary_net_keras import Convolution2D
+from ann_architectures.BinaryConnect.binary_net_keras import Conv2D
 from ann_architectures.BinaryConnect.binary_net_keras import Dense
 from ann_architectures.BinaryConnect.common import binary_sigmoid_unit
 from snntoolbox.io_utils.common import load_dataset
@@ -32,7 +32,7 @@ nb_epoch = 100
 # input image dimensions
 img_rows, img_cols = 28, 28
 # number of convolutional filters to use
-nb_filters = 32
+filters = 32
 # size of pooling area for max pooling
 nb_pool = 2
 # convolution kernel size
@@ -44,10 +44,10 @@ activation = binary_sigmoid_unit
 
 model = Sequential()
 
-model.add(Convolution2D(nb_filters, nb_conv, nb_conv,
+model.add(Conv2D(filters, nb_conv, nb_conv,
                         input_shape=(chnls, img_rows, img_cols),
                         activation=activation))
-model.add(Convolution2D(nb_filters, nb_conv, nb_conv, activation=activation))
+model.add(Conv2D(filters, nb_conv, nb_conv, activation=activation))
 model.add(MaxPooling2D(pool_size=(nb_pool, nb_pool)))
 model.add(Dropout(0.25))
 

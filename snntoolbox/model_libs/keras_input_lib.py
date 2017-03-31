@@ -84,9 +84,8 @@ def extract(model):
 
         `Convolution` layers contain further
 
-        - nb_col (int): The x-dimension of filters.
-        - nb_row (int): The y-dimension of filters.
-        - border_mode (string): How to handle borders during convolution, e.g.
+        - kernel_size (tuple/list of 2 ints): The x- and y-dimension of filters.
+        - padding (string): How to handle borders during convolution, e.g.
           `full`, `valid`, `same`.
 
         `Pooling` layers contain
@@ -138,7 +137,10 @@ def extract(model):
         print("Parsing layer {}".format(layer_type))
 
         attributes = layer.get_config()
-        attributes['layer_type'] = layer.__class__.__name__
+        layer_type = layer.__class__.__name__
+        if layer_type == 'MaxPooling2D' and settings['max2avg_pool']:
+            layer_type = 'AveragePooling2D'
+        attributes['layer_type'] = layer_type
 
         # Append layer name
         if len(layer.output_shape) == 2:
@@ -150,7 +152,7 @@ def extract(model):
         num_str = str(layer_num) if layer_num > 9 else '0' + str(layer_num)
         attributes['name'] = num_str + layer_type + shape_string
 
-        if layer_type in {'Dense', 'Convolution2D'}:
+        if layer_type in {'Dense', 'Conv2D'}:
             attributes['parameters'] = layer.get_weights()
             # Get type of nonlinearity if the activation is directly in the
             # Dense / Conv layer:

@@ -13,14 +13,14 @@ CLASS_INDEX_PATH = 'https://s3.amazonaws.com/deep-learning-models/' + \
     'image-models/imagenet_class_index.json'
 
 
-def preprocess_input(x, dim_ordering='default'):
+def preprocess_input(x, image_data_format='default'):
     """Preprocess input.
 
     Parameters
     ----------
     x: np.array
         The input samples.
-    dim_ordering: str
+    image_data_format: str
         Ordering of the dimensions. ``'th'`` for Theano, ``'tf'`` for
         TensorFlow.
 
@@ -31,11 +31,11 @@ def preprocess_input(x, dim_ordering='default'):
         The processed data.
     """
 
-    if dim_ordering == 'default':
-        dim_ordering = k.image_dim_ordering()
-    assert dim_ordering in {'tf', 'th'}
+    if image_data_format == 'default':
+        image_data_format = k.image_data_format()
+    assert image_data_format in {'channels_first', 'channels_last'}
 
-    if dim_ordering == 'th':
+    if image_data_format == 'channels_first':
         x[:, 0, :, :] -= 103.939
         x[:, 1, :, :] -= 116.779
         x[:, 2, :, :] -= 123.68

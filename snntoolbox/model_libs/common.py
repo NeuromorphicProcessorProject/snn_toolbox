@@ -9,7 +9,7 @@ Created on Thu May 19 08:26:49 2016
 """
 
 
-def border_mode_string(pad, pool_size):
+def padding_string(pad, pool_size):
     """Get string defining the border mode.
 
     Parameters
@@ -22,21 +22,21 @@ def border_mode_string(pad, pool_size):
     Returns
     -------
 
-    border_mode: str
+    padding: str
         Border mode identifier.
     """
 
     if pad == (0, 0):
-        border_mode = 'valid'
+        padding = 'valid'
     elif pad == (pool_size[0] // 2, pool_size[1] // 2):
-        border_mode = 'same'
+        padding = 'same'
     elif pad == (pool_size[0] - 1, pool_size[1] - 1):
-        border_mode = 'full'
+        padding = 'full'
     else:
         raise NotImplementedError(
             "Padding {} could not be interpreted as any of the ".format(pad) +
             "supported border modes 'valid', 'same' or 'full'.")
-    return border_mode
+    return padding
 
 
 def absorb_bn(w, b, gamma, beta, mean, var, epsilon):

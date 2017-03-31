@@ -14,7 +14,7 @@ import warnings
 
 from keras.models import Model
 from keras.layers import Flatten, Dense, Input
-from keras.layers import Convolution2D, MaxPooling2D
+from keras.layers import Conv2D, MaxPooling2D
 from keras.preprocessing import image
 from keras.utils.layer_utils import convert_all_kernels_in_model
 from keras import backend as K
@@ -67,7 +67,7 @@ def VGG16(include_top=True, weights='imagenet',
                          '`None` (random initialization) or `imagenet` '
                          '(pre-training on ImageNet).')
     # Determine proper input shape
-    if K.image_dim_ordering() == 'th':
+    if K.image_data_format() == 'channels_first':
         if include_top:
             input_shape = (3, 224, 224)
         else:
@@ -86,43 +86,43 @@ def VGG16(include_top=True, weights='imagenet',
         else:
             img_input = input_tensor
     # Block 1
-    x = Convolution2D(64, 3, 3, activation='relu',
-                      border_mode='same', name='block1_conv1')(img_input)
-    x = Convolution2D(64, 3, 3, activation='relu',
-                      border_mode='same', name='block1_conv2')(x)
+    x = Conv2D(64, 3, 3, activation='relu',
+                      padding='same', name='block1_conv1')(img_input)
+    x = Conv2D(64, 3, 3, activation='relu',
+                      padding='same', name='block1_conv2')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool')(x)
 
     # Block 2
-    x = Convolution2D(128, 3, 3, activation='relu',
-                      border_mode='same', name='block2_conv1')(x)
-    x = Convolution2D(128, 3, 3, activation='relu',
-                      border_mode='same', name='block2_conv2')(x)
+    x = Conv2D(128, 3, 3, activation='relu',
+                      padding='same', name='block2_conv1')(x)
+    x = Conv2D(128, 3, 3, activation='relu',
+                      padding='same', name='block2_conv2')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool')(x)
 
     # Block 3
-    x = Convolution2D(256, 3, 3, activation='relu', border_mode='same',
+    x = Conv2D(256, 3, 3, activation='relu', padding='same',
                       name='block3_conv1')(x)
-    x = Convolution2D(256, 3, 3, activation='relu', border_mode='same',
+    x = Conv2D(256, 3, 3, activation='relu', padding='same',
                       name='block3_conv2')(x)
-    x = Convolution2D(256, 3, 3, activation='relu', border_mode='same',
+    x = Conv2D(256, 3, 3, activation='relu', padding='same',
                       name='block3_conv3')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool')(x)
 
     # Block 4
-    x = Convolution2D(512, 3, 3, activation='relu', border_mode='same',
+    x = Conv2D(512, 3, 3, activation='relu', padding='same',
                       name='block4_conv1')(x)
-    x = Convolution2D(512, 3, 3, activation='relu', border_mode='same',
+    x = Conv2D(512, 3, 3, activation='relu', padding='same',
                       name='block4_conv2')(x)
-    x = Convolution2D(512, 3, 3, activation='relu', border_mode='same',
+    x = Conv2D(512, 3, 3, activation='relu', padding='same',
                       name='block4_conv3')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool')(x)
 
     # Block 5
-    x = Convolution2D(512, 3, 3, activation='relu', border_mode='same',
+    x = Conv2D(512, 3, 3, activation='relu', padding='same',
                       name='block5_conv1')(x)
-    x = Convolution2D(512, 3, 3, activation='relu', border_mode='same',
+    x = Conv2D(512, 3, 3, activation='relu', padding='same',
                       name='block5_conv2')(x)
-    x = Convolution2D(512, 3, 3, activation='relu', border_mode='same',
+    x = Conv2D(512, 3, 3, activation='relu', padding='same',
                       name='block5_conv3')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool')(x)
 
@@ -138,8 +138,8 @@ def VGG16(include_top=True, weights='imagenet',
 
     # load weights
     if weights == 'imagenet':
-        print('k.image_dim_ordering:', K.image_dim_ordering())
-        if K.image_dim_ordering() == 'th':
+        print('k.image_data_format:', K.image_data_format())
+        if K.image_data_format() == 'channels_first':
             if include_top:
                 weights_path = TH_WEIGHTS_PATH
             else:

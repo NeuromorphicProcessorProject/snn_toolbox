@@ -326,7 +326,7 @@ class Module_average_pooling(Megasim_base):
 
     duplicate code with the module_conv class - TODO: merge them
     layer_params
-    Attributes: ['label', 'layer_num', 'border_mode', 'layer_type', 'strides', 'input_shape', 'output_shape', 'get_activ', 'pool_size']
+    Attributes: ['label', 'layer_num', 'padding', 'layer_type', 'strides', 'input_shape', 'output_shape', 'get_activ', 'pool_size']
     '''
 
     def __init__(self, layer_params, neuron_params, reset_input_event = False, scaling_factor=10000000):
@@ -376,8 +376,8 @@ class Module_average_pooling(Megasim_base):
 
         self.pre_shapes = layer_params.input_shape # (none, 1, 28 28) # last 2
 
-        self.border_mode = layer_params.border_mode
-        if self.border_mode != 'valid':
+        self.padding = layer_params.padding
+        if self.padding != 'valid':
             echo("Not implemented yet!")
             sys.exit(88)
 
@@ -562,12 +562,12 @@ class Module_conv(Megasim_base):
     w: list
         list of weights
 
-    border_mode: string
+    padding: string
         String with the border mode used for the convolutional layer. So far only the valid mode is implemented
 
 
     layer_params
-    Attributes: ['nb_col', 'activation', 'layer_type', 'layer_num', 'nb_filter', 'output_shape', 'input_shape', 'nb_row', 'label', 'parameters', 'border_mode']
+    Attributes: ['kernel_size', 'activation', 'layer_type', 'layer_num', 'filters', 'output_shape', 'input_shape', 'label', 'parameters', 'padding']
     '''
 
     def __init__(self, layer_params, neuron_params, flip_kernels = True, reset_input_event = False, scaling_factor=10000000):
@@ -604,7 +604,7 @@ class Module_conv(Megasim_base):
         self.Nx_array = self.output_shapes[2:][1]
         self.Ny_array = self.output_shapes[2:][0]
 
-        self.border_mode = layer_params.border_mode # 'same', 'valid',
+        self.padding = layer_params.padding # 'same', 'valid',
 
         self.Reset_to_reminder = 0
         if neuron_params["reset"] == 'Reset to zero':
@@ -613,7 +613,7 @@ class Module_conv(Megasim_base):
             self.Reset_to_reminder = 1
 
 
-        if self.border_mode == 'valid':
+        if self.padding == 'valid':
             # if its valid mode
             self.Nx_array = self.output_shapes[2:][1] + self.kernel_size[1] - 1
             self.Ny_array = self.output_shapes[2:][0] + self.kernel_size[0] - 1
@@ -777,7 +777,7 @@ Dy %d
        ))
             param_reset2 = " ".join([str(x) for x in [0]*1])
 
-        # if self.label == "02Convolution2D_32x24x24":
+        # if self.label == "02Conv2D_32x24x24":
         #     import pdb
         #     pdb.set_trace()
         param5 = (
@@ -858,12 +858,12 @@ class Module_fully_connected(Megasim_base):
     w: list
         list of weights
 
-    border_mode: string
+    padding: string
         String with the border mode used for the convolutional layer. So far only the valid mode is implemented
 
 
     layer_params
-    Attributes: ['nb_col', 'activation', 'layer_type', 'layer_num', 'nb_filter', 'output_shape', 'input_shape', 'nb_row', 'label', 'parameters', 'border_mode']
+    Attributes: ['kernel_size', 'activation', 'layer_type', 'layer_num', 'filters', 'output_shape', 'input_shape', 'label', 'parameters', 'padding']
     '''
     def __init__(self, layer_params, neuron_params, scaling_factor=10000000, reset_input_event = False, enable_softmax=True):
 
@@ -1210,7 +1210,7 @@ class SNN():
                                            reset_input_event= self.reset_signal_event)
                 )
 
-            elif layer_type == 'Convolution2D':
+            elif layer_type == 'Conv2D':
                 echo("Building layer: {}\n".format(layer.name))
                 self.layers.append(
                     Module_conv(layer_params=layer, neuron_params=settings,

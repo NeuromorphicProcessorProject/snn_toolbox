@@ -134,7 +134,7 @@ class SNN:
             self.add_layer(layer)
             if layer_type == 'Dense':
                 self.build_dense(layer)
-            elif layer_type == 'Convolution2D':
+            elif layer_type == 'Conv2D':
                 self.build_convolution(layer)
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
                 self.build_pooling(layer)

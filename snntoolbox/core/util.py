@@ -135,6 +135,8 @@ def parse(input_model):
         if filter_flip:
             parsed_layer.filter_flip = filter_flip
         inbound = [parsed_layers[inb] for inb in layer.pop('inbound')]
+        if len(inbound) == 1:
+            inbound = inbound[0]
         parsed_layers[layer['name']] = parsed_layer(**layer)(inbound)
     print("Compiling parsed model...")
     parsed_model = keras.models.Model(img_input,
@@ -780,7 +782,7 @@ def get_activations_batch(ann, x_batch):
     activations_batch: list[tuple[np.array, str]]
         Each tuple ``(activations, label)`` represents a layer in the ANN for
         which an activation can be calculated (e.g. ``Dense``,
-        ``Convolution2D``).
+        ``Conv2D``).
         ``activations`` containing the activations of a layer. It has the same
         shape as the original layer, e.g.
         (batch_size, n_features, n_rows, n_cols) for a convolution layer.
@@ -833,7 +835,7 @@ def extract_label(label):
 
     label: string
         Specifies both the layer type, index and shape, e.g.
-        ``'03Convolution2D_3x32x32'``.
+        ``'03Conv2D_3x32x32'``.
 
     Returns
     -------
@@ -957,7 +959,7 @@ def get_fanin(layer):
     """
 
     if 'Conv' in layer.name:
-        fanin = layer.nb_col * layer.nb_row * layer.input_shape[1]
+        fanin = np.prod(layer.kernel_size) * layer.input_shape[1]
     elif 'Dense' in layer.name:
         fanin = layer.input_shape[1]
     elif 'Pool' in layer.name:
@@ -992,12 +994,11 @@ def get_fanout(layer):
         if 'Conv' in layer.name and 'Pool' in next_layer.name:
             fanout += 1
         elif 'Dense' in layer.name:
-            fanout += next_layer.output_dim
+            fanout += next_layer.units
         elif 'Pool' in layer.name and 'Conv' in next_layer.name:
-            fanout += next_layer.nb_col * next_layer.nb_row * \
-                      next_layer.nb_filter
+            fanout += np.prod(next_layer.kernel_size) * next_layer.filters
         elif 'Pool' in layer.name and 'Dense' in next_layer.name:
-            fanout += next_layer.output_dim
+            fanout += next_layer.units
         else:
             fanout += 0
 

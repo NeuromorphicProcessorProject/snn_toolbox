@@ -371,6 +371,7 @@ settings = OrderedDict({
     'diff_to_min_rate': 100,
     'scaling_factor': 10000000,
     'maxpool_type': 'fir_max',
+    'max2avg_pool': False,
     'binarize_weights': False,
     'runlabel': 'test',
     'reset_between_frames': True,
@@ -401,7 +402,7 @@ pyNN_settings = {'v_reset': 0,
 settings.update(pyNN_settings)
 
 # Layers that can be implemented by our spiking neuron simulators
-spiking_layers = ['Dense', 'Convolution2D', 'MaxPooling2D', 'AveragePooling2D',
+spiking_layers = ['Dense', 'Conv2D', 'MaxPooling2D', 'AveragePooling2D',
                   'Flatten', 'Merge']
 
 

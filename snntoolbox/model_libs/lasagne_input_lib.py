@@ -24,12 +24,12 @@ import numpy as np
 import theano
 from snntoolbox.config import settings, spiking_layers
 from snntoolbox.io_utils.common import load_parameters
-from snntoolbox.model_libs.common import border_mode_string
+from snntoolbox.model_libs.common import padding_string
 from snntoolbox.model_libs.common import import_script
 
 layer_dict = {'DenseLayer': 'Dense',
-              'Conv2DLayer': 'Convolution2D',
-              'Conv2DDNNLayer': 'Convolution2D',
+              'Conv2DLayer': 'Conv2D',
+              'Conv2DDNNLayer': 'Conv2D',
               'MaxPool2DLayer': 'MaxPooling2D',
               'Pool2DLayer': 'AveragePooling2D',
               'DropoutLayer': 'Dropout',
@@ -105,9 +105,8 @@ def extract(model):
 
         `Convolution` layers contain further
 
-        - nb_col (int): The x-dimension of filters.
-        - nb_row (int): The y-dimension of filters.
-        - border_mode (string): How to handle borders during convolution, e.g.
+        - kernel_size (tuple/list of 2 ints): The x- and y-dimension of filters.
+        - padding (string): How to handle borders during convolution, e.g.
           `full`, `valid`, `same`.
 
         `Pooling` layers contain
@@ -130,6 +129,8 @@ def extract(model):
         if name == 'Pool2DLayer' and layer.mode == 'max':
             name = 'MaxPool2DLayer'
         layer_type = layer_dict.get(name, name)
+        if layer_type == 'MaxPooling2D' and settings['max2avg_pool']:
+            layer_type = 'AveragePooling2D'
 
         attributes = {'layer_type': layer_type}
 
@@ -210,7 +211,7 @@ def extract(model):
         num_str = str(idx) if idx > 9 else '0' + str(idx)
         attributes['name'] = num_str + layer_type + shape_string
 
-        if layer_type in {'Dense', 'Convolution2D'}:
+        if layer_type in {'Dense', 'Conv2D'}:
             inc = len(layer.params)  # For weights and maybe biases
             attributes['parameters'] = all_parameters[parameters_idx:
                                                       parameters_idx + inc]
@@ -232,24 +233,23 @@ def extract(model):
                     break
             attributes['activation'] = activation
             print("Detected activation {}.".format(activation))
-            if layer_type == 'Convolution2D':
-                border_mode = border_mode_string(layer.pad, layer.filter_size)
+            if layer_type == 'Conv2D':
+                padding = padding_string(layer.pad, layer.filter_size)
                 attributes.update({'input_shape': layer.input_shape,
-                                   'nb_filter': layer.num_filters,
-                                   'nb_col': layer.filter_size[1],
-                                   'nb_row': layer.filter_size[0],
-                                   'border_mode': border_mode,
-                                   'subsample': layer.stride,
+                                   'filters': layer.num_filters,
+                                   'kernel_size': layer.filter_size,
+                                   'padding': padding,
+                                   'strides': layer.stride,
                                    'filter_flip': layer.flip_filters})
             else:
-                attributes['output_dim'] = layer.num_units
+                attributes['units'] = layer.num_units
 
         if layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
-            border_mode = border_mode_string(layer.pad, layer.pool_size)
+            padding = padding_string(layer.pad, layer.pool_size)
             attributes.update({'input_shape': layer.input_shape,
                                'pool_size': layer.pool_size,
                                'strides': layer.stride,
-                               'border_mode': border_mode})
+                               'padding': padding})
 
         if layer_type == 'Merge':
             attributes.update({'mode': 'concat', 'concat_axis': layer.axis})

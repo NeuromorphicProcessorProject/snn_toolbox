@@ -228,11 +228,12 @@ def plot_layer_activity(layer, title, path=None, limits=None):
             n = int(np.sqrt(num))
             while num / n % 1 != 0:
                 n -= 1
-            f, ax = plt.subplots(figsize=(7, min(3 + n*n*n / num / 2, 9)))
+            f, ax = plt.subplots(subplot_kw={'figsize':
+                                             (7, min(3+n*n*n/num/2, 9))})
             im = ax.imshow(np.reshape(layer[0], (n, -1)),
                            interpolation='nearest', clim=limits)
         else:
-            f, ax = plt.subplots(figsize=(7, 2))
+            f, ax = plt.subplots(subplot_kw={'figsize': (7, 2)})
             im = ax.imshow(np.array(layer[0], ndmin=2),
                            interpolation='nearest', clim=limits)
         ax.get_yaxis().set_visible(False)
@@ -251,7 +252,7 @@ def plot_layer_activity(layer, title, path=None, limits=None):
         if num_cols > 4:
             fac = num_cols / 4
         f, ax = plt.subplots(num_rows, num_cols, squeeze=False,
-                             figsize=(3 + num_cols * 2, 11))
+                             subplot_kw={'figsize': (3+num_cols*2, 11)})
         for i in range(num_rows):
             for j in range(num_cols):
                 idx = j + num_cols * i
@@ -402,7 +403,7 @@ def plot_correlations(spikerates, layer_activations):
 
     layer_activations: list of tuples ``(activations, label)``
         Each entry represents a layer in the ANN for which an activation can be
-        calculated (e.g. ``Dense``, ``Convolution2D``).
+        calculated (e.g. ``Dense``, ``Conv2D``).
 
         ``activations`` is an array of the same dimension as the corresponding
         layer, containing the activations of Dense or Convolution layers.
@@ -414,8 +415,8 @@ def plot_correlations(spikerates, layer_activations):
     # Determine optimal shape for rectangular arrangement of plots
     num_rows = int(np.ceil(np.sqrt(num_layers)))
     num_cols = int(np.ceil(num_layers / num_rows))
-    f, ax = plt.subplots(num_rows, num_cols, figsize=(8, 1 + num_rows * 4),
-                         squeeze=False)
+    f, ax = plt.subplots(num_rows, num_cols, squeeze=False,
+                         subplot_kw={'figsize': (8, 1 + num_rows * 4)})
     for i in range(num_rows):
         for j in range(num_cols):
             layer_num = j + i * num_cols

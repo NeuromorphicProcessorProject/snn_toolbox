@@ -50,10 +50,10 @@ class Dense(keras.layers.Dense):
 
 
 # This class extends the Lasagne Conv2DLayer to support BinaryConnect
-class Convolution2D(keras.layers.Convolution2D):
+class Conv2D(keras.layers.Conv2D):
     """Binary convolution layer."""
 
-    def __init__(self, nb_filter, nb_row, nb_col, binary=True, stochastic=True,
+    def __init__(self, filters, kernel_size, binary=True, stochastic=True,
                  h=1., **kwargs):
 
         self.binary = binary
@@ -63,11 +63,10 @@ class Convolution2D(keras.layers.Convolution2D):
         self.Wb = None
 
         if self.binary:
-            super(Convolution2D, self).__init__(nb_filter, nb_row, nb_col,
-                                                init='uniform', **kwargs)
+            super(Conv2D, self).__init__(filters, kernel_size, init='uniform',
+                                         **kwargs)
         else:
-            super(Convolution2D, self).__init__(nb_filter, nb_row, nb_col,
-                                                **kwargs)
+            super(Conv2D, self).__init__(filters, kernel_size, **kwargs)
 
     def convolve(self, input_node, deterministic=False, **kwargs):
         """Convolution operation.
@@ -88,7 +87,7 @@ class Convolution2D(keras.layers.Convolution2D):
         wr = self.W
         self.W = self.Wb
 
-        rvalue = super(Convolution2D, self).convolve(input_node, **kwargs)
+        rvalue = super(Conv2D, self).convolve(input_node, **kwargs)
 
         self.W = wr
 

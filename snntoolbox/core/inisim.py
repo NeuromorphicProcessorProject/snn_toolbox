@@ -22,7 +22,7 @@ import theano
 import theano.tensor as t
 from future import standard_library
 from keras import backend as k
-from keras.layers import Convolution2D, Merge
+from keras.layers import Conv2D, Merge
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D
 from snntoolbox.config import settings
 from theano.tensor.shared_randomstreams import RandomStreams
@@ -160,7 +160,7 @@ def linear_activation(self):
                                        self.mem, self.mem + masked_imp)
     elif v_clip:
         # Clip membrane potential to [-2, 2] to prevent too strong accumulation.
-        new_mem = theano.tensor.clip(self.mem + masked_imp, -2, 100)
+        new_mem = theano.tensor.clip(self.mem + masked_imp, -3, 3)
     else:
         new_mem = self.mem + masked_imp
 
@@ -352,7 +352,7 @@ def reset_spikevars(self):
 def init_neurons(self, input_shape, tau_refrac=0.):
     """Init layer neurons."""
 
-    output_shape = self.get_output_shape_for(input_shape)
+    output_shape = self.compute_output_shape(input_shape)
     self.v_thresh = theano.shared(settings['v_thresh'])
     self.tau_refrac = tau_refrac
     self.mem = k.zeros(output_shape)
@@ -476,7 +476,7 @@ class SpikeFlatten(Flatten):
 class SpikeDense(Dense):
     """Spike Dense layer."""
 
-    def __init__(self, output_dim, **kwargs):
+    def __init__(self, units, **kwargs):
         """Init function."""
         # Replace activation from kwargs by 'linear' before initializing
         # superclass, because the relu activation is applied by the spike-
@@ -484,7 +484,7 @@ class SpikeDense(Dense):
         # we need to apply a the activation manually. This information is taken
         # from the 'activation' key during conversion.
         self.activation_str = str(kwargs.pop('activation'))
-        super(SpikeDense, self).__init__(output_dim, **kwargs)
+        super(SpikeDense, self).__init__(units, **kwargs)
         self.layer_type = self.class_name
         self.tau_refrac = kwargs['tau_refrac'] if 'tau_refrac' in kwargs else 0.
         self.v_thresh = None
@@ -516,8 +516,8 @@ class SpikeDense(Dense):
         super(SpikeDense, self).build(input_shape)
         init_neurons(self, input_shape)
         if bias_relaxation:
-            self.b0 = k.variable(self.b.get_value())
-            add_updates(self, [(self.b, update_b(self))])
+            self.b0 = k.variable(self.bias.get_value())
+            add_updates(self, [(self.bias, update_b(self))])
 
     def call(self, x, mask=None):
         """Layer functionality."""
@@ -549,10 +549,10 @@ class SpikeDense(Dense):
         return self.__class__.__name__
 
 
-class SpikeConvolution2D(Convolution2D):
+class SpikeConv2D(Conv2D):
     """Spike 2D Convolution."""
 
-    def __init__(self, nb_filter, nb_row, nb_col, filter_flip=True, **kwargs):
+    def __init__(self, filters, kernel_size, filter_flip=True, **kwargs):
         """Init function."""
         # Replace activation from kwargs by 'linear' before initializing
         # superclass, because the relu activation is applied by the spike-
@@ -560,8 +560,7 @@ class SpikeConvolution2D(Convolution2D):
         # we need to apply a the activation manually. This information is taken
         # from the 'activation' key during conversion.
         self.activation_str = str(kwargs.pop('activation'))
-        super(SpikeConvolution2D, self).__init__(nb_filter, nb_row, nb_col,
-                                                 **kwargs)
+        super(SpikeConv2D, self).__init__(filters, kernel_size, **kwargs)
         self.layer_type = self.class_name
         self.filter_flip = filter_flip
         self.tau_refrac = kwargs['tau_refrac'] if 'tau_refrac' in kwargs else 0.
@@ -591,11 +590,11 @@ class SpikeConvolution2D(Convolution2D):
             to reference for weight shape computations.
         """
 
-        super(SpikeConvolution2D, self).build(input_shape)
+        super(SpikeConv2D, self).build(input_shape)
         init_neurons(self, input_shape)
         if bias_relaxation:
-            self.b0 = k.variable(self.b.get_value())
-            add_updates(self, [(self.b, update_b(self))])
+            self.b0 = k.variable(self.bias.get_value())
+            add_updates(self, [(self.bias, update_b(self))])
 
     def call(self, x, mask=None):
         """Layer functionality."""
@@ -613,7 +612,7 @@ class SpikeConvolution2D(Convolution2D):
             # Modify threshold if firing rate of layer too low
             add_updates(self, [(self.v_thresh, get_new_thresh(self))])
 
-        self.impulse = super(SpikeConvolution2D, self).call(inp)
+        self.impulse = super(SpikeConv2D, self).call(inp)
         return update_neurons(self)
 
     def reset(self):
@@ -699,7 +698,7 @@ class SpikeMaxPooling2D(MaxPooling2D):
 
         super(SpikeMaxPooling2D, self).__init__(**kwargs)
         self.layer_type = self.class_name
-        self.ignore_border = True if self.border_mode == 'valid' else False
+        self.ignore_border = True if self.padding == 'valid' else False
         if 'binary' in settings['maxpool_type']:
             self.activation_str = settings['maxpool_type']
         self.tau_refrac = kwargs['tau_refrac'] if 'tau_refrac' in kwargs else 0.
@@ -761,18 +760,18 @@ class SpikeMaxPooling2D(MaxPooling2D):
             add_updates(self, [(self.previous_x, x)])
             self.impulse = self._pooling_function(
                 [self.spikerate_pre, self.previous_x], self.pool_size,
-                self.strides, self.border_mode, self.dim_ordering)
+                self.strides, self.padding, self.data_format)
         else:
             print("Wrong max pooling type, "
                   "falling back on Average Pooling instead.")
             self.impulse = k.pool2d(inp, self.pool_size, self.strides,
-                                    self.border_mode, pool_mode='avg')
+                                    self.padding, pool_mode='avg')
         return update_neurons(self)
 
-    def _pooling_function(self, inputs, pool_size, strides, border_mode,
-                          dim_ordering):
-        return spike_pool2d(inputs, pool_size, strides, border_mode,
-                            dim_ordering, 'max')
+    def _pooling_function(self, inputs, pool_size, strides, padding,
+                          data_format):
+        return spike_pool2d(inputs, pool_size, strides, padding, data_format,
+                            'max')
 
     def reset(self):
         """Reset layer variables."""
@@ -788,8 +787,8 @@ class SpikeMaxPooling2D(MaxPooling2D):
         return self.__class__.__name__
 
 
-def spike_pool2d(inputs, pool_size, strides=(1, 1), border_mode='valid',
-                 dim_ordering=k.image_dim_ordering(), pool_mode='max'):
+def spike_pool2d(inputs, pool_size, strides=(1, 1), padding='valid',
+                 data_format=None, pool_mode='max'):
     """MaxPooling with spikes.
 
     Parameters
@@ -798,8 +797,8 @@ def spike_pool2d(inputs, pool_size, strides=(1, 1), border_mode='valid',
     inputs :
     pool_size :
     strides :
-    border_mode :
-    dim_ordering :
+    padding :
+    data_format :
     pool_mode :
 
     Returns
@@ -807,48 +806,51 @@ def spike_pool2d(inputs, pool_size, strides=(1, 1), border_mode='valid',
 
     """
 
+    if data_format is None:
+        data_format = k.image_data_format()
+    if data_format not in {'channels_first', 'channels_last'}:
+        raise ValueError('Unknown data_format:', data_format)
+
+    assert pool_size[0] >= 1 and pool_size[1] >= 1
+
     x = inputs[0]  # Presynaptic spike-rates
     y = inputs[1]  # Presynaptic spikes
 
-    if border_mode == 'same':
-        w_pad = pool_size[0] - 2 if pool_size[0] % 2 == 1 else pool_size[0] - 1
-        h_pad = pool_size[1] - 2 if pool_size[1] % 2 == 1 else pool_size[1] - 1
-        padding = (w_pad, h_pad)
-    elif border_mode == 'valid':
-        padding = (0, 0)
+    if padding == 'same':
+        w_pad = pool_size[0] - 2 if pool_size[0] > 2 and pool_size[0] % 2 == 1 \
+            else pool_size[0] - 1
+        h_pad = pool_size[1] - 2 if pool_size[1] > 2 and pool_size[1] % 2 == 1 \
+            else pool_size[1] - 1
+        pad = (w_pad, h_pad)
+    elif padding == 'valid':
+        pad = (0, 0)
     else:
-        raise Exception('Invalid border mode: ' + str(border_mode))
+        raise ValueError('Invalid border mode: ', padding)
 
-    if dim_ordering not in {'th', 'tf'}:
-        raise Exception('Unknown dim_ordering ' + str(dim_ordering))
-
-    if dim_ordering == 'tf':
+    if data_format == 'channels_last':
         x = x.dimshuffle((0, 3, 1, 2))
         y = y.dimshuffle((0, 3, 1, 2))
 
     if pool_mode == 'max':
-        pool_out = spike_pool_2d(inputs, pool_size, True, strides, padding,
-                                 'max')
+        pool_out = spike_pool_2d(inputs, pool_size, True, strides, pad, 'max')
     elif pool_mode == 'avg':
-        pool_out = pool.pool_2d(y, ds=pool_size, st=strides,
-                                ignore_border=True,
-                                padding=padding,
-                                mode='average_exc_pad')
+        pool_out = pool.pool_2d(y, ws=pool_size, stride=strides, pad=pad,
+                                ignore_border=True, mode='average_exc_pad')
     else:
         raise Exception('Invalid pooling mode: ' + str(pool_mode))
 
-    if border_mode == 'same':
+    if padding == 'same':
         expected_width = (x.shape[2] + strides[0] - 1) // strides[0]
         expected_height = (x.shape[3] + strides[1] - 1) // strides[1]
-
         pool_out = pool_out[:, :, : expected_width, : expected_height]
 
-    if dim_ordering == 'tf':
+    if data_format == 'channels_last':
         pool_out = pool_out.dimshuffle((0, 2, 3, 1))
+
     return pool_out
 
 
-def spike_pool_2d(inputs, ds, ignore_border=None, st=None, padding=(0, 0),
+def spike_pool_2d(inputs, ws, ignore_border=None, stride=None, pad=(0, 0),
                   mode='max'):
     """Downscale the input by a specified factor
 
@@ -860,17 +862,17 @@ def spike_pool_2d(inputs, ds, ignore_border=None, st=None, padding=(0, 0),
     ----------
     inputs : list[N-D theano tensors of input images]
         Input images. Max pooling will be done over the 2 last dimensions.
-    ds : tuple of length 2
+    ws : tuple of length 2
         Factor by which to downscale (vertical ds, horizontal ds).
         (2,2) will halve the image in each dimension.
     ignore_border : bool (default None, will print a warning and set to False)
         When True, (5,5) input with ds=(2,2) will generate a (2,2) output.
         (3,3) otherwise.
-    st : tuple of two ints
+    stride : tuple of two ints
         Stride size, which is the number of shifts over rows/cols to get the
         next pool region. If st is None, it is considered equal to ds
         (no overlap on pooling regions).
-    padding : tuple of two ints
+    pad : tuple of two ints
         (pad_h, pad_w), pad zeros to extend beyond four borders of the
         images, pad_h is the size of the top and bottom margins, and
         pad_w is the size of the left and right margins.
@@ -894,16 +896,12 @@ def spike_pool_2d(inputs, ds, ignore_border=None, st=None, padding=(0, 0),
             " On the GPU, using ignore_border=True is needed to use cuDNN."
             " When using ignore_border=False and not using cuDNN, the only"
             " GPU combination supported is when"
-            " `ds == st and padding == (0, 0) and mode == 'max'`."
+            " `ws == stride and pad == (0, 0) and mode == 'max'`."
             " Otherwise, the convolution will be executed on CPU.",
             stacklevel=2)
         ignore_border = False
-    if x.ndim == 4:
-        op = SpikePool(ds, ignore_border, st=st, padding=padding, mode=mode)
-        output = op(inputs)
-        return output
-    else:
-        raise NotImplementedError
+    op = SpikePool(ws, ignore_border, stride, pad, mode, 2)
+    return op(inputs, ws, stride, pad)
 
 
 class SpikePool(theano.Op):
@@ -916,17 +914,17 @@ class SpikePool(theano.Op):
 
     Parameters
     ----------
-    ds : list or tuple of two ints
+    ws : list or tuple of two ints
         Downsample factor over rows and column.
         ds indicates the pool region size.
     ignore_border : bool
         If ds doesn't divide imgshape, do we include an extra row/col
         of partial downsampling (False) or ignore it (True).
-    st : list or tuple of two ints or None
+    stride : list or tuple of two ints or None
         Stride size, which is the number of shifts over rows/cols to get the
         next pool region. If st is None, it is considered equal to ds
         (no overlap on pooling regions).
-    padding: tuple of two ints
+    pad: tuple of two ints
         (pad_h, pad_w), pad zeros to extend beyond four borders of the images,
         pad_h is the size of the top and bottom margins, and pad_w is the size
         of the left and right margins.
@@ -936,22 +934,23 @@ class SpikePool(theano.Op):
 
     """
 
-    __props__ = ('ds', 'ignore_border', 'st', 'padding', 'mode')
+    __props__ = ('ws', 'ignore_border', 'stride', 'pad', 'mode', 'ndim')
 
-    def __init__(self, ds, ignore_border=False, st=None, padding=(0, 0),
-                 mode='max'):
+    def __init__(self, ws, ignore_border=False, stride=None, pad=(0, 0),
+                 mode='max', ndim=2):
         super(SpikePool, self).__init__()
-        self.ds = tuple(ds)
-        if st is None:
-            st = ds
-        assert isinstance(st, (tuple, list))
-        self.st = tuple(st)
+        self.ws = tuple(ws)
+        if stride is None:
+            stride = ws
+        assert isinstance(stride, (tuple, list))
+        self.stride = tuple(stride)
         self.ignore_border = ignore_border
-        self.padding = tuple(padding)
-        if self.padding != (0, 0) and not ignore_border:
+        self.pad = tuple(pad)
+        self.ndim = ndim
+        if self.pad != (0, 0) and not ignore_border:
             raise NotImplementedError(
                 'padding works only with ignore_border=True')
-        if self.padding[0] >= self.ds[0] or self.padding[1] >= self.ds[1]:
+        if self.pad[0] >= self.ws[0] or self.pad[1] >= self.ws[1]:
             raise NotImplementedError(
                 'padding_h and padding_w must be smaller than strides')
         if mode not in ['max', 'average_inc_pad', 'average_exc_pad', 'sum']:
@@ -972,11 +971,14 @@ class SpikePool(theano.Op):
 
         super(SpikePool, self).R_op(inputs, eval_points)
 
-    def make_node(self, x):
+    def make_node(self, x, ws, stride=None, pad=None):
         """
 
         Parameters
         ----------
+        pad : 
+        stride : 
+        ws : 
         x :
 
         Returns
@@ -985,13 +987,39 @@ class SpikePool(theano.Op):
         """
 
         for i in range(len(x)):
-            if x[i].type.ndim != 4:
-                raise TypeError()
             x[i] = t.as_tensor_variable(x[i])
+
+        nd = self.ndim
+        if stride is None:
+            stride = ws
+        if pad is None:
+            pad = (0,) * nd
+        elif isinstance(pad, (tuple, list)):
+            if max(pad) != 0 and not self.ignore_border:
+                raise NotImplementedError(
+                    'padding works only with ignore_border=True')
+            if isinstance(ws, (tuple, list)):
+                if any(pad[i] >= ws[i] for i in range(nd)):
+                    raise NotImplementedError(
+                        'padding must be smaller than strides')
+        ws = t.as_tensor_variable(ws)
+        stride = t.as_tensor_variable(stride)
+        pad = t.as_tensor_variable(pad)
+        assert ws.ndim == 1
+        assert stride.ndim == 1
+        assert pad.ndim == 1
+        if x[0].type.ndim < nd:
+            raise TypeError()
+        if ws.dtype not in t.int_dtypes:
+            raise TypeError('Pool downsample parameters must be ints.')
+        if stride.dtype not in t.int_dtypes:
+            raise TypeError('Stride parameters must be ints.')
+        if pad.dtype not in t.int_dtypes:
+            raise TypeError('Padding parameters must be ints.')
         # If the input shape are broadcastable we can have 0 in the output shape
-        broad = x[0].broadcastable[:2] + (False, False)
+        broad = x[0].broadcastable[:-nd] + (False,) * nd
         out = t.TensorType(x[0].dtype, broad)
-        return theano.gof.Apply(self, x, [out()])
+        return theano.gof.Apply(self, x+[ws, stride, pad], [out()])
 
     def perform(self, node, inp, out, **kwargs):
         """Perform pooling operation on spikes.
@@ -1005,73 +1033,71 @@ class SpikePool(theano.Op):
         node :
         """
 
-        xr = inp[0]  # Presynaptic spike-rates
-        xs = inp[1]  # Presynaptic spikes
+        # xr contains the presynaptic spike-rates, and xs the presynaptic spikes
+        xr, xs, ws, stride, pad = inp
         z, = out
-        if len(xr.shape) != 4:
+        nd = self.ndim
+        assert ws.shape == stride.shape == pad.shape == (nd,)
+        if len(xr.shape) < nd:
             raise NotImplementedError(
-                'Pool requires 4D input for now')
-        z_shape = pool.Pool.out_shape(xr.shape, self.ds, self.ignore_border,
-                                      self.st, self.padding)
+                'Pool requires input with {} or more dimensions'.format(nd))
+        z_shape = pool.Pool.out_shape(xr.shape, ws, self.ignore_border, stride,
+                                      pad, nd)
+        if not self.ignore_border:
+            assert all(z > 0 for z in z_shape[-nd:])
         if (z[0] is None) or (z[0].shape != z_shape):
             z[0] = np.zeros(z_shape, dtype=xr.dtype)
         zz = z[0]
-        # number of pooling output rows
-        pr = zz.shape[-2]
-        # number of pooling output cols
-        pc = zz.shape[-1]
-        ds0, ds1 = self.ds
-        st0, st1 = self.st
-        pad_h = self.padding[0]
-        pad_w = self.padding[1]
-        img_rows = xr.shape[-2] + 2 * pad_h
-        img_cols = xr.shape[-1] + 2 * pad_w
+        # size of pooling output
+        pool_out_shp = zz.shape[-nd:]
+        img_shp = tuple(xr.shape[-nd + i] + 2 * pad[i] for i in t.xrange(nd))
         inc_pad = self.mode == 'average_inc_pad'
 
         # pad the image
-        if self.padding != (0, 0):
-            yr = np.zeros(
-                (xr.shape[0], xr.shape[1], img_rows, img_cols),
-                dtype=xr.dtype)
-            yr[:, :, pad_h:(img_rows - pad_h), pad_w:(img_cols - pad_w)] = xr
-            ys = np.zeros(
-                (xs.shape[0], xs.shape[1], img_rows, img_cols),
-                dtype=xs.dtype)
-            ys[:, :, pad_h:(img_rows - pad_h), pad_w:(img_cols - pad_w)] = xs
+        if max(self.pad) != 0:
+            yr = np.zeros(xr.shape[:-nd] + img_shp, dtype=xr.dtype)
+            yr[(slice(None),)*(len(xr.shape)-nd) + tuple(
+                slice(pad[i], img_shp[i]-pad[i]) for i in t.xrange(nd))] = xr
+            ys = np.zeros(xs.shape[:-nd] + img_shp, dtype=xs.dtype)
+            ys[(slice(None),)*(len(xs.shape)-nd) + tuple(slice(
+                pad[i], img_shp[i]-pad[i]) for i in t.xrange(nd))] = xs
         else:
             yr = xr
             ys = xs
 
-        for n in range(xr.shape[0]):
-            for j in range(xr.shape[1]):
-                for r in range(pr):
-                    row_st = r * st0
-                    row_end = min(row_st + ds0, img_rows)
-                    if not inc_pad:
-                        row_st = max(row_st, self.padding[0])
-                        row_end = min(row_end, xr.shape[-2] + pad_h)
-                    for c in range(pc):
-                        col_st = c * st1
-                        col_end = min(col_st + ds1, img_cols)
-                        if not inc_pad:
-                            col_st = max(col_st, self.padding[1])
-                            col_end = min(col_end, xr.shape[-1] + pad_w)
-                        rate_patch = yr[n, j, row_st:row_end, col_st:col_end]
-                        # if not rate_patch.any():
-                        #     # Need to prevent the layer to output a spike at
-                        #     # index 0 if all rates are equally zero.
-                        #     continue
-                        spike_patch = ys[n, j, row_st:row_end, col_st:col_end]
-                        # max_rates = rate_patch == np.max(rate_patch)
-                        # if (spike_patch * max_rates).any():
-                        #     zz[n, j, r, c] = settings['v_thresh']
-                        max_rate_idx = np.argmax(rate_patch)  # flattens patch
-                        if spike_patch.flatten()[max_rate_idx]:
-                            zz[n, j, r, c] = settings['v_thresh']
+        # precompute the region boundaries for each dimension
+        region_slices = [[] for _ in t.xrange(nd)]
+        for i in t.xrange(nd):
+            for j in t.xrange(pool_out_shp[i]):
+                start = j * stride[i]
+                end = min(start + ws[i], img_shp[i])
+                if not inc_pad:
+                    start = max(start, pad[i])
+                    end = min(end, img_shp[i] - pad[i])
+                region_slices[i].append(slice(start, end))
+
+        # iterate over non-pooling dimensions
+        for n in np.ndindex(*xr.shape[:-nd]):
+            # iterate over pooling regions
+            for r in np.ndindex(*pool_out_shp):
+                rate_patch = yr[n][[region_slices[i][r[i]] for i in
+                                    t.xrange(nd)]]
+                # if not rate_patch.any():
+                #     # Need to prevent the layer to output a spike at
+                #     # index 0 if all rates are equally zero.
+                #     continue
+                spike_patch = ys[n][[region_slices[i][r[i]] for i in
+                                     t.xrange(nd)]]
+                # max_rates = rate_patch == np.max(rate_patch)
+                # if (spike_patch * max_rates).any():
+                #     zz[n, j, r, c] = settings['v_thresh']
+                max_rate_idx = np.argmax(rate_patch)  # flattens patch
+                if spike_patch.flatten()[max_rate_idx]:
+                    zz[n][r] = settings['v_thresh']
 
 custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeDense': SpikeDense,
-                 'SpikeConvolution2D': SpikeConvolution2D,
+                 'SpikeConv2D': SpikeConv2D,
                  'SpikeAveragePooling2D': SpikeAveragePooling2D,
                  'SpikeMaxPooling2D': SpikeMaxPooling2D,
                  'SpikeMerge': SpikeMerge}

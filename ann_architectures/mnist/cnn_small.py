@@ -9,7 +9,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 from keras.datasets import mnist as dataset
-from keras.layers import Dense, Flatten, Convolution2D
+from keras.layers import Dense, Flatten, Conv2D
 from keras.models import Sequential
 from keras.utils import np_utils
 from snntoolbox.io_utils.plotting import plot_history
@@ -42,9 +42,9 @@ print(X_test.shape[0], 'test samples')
 
 model = Sequential()
 
-model.add(Convolution2D(32, 3, 3, activation='relu',
+model.add(Conv2D(32, 3, 3, activation='relu',
                         input_shape=(chnls, img_rows, img_cols)))
-model.add(Convolution2D(32, 1, 1, activation='relu'))
+model.add(Conv2D(32, 1, 1, activation='relu'))
 model.add(Flatten())
 model.add(Dense(nb_classes, activation='softmax'))
 

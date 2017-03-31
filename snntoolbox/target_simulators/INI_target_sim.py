@@ -134,6 +134,8 @@ class SNN:
             spike_layer = getattr(self.sim, 'Spike' + layer.__class__.__name__)
             inbound = [spiking_layers[inb.name] for inb in
                        layer.inbound_nodes[0].inbound_layers]
+            if len(inbound) == 1:
+                inbound = inbound[0]
             spiking_layers[layer.name] = \
                 spike_layer.from_config(layer.get_config())(inbound)
 
@@ -616,8 +618,8 @@ class SNN:
         from snntoolbox.core.util import get_fanin, get_fanout
 
         self.fanin = [0]
-        self.fanout = [self.snn.layers[1].nb_col * self.snn.layers[1].nb_col *
-                       self.snn.layers[1].nb_filter]
+        self.fanout = [int(np.multiply(np.prod(self.snn.layers[1].kernel_size),
+                                       self.snn.layers[1].filters))]
         self.num_neurons = [np.product(self.snn.input_shape[1:])]
         self.num_neurons_with_bias = [0]
 
