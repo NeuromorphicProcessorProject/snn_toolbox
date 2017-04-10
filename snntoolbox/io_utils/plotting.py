@@ -228,12 +228,11 @@ def plot_layer_activity(layer, title, path=None, limits=None):
             n = int(np.sqrt(num))
             while num / n % 1 != 0:
                 n -= 1
-            f, ax = plt.subplots(subplot_kw={'figsize':
-                                             (7, min(3+n*n*n/num/2, 9))})
+            f, ax = plt.subplots(figsize=(7, min(3+n*n*n/num/2, 9)))
             im = ax.imshow(np.reshape(layer[0], (n, -1)),
                            interpolation='nearest', clim=limits)
         else:
-            f, ax = plt.subplots(subplot_kw={'figsize': (7, 2)})
+            f, ax = plt.subplots(figsize=(7, 2))
             im = ax.imshow(np.array(layer[0], ndmin=2),
                            interpolation='nearest', clim=limits)
         ax.get_yaxis().set_visible(False)
@@ -252,7 +251,7 @@ def plot_layer_activity(layer, title, path=None, limits=None):
         if num_cols > 4:
             fac = num_cols / 4
         f, ax = plt.subplots(num_rows, num_cols, squeeze=False,
-                             subplot_kw={'figsize': (3+num_cols*2, 11)})
+                             figsize=(3+num_cols*2, 11))
         for i in range(num_rows):
             for j in range(num_cols):
                 idx = j + num_cols * i
@@ -262,7 +261,7 @@ def plot_layer_activity(layer, title, path=None, limits=None):
                                      clim=limits)
                 ax[i, j].get_xaxis().set_visible(False)
                 ax[i, j].get_yaxis().set_visible(False)
-    unit = ' [Hz]' if title == 'Spikerates' else ''
+    unit = ' [kHz]' if title == 'Spikerates' else ''
     f.suptitle('{} \n of layer {}'.format(title + unit, layer[1]), fontsize=20)
     f.subplots_adjust(left=0, bottom=0, right=0.99, top=0.9,
                       wspace=0.05, hspace=0.05)
@@ -416,7 +415,7 @@ def plot_correlations(spikerates, layer_activations):
     num_rows = int(np.ceil(np.sqrt(num_layers)))
     num_cols = int(np.ceil(num_layers / num_rows))
     f, ax = plt.subplots(num_rows, num_cols, squeeze=False,
-                         subplot_kw={'figsize': (8, 1 + num_rows * 4)})
+                         figsize=(8, 1 + num_rows * 4))
     for i in range(num_rows):
         for j in range(num_cols):
             layer_num = j + i * num_cols
@@ -434,6 +433,48 @@ def plot_correlations(spikerates, layer_activations):
     f.text(0.5, 0.04, 'SNN spikerates (Hz)', ha='center', fontsize=16)
     f.text(0.04, 0.5, 'ANN activations', va='center', rotation='vertical',
            fontsize=16)
+
+
+def get_pearson_coefficients(spikerates_batch, activations_batch):
+    """
+    Compute Pearson coefficients.
+
+    Parameters
+    ----------
+
+    spikerates_batch : 
+    activations_batch : 
+
+    Returns
+    -------
+
+    """
+
+    from scipy.stats import pearsonr
+
+    co = []
+    for layer_num in range(len(spikerates_batch)):
+        c = []
+        for sample in range(len(spikerates_batch[0][0])):
+            s = spikerates_batch[layer_num][0][sample].flatten()
+            a = activations_batch[layer_num][0][sample].flatten()
+            if layer_num < len(spikerates_batch) - 1:
+                # Remove points at origin and saturated units, except for
+                # output layer (has too few units and gets activation of 1
+                # because of softmax).
+                ss = []
+                aa = []
+                for sss, aaa in zip(s, a):
+                    if (sss > 0 or aaa > 0) and aaa < 1. / settings['dt']:
+                        ss.append(sss)
+                        aa.append(aaa)
+                s = ss
+                a = aa
+            (r, p) = pearsonr(s, a)
+            c.append(r)
+        co.append(c)
+
+    return co
 
 
 def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
@@ -463,31 +504,7 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
         Where to save the output.
     """
 
-    from scipy.stats import pearsonr
-
-    batch_size = len(spikerates_batch[0][0])
-
-    co = []
-    for layer_num in range(len(spikerates_batch)):
-        c = []
-        for sample in range(batch_size):
-            s = spikerates_batch[layer_num][0][sample].flatten()
-            a = activations_batch[layer_num][0][sample].flatten()
-            if layer_num < len(spikerates_batch) - 1:
-                # Remove points at origin and saturated units, except for
-                # output layer (has too few units and gets activation of 1
-                # because of softmax).
-                ss = []
-                aa = []
-                for sss, aaa in zip(s, a):
-                    if (sss > 0 or aaa > 0) and aaa < 1. / settings['dt']:
-                        ss.append(sss)
-                        aa.append(aaa)
-                s = ss
-                a = aa
-            (r, p) = pearsonr(s, a)
-            c.append(r)
-        co.append(c)
+    co = get_pearson_coefficients(spikerates_batch, activations_batch)
 
     # Average over batch
     corr = np.mean(co, axis=1)
@@ -499,13 +516,13 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
 
     plt.figure()
     plt.bar([i + 0.1 for i in range(len(corr))], corr, width=0.8, yerr=std,
-            color='#f5f5f5')
+            color=(0.8, 0.8, 0.8))
     plt.ylim([0, 1])
     plt.xlim([0, len(corr)])
     plt.xticks([i + 0.5 for i in range(len(labels))], labels, rotation=90)
     plt.tick_params(bottom='off')
     plt.title('Correlation between ANN activations \n and SNN spikerates,\n ' +
-              'averaged over {} samples'.format(batch_size))
+              'averaged over {} samples'.format(len(spikerates_batch[0][0])))
     plt.ylabel('Pearson Correlation Coefficient')
     if path is not None:
         filename = 'Pearson'

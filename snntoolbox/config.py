@@ -403,7 +403,7 @@ settings.update(pyNN_settings)
 
 # Layers that can be implemented by our spiking neuron simulators
 spiking_layers = ['Dense', 'Conv2D', 'MaxPooling2D', 'AveragePooling2D',
-                  'Flatten', 'Merge']
+                  'Flatten', 'Concatenate']
 
 
 def file_not_found_msg(filename, path=None):

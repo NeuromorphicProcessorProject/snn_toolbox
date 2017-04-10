@@ -22,7 +22,7 @@ import theano
 import theano.tensor as t
 from future import standard_library
 from keras import backend as k
-from keras.layers import Conv2D, Merge
+from keras.layers import Conv2D, Concatenate
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D
 from snntoolbox.config import settings
 from theano.tensor.shared_randomstreams import RandomStreams
@@ -436,7 +436,7 @@ def update_b(self):
         0, 1 - (1 - 2 * self.time / settings['duration']) * i / 50), 1)
 
 
-class SpikeMerge(Merge):
+class SpikeConcatenate(Concatenate):
     """Spike merge layer"""
 
     @staticmethod
@@ -1056,9 +1056,11 @@ class SpikePool(theano.Op):
         # pad the image
         if max(self.pad) != 0:
             yr = np.zeros(xr.shape[:-nd] + img_shp, dtype=xr.dtype)
+            # noinspection PyTypeChecker
             yr[(slice(None),)*(len(xr.shape)-nd) + tuple(
                 slice(pad[i], img_shp[i]-pad[i]) for i in t.xrange(nd))] = xr
             ys = np.zeros(xs.shape[:-nd] + img_shp, dtype=xs.dtype)
+            # noinspection PyTypeChecker
             ys[(slice(None),)*(len(xs.shape)-nd) + tuple(slice(
                 pad[i], img_shp[i]-pad[i]) for i in t.xrange(nd))] = xs
         else:
@@ -1100,4 +1102,4 @@ custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeConv2D': SpikeConv2D,
                  'SpikeAveragePooling2D': SpikeAveragePooling2D,
                  'SpikeMaxPooling2D': SpikeMaxPooling2D,
-                 'SpikeMerge': SpikeMerge}
+                 'SpikeConcatenate': SpikeConcatenate}

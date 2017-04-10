@@ -39,7 +39,7 @@ def padding_string(pad, pool_size):
     return padding
 
 
-def absorb_bn(w, b, gamma, beta, mean, var, epsilon):
+def absorb_bn(w, b, gamma, beta, mean, var, epsilon, axis=None):
     """
     Absorb the parameters of a batch-normalization layer into the previous
     layer.
@@ -47,7 +47,8 @@ def absorb_bn(w, b, gamma, beta, mean, var, epsilon):
 
     import numpy as np
 
-    axis = 0 if w.ndim > 2 else 1
+    if axis is None:
+        axis = 0 if w.ndim > 2 else 1
 
     broadcast_shape = [1] * w.ndim  # e.g. [1, 1, 1, 1] for ConvLayer
     broadcast_shape[axis] = w.shape[axis]  # [64, 1, 1, 1] for 64 features

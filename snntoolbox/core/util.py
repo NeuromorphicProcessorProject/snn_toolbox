@@ -190,7 +190,7 @@ def get_dataset(s):
         from keras.preprocessing.image import ImageDataGenerator
         print("Loading data set from ImageDataGenerator, using images in "
               "{}.\n".format(s['dataset_path']))
-        datagen_kwargs = ast.literal_eval(s['datagen_kwargs'])
+        datagen_kwargs = s['datagen_kwargs']
         dataflow_kwargs = ast.literal_eval(s['dataflow_kwargs'])
         dataflow_kwargs['directory'] = s['dataset_path']
         if 'batch_size' not in dataflow_kwargs:
@@ -229,6 +229,18 @@ def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
     Can use either numpy arrays ``x_test, y_test`` containing the test samples,
     or generate them with a dataflow
     (``Keras.ImageDataGenerator.flow_from_directory`` object).
+    
+    Parameters
+    ----------
+    
+    model: keras.models.Model
+    
+    x_test: Optional[np.ndarray] 
+    
+    y_test: Optional[np.ndarray]
+    
+    dataflow: keras.ImageDataGenerator.flow_from_directory
+    
     """
 
     assert (
@@ -237,21 +249,16 @@ def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
 
     score = [0, 0]
     if x_test is not None:
-        truth = np.argmax(y_test, axis=1)
         preds = model.predict(x_test, settings['batch_size'], verbose=0)
+        truth = np.argmax(y_test, axis=1)
         score[0] = np.mean(np.argmax(preds, axis=1) == truth)
         score[1] = get_top5score(truth, preds) / len(truth)
     else:
         batches = int(settings['num_to_test'] / settings['batch_size'])
         for i in range(batches):
-            # Get samples from Keras.ImageDataGenerator
             x_batch, y_batch = dataflow.next()
-            if True:  # Only for imagenet!
-                print("Preprocessing input for ImageNet")
-                x_batch = np.add(np.multiply(x_batch, 2. / 255.), - 1.).astype(
-                    'float32')
-            truth = np.argmax(y_batch, axis=1)
             preds = model.predict_on_batch(x_batch)
+            truth = np.argmax(y_batch, axis=1)
             score[0] += np.mean(np.argmax(preds, axis=1) == truth)
             score[1] += get_top5score(truth, preds) / len(truth)
         score[0] /= batches
@@ -519,13 +526,13 @@ def normalize_parameters(model, **kwargs):
             parameters_norm = [parameters[0]]  # Consider only weights at first
             offset = 0  # Index offset at input filter dimension
             for inb in inbound:
-                f_out = inb.W_shape[0]  # Num output features of inbound layer
+                f_out = inb.filters  # Num output features of inbound layer
                 f_in = range(offset, offset + f_out)
                 if parameters[0].ndim == 2:  # Fully-connected Layer
                     parameters_norm[0][f_in, :] *= \
                         scale_facs[inb.name] / scale_fac
                 else:
-                    parameters_norm[0][:, f_in, :, :] *= \
+                    parameters_norm[0][:, :, f_in, :] *= \
                         scale_facs[inb.name] / scale_fac
                 offset += f_out
             parameters_norm.append(parameters[1] / scale_fac)  # Append bias
@@ -600,12 +607,12 @@ def get_inbound_layers_with_params(layer):
         inbound = get_inbound_layers(inbound)
         if len(inbound) == 1:
             inbound = inbound[0]
-            if len(inbound.get_weights()) > 0:
+            if len(inbound.weights) > 0:
                 return [inbound]
         else:
             result = []
             for inb in inbound:
-                if len(inb.get_weights()) > 0:
+                if len(inb.weights) > 0:
                     result.append(inb)
                 else:
                     result += get_inbound_layers_with_params(inb)
@@ -629,7 +636,7 @@ def get_inbound_layers_without_params(layer):
     """
 
     return [layer for layer in layer.inbound_nodes[0].inbound_layers
-            if len(layer.get_weights()) == 0]
+            if len(layer.weights) == 0]
 
 
 def get_inbound_layers(layer):
@@ -668,6 +675,41 @@ def get_outbound_layers(layer):
     """
 
     return [on.outbound_layer for on in layer.outbound_nodes]
+
+
+def get_outbound_activation(layer):
+    """
+    Iterate over 2 outbound layers to find an activation layer. If there is no
+    activation layer, take the activation of the current layer.
+
+    Parameters
+    ----------
+
+    layer: Union[keras.layers.Conv2D, keras.layers.Dense]
+        Layer
+
+    Returns
+    -------
+
+    activation: str
+        Name of outbound activation type.
+    """
+
+    activation = layer.activation.__name__
+    outbound = layer
+    for i in range(2):
+        outbound = get_outbound_layers(outbound)
+        if len(outbound) == 0:
+            break
+        elif len(outbound) == 1:
+            outbound = outbound[0]
+            if hasattr(outbound, 'activation'):
+                activation = outbound.activation.__name__
+        else:
+            print("Activation following Conv or Dense must be unique.")
+            raise Exception
+
+    return activation
 
 
 def get_spiking_outbound_layers(layer):
@@ -792,7 +834,7 @@ def get_activations_batch(ann, x_batch):
     activations_batch = []
     for layer in ann.layers:
         if layer.__class__.__name__ in ['Input', 'InputLayer', 'Flatten',
-                                        'Merge']:
+                                        'Concatenate']:
             continue
         activations = keras.models.Model(ann.input,
                                          layer.output).predict_on_batch(x_batch)

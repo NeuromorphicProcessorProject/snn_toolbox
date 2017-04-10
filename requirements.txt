@@ -1,4 +1,3 @@
-lmdb
 # Requirements for SNN toolbox #
 ################################
 
@@ -16,6 +15,7 @@ pyNN
 keras
 h5py
 pytest
+lmdb
 
 # You may need to install 'freetype' (including 'libpng') on system-level
 # to be able to install matplotlib:

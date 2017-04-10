@@ -108,7 +108,7 @@ class DVSIterator(object):
                 event_sums[y, x] += 1
                 xaddr_sub.append(x)
                 yaddr_sub.append(y)
-            sigma = np.std(event_sums)
+            sigma = np.std(event_sums[np.nonzero(event_sums)])
             # Clip number of events per pixel to three-sigma
             np.clip(event_sums, 0, 3*sigma, event_sums)
             print("Discarded {} events during 3-sigma standardization.".format(

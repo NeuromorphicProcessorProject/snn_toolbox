@@ -50,7 +50,7 @@ from setuptools.command.test import test as TestCommand
 
 setup(
     name='snntoolbox',
-    version='0.2.0',  # see https://www.python.org/dev/peps/pep-0440/
+    version='0.3.0',  # see https://www.python.org/dev/peps/pep-0440/
     description='Spiking Neural Net Conversion',
     # long_description=long_description,
     author='Bodo Rueckauer',
@@ -85,8 +85,26 @@ setup(
 
     keywords='neural networks, deep learning, spiking',
 
-    # install_requires=[
-    # ],
+    install_requires=[
+        'future',
+        'neo',
+        'lazyarray',
+        'sklearn',
+        'sympy',
+        'sphinx',
+        'pyNN',
+        'h5py',
+        'pytest',
+        'lmdb',
+        'protobuf',
+        'scikit-image',
+        'Cython',
+        'keras',
+        'theano',
+        'matplotlib',
+        'scipy',
+        'numpy'
+    ],
 
     setup_requires=['pytest-runner'],
 

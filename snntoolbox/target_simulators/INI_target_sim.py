@@ -272,11 +272,6 @@ class SNN:
             # Get a batch of samples
             if dataflow is not None:
                 x_b_l, y_b = dataflow.next()
-                imagenet = True
-                if imagenet:  # Only for imagenet!
-                    print("Preprocessing input for ImageNet")
-                    x_b_l = np.add(np.multiply(x_b_l, 2. / 255.), - 1.)
-                    # x_b_l = preprocess_input(x_b_l)
             elif not s['dataset_format'] == 'aedat':
                 batch_idxs = range(s['batch_size'] * batch_idx,
                                    s['batch_size'] * (batch_idx + 1))
@@ -287,6 +282,17 @@ class SNN:
                     x_b_xaddr, x_b_yaddr, x_b_ts, y_b = dvs_gen.__next__()
                 except StopIteration:
                     break
+                if any({'activations', 'correlation',
+                        'hist_spikerates_activations'} & s['plot_vars']) or \
+                        'activations_n_b_l' in s['log_vars']:
+                    if x_test is None:
+                        from snntoolbox.io_utils.common import load_dataset
+                        dataset_path_npz = '/home/rbodo/.snntoolbox/Datasets/' \
+                                           'roshambo/frames_background'
+                        x_test = load_dataset(dataset_path_npz, 'x_test.npz')
+                    batch_idxs = range(s['batch_size'] * batch_idx,
+                                       s['batch_size'] * (batch_idx + 1))
+                    x_b_l = x_test[batch_idxs, :]
             truth_b = np.argmax(y_b, axis=1)
 
             # Either use Poisson spiketrains as inputs to the SNN, or take the
@@ -400,7 +406,7 @@ class SNN:
                         input_ops = np.ones((s['batch_size'])) * \
                             self.num_neurons[1]
                         if sim_step_int == 0:
-                            input_ops *= self.fanin[1]
+                            input_ops *= 2 * self.fanin[1]  # MACs for convol.
                     self.operations_b_t[:, sim_step_int] += input_ops
                 top1err = np.around(np.mean(self.top1err_b_t[:, sim_step_int]),
                                     4)

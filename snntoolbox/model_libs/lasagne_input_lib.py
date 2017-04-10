@@ -36,7 +36,7 @@ layer_dict = {'DenseLayer': 'Dense',
               'FlattenLayer': 'Flatten',
               'BatchNormLayer': 'BatchNormalization',
               'NonlinearityLayer': 'Activation',
-              'ConcatLayer': 'Merge'}
+              'ConcatLayer': 'Concatenate'}
 
 
 activation_dict = {'rectify': 'relu',
@@ -138,19 +138,17 @@ def extract(model):
             inc = len(layer.params)
             bn_parameters = all_parameters[parameters_idx: parameters_idx + inc]
             parameters_idx += inc
-            for k in range(1, 3):
-                prev_layer = get_inbound_layers(layer)[0]
-                if len(prev_layer.params) > 0:
-                    break
-            assert prev_layer, "Could not find layer with parameters " \
-                               "preceeding BatchNorm layer."
-            prev_layer_dict = dict(layers[name_map[str(id(prev_layer))]])
-            parameters = prev_layer_dict['parameters']  # W, b of previous layer
+            inb = get_inbound_layers_with_params(layer)
+            assert len(inb) == 1, "Could not find unique layer with " \
+                                  "parameters preceeding BatchNorm layer."
+            prev_layer = inb[0]
+            prev_layer_idx = name_map[str(id(prev_layer))]
+            parameters = layers[prev_layer_idx]['parameters']
             if len(parameters) == 1:  # No bias
                 parameters.append(np.zeros_like(bn_parameters[0]))
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of previous {}.".format(prev_layer_dict['name']))
-            prev_layer_dict['parameters'] = absorb_bn(
+                  "parameters of previous {}.".format(prev_layer.name))
+            layers[prev_layer_idx]['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[1],
                 bn_parameters[0], bn_parameters[2], bn_parameters[3])
 
@@ -176,7 +174,7 @@ def extract(model):
             idx += 1
 
         if layer_type not in spiking_layers:
-            print("Skipping layer {}".format(layer_type))
+            print("Skipping layer {}.".format(layer_type))
             continue
 
         print("Parsing layer {}.".format(layer_type))
@@ -232,7 +230,7 @@ def extract(model):
                     activation = activation_dict.get(nonlinearity, 'linear')
                     break
             attributes['activation'] = activation
-            print("Detected activation {}.".format(activation))
+            print("Using activation {}.".format(activation))
             if layer_type == 'Conv2D':
                 padding = padding_string(layer.pad, layer.filter_size)
                 attributes.update({'input_shape': layer.input_shape,
@@ -251,7 +249,7 @@ def extract(model):
                                'strides': layer.stride,
                                'padding': padding})
 
-        if layer_type == 'Merge':
+        if layer_type == 'Concatenate':
             attributes.update({'mode': 'concat', 'concat_axis': layer.axis})
 
         attributes['inbound'] = get_inbound_names(layers, layer, name_map)
@@ -305,6 +303,39 @@ def get_inbound_layers(layer):
         return layer.input_layers
     else:
         return [layer.input_layer]
+
+
+def get_inbound_layers_with_params(layer):
+    """Iterate until inbound layers are found that have parameters.
+
+    Parameters
+    ----------
+
+    layer: lasagne.layers.Layer
+        Layer
+
+    Returns
+    -------
+
+    : list
+        List of inbound layers.
+    """
+
+    inbound = layer
+    while True:
+        inbound = get_inbound_layers(inbound)
+        if len(inbound) == 1:
+            inbound = inbound[0]
+            if len(inbound.params) > 0:
+                return [inbound]
+        else:
+            result = []
+            for inb in inbound:
+                if len(inb.params) > 0:
+                    result.append(inb)
+                else:
+                    result += get_inbound_layers_with_params(inb)
+            return result
 
 
 def hard_sigmoid(x):
@@ -457,27 +488,21 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
     (``Keras.ImageDataGenerator.flow_from_directory`` object).
     """
 
-    if x_test is None:
-        print("Using {} samples to evaluate input model".format(
-            settings['num_to_test']))
+    num_to_test = len(x_test) if x_test is not None else settings['num_to_test']
+    print("Using {} samples to evaluate input model.".format(num_to_test))
 
     err = 0
     loss = 0
     batch_size = settings['batch_size']
-    batches = int(len(x_test) / batch_size) if x_test else \
+    batches = int(len(x_test) / batch_size) if x_test is not None else \
         int(settings['num_to_test'] / batch_size)
 
     for i in range(batches):
-        if x_test:
+        if x_test is not None:
             x_batch = x_test[i*batch_size: (i+1)*batch_size]
             y_batch = y_test[i*batch_size: (i+1)*batch_size]
         else:
-            # Get samples from Keras.ImageDataGenerator
             x_batch, y_batch = dataflow.next()
-            if True:  # Only for imagenet!
-                print("Preprocessing input for ImageNet")
-                x_batch = np.add(np.multiply(x_batch, 2. / 255.), - 1.).astype(
-                    'float32')
         new_loss, new_err = val_fn(x_batch, y_batch)
         err += new_err
         loss += new_loss

@@ -84,7 +84,8 @@ def inception_a(input_layer, nfilt):
     l3 = bn_conv(l3, num_filters=nfilt[2][2], filter_size=3, pad=1)
 
     l4 = Pool2DLayer(
-        input_layer, pool_size=new_pool_size, stride=1, pad=new_pad, mode='average_exc_pad')
+        input_layer, pool_size=new_pool_size, stride=1, pad=new_pad,
+        mode='average_exc_pad')
     l4 = bn_conv(l4, num_filters=nfilt[3][0], filter_size=1)
 
     return ConcatLayer([l1, l2, l3, l4])
