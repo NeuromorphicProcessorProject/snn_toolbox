@@ -18,7 +18,7 @@ from __future__ import print_function
 from keras.datasets import mnist as dataset
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers.convolutional import Convolution2D, AveragePooling2D
+from keras.layers.convolutional import Conv2D, AveragePooling2D
 from keras.utils import np_utils
 from keras.callbacks import EarlyStopping
 
@@ -32,7 +32,7 @@ nb_epoch = 100
 # input image dimensions
 img_rows, img_cols = 28, 28
 # number of convolutional filters to use
-nb_filters = 32
+filters = 32
 # size of pooling area for max pooling
 nb_pool = 2
 # convolution kernel size
@@ -60,10 +60,10 @@ print(X_test.shape[0], 'test samples')
 
 model = Sequential()
 
-model.add(Convolution2D(nb_filters, nb_conv, nb_conv,
+model.add(Conv2D(filters, nb_conv, nb_conv,
                         input_shape=(chnls, img_rows, img_cols)))
 model.add(Activation('relu'))
-model.add(Convolution2D(nb_filters, nb_conv, nb_conv))
+model.add(Conv2D(filters, nb_conv, nb_conv))
 model.add(Activation('relu'))
 model.add(AveragePooling2D(pool_size=(nb_pool, nb_pool)))
 model.add(Dropout(0.25))

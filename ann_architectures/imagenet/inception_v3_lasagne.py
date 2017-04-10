@@ -37,7 +37,7 @@ def preprocess(im):
     import numpy as np
 
     im = skimage.transform.resize(im, (299, 299), preserve_range=True)
-    im = (im - 128) / 128.
+    im = np.divide((im-128), 128)
     im = np.rollaxis(np.array(im), 2)[np.newaxis].astype('float32')
 
     return im

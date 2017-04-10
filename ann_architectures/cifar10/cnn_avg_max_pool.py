@@ -9,7 +9,7 @@ from keras.datasets import cifar10
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import MaxPooling2D, AveragePooling2D
-from keras.layers.convolutional import Convolution2D
+from keras.layers.convolutional import Conv2D
 from keras.callbacks import EarlyStopping
 from keras.utils import np_utils
 
@@ -40,18 +40,18 @@ print(X_test.shape[0], 'test samples')
 
 model = Sequential()
 
-model.add(Convolution2D(32, 3, 3, border_mode='valid',
+model.add(Conv2D(32, 3, 3, padding='valid',
                         input_shape=(img_channels, img_rows, img_cols)))
 model.add(Activation('relu'))
-model.add(Convolution2D(32, 3, 3, border_mode='valid'))
+model.add(Conv2D(32, 3, 3, padding='valid'))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 
-model.add(Convolution2D(32, 3, 3, border_mode='valid'))
+model.add(Conv2D(32, 3, 3, padding='valid'))
 model.add(Activation('relu'))
 model.add(AveragePooling2D(pool_size=(2, 2)))
 
-model.add(Convolution2D(32, 3, 3, border_mode='valid'))
+model.add(Conv2D(32, 3, 3, padding='valid'))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 

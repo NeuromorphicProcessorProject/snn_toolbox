@@ -12,7 +12,7 @@ import numpy as np
 
 from keras.models import Sequential
 from keras.layers.core import Dense, Activation, Flatten
-from keras.layers.convolutional import Convolution2D, AveragePooling2D
+from keras.layers.convolutional import Conv2D, AveragePooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 from keras.optimizers import SGD
@@ -36,19 +36,19 @@ init = 'he_normal'
 reg = l2(5e-4)  # Weight regularization value for l2
 
 model = Sequential()
-model.add(Convolution2D(128, 5, 5, subsample=(2, 2), init=init,
+model.add(Conv2D(128, 5, 5, strides=(2, 2), init=init,
                         W_regularizer=reg,
                         input_shape=(img_channels, img_rows, img_cols)))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
 model.add(AveragePooling2D())
 
-model.add(Convolution2D(256, 3, 3, init=init, W_regularizer=reg))
+model.add(Conv2D(256, 3, 3, init=init, W_regularizer=reg))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
 model.add(AveragePooling2D())
 
-model.add(Convolution2D(512, 3, 3, init=init, W_regularizer=reg))
+model.add(Conv2D(512, 3, 3, init=init, W_regularizer=reg))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
 model.add(AveragePooling2D())

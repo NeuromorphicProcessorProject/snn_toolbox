@@ -23,17 +23,17 @@ import os
 import caffe
 import numpy as np
 from snntoolbox.config import settings, spiking_layers
-from snntoolbox.model_libs.common import absorb_bn, border_mode_string
+from snntoolbox.model_libs.common import absorb_bn, padding_string
 
 caffe.set_mode_gpu()
 
 layer_dict = {'InnerProduct': 'Dense',
-              'Convolution': 'Convolution2D',
+              'Convolution': 'Conv2D',
               'MaxPooling2D': 'MaxPooling2D',
               'AveragePooling2D': 'AveragePooling2D',
               'ReLU': 'Activation',
               'Softmax': 'Activation',
-              'Concat': 'Merge'}
+              'Concat': 'Concatenate'}
 
 
 activation_dict = {'ReLU': 'relu',
@@ -107,9 +107,8 @@ def extract(model):
 
         `Convolution` layers contain further
 
-        - nb_col (int): The x-dimension of filters.
-        - nb_row (int): The y-dimension of filters.
-        - border_mode (string): How to handle borders during convolution, e.g.
+        - kernel_size (tuple/list of 2 ints): The x- and y-dimension of filters.
+        - padding (string): How to handle borders during convolution, e.g.
           `full`, `valid`, `same`.
 
         `Pooling` layers contain
@@ -134,36 +133,34 @@ def extract(model):
         name = layer.type
         if name == 'Pooling':
             pooling = layer.pooling_param.PoolMethod.DESCRIPTOR.values[0].name
-            name = 'MaxPooling2D' if pooling == 'MAX' else 'AveragePooling2D'
+            name = 'MaxPooling2D' if pooling == 'MAX' and not \
+                settings['max2avg_pool'] else 'AveragePooling2D'
         layer_type = layer_dict.get(name, name)
 
         attributes = {'layer_type': layer_type}
 
         if layer_type == 'BatchNormalization':
-            bn_parameters = [layer.blobs[0].data,
-                             layer.blobs[1].data]
-            for k in range(1, 3):
-                prev_layer = get_inbound_layers(layer)[0]
-                if 'parameters' in prev_layer:
-                    break
-            assert prev_layer, "Could not find layer with parameters " \
-                               "preceeding BatchNorm layer."
-            prev_layer_dict = dict(layers[name_map[str(id(prev_layer))]])
-            parameters = prev_layer_dict['parameters']  # W, b of previous layer
+            bn_parameters = [layer.blobs[0].data, layer.blobs[1].data]
+            inb = get_inbound_layers_with_params(layer)
+            assert len(inb) == 1, "Could not find unique layer with " \
+                                  "parameters preceeding BatchNorm layer."
+            prev_layer = inb[0]
+            prev_layer_idx = name_map[str(id(prev_layer))]
+            parameters = layers[prev_layer_idx]['parameters']
             if len(parameters) == 1:  # No bias
                 parameters.append(np.zeros_like(bn_parameters[0]))
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of previous {}.".format(prev_layer['name']))
-            prev_layer['parameters'] = absorb_bn(
+                  "parameters of previous {}.".format(prev_layer.name))
+            layers[prev_layer_idx]['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[1],
                 bn_parameters[0], bn_parameters[2], 1 / bn_parameters[3],
                 layer.epsilon)
 
         if layer_type not in spiking_layers:
-            print("Skipping layer {}".format(layer_type))
+            print("Skipping layer {}.".format(layer_type))
             continue
 
-        print("Parsing layer {}".format(layer_type))
+        print("Parsing layer {}.".format(layer_type))
 
         if idx == 0:
             attributes['batch_input_shape'] = tuple(batch_input_shape)
@@ -179,7 +176,7 @@ def extract(model):
         prev_layer_output_shape = list(caffe_model.blobs[prev_layer_key].shape)
         if len(output_shape) < len(prev_layer_output_shape) and \
                 layer_type != 'Flatten':
-            print("Inserting layer Flatten")
+            print("Inserting layer Flatten.")
             num_str = str(idx) if idx > 9 else '0' + str(idx)
             shape_string = str(np.prod(output_shape[1:]))
             layers.append({'name': num_str + 'Flatten_' + shape_string,
@@ -199,15 +196,7 @@ def extract(model):
         num_str = str(idx) if idx > 9 else '0' + str(idx)
         attributes['name'] = num_str + layer_type + shape_string
 
-        if layer_type in {'Dense', 'Convolution2D'}:
-            w = caffe_model.params[layer.name][0].data
-            b = caffe_model.params[layer.name][1].data
-            if layer_type == 'Dense':
-                w = np.transpose(w)
-            else:
-                w = w[:, :, ::-1, ::-1]
-                print("Flipped kernels")
-            attributes['parameters'] = [w, b]
+        if layer_type in {'Dense', 'Conv2D'}:
             # Search for the activation layer to integrate it into Dense / Conv:
             activation = 'linear'
             for k in range(layer_num+1, min(layer_num+4, len(caffe_layers))):
@@ -216,25 +205,33 @@ def extract(model):
                                                      'linear')
                     break
             attributes['activation'] = activation
-            print("Detected activation {}".format(activation))
+            print("Using activation {}.".format(activation))
 
-        if layer_type == 'Convolution2D':
+        if layer_type == 'Conv2D':
+            w = caffe_model.params[layer.name][0].data
+            b = caffe_model.params[layer.name][1].data
+            w = w[:, :, ::-1, ::-1]
+            print("Flipped kernels.")
+            w = np.transpose(w, (2, 3, 1, 0))
+            attributes['parameters'] = [w, b]
             p = layer.convolution_param
             # Take maximum here because sometimes not not all fields are set
             # (e.g. kernel_h == 0 even though kernel_size == [3])
             filter_size = [max(p.kernel_w, p.kernel_size[0]),
                            max(p.kernel_h, p.kernel_size[-1])]
             pad = (p.pad_w, p.pad_h)
-            border_mode = border_mode_string(pad, filter_size)
-            attributes.update({'nb_filter': p.num_output,
-                               'nb_col': filter_size[0],
-                               'nb_row': filter_size[1],
-                               'border_mode': border_mode,
-                               'subsample': (p.stride[0], p.stride[0]),
+            padding = padding_string(pad, filter_size)
+            attributes.update({'filters': p.num_output,
+                               'kernel_size': filter_size,
+                               'padding': padding,
+                               'strides': (p.stride[0], p.stride[0]),
                                'filter_flip': False})  # p.filter_flip
 
         if layer_type == 'Dense':
-            attributes['output_dim'] = layer.inner_product_param.num_output
+            w = np.transpose(caffe_model.params[layer.name][0].data)
+            b = caffe_model.params[layer.name][1].data
+            attributes['parameters'] = [w, b]
+            attributes['units'] = layer.inner_product_param.num_output
 
         if layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
             p = layer.pooling_param
@@ -243,13 +240,13 @@ def extract(model):
             pool_size = [max(p.kernel_w, p.kernel_size),
                          max(p.kernel_h, p.kernel_size)]
             pad = (max(p.pad_w, p.pad), max(p.pad_h, p.pad))
-            border_mode = border_mode_string(pad, pool_size)
+            padding = padding_string(pad, pool_size)
             strides = [max(p.stride_w, p.stride), max(p.stride_h, p.stride)]
             attributes.update({'pool_size': pool_size,
                                'strides': strides,
-                               'border_mode': border_mode})
+                               'padding': padding})
 
-        if layer_type == 'Merge':
+        if layer_type == 'Concatenate':
             attributes.update({'mode': 'concat',
                                'concat_axis': layer.concat_param.axis})
 
@@ -310,10 +307,40 @@ def get_inbound_layers(layer):
         List of inbound layers.
     """
 
-    if layer.type == 'Concat':
-        return layer.bottom
-    else:
-        return layer.bottom
+    return layer.bottom
+
+
+def get_inbound_layers_with_params(layer):
+    """Iterate until inbound layers are found that have parameters.
+
+    Parameters
+    ----------
+
+    layer: caffe.layers.Layer
+        Layer
+
+    Returns
+    -------
+
+    : list
+        List of inbound layers.
+    """
+
+    inbound = layer
+    while True:
+        inbound = get_inbound_layers(inbound)
+        if len(inbound) == 1:
+            inbound = inbound[0]
+            if len(inbound.blobs) > 0:
+                return [inbound]
+        else:
+            result = []
+            for inb in inbound:
+                if len(inb.blobs) > 0:
+                    result.append(inb)
+                else:
+                    result += get_inbound_layers_with_params(inb)
+            return result
 
 
 def load_ann(path=None, filename=None):
@@ -369,28 +396,26 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
     (``Keras.ImageDataGenerator.flow_from_directory`` object).
     """
 
-    if x_test is not None:
-        out = val_fn(data=x_test)
-        guesses = np.argmax([out[key] for key in out.keys()][0], axis=1)
-        truth = np.argmax(y_test, axis=1)
-        accuracy = np.mean(guesses == truth)
-    else:
-        print("Using {} samples to evaluate input model".format(
-            settings['num_to_test']))
-        accuracy = 0
-        batches = int(settings['num_to_test'] / settings['batch_size'])
-        for i in range(batches):
-            # Get samples from Keras.ImageDataGenerator
+    num_to_test = len(x_test) if x_test is not None else settings['num_to_test']
+    print("Using {} samples to evaluate input model.".format(num_to_test))
+
+    accuracy = 0
+    batch_size = settings['batch_size']
+    batches = int(len(x_test) / batch_size) if x_test is not None else \
+        int(settings['num_to_test'] / batch_size)
+
+    for i in range(batches):
+        if x_test is not None:
+            x_batch = x_test[i*batch_size: (i+1)*batch_size]
+            y_batch = y_test[i*batch_size: (i+1)*batch_size]
+        else:
             x_batch, y_batch = dataflow.next()
-            if True:  # Only for imagenet!
-                print("Preprocessing input for ImageNet")
-                x_batch = np.add(np.multiply(x_batch, 2. / 255.), - 1.).astype(
-                    'float32')
-            out = val_fn(data=x_batch)
-            guesses = np.argmax([out[key] for key in out.keys()][0], axis=1)
-            truth = np.argmax(y_batch, axis=1)
-            accuracy += np.mean(guesses == truth)
-        accuracy /= batches
+        out = val_fn(data=x_batch)
+        guesses = np.argmax([out[key] for key in out.keys()][0], axis=1)
+        truth = np.argmax(y_batch, axis=1)
+        accuracy += np.mean(guesses == truth)
+
+    accuracy /= batches
     loss = -1
 
     print('\n' + "Test loss: {:.2f}".format(loss))

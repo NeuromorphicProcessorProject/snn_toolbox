@@ -15,7 +15,7 @@ from __future__ import print_function
 from keras.preprocessing.image import ImageDataGenerator
 
 from ann_architectures.imagenet.utils import preprocess_input
-from keras.layers import Flatten, Dense, Convolution2D, AveragePooling2D
+from keras.layers import Flatten, Dense, Conv2D, AveragePooling2D
 from keras.models import Sequential
 from keras.optimizers import SGD
 
@@ -31,43 +31,43 @@ def get_vgg16():
     model = Sequential()
 
     # Block 1
-    model.add(Convolution2D(64, 3, 3, border_mode='same', name='block1_conv1',
+    model.add(Conv2D(64, 3, 3, padding='same', name='block1_conv1',
                             input_shape=(3, 224, 224), activation='relu'))
-    model.add(Convolution2D(64, 3, 3, border_mode='same', name='block1_conv2',
+    model.add(Conv2D(64, 3, 3, padding='same', name='block1_conv2',
                             activation='relu'))
     model.add(AveragePooling2D(name='block1_pool'))
 
     # Block 2
-    model.add(Convolution2D(128, 3, 3, border_mode='same',
+    model.add(Conv2D(128, 3, 3, padding='same',
                             name='block2_conv1', activation='relu'))
-    model.add(Convolution2D(128, 3, 3, border_mode='same',
+    model.add(Conv2D(128, 3, 3, padding='same',
                             name='block2_conv2', activation='relu'))
     model.add(AveragePooling2D(name='block2_pool'))
 
     # Block 3
-    model.add(Convolution2D(256, 3, 3, border_mode='same',
+    model.add(Conv2D(256, 3, 3, padding='same',
                             name='block3_conv1', activation='relu'))
-    model.add(Convolution2D(256, 3, 3, border_mode='same',
+    model.add(Conv2D(256, 3, 3, padding='same',
                             name='block3_conv2', activation='relu'))
-    model.add(Convolution2D(256, 3, 3, border_mode='same',
+    model.add(Conv2D(256, 3, 3, padding='same',
                             name='block3_conv3', activation='relu'))
     model.add(AveragePooling2D(name='block3_pool'))
 
     # Block 4
-    model.add(Convolution2D(512, 3, 3, border_mode='same',
+    model.add(Conv2D(512, 3, 3, padding='same',
                             name='block4_conv1', activation='relu'))
-    model.add(Convolution2D(512, 3, 3, border_mode='same',
+    model.add(Conv2D(512, 3, 3, padding='same',
                             name='block4_conv2', activation='relu'))
-    model.add(Convolution2D(512, 3, 3, border_mode='same',
+    model.add(Conv2D(512, 3, 3, padding='same',
                             name='block4_conv3', activation='relu'))
     model.add(AveragePooling2D(name='block4_pool'))
 
     # Block 5
-    model.add(Convolution2D(512, 3, 3, border_mode='same',
+    model.add(Conv2D(512, 3, 3, padding='same',
                             name='block5_conv1', activation='relu'))
-    model.add(Convolution2D(512, 3, 3, border_mode='same',
+    model.add(Conv2D(512, 3, 3, padding='same',
                             name='block5_conv2', activation='relu'))
-    model.add(Convolution2D(512, 3, 3, border_mode='same',
+    model.add(Conv2D(512, 3, 3, padding='same',
                             name='block5_conv3', activation='relu'))
     model.add(AveragePooling2D(name='block5_pool'))
 

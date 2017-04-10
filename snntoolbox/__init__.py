@@ -37,6 +37,6 @@ if not os.path.exists(_config_path):
     _config = {'floatx': 'float32',
                'epsilon': 1e-07,
                'backend': 'theano',
-               'image_dim_ordering': 'th'}
+               'image_data_format': 'channels_first'}
     with open(_config_path, 'w') as f:
         f.write(json.dumps(_config, indent=4))

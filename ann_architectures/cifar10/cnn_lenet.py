@@ -8,7 +8,7 @@ from __future__ import print_function
 from keras.datasets import cifar10
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers.convolutional import Convolution2D
+from keras.layers.convolutional import Conv2D
 from keras.layers.convolutional import MaxPooling2D
 from keras.utils import np_utils
 
@@ -49,13 +49,13 @@ print(X_test.shape[0], 'test samples')
 
 model = Sequential()
 
-model.add(Convolution2D(20, 5, 5,
+model.add(Conv2D(20, 5, 5,
                         input_shape=(img_channels, img_rows, img_cols)))
 model.add(Activation('relu'))
 
 model.add(MaxPooling2D(pool_size=(2, 2)))
 
-model.add(Convolution2D(50, 5, 5))
+model.add(Conv2D(50, 5, 5))
 model.add(Activation('relu'))
 
 model.add(MaxPooling2D(pool_size=(2, 2)))

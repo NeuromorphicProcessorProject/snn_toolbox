@@ -24,19 +24,19 @@ import numpy as np
 import theano
 from snntoolbox.config import settings, spiking_layers
 from snntoolbox.io_utils.common import load_parameters
-from snntoolbox.model_libs.common import border_mode_string
+from snntoolbox.model_libs.common import padding_string
 from snntoolbox.model_libs.common import import_script
 
 layer_dict = {'DenseLayer': 'Dense',
-              'Conv2DLayer': 'Convolution2D',
-              'Conv2DDNNLayer': 'Convolution2D',
+              'Conv2DLayer': 'Conv2D',
+              'Conv2DDNNLayer': 'Conv2D',
               'MaxPool2DLayer': 'MaxPooling2D',
               'Pool2DLayer': 'AveragePooling2D',
               'DropoutLayer': 'Dropout',
               'FlattenLayer': 'Flatten',
               'BatchNormLayer': 'BatchNormalization',
               'NonlinearityLayer': 'Activation',
-              'ConcatLayer': 'Merge'}
+              'ConcatLayer': 'Concatenate'}
 
 
 activation_dict = {'rectify': 'relu',
@@ -105,9 +105,8 @@ def extract(model):
 
         `Convolution` layers contain further
 
-        - nb_col (int): The x-dimension of filters.
-        - nb_row (int): The y-dimension of filters.
-        - border_mode (string): How to handle borders during convolution, e.g.
+        - kernel_size (tuple/list of 2 ints): The x- and y-dimension of filters.
+        - padding (string): How to handle borders during convolution, e.g.
           `full`, `valid`, `same`.
 
         `Pooling` layers contain
@@ -130,6 +129,8 @@ def extract(model):
         if name == 'Pool2DLayer' and layer.mode == 'max':
             name = 'MaxPool2DLayer'
         layer_type = layer_dict.get(name, name)
+        if layer_type == 'MaxPooling2D' and settings['max2avg_pool']:
+            layer_type = 'AveragePooling2D'
 
         attributes = {'layer_type': layer_type}
 
@@ -137,19 +138,17 @@ def extract(model):
             inc = len(layer.params)
             bn_parameters = all_parameters[parameters_idx: parameters_idx + inc]
             parameters_idx += inc
-            for k in range(1, 3):
-                prev_layer = get_inbound_layers(layer)[0]
-                if len(prev_layer.params) > 0:
-                    break
-            assert prev_layer, "Could not find layer with parameters " \
-                               "preceeding BatchNorm layer."
-            prev_layer_dict = dict(layers[name_map[str(id(prev_layer))]])
-            parameters = prev_layer_dict['parameters']  # W, b of previous layer
+            inb = get_inbound_layers_with_params(layer)
+            assert len(inb) == 1, "Could not find unique layer with " \
+                                  "parameters preceeding BatchNorm layer."
+            prev_layer = inb[0]
+            prev_layer_idx = name_map[str(id(prev_layer))]
+            parameters = layers[prev_layer_idx]['parameters']
             if len(parameters) == 1:  # No bias
                 parameters.append(np.zeros_like(bn_parameters[0]))
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of previous {}.".format(prev_layer_dict['name']))
-            prev_layer_dict['parameters'] = absorb_bn(
+                  "parameters of previous {}.".format(prev_layer.name))
+            layers[prev_layer_idx]['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[1],
                 bn_parameters[0], bn_parameters[2], bn_parameters[3])
 
@@ -175,7 +174,7 @@ def extract(model):
             idx += 1
 
         if layer_type not in spiking_layers:
-            print("Skipping layer {}".format(layer_type))
+            print("Skipping layer {}.".format(layer_type))
             continue
 
         print("Parsing layer {}.".format(layer_type))
@@ -210,7 +209,7 @@ def extract(model):
         num_str = str(idx) if idx > 9 else '0' + str(idx)
         attributes['name'] = num_str + layer_type + shape_string
 
-        if layer_type in {'Dense', 'Convolution2D'}:
+        if layer_type in {'Dense', 'Conv2D'}:
             inc = len(layer.params)  # For weights and maybe biases
             attributes['parameters'] = all_parameters[parameters_idx:
                                                       parameters_idx + inc]
@@ -231,27 +230,26 @@ def extract(model):
                     activation = activation_dict.get(nonlinearity, 'linear')
                     break
             attributes['activation'] = activation
-            print("Detected activation {}.".format(activation))
-            if layer_type == 'Convolution2D':
-                border_mode = border_mode_string(layer.pad, layer.filter_size)
+            print("Using activation {}.".format(activation))
+            if layer_type == 'Conv2D':
+                padding = padding_string(layer.pad, layer.filter_size)
                 attributes.update({'input_shape': layer.input_shape,
-                                   'nb_filter': layer.num_filters,
-                                   'nb_col': layer.filter_size[1],
-                                   'nb_row': layer.filter_size[0],
-                                   'border_mode': border_mode,
-                                   'subsample': layer.stride,
+                                   'filters': layer.num_filters,
+                                   'kernel_size': layer.filter_size,
+                                   'padding': padding,
+                                   'strides': layer.stride,
                                    'filter_flip': layer.flip_filters})
             else:
-                attributes['output_dim'] = layer.num_units
+                attributes['units'] = layer.num_units
 
         if layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
-            border_mode = border_mode_string(layer.pad, layer.pool_size)
+            padding = padding_string(layer.pad, layer.pool_size)
             attributes.update({'input_shape': layer.input_shape,
                                'pool_size': layer.pool_size,
                                'strides': layer.stride,
-                               'border_mode': border_mode})
+                               'padding': padding})
 
-        if layer_type == 'Merge':
+        if layer_type == 'Concatenate':
             attributes.update({'mode': 'concat', 'concat_axis': layer.axis})
 
         attributes['inbound'] = get_inbound_names(layers, layer, name_map)
@@ -305,6 +303,39 @@ def get_inbound_layers(layer):
         return layer.input_layers
     else:
         return [layer.input_layer]
+
+
+def get_inbound_layers_with_params(layer):
+    """Iterate until inbound layers are found that have parameters.
+
+    Parameters
+    ----------
+
+    layer: lasagne.layers.Layer
+        Layer
+
+    Returns
+    -------
+
+    : list
+        List of inbound layers.
+    """
+
+    inbound = layer
+    while True:
+        inbound = get_inbound_layers(inbound)
+        if len(inbound) == 1:
+            inbound = inbound[0]
+            if len(inbound.params) > 0:
+                return [inbound]
+        else:
+            result = []
+            for inb in inbound:
+                if len(inb.params) > 0:
+                    result.append(inb)
+                else:
+                    result += get_inbound_layers_with_params(inb)
+            return result
 
 
 def hard_sigmoid(x):
@@ -457,27 +488,21 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
     (``Keras.ImageDataGenerator.flow_from_directory`` object).
     """
 
-    if x_test is None:
-        print("Using {} samples to evaluate input model".format(
-            settings['num_to_test']))
+    num_to_test = len(x_test) if x_test is not None else settings['num_to_test']
+    print("Using {} samples to evaluate input model.".format(num_to_test))
 
     err = 0
     loss = 0
     batch_size = settings['batch_size']
-    batches = int(len(x_test) / batch_size) if x_test else \
+    batches = int(len(x_test) / batch_size) if x_test is not None else \
         int(settings['num_to_test'] / batch_size)
 
     for i in range(batches):
-        if x_test:
+        if x_test is not None:
             x_batch = x_test[i*batch_size: (i+1)*batch_size]
             y_batch = y_test[i*batch_size: (i+1)*batch_size]
         else:
-            # Get samples from Keras.ImageDataGenerator
             x_batch, y_batch = dataflow.next()
-            if True:  # Only for imagenet!
-                print("Preprocessing input for ImageNet")
-                x_batch = np.add(np.multiply(x_batch, 2. / 255.), - 1.).astype(
-                    'float32')
         new_loss, new_err = val_fn(x_batch, y_batch)
         err += new_err
         loss += new_loss

@@ -21,7 +21,7 @@ from keras.callbacks import ModelCheckpoint
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers.core import Dropout, Activation, Flatten
-from keras.layers.convolutional import Convolution2D, AveragePooling2D
+from keras.layers.convolutional import Conv2D, AveragePooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.utils import np_utils
 from keras.regularizers import l2
@@ -49,47 +49,47 @@ b_reg = None
 
 model = Sequential()
 
-model.add(Convolution2D(192, 5, 5, border_mode='same', init=init,
+model.add(Conv2D(192, 5, 5, padding='same', init=init,
                         input_shape=(img_channels, img_rows, img_cols)))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
-model.add(Convolution2D(160, 1, 1, W_regularizer=reg, b_regularizer=b_reg,
+model.add(Conv2D(160, 1, 1, W_regularizer=reg, b_regularizer=b_reg,
                         init=init))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
-model.add(Convolution2D(96, 1, 1, W_regularizer=reg, b_regularizer=b_reg,
-                        init=init))
-model.add(BatchNormalization(axis=1))
-model.add(Activation('relu'))
-model.add(AveragePooling2D(pool_size=(3, 3), strides=(2, 2),
-                           border_mode='same'))
-model.add(Dropout(0.2))
-
-model.add(Convolution2D(192, 5, 5, border_mode='same', init=init,
-                        W_regularizer=reg, b_regularizer=b_reg))
-model.add(BatchNormalization(axis=1))
-model.add(Activation('relu'))
-model.add(Convolution2D(192, 1, 1, W_regularizer=reg, b_regularizer=b_reg,
-                        init=init))
-model.add(BatchNormalization(axis=1))
-model.add(Activation('relu'))
-model.add(Convolution2D(192, 1, 1, W_regularizer=reg, b_regularizer=b_reg,
+model.add(Conv2D(96, 1, 1, W_regularizer=reg, b_regularizer=b_reg,
                         init=init))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
 model.add(AveragePooling2D(pool_size=(3, 3), strides=(2, 2),
-                           border_mode='same'))
+                           padding='same'))
 model.add(Dropout(0.2))
 
-model.add(Convolution2D(192, 3, 3, border_mode='same', init=init,
+model.add(Conv2D(192, 5, 5, padding='same', init=init,
                         W_regularizer=reg, b_regularizer=b_reg))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
-model.add(Convolution2D(192, 1, 1, W_regularizer=reg, b_regularizer=b_reg,
+model.add(Conv2D(192, 1, 1, W_regularizer=reg, b_regularizer=b_reg,
                         init=init))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
-model.add(Convolution2D(10, 1, 1, W_regularizer=reg, b_regularizer=b_reg,
+model.add(Conv2D(192, 1, 1, W_regularizer=reg, b_regularizer=b_reg,
+                        init=init))
+model.add(BatchNormalization(axis=1))
+model.add(Activation('relu'))
+model.add(AveragePooling2D(pool_size=(3, 3), strides=(2, 2),
+                           padding='same'))
+model.add(Dropout(0.2))
+
+model.add(Conv2D(192, 3, 3, padding='same', init=init,
+                        W_regularizer=reg, b_regularizer=b_reg))
+model.add(BatchNormalization(axis=1))
+model.add(Activation('relu'))
+model.add(Conv2D(192, 1, 1, W_regularizer=reg, b_regularizer=b_reg,
+                        init=init))
+model.add(BatchNormalization(axis=1))
+model.add(Activation('relu'))
+model.add(Conv2D(10, 1, 1, W_regularizer=reg, b_regularizer=b_reg,
                         init=init))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))

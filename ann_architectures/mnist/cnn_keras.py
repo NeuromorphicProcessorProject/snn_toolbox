@@ -17,7 +17,7 @@ from __future__ import print_function
 
 from keras.datasets import mnist as dataset
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, Convolution2D
+from keras.layers import Dense, Dropout, Flatten, Conv2D
 from keras.layers import BatchNormalization, Activation, MaxPooling2D
 from keras.utils.np_utils import to_categorical
 
@@ -46,13 +46,13 @@ x_test /= 255
 
 model = Sequential()
 
-model.add(Convolution2D(16, 5, 5, input_shape=(chnls, img_rows, img_cols),
-                        subsample=(2, 2)))
+model.add(Conv2D(16, 5, 5, input_shape=(chnls, img_rows, img_cols),
+                        strides=(2, 2)))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
 model.add(Dropout(0.1))
 
-model.add(Convolution2D(32, 3, 3))
+model.add(Conv2D(32, 3, 3))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
 model.add(MaxPooling2D())

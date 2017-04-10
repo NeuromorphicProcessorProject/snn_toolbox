@@ -135,6 +135,8 @@ def parse(input_model):
         if filter_flip:
             parsed_layer.filter_flip = filter_flip
         inbound = [parsed_layers[inb] for inb in layer.pop('inbound')]
+        if len(inbound) == 1:
+            inbound = inbound[0]
         parsed_layers[layer['name']] = parsed_layer(**layer)(inbound)
     print("Compiling parsed model...")
     parsed_model = keras.models.Model(img_input,
@@ -151,6 +153,8 @@ def get_dataset(s):
     TODO: Docstring
     """
 
+    from snntoolbox.io_utils.common import load_dataset
+
     evalset = normset = testset = None
     # Instead of loading a normalization set, try to get the scale-factors from
     # a previous run, stored on disk.
@@ -165,11 +169,9 @@ def get_dataset(s):
     if s['dataset_format'] == 'npz':
         print("Loading data set from '.npz' files in {}.\n".format(
             s['dataset_path']))
-        from snntoolbox.io_utils.common import load_dataset
         if s['evaluateANN'] or s['simulate']:
-            evalset = {
-                'x_test': load_dataset(s['dataset_path'], 'x_test.npz'),
-                'y_test': load_dataset(s['dataset_path'], 'y_test.npz')}
+            evalset = {'x_test': load_dataset(s['dataset_path'], 'x_test.npz'),
+                       'y_test': load_dataset(s['dataset_path'], 'y_test.npz')}
 #            # Binarize the input. Hack: Should be independent of maxpool type
 #            if s['maxpool_type'] == 'binary_tanh':
 #                evalset['x_test'] = np.sign(evalset['x_test'])
@@ -178,8 +180,7 @@ def get_dataset(s):
 #                np.round(evalset['x_test'], out=evalset['x_test'])
             assert evalset, "Evaluation set empty."
         if s['normalize'] and normset is None:
-            normset = {
-                'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
+            normset = {'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
             assert normset, "Normalization set empty."
         if s['simulate']:
             testset = evalset
@@ -189,7 +190,7 @@ def get_dataset(s):
         from keras.preprocessing.image import ImageDataGenerator
         print("Loading data set from ImageDataGenerator, using images in "
               "{}.\n".format(s['dataset_path']))
-        datagen_kwargs = ast.literal_eval(s['datagen_kwargs'])
+        datagen_kwargs = s['datagen_kwargs']
         dataflow_kwargs = ast.literal_eval(s['dataflow_kwargs'])
         dataflow_kwargs['directory'] = s['dataset_path']
         if 'batch_size' not in dataflow_kwargs:
@@ -213,6 +214,12 @@ def get_dataset(s):
             testset = {
                 'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
             assert testset, "Test set empty."
+    elif s['dataset_format'] == 'aedat':
+        if s['normalize'] and normset is None:
+            normset = {'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
+            assert normset, "Normalization set empty."
+        evalset = testset = {}
+
     return evalset, normset, testset
 
 
@@ -222,6 +229,18 @@ def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
     Can use either numpy arrays ``x_test, y_test`` containing the test samples,
     or generate them with a dataflow
     (``Keras.ImageDataGenerator.flow_from_directory`` object).
+    
+    Parameters
+    ----------
+    
+    model: keras.models.Model
+    
+    x_test: Optional[np.ndarray] 
+    
+    y_test: Optional[np.ndarray]
+    
+    dataflow: keras.ImageDataGenerator.flow_from_directory
+    
     """
 
     assert (
@@ -230,21 +249,16 @@ def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
 
     score = [0, 0]
     if x_test is not None:
-        truth = np.argmax(y_test, axis=1)
         preds = model.predict(x_test, settings['batch_size'], verbose=0)
+        truth = np.argmax(y_test, axis=1)
         score[0] = np.mean(np.argmax(preds, axis=1) == truth)
         score[1] = get_top5score(truth, preds) / len(truth)
     else:
         batches = int(settings['num_to_test'] / settings['batch_size'])
         for i in range(batches):
-            # Get samples from Keras.ImageDataGenerator
             x_batch, y_batch = dataflow.next()
-            if True:  # Only for imagenet!
-                print("Preprocessing input for ImageNet")
-                x_batch = np.add(np.multiply(x_batch, 2. / 255.), - 1.).astype(
-                    'float32')
-            truth = np.argmax(y_batch, axis=1)
             preds = model.predict_on_batch(x_batch)
+            truth = np.argmax(y_batch, axis=1)
             score[0] += np.mean(np.argmax(preds, axis=1) == truth)
             score[1] += get_top5score(truth, preds) / len(truth)
         score[0] /= batches
@@ -512,13 +526,13 @@ def normalize_parameters(model, **kwargs):
             parameters_norm = [parameters[0]]  # Consider only weights at first
             offset = 0  # Index offset at input filter dimension
             for inb in inbound:
-                f_out = inb.W_shape[0]  # Num output features of inbound layer
+                f_out = inb.filters  # Num output features of inbound layer
                 f_in = range(offset, offset + f_out)
                 if parameters[0].ndim == 2:  # Fully-connected Layer
                     parameters_norm[0][f_in, :] *= \
                         scale_facs[inb.name] / scale_fac
                 else:
-                    parameters_norm[0][:, f_in, :, :] *= \
+                    parameters_norm[0][:, :, f_in, :] *= \
                         scale_facs[inb.name] / scale_fac
                 offset += f_out
             parameters_norm.append(parameters[1] / scale_fac)  # Append bias
@@ -593,12 +607,12 @@ def get_inbound_layers_with_params(layer):
         inbound = get_inbound_layers(inbound)
         if len(inbound) == 1:
             inbound = inbound[0]
-            if len(inbound.get_weights()) > 0:
+            if len(inbound.weights) > 0:
                 return [inbound]
         else:
             result = []
             for inb in inbound:
-                if len(inb.get_weights()) > 0:
+                if len(inb.weights) > 0:
                     result.append(inb)
                 else:
                     result += get_inbound_layers_with_params(inb)
@@ -622,7 +636,7 @@ def get_inbound_layers_without_params(layer):
     """
 
     return [layer for layer in layer.inbound_nodes[0].inbound_layers
-            if len(layer.get_weights()) == 0]
+            if len(layer.weights) == 0]
 
 
 def get_inbound_layers(layer):
@@ -642,6 +656,93 @@ def get_inbound_layers(layer):
     """
 
     return layer.inbound_nodes[0].inbound_layers
+
+
+def get_outbound_layers(layer):
+    """Return outbound layers.
+
+    Parameters
+    ----------
+
+    layer: Keras.layers
+        A Keras layer.
+
+    Returns
+    -------
+
+    : list[Keras.layers]
+        List of outbound layers.
+    """
+
+    return [on.outbound_layer for on in layer.outbound_nodes]
+
+
+def get_outbound_activation(layer):
+    """
+    Iterate over 2 outbound layers to find an activation layer. If there is no
+    activation layer, take the activation of the current layer.
+
+    Parameters
+    ----------
+
+    layer: Union[keras.layers.Conv2D, keras.layers.Dense]
+        Layer
+
+    Returns
+    -------
+
+    activation: str
+        Name of outbound activation type.
+    """
+
+    activation = layer.activation.__name__
+    outbound = layer
+    for i in range(2):
+        outbound = get_outbound_layers(outbound)
+        if len(outbound) == 0:
+            break
+        elif len(outbound) == 1:
+            outbound = outbound[0]
+            if hasattr(outbound, 'activation'):
+                activation = outbound.activation.__name__
+        else:
+            print("Activation following Conv or Dense must be unique.")
+            raise Exception
+
+    return activation
+
+
+def get_spiking_outbound_layers(layer):
+    """Iterate until spiking outbound layers are found.
+
+    Parameters
+    ----------
+
+    layer: keras.layers.Layer
+        Layer
+
+    Returns
+    -------
+
+    : list
+        List of outbound layers.
+    """
+
+    outbound = layer
+    while True:
+        outbound = get_outbound_layers(outbound)
+        if len(outbound) == 1:
+            outbound = outbound[0]
+            if hasattr(outbound, 'spiketrain'):
+                return [outbound]
+        else:
+            result = []
+            for outb in outbound:
+                if hasattr(outb, 'spiketrain'):
+                    result.append(outb)
+                else:
+                    result += get_spiking_outbound_layers(outb)
+            return result
 
 
 def get_scale_fac(activations, idx=0):
@@ -723,7 +824,7 @@ def get_activations_batch(ann, x_batch):
     activations_batch: list[tuple[np.array, str]]
         Each tuple ``(activations, label)`` represents a layer in the ANN for
         which an activation can be calculated (e.g. ``Dense``,
-        ``Convolution2D``).
+        ``Conv2D``).
         ``activations`` containing the activations of a layer. It has the same
         shape as the original layer, e.g.
         (batch_size, n_features, n_rows, n_cols) for a convolution layer.
@@ -733,7 +834,7 @@ def get_activations_batch(ann, x_batch):
     activations_batch = []
     for layer in ann.layers:
         if layer.__class__.__name__ in ['Input', 'InputLayer', 'Flatten',
-                                        'Merge']:
+                                        'Concatenate']:
             continue
         activations = keras.models.Model(ann.input,
                                          layer.output).predict_on_batch(x_batch)
@@ -776,7 +877,7 @@ def extract_label(label):
 
     label: string
         Specifies both the layer type, index and shape, e.g.
-        ``'03Convolution2D_3x32x32'``.
+        ``'03Conv2D_3x32x32'``.
 
     Returns
     -------
@@ -862,98 +963,112 @@ def to_list(x):
     return x if type(x) is list else [x]
 
 
-def compute_ops_ann(parsed_model):
+def get_layer_ops(spiketrains_b_l, fanout, num_neurons_with_bias=0):
     """
-    Computes the number of operations (1 MACC = 2 ops) performed in the network.
-    """
+    Return total number of operations in the layer for a batch of samples.  
 
-    ops = 0
-    for l, layer in enumerate(parsed_model.layers):
-        if "Convolution" in layer.name:
-            kernel_width = layer.nb_col
-            kernel_height = layer.nb_row
-            num_input_maps = layer.input_shape[1]
-            num_output_maps = layer.nb_filter
-            output_width = layer.output_shape[2]
-            output_height = layer.output_shape[3]
-            bias_ops = num_output_maps * output_width * output_height
-            ops += 2 * (kernel_width * kernel_height * num_input_maps *
-                        num_output_maps * output_width * output_height) + \
-                bias_ops
-        elif "Dense" in layer.name:
-            input_shape = np.prod(layer.input_shape[1:])
-            layer_dim = layer.output_shape[1]
-            bias_ops = layer.output_shape[1]
-            ops += 2 * (layer_dim * input_shape) + bias_ops
-
-    np.save(os.path.join(settings['path_wd'], "ANN_total_ops"), ops)
-    return ops
-
-
-def compute_ops_snn(spiketrains_batch):
-    """
-    Computes the number of operations performed in a spiking network,
-    layerwise, for convolutional, pooling and dense layers.
-    
     Parameters
     ----------
-    
-    spiketrains_batch: list[tuple]
-        First dimension contains the spiketrains for each layer in the network.
-        Second dimension contains the layer objects.
-    
-    Returns
-    -------
-    
-    layer_spikes_per_time: total spikes fired in each layer at each time point
-    network_ops_per_time: total number of operations in the network, at each
-                          time point
-    accum_ops_per_time: total number of operations in the network, accumulated
-                        over time
+
+    spiketrains_b_l: ndarray
+        Batch of spiketrains of a layer. Shape: (batch_size, layer_shape)
+    fanout: int
+        Number of outgoing connections per neuron.
+    num_neurons_with_bias: int
+        Number of neurons with bias.
     """
 
-    num_timesteps = int(settings['duration']/settings['dt'])
-    # total number of spikes, excluding the flatten layers, at each time step
-    network_spikes_per_time = np.zeros(num_timesteps)
-    # spike numbers for each layer, at each time point
-    layer_spikes_per_time = np.zeros((len(spiketrains_batch), num_timesteps))
-    # total number of ops for convolution and dense layers, for each time step
-    network_ops_per_time = np.zeros(num_timesteps)
+    return np.array([np.count_nonzero(s) for s in spiketrains_b_l]) * fanout + \
+        num_neurons_with_bias
 
-    for idx, l in enumerate(spiketrains_batch):
-        layer = l[1]
-        spiketrain = l[0]
-        # average over batch items
-        layer_spikes = np.sum(np.mean(spiketrain, axis=0),
-                              axis=tuple(range(0, spiketrain.ndim - 2)))
-        network_spikes_per_time += layer_spikes
-        layer_spikes_per_time[idx] = layer_spikes
-        if (idx < len(spiketrains_batch)-1) and \
-                any(name in layer.name for name in
-                    ['Convolution', 'Dense', 'Pool']):
-            next_layer = spiketrains_batch[idx+1][1]
-            bias_ops = np.prod(next_layer.output_shape[1:])
-            if 'Convolution' in next_layer.name:
-                network_ops_per_time += (layer_spikes *
-                                         next_layer.output_shape[1] *
-                                         next_layer.nb_col *
-                                         next_layer.nb_row +
-                                         bias_ops)
-            elif 'Dense' in next_layer.name:
-                network_ops_per_time += (layer_spikes *
-                                         next_layer.output_shape[1] + bias_ops)
 
-    inp_conv = spiketrains_batch[0][1]
-    kernel_width = inp_conv.nb_col
-    kernel_height = inp_conv.nb_row
-    num_input_maps = inp_conv.input_shape[1]
-    num_output_maps = inp_conv.nb_filter
-    output_width = inp_conv.output_shape[2]
-    output_height = inp_conv.output_shape[3]
-    input_ops = (kernel_width * kernel_height * num_input_maps *
-                 num_output_maps * output_width * output_height)
-    bias_ops = np.prod(inp_conv.output_shape[1:])
+def get_fanin(layer):
+    """
+    Return fan-in of a neuron in ``layer``.
 
-    network_ops_per_time += (input_ops + bias_ops)
-    accum_ops_per_time = np.cumsum(network_ops_per_time)
-    return layer_spikes_per_time, network_ops_per_time, accum_ops_per_time
+    Parameters
+    ----------
+
+    layer: Subclass[keras.layers.Layer] 
+         Layer.
+
+    Returns
+    -------
+
+    fanin: int
+        Fan-in.
+
+    """
+
+    if 'Conv' in layer.name:
+        fanin = np.prod(layer.kernel_size) * layer.input_shape[1]
+    elif 'Dense' in layer.name:
+        fanin = layer.input_shape[1]
+    elif 'Pool' in layer.name:
+        fanin = 0
+    else:
+        fanin = 0
+
+    return fanin
+
+
+def get_fanout(layer):
+    """
+    Return fan-out of a neuron in ``layer``.
+
+    Parameters
+    ----------
+
+    layer: Subclass[keras.layers.Layer] 
+         Layer.
+
+    Returns
+    -------
+
+    fanout: int
+        Fan-out.
+
+    """
+
+    fanout = 0
+    next_layers = get_spiking_outbound_layers(layer)
+    for next_layer in next_layers:
+        if 'Conv' in layer.name and 'Pool' in next_layer.name:
+            fanout += 1
+        elif 'Dense' in layer.name:
+            fanout += next_layer.units
+        elif 'Pool' in layer.name and 'Conv' in next_layer.name:
+            fanout += np.prod(next_layer.kernel_size) * next_layer.filters
+        elif 'Pool' in layer.name and 'Dense' in next_layer.name:
+            fanout += next_layer.units
+        else:
+            fanout += 0
+
+    return fanout
+
+
+def get_ann_ops(num_neurons, num_neurons_with_bias, fanin):
+    """
+    Compute number of operations performed by an ANN in one forward pass.
+
+    Parameters
+    ----------
+
+    num_neurons: list[int]
+        Number of neurons per layer, starting with input layer.
+    num_neurons_with_bias: list[int]
+        Number of neurons with bias.
+    fanin: list[int]
+        List of fan-in of neurons in Conv, Dense and Pool layers. Input and Pool
+        layers have fan-in 0 so they are not counted.
+
+
+    Returns
+    -------
+
+    : int
+        Number of operations.
+
+    """
+
+    return 2 * np.dot(num_neurons, fanin) + np.sum(num_neurons_with_bias)

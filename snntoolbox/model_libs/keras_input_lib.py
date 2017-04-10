@@ -19,10 +19,12 @@ Created on Thu May 19 08:21:05 2016
 """
 
 import os
+import numpy as np
 
 from snntoolbox.config import settings, spiking_layers
 from snntoolbox.model_libs.common import absorb_bn
-from snntoolbox.core.util import get_inbound_layers
+from snntoolbox.core.util import get_inbound_layers_with_params, \
+    get_outbound_activation
 
 
 def extract(model):
@@ -84,9 +86,8 @@ def extract(model):
 
         `Convolution` layers contain further
 
-        - nb_col (int): The x-dimension of filters.
-        - nb_row (int): The y-dimension of filters.
-        - border_mode (string): How to handle borders during convolution, e.g.
+        - kernel_size (tuple/list of 2 ints): The x- and y-dimension of filters.
+        - padding (string): How to handle borders during convolution, e.g.
           `full`, `valid`, `same`.
 
         `Pooling` layers contain
@@ -103,21 +104,23 @@ def extract(model):
 
         # Absorb BatchNormalization layer into parameters of previous layer
         if layer_type == 'BatchNormalization':
-            bn_parameters = layer.get_weights()  # gamma, beta, mean, var
-            for k in range(1, 3):
-                prev_layer = get_inbound_layers(layer)[0]
-                if len(prev_layer.get_weights()) > 0:
-                    break
-            assert prev_layer, "Could not find layer with parameters " \
-                               "preceeding BatchNorm layer."
-            prev_layer_dict = dict(layers[name_map[str(id(prev_layer))]])
-            parameters = prev_layer_dict['parameters']  # W, b of previous layer
+            mean = layer.moving_mean.get_value()
+            var = layer.moving_variance.get_value()
+            gamma = np.ones_like(mean) if layer.gamma is None else \
+                layer.gamma.get_value()
+            beta = np.zeros_like(mean) if layer.beta is None else \
+                layer.beta.get_value()
+            inb = get_inbound_layers_with_params(layer)
+            assert len(inb) == 1, "Could not find unique layer with " \
+                                  "parameters preceeding BatchNorm layer."
+            prev_layer = inb[0]
+            prev_layer_idx = name_map[str(id(prev_layer))]
+            parameters = layers[prev_layer_idx]['parameters']
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of previous {}.".format(prev_layer_dict['name']))
-            prev_layer_dict['parameters'] = absorb_bn(
-                parameters[0], parameters[1], bn_parameters[0],
-                bn_parameters[1], bn_parameters[2], bn_parameters[3],
-                layer.epsilon)
+                  "parameters of previous {}.".format(prev_layer.name))
+            layers[prev_layer_idx]['parameters'] = absorb_bn(
+                parameters[0], parameters[1], gamma, beta, mean, var,
+                layer.epsilon, -layer.axis)
 
         # Pass on batch_input_shape (also in case the first layer is skipped)
         if layer_num == 0:
@@ -131,14 +134,38 @@ def extract(model):
                 model.layers[layer_num + 1].batch_input_shape = \
                     tuple(batch_input_shape)
 
+        if layer_type == 'GlobalAveragePooling2D':
+            print("Replacing {} by 'AveragePooling' plus 'Flatten'.".format(
+                layer_type))
+            pool_size = [layer.input_shape[-2], layer.input_shape[-1]]
+            shape_string = '_{}x{}x{}'.format(layer.output_shape[1], 1, 1)
+            num_str = str(idx) if idx > 9 else '0' + str(idx)
+            layers.append(
+                {'layer_type': 'AveragePooling2D',
+                 'name': num_str + 'AveragePooling2D' + shape_string,
+                 'input_shape': layer.input_shape, 'pool_size': pool_size,
+                 'inbound': get_inbound_names(layers, layer, name_map)})
+            name_map[str(id(layer))] = idx
+            idx += 1
+            num_str = str(idx) if idx > 9 else '0' + str(idx)
+            shape_string = str(np.prod(layer.output_shape[1:]))
+            layers.append({'name': num_str + 'Flatten_' + shape_string,
+                           'layer_type': 'Flatten',
+                           'inbound': [layers[-1]['name']]})
+            name_map[str(id(layer))] = idx
+            idx += 1
+
         if layer_type not in spiking_layers:
             print("Skipping layer {}.".format(layer_type))
             continue
 
-        print("Parsing layer {}".format(layer_type))
+        print("Parsing layer {}.".format(layer_type))
 
         attributes = layer.get_config()
-        attributes['layer_type'] = layer.__class__.__name__
+        layer_type = layer.__class__.__name__
+        if layer_type == 'MaxPooling2D' and settings['max2avg_pool']:
+            layer_type = 'AveragePooling2D'
+        attributes['layer_type'] = layer_type
 
         # Append layer name
         if len(layer.output_shape) == 2:
@@ -150,19 +177,14 @@ def extract(model):
         num_str = str(layer_num) if layer_num > 9 else '0' + str(layer_num)
         attributes['name'] = num_str + layer_type + shape_string
 
-        if layer_type in {'Dense', 'Convolution2D'}:
+        if layer_type in {'Dense', 'Conv2D'}:
             attributes['parameters'] = layer.get_weights()
-            # Get type of nonlinearity if the activation is directly in the
-            # Dense / Conv layer:
-            activation = layer.get_config()['activation']
-            # Otherwise, search for the activation layer:
-            for k in range(layer_num + 1,
-                           min(layer_num + 4, len(model.layers))):
-                if model.layers[k].__class__.__name__ == 'Activation':
-                    activation = model.layers[k].get_config()['activation']
-                    break
-            attributes['activation'] = activation
-            print("Detected activation {}".format(activation))
+            if layer.bias is None:
+                attributes['parameters'].append(np.zeros(layer.filters))
+                attributes['use_bias'] = True
+            # Get type of nonlinearity
+            attributes['activation'] = get_outbound_activation(layer)
+            print("Using activation {}.".format(attributes['activation']))
 
         attributes['inbound'] = get_inbound_names(layers, layer, name_map)
 
@@ -180,6 +202,8 @@ def get_inbound_names(layers, layer, name_map):
     """Get names of inbound layers.
 
     """
+
+    from snntoolbox.core.util import get_inbound_layers
 
     if len(layers) == 0:
         return ['input_1']
@@ -250,23 +274,18 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
     (``Keras.ImageDataGenerator.flow_from_directory`` object).
     """
 
-    import numpy as np
+    num_to_test = len(x_test) if x_test is not None else settings['num_to_test']
+    print("Using {} samples to evaluate input model.".format(num_to_test))
 
     if x_test is not None:
         score = val_fn(x_test, y_test, verbose=0)
     else:
-        print("Using {} samples to evaluate input model".format(
-            settings['num_to_test']))
         score = [0, 0]
         batches = int(settings['num_to_test'] / settings['batch_size'])
         for i in range(batches):
-            # Get samples from Keras.ImageDataGenerator
             x_batch, y_batch = dataflow.next()
-            if True:  # Only for imagenet!
-                print("Preprocessing input for ImageNet")
-                x_batch = np.add(np.multiply(x_batch, 2. / 255.), - 1.).astype(
-                    'float32')
-            loss, acc = val_fn(x_batch, y_batch, verbose=0)
+            loss, acc = val_fn(x_batch, y_batch,
+                               batch_size=settings['batch_size'], verbose=0)
             score[0] += loss
             score[1] += acc
         score[0] /= batches
@@ -274,4 +293,5 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
 
     print('\n' + "Test loss: {:.2f}".format(score[0]))
     print("Test accuracy: {:.2%}\n".format(score[1]))
+
     return score

@@ -17,7 +17,7 @@ from keras.datasets import cifar10
 from keras.callbacks import ModelCheckpoint
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten, Convolution2D
+from keras.layers import Dense, Dropout, Activation, Flatten, Conv2D
 from keras.layers import MaxPooling2D, BatchNormalization
 from keras.utils import np_utils
 
@@ -35,22 +35,22 @@ y_test = np_utils.to_categorical(y_test, 10)
 
 model = Sequential()
 
-model.add(Convolution2D(64, 5, 5, border_mode='same', input_shape=(3, 32, 32)))
+model.add(Conv2D(64, 5, 5, padding='same', input_shape=(3, 32, 32)))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(3, 3), strides=(2, 2)))
 model.add(Dropout(0.1))
 
-model.add(Convolution2D(64, 5, 5, border_mode='same'))
+model.add(Conv2D(64, 5, 5, padding='same'))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
 model.add(Dropout(0.1))
 model.add(MaxPooling2D(pool_size=(3, 3), strides=(2, 2)))
 
-model.add(Convolution2D(64, 3, 3))
+model.add(Conv2D(64, 3, 3))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
-model.add(Convolution2D(32, 3, 3))
+model.add(Conv2D(32, 3, 3))
 model.add(BatchNormalization(axis=1))
 model.add(Activation('relu'))
 

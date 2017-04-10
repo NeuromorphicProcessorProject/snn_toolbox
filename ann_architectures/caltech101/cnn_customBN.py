@@ -8,7 +8,7 @@ import numpy as np
 
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D
+from keras.layers.convolutional import Conv2D, MaxPooling2D, ZeroPadding2D
 from keras.callbacks import CallbackList, ModelCheckpoint
 from keras.regularizers import l2
 
@@ -113,8 +113,8 @@ for cv_fold in [0]: # on which cross val folds to run; cant loop over several fo
         lr_decay = 5e-4
 
     model = Sequential()
-    conv1 = Convolution2D(128, 5, 5,
-                          subsample=(2, 2),  # subsample = stride
+    conv1 = Conv2D(128, 5, 5,
+                          strides=(2, 2),
                           b_constraint=b_constraint,
                           init='he_normal',
                           W_regularizer=l2(weight_reg),
@@ -127,7 +127,7 @@ for cv_fold in [0]: # on which cross val folds to run; cant loop over several fo
     if dropout:
         model.add(Dropout(0.35))
 
-    conv2 = Convolution2D(256, 3, 3, b_constraint=b_constraint, init='he_normal', W_regularizer=l2(weight_reg))
+    conv2 = Conv2D(256, 3, 3, b_constraint=b_constraint, init='he_normal', W_regularizer=l2(weight_reg))
     model.add(conv2)
     if batch_normalization:
         model.add(BatchNormalization(mode=1))
@@ -137,7 +137,7 @@ for cv_fold in [0]: # on which cross val folds to run; cant loop over several fo
         model.add(Dropout(0.35))
 
     model.add(ZeroPadding2D(padding=(1, 1)))
-    conv3 = Convolution2D(512, 3, 3, b_constraint=b_constraint, init='he_normal', W_regularizer=l2(weight_reg))
+    conv3 = Conv2D(512, 3, 3, b_constraint=b_constraint, init='he_normal', W_regularizer=l2(weight_reg))
     model.add(conv3)
     if batch_normalization:
         model.add(BatchNormalization(mode=1))

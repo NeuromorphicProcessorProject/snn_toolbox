@@ -14,7 +14,7 @@ import json
 
 class_idx_path = '/home/rbodo/.snntoolbox/Datasets/' \
                  'imagenet/GoogLeNet/imagenet_class_index.json'
-class_idx = json.load(open(class_idx_path, "r"))
+class_idx = json.load(open(class_idx_path, 'r'))
 classes = [class_idx[str(idx)][0] for idx in range(len(class_idx))]
 
 settings = {'path_wd': '/home/rbodo/.snntoolbox/data/'

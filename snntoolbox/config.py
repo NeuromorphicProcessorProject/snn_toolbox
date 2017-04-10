@@ -45,8 +45,9 @@ dataset_path: string
 dataset_format: string
     Two input formats are supported:
 
-    - ``.npz``: Compressed numpy format.
-    - ``.jpg``: Images in directories corresponding to their class.
+    - ``npz``: Compressed numpy format.
+    - ``jpg``: Images in directories corresponding to their class.
+    - ``aedat``: DVS address-events.
 
 datagen_kwargs: string, optional
     Specify keyword arguments for the data generator that will be used to load
@@ -345,7 +346,7 @@ settings = OrderedDict({
     'overwrite': True,
     'convert': True,
     'simulate': True,
-    'verbose': 3,
+    'verbose': 1,
     'v_thresh': 1,
     'tau_refrac': 0,
     'softmax_to_relu': True,
@@ -356,7 +357,6 @@ settings = OrderedDict({
     'num_to_test': 1000,
     'poisson_input': False,
     'num_poisson_events_per_sample': -1,
-    'dvs_input': False,
     'num_dvs_events_per_sample': 2000,
     'eventframe_width': 1000,
     'label_dict': {},
@@ -371,6 +371,7 @@ settings = OrderedDict({
     'diff_to_min_rate': 100,
     'scaling_factor': 10000000,
     'maxpool_type': 'fir_max',
+    'max2avg_pool': False,
     'binarize_weights': False,
     'runlabel': 'test',
     'reset_between_frames': True,
@@ -379,10 +380,11 @@ settings = OrderedDict({
 
 # Possible variables to monitor and save / plot:
 log_vars = {'activations_n_b_l', 'spiketrains_n_b_l_t', 'input_b_l_t',
-            'mem_n_b_l_t', 'all'}
+            'mem_n_b_l_t', 'operations_b_t', 'all'}
 plot_vars = {'activations', 'spiketrains', 'spikecounts', 'spikerates',
              'input_image', 'error_t', 'confusion_matrix', 'correlation',
-             'hist_spikerates_activations', 'normalization_activations', 'all'}
+             'hist_spikerates_activations', 'normalization_activations',
+             'operations', 'all'}
 
 # pyNN specific parameters.
 pyNN_settings = {'v_reset': 0,
@@ -400,8 +402,8 @@ pyNN_settings = {'v_reset': 0,
 settings.update(pyNN_settings)
 
 # Layers that can be implemented by our spiking neuron simulators
-spiking_layers = ['Dense', 'Convolution2D', 'MaxPooling2D', 'AveragePooling2D',
-                  'Flatten', 'Merge']
+spiking_layers = ['Dense', 'Conv2D', 'MaxPooling2D', 'AveragePooling2D',
+                  'Flatten', 'Concatenate']
 
 
 def file_not_found_msg(filename, path=None):
@@ -532,8 +534,11 @@ def update_setup(s):
             "specified data set path {}.".format(
                 settings['dataset_path']))
     if settings['dataset_format'] == 'jpg':
-        assert os.listdir(settings['dataset_path']), "Data set directory is" \
-                                                     " empty."
+        assert os.listdir(settings['dataset_path']), "Data set directory is " \
+                                                     "empty."
+    if settings['dataset_format'] == 'aedat':
+        assert os.listdir(settings['dataset_path']), "Data set directory is " \
+                                                     "empty."
 
     # Convert string containing sample indices to list of indices.
     assert isinstance(settings['samples_to_test'], str), "The parameter " + \
