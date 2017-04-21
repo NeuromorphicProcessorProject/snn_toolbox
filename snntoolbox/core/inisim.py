@@ -36,7 +36,7 @@ floatX = theano.config.floatX
 
 bias_relaxation = False
 clamp_var = False
-clamp_delay = True
+clamp_delay = False
 v_clip = False
 
 
