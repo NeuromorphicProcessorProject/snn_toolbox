@@ -211,8 +211,11 @@ def extract(model):
 
         if layer_type in {'Dense', 'Conv2D'}:
             inc = len(layer.params)  # For weights and maybe biases
-            attributes['parameters'] = all_parameters[parameters_idx:
-                                                      parameters_idx + inc]
+            params = all_parameters[parameters_idx: parameters_idx + inc]
+            if layer_type == 'Conv2D':
+                params[0] = np.transpose(params[0], (2, 3, 1, 0))
+            attributes['parameters'] = params
+
             parameters_idx += inc
             if settings['binarize_weights']:
                 print("Binarizing weights...")
@@ -250,7 +253,7 @@ def extract(model):
                                'padding': padding})
 
         if layer_type == 'Concatenate':
-            attributes.update({'mode': 'concat', 'concat_axis': layer.axis})
+            attributes.update({'axis': layer.axis})
 
         attributes['inbound'] = get_inbound_names(layers, layer, name_map)
 
@@ -389,7 +392,7 @@ def absorb_bn(w, b, gamma, beta, mean, var_squ_eps_inv):
     layer.
     """
 
-    axis = 0 if w.ndim > 2 else 1
+    axis = -1 if w.ndim > 2 else 1
 
     broadcast_shape = [1] * w.ndim  # e.g. [1, 1, 1, 1] for ConvLayer
     broadcast_shape[axis] = w.shape[axis]  # [64, 1, 1, 1] for 64 features

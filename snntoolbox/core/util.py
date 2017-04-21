@@ -207,8 +207,10 @@ def get_dataset(s):
                 'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
             assert evalset, "Evaluation set empty."
         if s['normalize'] and normset is None:
+            dataflow_kwargs['shuffle'] = True
             normset = {
                 'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
+            dataflow_kwargs['shuffle'] = False
             assert normset, "Normalization set empty."
         if s['simulate']:
             testset = {
@@ -443,13 +445,10 @@ def normalize_parameters(model, **kwargs):
             x_norm = kwargs['x_norm']
         elif 'dataflow' in kwargs:
             x_norm, y = kwargs['dataflow'].next()
-            if True:  # Only for imagenet!
-                print("Preprocessing input for ImageNet")
-                x_norm = np.add(np.multiply(x_norm, 2. / 255.), - 1.)
         print("Using {} samples for normalization.".format(len(x_norm)))
         sizes = [
             len(x_norm) * np.array(layer.output_shape[1:]).prod() * 32 /
-            (8*1e9) for layer in model.layers if len(layer.get_weights()) > 0]
+            (8*1e9) for layer in model.layers if len(layer.weights) > 0]
         size_str = ['{:.2f}'.format(s) for s in sizes]
         print("INFO: Need {} GB for layer activations.\n".format(size_str) +
               "May have to reduce size of data set used for normalization.\n")
@@ -466,7 +465,7 @@ def normalize_parameters(model, **kwargs):
         i = 0
         for layer in model.layers:
             # Skip if layer has no parameters
-            if len(layer.get_weights()) == 0:
+            if len(layer.weights) == 0:
                 continue
 
             print("Calculating activations of layer {} ...".format(
@@ -480,7 +479,17 @@ def normalize_parameters(model, **kwargs):
             nonzero_activations = activations[np.nonzero(activations)]
             del activations
             idx = i if settings['normalization_schedule'] else 0
-            scale_facs[layer.name] = get_scale_fac(nonzero_activations, idx)
+            if layer.activation.__name__ == 'softmax':
+                # When using a certain percentile or even the max, the scaling
+                # factor can be extremely low in case of many output classes
+                # (e.g. 0.01 for ImageNet). This amplifies weights and biases
+                # greatly. But large biases cause large offsets in the beginning
+                # of the simulation (spike input absent).
+                sf = 1.0  # float(np.max(nonzero_activations))
+                print("Scale factor: {:.2f}.".format(sf))
+            else:
+                sf = get_scale_fac(nonzero_activations, idx)
+            scale_facs[layer.name] = sf
             # Since we have calculated output activations here, check at this
             # point if the output is mostly negative, in which case we should
             # stick to softmax. Otherwise ReLU is preferred.
@@ -506,7 +515,7 @@ def normalize_parameters(model, **kwargs):
     # Apply scale factors to normalize the parameters.
     for layer in model.layers:
         # Skip if layer has no parameters
-        if len(layer.get_weights()) == 0:
+        if len(layer.weights) == 0:
             continue
 
         # Scale parameters
@@ -552,7 +561,7 @@ def normalize_parameters(model, **kwargs):
         weights = np.load(os.path.join(activ_dir, 'weights.npz'))
         for idx, layer in enumerate(model.layers):
             # Skip if layer has no parameters
-            if len(layer.get_weights()) == 0:
+            if len(layer.weights) == 0:
                 continue
 
             label = str(idx) + layer.__class__.__name__ if use_simple_label \
@@ -703,7 +712,7 @@ def get_outbound_activation(layer):
             break
         elif len(outbound) == 1:
             outbound = outbound[0]
-            if hasattr(outbound, 'activation'):
+            if outbound.__class__.__name__ == 'Activation':
                 activation = outbound.activation.__name__
         else:
             print("Activation following Conv or Dense must be unique.")

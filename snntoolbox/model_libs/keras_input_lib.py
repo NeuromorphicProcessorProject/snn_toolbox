@@ -167,14 +167,14 @@ def extract(model):
             layer_type = 'AveragePooling2D'
         attributes['layer_type'] = layer_type
 
-        # Append layer name
+        # Append layer label
         if len(layer.output_shape) == 2:
             shape_string = '_{}'.format(layer.output_shape[1])
         else:
             shape_string = '_{}x{}x{}'.format(layer.output_shape[1],
                                               layer.output_shape[2],
                                               layer.output_shape[3])
-        num_str = str(layer_num) if layer_num > 9 else '0' + str(layer_num)
+        num_str = str(idx) if idx > 9 else '0' + str(idx)
         attributes['name'] = num_str + layer_type + shape_string
 
         if layer_type in {'Dense', 'Conv2D'}:

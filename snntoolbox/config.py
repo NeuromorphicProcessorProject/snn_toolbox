@@ -358,7 +358,7 @@ settings = OrderedDict({
     'poisson_input': False,
     'num_poisson_events_per_sample': -1,
     'num_dvs_events_per_sample': 2000,
-    'eventframe_width': 1000,
+    'eventframe_width': 10,
     'label_dict': {},
     'subsample_facs': (1, 1),
     'reset': 'Reset by subtraction',
@@ -374,7 +374,7 @@ settings = OrderedDict({
     'max2avg_pool': False,
     'binarize_weights': False,
     'runlabel': 'test',
-    'reset_between_frames': True,
+    'reset_between_nth_sample': 1,
     'log_vars': [],
     'plot_vars': []})
 
@@ -496,10 +496,12 @@ def update_setup(s):
             try:
                 keras.models.load_model(h5_filepath)
             except:
-                raise AssertionError("You provided an h5 file with weights, "
-                                     "but without network configuration. In "
-                                     "earlier versions of Keras, this is "
-                                     "contained in a json file.")
+                raise AssertionError(
+                    "Input model could not be loaded. This is likely due to a "
+                    "Keras version backwards-incompability. For instance, you "
+                    "might have provided an h5 file with weights, but without "
+                    "network configuration. In earlier versions of Keras, this "
+                    "is contained in a json file.")
     elif settings['model_lib'] == 'lasagne':
         h5_file = settings['filename_ann'] + '.h5'
         pkl_file = settings['filename_ann'] + '.pkl'
@@ -546,6 +548,18 @@ def update_setup(s):
         settings['samples_to_test'].__class__)
     settings['sample_indices_to_test'] = [
         int(i) for i in settings['samples_to_test'].split() if i.isnumeric()]
+    if not settings['sample_indices_to_test'] == []:
+        if len(settings['sample_indices_to_test']) != settings['num_to_test']:
+            print(dedent("""
+            SNN toolbox Warning: Settings mismatch. Adjusting 'num_to_test' to
+            equal the number of 'samples_to_test'."""))
+            settings['num_to_test'] = len(settings['sample_indices_to_test'])
+        if settings['dataset_format'] == 'jpg':
+            assert "'shuffle': False" in settings['dataflow_kwargs'], dedent("""
+                SNN toolbox Warning: You gave a list of specific samples to be
+                tested. For this to work in combination with a  
+                DataImageGenerator, you should set shuffling=False in 
+                settings['dataflow_kwargs'].""")
 
     # Create log directory if it does not exist.
     if 'log_dir_of_current_run' not in s:
@@ -593,11 +607,11 @@ def update_setup(s):
 
     if 'all' in settings['log_vars']:
         settings['log_vars'] = log_vars
-        settings['log_vars'].pop('all')
+        settings['log_vars'].remove('all')
 
     if 'all' in settings['plot_vars']:
         settings['plot_vars'] = plot_vars
-        settings['plot_vars'].pop('all')
+        settings['plot_vars'].remove('all')
 
     return True
 

@@ -27,8 +27,6 @@ from snntoolbox.core.inisim import bias_relaxation
 
 standard_library.install_aliases()
 
-if settings['online_normalization']:
-    lidx = 0
 
 remove_classifier = False
 
@@ -158,6 +156,7 @@ class SNN:
             num_neurons, num_neurons_with_bias, fanin = self.set_connectivity()
             self.ann_ops = get_ann_ops(num_neurons, num_neurons_with_bias,
                                        fanin)
+            print("Number of operations of ANN: {}".format(self.ann_ops))
 
     def run(self, x_test=None, y_test=None, dataflow=None, **kwargs):
         """Simulate a SNN with LIF and Poisson input.
@@ -224,21 +223,29 @@ class SNN:
             self.parsed_model = keras.models.load_model(os.path.join(
                 s['path_wd'], s['filename_parsed_model']+'.h5'))
 
-        si = s['sample_indices_to_test'] \
+        # Extract certain samples from test set, if user specified such a list.
+        si = s['sample_indices_to_test'].copy() \
             if 'sample_indices_to_test' in s else []
         if not si == []:
-            assert len(si) == s['batch_size'], dedent("""
-                You attempted to test the SNN on a total number of samples that
-                is not compatible with the batch size with which the SNN was
-                converted. Either change the number of samples to test to be
-                equal to the batch size, or convert the ANN again using the
-                corresponding batch size.""")
             if dataflow is not None:
-                # Probably need to turn off shuffling in ImageDataGenerator
-                # for this to produce the desired samples.
-                x_test, y_test = dataflow.next()
-            x_test = np.array([x_test[i] for i in si])
-            y_test = np.array([y_test[i] for i in si])
+                batch_idx = 0
+                x_test = []
+                y_test = []
+                target_idx = si.pop(0)
+                while len(x_test) < s['num_to_test']:
+                    x_b_l, y_b = dataflow.next()
+                    for i in range(s['batch_size']):
+                        if batch_idx * s['batch_size'] + i == target_idx:
+                            x_test.append(x_b_l[i])
+                            y_test.append(y_b[i])
+                            if len(si) > 0:
+                                target_idx = si.pop(0)
+                    batch_idx += 1
+                x_test = np.array(x_test)
+                y_test = np.array(y_test)
+            else:
+                x_test = np.array([x_test[i] for i in si])
+                y_test = np.array([y_test[i] for i in si])
 
         # Divide the test set into batches and run all samples in a batch in
         # parallel.
@@ -270,7 +277,7 @@ class SNN:
 
         for batch_idx in range(num_batches):
             # Get a batch of samples
-            if dataflow is not None:
+            if dataflow is not None and len(s['sample_indices_to_test']) == 0:
                 x_b_l, y_b = dataflow.next()
             elif not s['dataset_format'] == 'aedat':
                 batch_idxs = range(s['batch_size'] * batch_idx,
@@ -307,10 +314,9 @@ class SNN:
             else:
                 # Simply use the analog values of the original data as input.
                 input_b_l = x_b_l * s['dt']
-                # input_b_l = np.random.random_sample(x_b_l.shape)
 
             # Reset network variables.
-            self.reset()
+            self.reset(batch_idx)
 
             # Allocate variables to monitor during simulation
             output_b_l = np.zeros((s['batch_size'], self.num_classes), 'int32')
@@ -335,11 +341,10 @@ class SNN:
                         # size as the maximum activation, and the same sign as
                         # the corresponding activation. Is there a better
                         # solution?
-                        # input_b_l *= np.max(x_b_l) * np.sign(x_b_l)
+                        input_b_l *= np.max(x_b_l) * np.sign(x_b_l)
                     else:
                         input_b_l = np.zeros(x_b_l.shape)
                 elif s['dataset_format'] == 'aedat':
-                    # print("Generating a batch of even-frames...")
                     input_b_l = np.zeros(self.snn.layers[0].batch_input_shape,
                                          'float32')
                     for sample_idx in range(s['batch_size']):
@@ -570,11 +575,11 @@ class SNN:
             if self.sim.get_time(layer) is not None:  # Has time attribute
                 self.sim.set_time(layer, np.float32(t))
 
-    def reset(self):
+    def reset(self, sample_idx):
         """Reset network variables."""
 
         for layer in self.snn.layers[1:]:  # Skip input layer
-            layer.reset()
+            layer.reset(sample_idx)
 
     def init_log_vars(self):
         """Initialize debug variables."""

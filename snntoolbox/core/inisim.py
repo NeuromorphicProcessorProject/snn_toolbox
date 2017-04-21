@@ -36,7 +36,7 @@ floatX = theano.config.floatX
 
 bias_relaxation = False
 clamp_var = False
-clamp_delay = False
+clamp_delay = True
 v_clip = False
 
 
@@ -64,12 +64,13 @@ def update_neurons(self):
 
     if settings['online_normalization']:
         add_updates(self, [(self.spikecounts,
-                            t.add(self.spikecounts, output_spikes))])
+                            t.add(self.spikecounts, t.neq(output_spikes, 0)))])
         add_updates(self, [(self.max_spikerate, t.max(self.spikecounts) *
                             settings['dt'] / self.time)])
 
     if self.spiketrain is not None:
-        add_updates(self, [(self.spiketrain, self.time * output_spikes)])
+        add_updates(self, [(self.spiketrain,
+                            self.time * t.neq(output_spikes, 0))])
 
     return t.cast(output_spikes, floatX)
 
@@ -165,7 +166,7 @@ def linear_activation(self):
         new_mem = self.mem + masked_imp
 
     # Store spiking
-    output_spikes = t.ge(new_mem, self.v_thresh)
+    output_spikes = t.mul(t.ge(new_mem, self.v_thresh), self.v_thresh)
     spike_idxs = output_spikes.nonzero()
 
     if settings['reset'] == 'Reset by subtraction':
@@ -221,12 +222,17 @@ def softmax_activation(self):
 def get_new_thresh(self):
     """Get new threshhold."""
 
-    return theano.ifelse.ifelse(
-        t.eq(self.time / settings['dt'] % settings['timestep_fraction'], 0) *
-        t.gt(self.max_spikerate, settings['diff_to_min_rate'] / 1000) *
-        t.gt(1 / settings['dt'] - self.max_spikerate,
-             settings['diff_to_max_rate'] / 1000),
-        self.max_spikerate, self.v_thresh)
+    thr_min = 0.5
+    thr_max = 1.0
+    r_lim = 1 / settings['dt']
+    return thr_min + (thr_max - thr_min) * self.max_spikerate / r_lim
+
+    # return theano.ifelse.ifelse(
+    #     t.eq(self.time / settings['dt'] % settings['timestep_fraction'], 0) *
+    #     t.gt(self.max_spikerate, settings['diff_to_min_rate'] / 1000) *
+    #     t.gt(1 / settings['dt'] - self.max_spikerate,
+    #          settings['diff_to_max_rate'] / 1000),
+    #     self.max_spikerate, self.v_thresh)
 
 
 def get_time(self):
@@ -328,9 +334,12 @@ def init_membrane_potential(self, mode='zero'):
     return init_mem
 
 
-def reset_spikevars(self):
+def reset_spikevars(self, sample_idx):
     """Reset variables present in spiking layers."""
-    if settings['reset_between_frames']:
+    mod = settings['reset_between_nth_sample']
+    mod = mod if mod else sample_idx + 1
+    do_reset = sample_idx % mod == 0
+    if do_reset:
         self.mem.set_value(init_membrane_potential(self))
     self.time.set_value(np.float32(settings['dt']))
     if settings['tau_refrac'] > 0:
@@ -340,11 +349,11 @@ def reset_spikevars(self):
     if settings['payloads']:
         self.payloads.set_value(np.zeros(self.output_shape, floatX))
         self.payloads_sum.set_value(np.zeros(self.output_shape, floatX))
-    if settings['online_normalization'] and settings['reset_between_frames']:
+    if settings['online_normalization'] and do_reset:
         self.spikecounts.set_value(np.zeros(self.output_shape, floatX))
-        self.max_spikerate.set_value(0.)
-        self.v_thresh.set_value(settings['v_thresh'])
-    if clamp_var and settings['reset_between_frames']:
+        self.max_spikerate.set_value(np.float32(0.))
+        self.v_thresh.set_value(np.float32(settings['v_thresh']))
+    if clamp_var and do_reset:
         self.spikerate.set_value(np.zeros(self.input_shape, floatX))
         self.var.set_value(np.zeros(self.input_shape, floatX))
 
@@ -353,7 +362,7 @@ def init_neurons(self, input_shape, tau_refrac=0.):
     """Init layer neurons."""
 
     output_shape = self.compute_output_shape(input_shape)
-    self.v_thresh = theano.shared(settings['v_thresh'])
+    self.v_thresh = theano.shared(np.float32(settings['v_thresh']))
     self.tau_refrac = tau_refrac
     self.mem = k.zeros(output_shape)
     self.time = theano.shared(np.float32(settings['dt']))
@@ -363,15 +372,14 @@ def init_neurons(self, input_shape, tau_refrac=0.):
     if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
             'hist_spikerates_activations', 'operations', 'operations_b_t',
             'spiketrains_n_b_l_t'}
-           & (settings['plot_vars'] | settings['log_vars'])):
+                   & (settings['plot_vars'] | settings['log_vars'])):
         self.spiketrain = k.zeros(output_shape)
     if settings['online_normalization']:
         self.spikecounts = k.zeros(output_shape)
+        self.max_spikerate = theano.shared(np.float32(0))
     if settings['payloads']:
         self.payloads = k.zeros(output_shape)
         self.payloads_sum = k.zeros(output_shape)
-    if settings['online_normalization']:
-        self.max_spikerate = k.zeros(1)
     if clamp_var:
         self.spikerate = k.zeros(input_shape)
         self.var = k.zeros(input_shape)
@@ -440,7 +448,7 @@ class SpikeConcatenate(Concatenate):
     """Spike merge layer"""
 
     @staticmethod
-    def reset():
+    def reset(sample_idx):
         """Reset layer variables."""
 
         pass
@@ -461,7 +469,7 @@ class SpikeFlatten(Flatten):
         return t.cast(super(SpikeFlatten, self).call(x), floatX)
 
     @staticmethod
-    def reset():
+    def reset(sample_idx):
         """Reset layer variables."""
 
         pass
@@ -537,10 +545,10 @@ class SpikeDense(Dense):
         self.impulse = super(SpikeDense, self).call(inp)
         return update_neurons(self)
 
-    def reset(self):
+    def reset(self, sample_idx):
         """Reset layer variables."""
 
-        reset_spikevars(self)
+        reset_spikevars(self, sample_idx)
 
     @property
     def class_name(self):
@@ -615,10 +623,10 @@ class SpikeConv2D(Conv2D):
         self.impulse = super(SpikeConv2D, self).call(inp)
         return update_neurons(self)
 
-    def reset(self):
+    def reset(self, sample_idx):
         """Reset layer variables."""
 
-        reset_spikevars(self)
+        reset_spikevars(self, sample_idx)
 
     @property
     def class_name(self):
@@ -678,10 +686,10 @@ class SpikeAveragePooling2D(AveragePooling2D):
         self.impulse = super(SpikeAveragePooling2D, self).call(inp)
         return update_neurons(self)
 
-    def reset(self):
+    def reset(self, sample_idx):
         """Reset layer variables."""
 
-        reset_spikevars(self)
+        reset_spikevars(self, sample_idx)
 
     @property
     def class_name(self):
@@ -773,11 +781,13 @@ class SpikeMaxPooling2D(MaxPooling2D):
         return spike_pool2d(inputs, pool_size, strides, padding, data_format,
                             'max')
 
-    def reset(self):
+    def reset(self, sample_idx):
         """Reset layer variables."""
 
-        reset_spikevars(self)
-        if settings['reset_between_frames']:
+        reset_spikevars(self, sample_idx)
+        mod = settings['reset_between_nth_sample']
+        mod = mod if mod else sample_idx + 1
+        if sample_idx % mod == 0:
             self.spikerate_pre.set_value(np.zeros(self.input_shape, floatX))
 
     @property
@@ -1050,7 +1060,7 @@ class SpikePool(theano.Op):
         zz = z[0]
         # size of pooling output
         pool_out_shp = zz.shape[-nd:]
-        img_shp = tuple(xr.shape[-nd + i] + 2 * pad[i] for i in t.xrange(nd))
+        img_shp = tuple(xr.shape[-nd + i] + 2 * pad[i] for i in range(nd))
         inc_pad = self.mode == 'average_inc_pad'
 
         # pad the image
@@ -1058,19 +1068,19 @@ class SpikePool(theano.Op):
             yr = np.zeros(xr.shape[:-nd] + img_shp, dtype=xr.dtype)
             # noinspection PyTypeChecker
             yr[(slice(None),)*(len(xr.shape)-nd) + tuple(
-                slice(pad[i], img_shp[i]-pad[i]) for i in t.xrange(nd))] = xr
+                slice(pad[i], img_shp[i]-pad[i]) for i in range(nd))] = xr
             ys = np.zeros(xs.shape[:-nd] + img_shp, dtype=xs.dtype)
             # noinspection PyTypeChecker
             ys[(slice(None),)*(len(xs.shape)-nd) + tuple(slice(
-                pad[i], img_shp[i]-pad[i]) for i in t.xrange(nd))] = xs
+                pad[i], img_shp[i]-pad[i]) for i in range(nd))] = xs
         else:
             yr = xr
             ys = xs
 
         # precompute the region boundaries for each dimension
-        region_slices = [[] for _ in t.xrange(nd)]
-        for i in t.xrange(nd):
-            for j in t.xrange(pool_out_shp[i]):
+        region_slices = [[] for _ in range(nd)]
+        for i in range(nd):
+            for j in range(pool_out_shp[i]):
                 start = j * stride[i]
                 end = min(start + ws[i], img_shp[i])
                 if not inc_pad:
@@ -1078,24 +1088,26 @@ class SpikePool(theano.Op):
                     end = min(end, img_shp[i] - pad[i])
                 region_slices[i].append(slice(start, end))
 
+        spike = settings['v_thresh']
         # iterate over non-pooling dimensions
         for n in np.ndindex(*xr.shape[:-nd]):
+            yrn = yr[n]
+            ysn = ys[n]
+            zzn = zz[n]
             # iterate over pooling regions
             for r in np.ndindex(*pool_out_shp):
-                rate_patch = yr[n][[region_slices[i][r[i]] for i in
-                                    t.xrange(nd)]]
-                # if not rate_patch.any():
-                #     # Need to prevent the layer to output a spike at
-                #     # index 0 if all rates are equally zero.
-                #     continue
-                spike_patch = ys[n][[region_slices[i][r[i]] for i in
-                                     t.xrange(nd)]]
-                # max_rates = rate_patch == np.max(rate_patch)
-                # if (spike_patch * max_rates).any():
-                #     zz[n, j, r, c] = settings['v_thresh']
-                max_rate_idx = np.argmax(rate_patch)  # flattens patch
-                if spike_patch.flatten()[max_rate_idx]:
-                    zz[n][r] = settings['v_thresh']
+                rate_patch = yrn[[region_slices[i][r[i]] for i in range(nd)]]
+                if not rate_patch.any():
+                    # Need to prevent the layer to output a spike at
+                    # index 0 if all rates are equally zero.
+                    continue
+                spike_patch = ysn[[region_slices[i][r[i]] for i in range(nd)]]
+                # The first condition is not completely equivalent to the second
+                # because the latter has a higher chance of admitting spikes.
+                if spike_patch.flatten()[np.argmax(rate_patch)]:
+                #if (spike_patch * (rate_patch == np.argmax(rate_patch))).any():
+                    zzn[r] = spike
+
 
 custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeDense': SpikeDense,
