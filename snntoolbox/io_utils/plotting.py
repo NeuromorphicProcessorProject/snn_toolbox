@@ -370,8 +370,9 @@ def plot_layer_correlation(rates, activations, title, path=None):
                  textcoords='offset points')
     plt.title(title, fontsize=20)
     plt.locator_params(nbins=4)
-    plt.xlim([None, max(activations) * 1.1])
-    plt.ylim([None, max(rates) * 1.1])
+    lim = max([1.1, max(activations)])
+    plt.xlim([0, lim])
+    plt.ylim([0, lim])
     plt.xlabel('ANN activations', fontsize=16)
     plt.ylabel('SNN spikerates [Hz]', fontsize=16)
     if path is not None:
@@ -900,31 +901,47 @@ def plot_confusion_matrix(y_test, y_pred, path=None, class_labels=None):
     plt.close()
 
 
-def plot_error_vs_time(err_d_t, ann_err=None, path=None):
+def plot_error_vs_time(top1err_d_t, top5err_d_t,
+                       top1err_ann=None, top5err_ann=None, path=None):
     """Plot classification error over time.
 
     Parameters
     ----------
 
-    err_d_t: np.array
-        Batch of errors over time. Shape: (num_samples, duration). Data type:
-        boolean (correct / incorrect classification).
-    ann_err: Optional[float]
-        The error of the ANN.
+    top1err_d_t: np.array
+        Batch of top-1 errors over time. Shape: (num_samples, duration).
+        Data type: boolean (correct / incorrect classification).
+    top5err_d_t: np.array
+        Batch of top-5 errors over time. Shape: (num_samples, duration).
+        Data type: boolean (correct / incorrect classification).
+    top1err_ann: Optional[float]
+        The top-1 error of the ANN.
+    top5err_ann: Optional[float]
+        The top-5 error of the ANN.
     path: Optional[str]
         Where to save the output.
     """
 
-    err_t = np.mean(err_d_t, 0) * 100
-    std_t = np.std(err_d_t, 0) * 100
+    top1err_t = np.mean(top1err_d_t, 0) * 100
+    top1std_t = np.std(top1err_d_t, 0) * 100
+    top5err_t = np.mean(top5err_d_t, 0) * 100
+    top5std_t = np.std(top5err_d_t, 0) * 100
 
     plt.figure()
 #    plt.title('Error vs simulation time')
     time = np.arange(0, settings['duration'], settings['dt'])
-    plt.plot(time, err_t, '.b', label='SNN')
-    plt.fill_between(time, err_t-std_t, err_t+std_t, alpha=0.1, color='blue')
-    if ann_err:
-        plt.hlines(ann_err*100, 0, time[-1], label='ANN', linestyle='dashed')
+    plt.plot(time, top1err_t, '.g', label='SNN top-1')
+    plt.plot(time, top5err_t, 'xb', label='SNN top-5')
+    plt.fill_between(time, top1err_t-top1std_t, top1err_t+top1std_t, alpha=0.1,
+                     color='green')
+    plt.fill_between(time, top5err_t-top5std_t, top5err_t+top5std_t, alpha=0.1,
+                     color='blue')
+    if top1err_ann:
+        plt.hlines(top1err_ann*100, 0, time[-1], label='ANN top-1',
+                   colors='red', linestyle='-.')
+    if top5err_ann:
+        plt.hlines(top5err_ann*100, 0, time[-1], label='ANN top-5',
+                   colors='orange', linestyle='--')
     plt.legend()
     plt.ylim(0, 100)
     plt.ylabel('Error [%]')

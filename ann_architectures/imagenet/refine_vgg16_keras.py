@@ -14,7 +14,7 @@ from __future__ import print_function
 
 from keras.preprocessing.image import ImageDataGenerator
 
-from ann_architectures.imagenet.utils import preprocess_input
+from keras.applications.imagenet_utils import preprocess_input
 from keras.layers import Flatten, Dense, Conv2D, AveragePooling2D
 from keras.models import Sequential
 from keras.optimizers import SGD

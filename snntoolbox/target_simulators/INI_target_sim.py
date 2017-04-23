@@ -24,11 +24,10 @@ import keras
 from future import standard_library
 from snntoolbox.config import settings, initialize_simulator
 from snntoolbox.core.inisim import bias_relaxation
+from snntoolbox.core.util import in_top_k
 
 standard_library.install_aliases()
 
-if settings['online_normalization']:
-    lidx = 0
 
 remove_classifier = False
 
@@ -80,7 +79,8 @@ class SNN:
         self.parsed_model = None
         # Logging variables
         self.spiketrains_n_b_l_t = self.activations_n_b_l = None
-        self.input_b_l_t = self.mem_n_b_l_t = self.top1err_b_t = None
+        self.input_b_l_t = self.mem_n_b_l_t = None
+        self.top1err_b_t = self.top5err_b_t = None
         self.operations_b_t = self.ann_ops = None
         self.num_neurons = self.num_neurons_with_bias = None
         self.fanin = self.fanout = None
@@ -88,6 +88,7 @@ class SNN:
         # input.
         self.rescale_fac = 1
         self.num_classes = 0
+        self.top_k = 5
 
     # noinspection PyUnusedLocal
     def build(self, parsed_model, verbose=True, **kwargs):
@@ -144,7 +145,7 @@ class SNN:
         self.snn = keras.models.Model(
             input_images, spiking_layers[parsed_model.layers[-1].name])
         self.snn.compile('sgd', 'categorical_crossentropy',
-                         metrics=['accuracy'])
+                         ['accuracy'])
         self.snn.set_weights(parsed_model.get_weights())
         for layer in self.snn.layers:
             if hasattr(layer, 'b'):
@@ -158,6 +159,7 @@ class SNN:
             num_neurons, num_neurons_with_bias, fanin = self.set_connectivity()
             self.ann_ops = get_ann_ops(num_neurons, num_neurons_with_bias,
                                        fanin)
+            print("Number of operations of ANN: {}".format(self.ann_ops))
 
     def run(self, x_test=None, y_test=None, dataflow=None, **kwargs):
         """Simulate a SNN with LIF and Poisson input.
@@ -203,7 +205,7 @@ class SNN:
         """
 
         # from ann_architectures.imagenet.utils import preprocess_input
-        from snntoolbox.core.util import get_activations_batch, get_top5score
+        from snntoolbox.core.util import get_activations_batch
         from snntoolbox.core.util import echo, get_layer_ops
         from snntoolbox.io_utils.plotting import output_graphs
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
@@ -224,21 +226,29 @@ class SNN:
             self.parsed_model = keras.models.load_model(os.path.join(
                 s['path_wd'], s['filename_parsed_model']+'.h5'))
 
-        si = s['sample_indices_to_test'] \
+        # Extract certain samples from test set, if user specified such a list.
+        si = s['sample_indices_to_test'].copy() \
             if 'sample_indices_to_test' in s else []
         if not si == []:
-            assert len(si) == s['batch_size'], dedent("""
-                You attempted to test the SNN on a total number of samples that
-                is not compatible with the batch size with which the SNN was
-                converted. Either change the number of samples to test to be
-                equal to the batch size, or convert the ANN again using the
-                corresponding batch size.""")
             if dataflow is not None:
-                # Probably need to turn off shuffling in ImageDataGenerator
-                # for this to produce the desired samples.
-                x_test, y_test = dataflow.next()
-            x_test = np.array([x_test[i] for i in si])
-            y_test = np.array([y_test[i] for i in si])
+                batch_idx = 0
+                x_test = []
+                y_test = []
+                target_idx = si.pop(0)
+                while len(x_test) < s['num_to_test']:
+                    x_b_l, y_b = dataflow.next()
+                    for i in range(s['batch_size']):
+                        if batch_idx * s['batch_size'] + i == target_idx:
+                            x_test.append(x_b_l[i])
+                            y_test.append(y_b[i])
+                            if len(si) > 0:
+                                target_idx = si.pop(0)
+                    batch_idx += 1
+                x_test = np.array(x_test)
+                y_test = np.array(y_test)
+            else:
+                x_test = np.array([x_test[i] for i in si])
+                y_test = np.array([y_test[i] for i in si])
 
         # Divide the test set into batches and run all samples in a batch in
         # parallel.
@@ -246,6 +256,7 @@ class SNN:
             int(np.floor(s['num_to_test'] / s['batch_size']))
 
         top5score_moving = 0
+        score_ann = np.zeros(2)
         truth_d = []  # Filled up with correct classes of all test samples.
         guesses_d = []  # Filled up with guessed classes of all test samples.
         guesses_b = np.zeros(s['batch_size'])  # Guesses of one batch.
@@ -266,11 +277,12 @@ class SNN:
             os.remove(path_acc)
 
         self.init_log_vars()
-        self.num_classes = self.snn.layers[-1].output_shape[-1]
+        self.num_classes = int(self.snn.layers[-1].output_shape[-1])
+        self.top_k = min(self.num_classes, 5)
 
         for batch_idx in range(num_batches):
             # Get a batch of samples
-            if dataflow is not None:
+            if dataflow is not None and len(s['sample_indices_to_test']) == 0:
                 x_b_l, y_b = dataflow.next()
             elif not s['dataset_format'] == 'aedat':
                 batch_idxs = range(s['batch_size'] * batch_idx,
@@ -307,10 +319,9 @@ class SNN:
             else:
                 # Simply use the analog values of the original data as input.
                 input_b_l = x_b_l * s['dt']
-                # input_b_l = np.random.random_sample(x_b_l.shape)
 
             # Reset network variables.
-            self.reset()
+            self.reset(batch_idx)
 
             # Allocate variables to monitor during simulation
             output_b_l = np.zeros((s['batch_size'], self.num_classes), 'int32')
@@ -335,11 +346,10 @@ class SNN:
                         # size as the maximum activation, and the same sign as
                         # the corresponding activation. Is there a better
                         # solution?
-                        # input_b_l *= np.max(x_b_l) * np.sign(x_b_l)
+                        input_b_l *= np.max(x_b_l) * np.sign(x_b_l)
                     else:
                         input_b_l = np.zeros(x_b_l.shape)
                 elif s['dataset_format'] == 'aedat':
-                    # print("Generating a batch of even-frames...")
                     input_b_l = np.zeros(self.snn.layers[0].batch_input_shape,
                                          'float32')
                     for sample_idx in range(s['batch_size']):
@@ -379,6 +389,8 @@ class SNN:
                 # wrongly classified.
                 guesses_b[undecided] = -1
                 self.top1err_b_t[:, sim_step_int] = truth_b != guesses_b
+                self.top5err_b_t[:, sim_step_int] = \
+                    ~in_top_k(output_b_l, truth_b, self.top_k)
                 # Record neuron variables.
                 i = j = 0
                 for layer in self.snn.layers:
@@ -418,21 +430,31 @@ class SNN:
             truth_d += list(truth_b)
             guesses_d += list(guesses_b)
             top1acc_moving = np.mean(np.array(truth_d) == np.array(guesses_d))
-            top5score_moving += get_top5score(truth_b, output_b_l)
+            top5score_moving += sum(in_top_k(output_b_l, truth_b, self.top_k))
             top5acc_moving = top5score_moving / num_samples_seen
             if s['verbose'] > 0:
                 print("\nBatch {} of {} completed ({:.1%})".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
-                print("Moving top-1 accuracy: {:.2%}.\n".format(top1acc_moving))
-                print("Moving top-5 accuracy: {:.2%}.\n".format(top5acc_moving))
+                print("Moving accuracy of SNN (top-1, top-5): {:.2%}, {:.2%}."
+                      "".format(top1acc_moving, top5acc_moving))
             with open(path_acc, 'a') as f_acc:
                 f_acc.write("{} {:.2%} {:.2%}\n".format(
                     num_samples_seen, top1acc_moving, top5acc_moving))
+
+            # Evaluate ANN
+            score = self.parsed_model.test_on_batch(x_b_l, y_b)
+            score_ann += score[1:]
+            top1acc_moving_ann, top5acc_moving_ann = score_ann / num_samples_seen
+            print("Moving accuracy of ANN (top-1, top-5): {:.2%}, {:.2%}."
+                  "\n".format(top1acc_moving_ann, top5acc_moving_ann))
+
             if 'input_image' in s['plot_vars'] and x_b_l is not None:
                 plot_input_image(x_b_l[0], int(truth_b[0]), log_dir)
             if 'error_t' in s['plot_vars']:
                 ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
-                plot_error_vs_time(self.top1err_b_t, ann_err, log_dir)
+                plot_error_vs_time(self.top1err_b_t, self.top5err_b_t,
+                                   top1acc_moving_ann, top5acc_moving_ann,
+                                   log_dir)
             if 'confusion_matrix' in s['plot_vars']:
                 plot_confusion_matrix(truth_d, guesses_d, log_dir,
                                       list(np.arange(self.num_classes)))
@@ -449,6 +471,7 @@ class SNN:
                     self.parsed_model, x_b_l)
             log_vars = {key: getattr(self, key) for key in s['log_vars']}
             log_vars['top1err_b_t'] = self.top1err_b_t
+            log_vars['top5err_b_t'] = self.top5err_b_t
             np.savez_compressed(os.path.join(path_log_vars, str(batch_idx)),
                                 **log_vars)
             plot_vars = {}
@@ -570,11 +593,11 @@ class SNN:
             if self.sim.get_time(layer) is not None:  # Has time attribute
                 self.sim.set_time(layer, np.float32(t))
 
-    def reset(self):
+    def reset(self, sample_idx):
         """Reset network variables."""
 
         for layer in self.snn.layers[1:]:  # Skip input layer
-            layer.reset()
+            layer.reset(sample_idx)
 
     def init_log_vars(self):
         """Initialize debug variables."""
@@ -612,6 +635,8 @@ class SNN:
                                          layer.name))
 
         self.top1err_b_t = np.empty((settings['batch_size'], num_timesteps),
+                                    np.bool)
+        self.top5err_b_t = np.empty((settings['batch_size'], num_timesteps),
                                     np.bool)
 
     def set_connectivity(self):
