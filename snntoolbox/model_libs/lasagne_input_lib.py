@@ -131,6 +131,7 @@ def extract(model):
         layer_type = layer_dict.get(name, name)
         if layer_type == 'MaxPooling2D' and settings['max2avg_pool']:
             layer_type = 'AveragePooling2D'
+            print("Replacing Max by AveragePooling.")
 
         attributes = {'layer_type': layer_type}
 
@@ -516,5 +517,3 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
 
     print('\n' + "Test loss: {:.2f}".format(loss))
     print("Test accuracy: {:.2%}\n".format(acc))
-
-    return loss, acc

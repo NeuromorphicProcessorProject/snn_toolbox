@@ -143,7 +143,8 @@ def parse(input_model):
                                       parsed_layers[layers[-1]['name']])
     # Optimizer and loss should not matter at this stage, but it would be
     # cleaner to set them to the actial values of the input model.
-    parsed_model.compile('sgd', 'categorical_crossentropy', ['accuracy'])
+    parsed_model.compile('sgd', 'categorical_crossentropy',
+                         ['accuracy', keras.metrics.top_k_categorical_accuracy])
 
     return parsed_model
 
@@ -249,24 +250,15 @@ def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
         x_test is not None and y_test is not None or dataflow is not None), \
         "No testsamples provided."
 
-    score = [0, 0]
     if x_test is not None:
-        preds = model.predict(x_test, settings['batch_size'], verbose=0)
-        truth = np.argmax(y_test, axis=1)
-        score[0] = np.mean(np.argmax(preds, axis=1) == truth)
-        score[1] = get_top5score(truth, preds) / len(truth)
+        score = model.evaluate(x_test, settings['batch_size'], verbose=0)
     else:
-        batches = int(settings['num_to_test'] / settings['batch_size'])
-        for i in range(batches):
-            x_batch, y_batch = dataflow.next()
-            preds = model.predict_on_batch(x_batch)
-            truth = np.argmax(y_batch, axis=1)
-            score[0] += np.mean(np.argmax(preds, axis=1) == truth)
-            score[1] += get_top5score(truth, preds) / len(truth)
-        score[0] /= batches
-        score[1] /= batches
-    print('\n' + "Top-1 accuracy: {:.2%}".format(score[0]))
-    print("Top-5 accuracy: {:.2%}\n".format(score[1]))
+        steps = int(settings['num_to_test'] / settings['batch_size'])
+        score = model.evaluate_generator(dataflow, steps)
+    print('')
+    print("Top-1 accuracy: {:.2%}".format(score[1]))
+    print("Top-5 accuracy: {:.2%}".format(score[2]))
+    print('')
 
 
 def get_range(start=0.0, stop=1.0, num=5, method='linear'):
@@ -916,35 +908,40 @@ def extract_label(label):
     return layer_num, name, shape
 
 
-def get_top5score(truth, output):
-    """Compute the top-5-score (not averaged).
+def in_top_k(predictions, targets, k):
+    """Returns whether the `targets` are in the top `k` `predictions`
+
+    # Arguments
+        predictions: A tensor of shape batch_size x classess and type float32.
+        targets: A tensor of shape batch_size and type int32 or int64.
+        k: An int, number of top elements to consider.
+
+    # Returns
+        A tensor of shape batch_size and type int. output_i is 1 if
+        targets_i is within top-k values of predictions_i
+    """
+
+    predictions_top_k = np.argsort(predictions)[:, -k:]
+    return np.array([np.equal(p, t).any() for p, t in zip(predictions_top_k,
+                                                          targets)])
+
+
+def top_k_categorical_accuracy(y_true, y_pred, k=5):
+    """
 
     Parameters
     ----------
-
-    truth: np.array
-        Target classes.
-    output: np.array
-        Output of final classification layer. Shape: (batch_size, num_classes).
+    y_true : 
+    y_pred : 
+    k : 
 
     Returns
     -------
 
-    score: float
-        The top-5-score (not averaged over samples).
     """
 
-    score = 0
-    for t, o in zip(truth, output):
-        o = np.array(o, 'float32')
-        top5pred = []
-        for i in range(5):
-            top = np.argmax(o)
-            top5pred.append(top)
-            o[top] = -np.infty
-        if t in top5pred:
-            score += 1
-    return score
+    return np.mean(in_top_k(y_pred, np.argmax(y_true, axis=-1), k))
+
 
 # python 2 can not handle the 'flush' keyword argument of python 3 print().
 # Provide 'echo' function as an alias for

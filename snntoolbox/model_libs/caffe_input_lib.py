@@ -135,6 +135,7 @@ def extract(model):
             pooling = layer.pooling_param.PoolMethod.DESCRIPTOR.values[0].name
             name = 'MaxPooling2D' if pooling == 'MAX' and not \
                 settings['max2avg_pool'] else 'AveragePooling2D'
+            print("Replacing Max by AveragePooling.")
         layer_type = layer_dict.get(name, name)
 
         attributes = {'layer_type': layer_type}
@@ -416,9 +417,5 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
         accuracy += np.mean(guesses == truth)
 
     accuracy /= batches
-    loss = -1
 
-    print('\n' + "Test loss: {:.2f}".format(loss))
     print("Test accuracy: {:.2%}\n".format(accuracy))
-
-    return [loss, accuracy]

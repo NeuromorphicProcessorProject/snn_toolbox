@@ -162,9 +162,13 @@ def extract(model):
         print("Parsing layer {}.".format(layer_type))
 
         attributes = layer.get_config()
+
         layer_type = layer.__class__.__name__
+
         if layer_type == 'MaxPooling2D' and settings['max2avg_pool']:
             layer_type = 'AveragePooling2D'
+            print("Replacing Max by AveragePooling.")
+
         attributes['layer_type'] = layer_type
 
         # Append layer label
@@ -245,7 +249,7 @@ def load_ann(path=None, filename=None):
             Theano function that allows evaluating the original model.
     """
 
-    from keras import models
+    from keras import models, metrics
 
     if path is None:
         path = settings['path']
@@ -259,9 +263,12 @@ def load_ann(path=None, filename=None):
         # With this loading method, optimizer and loss cannot be recovered.
         # Could be specified by user, but since they are not really needed
         # at inference time, set them to the most common choice.
-        model.compile('sgd', 'categorical_crossentropy', metrics=['accuracy'])
+        model.compile('sgd', 'categorical_crossentropy',
+                      ['accuracy', metrics.top_k_categorical_accuracy])
     else:
         model = models.load_model(filepath + '.h5')
+        model.compile(model.optimizer, model.loss,
+                      ['accuracy', metrics.top_k_categorical_accuracy])
 
     return {'model': model, 'val_fn': model.evaluate}
 
@@ -278,20 +285,15 @@ def evaluate(val_fn, x_test=None, y_test=None, dataflow=None):
     print("Using {} samples to evaluate input model.".format(num_to_test))
 
     if x_test is not None:
-        score = val_fn(x_test, y_test, verbose=0)
+        score = val_fn(x_test, y_test, settings['batch_size'], verbose=0)
     else:
-        score = [0, 0]
+        score = np.zeros(3)
         batches = int(settings['num_to_test'] / settings['batch_size'])
         for i in range(batches):
             x_batch, y_batch = dataflow.next()
-            loss, acc = val_fn(x_batch, y_batch,
-                               batch_size=settings['batch_size'], verbose=0)
-            score[0] += loss
-            score[1] += acc
-        score[0] /= batches
-        score[1] /= batches
+            score += val_fn(x_batch, y_batch, settings['batch_size'], verbose=0)
+        score /= batches
 
-    print('\n' + "Test loss: {:.2f}".format(score[0]))
-    print("Test accuracy: {:.2%}\n".format(score[1]))
-
-    return score
+    print('')
+    print("Top-1 accuracy: {:.2%}".format(score[1]))
+    print("Top-5 accuracy: {:.2%}\n".format(score[2]))

@@ -91,8 +91,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         # Evaluate ANN
         if settings['evaluateANN']:
             print("Evaluating input model...")
-            score = model_lib.evaluate(input_model['val_fn'], **evalset)
-            spiking_model.ANN_err = 1 - score[1]
+            model_lib.evaluate(input_model['val_fn'], **evalset)
 
     if settings['convert'] and not is_stop(queue):
         # _____________________________ PARSE ________________________________ #

@@ -375,6 +375,7 @@ settings = OrderedDict({
     'binarize_weights': False,
     'runlabel': 'test',
     'reset_between_nth_sample': 1,
+    'filename_clamp_indices': '',
     'log_vars': [],
     'plot_vars': []})
 

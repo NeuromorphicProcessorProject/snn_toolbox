@@ -24,6 +24,7 @@ import keras
 from future import standard_library
 from snntoolbox.config import settings, initialize_simulator
 from snntoolbox.core.inisim import bias_relaxation
+from snntoolbox.core.util import in_top_k
 
 standard_library.install_aliases()
 
@@ -78,7 +79,8 @@ class SNN:
         self.parsed_model = None
         # Logging variables
         self.spiketrains_n_b_l_t = self.activations_n_b_l = None
-        self.input_b_l_t = self.mem_n_b_l_t = self.top1err_b_t = None
+        self.input_b_l_t = self.mem_n_b_l_t = None
+        self.top1err_b_t = self.top5err_b_t = None
         self.operations_b_t = self.ann_ops = None
         self.num_neurons = self.num_neurons_with_bias = None
         self.fanin = self.fanout = None
@@ -86,6 +88,7 @@ class SNN:
         # input.
         self.rescale_fac = 1
         self.num_classes = 0
+        self.top_k = 5
 
     # noinspection PyUnusedLocal
     def build(self, parsed_model, verbose=True, **kwargs):
@@ -142,7 +145,7 @@ class SNN:
         self.snn = keras.models.Model(
             input_images, spiking_layers[parsed_model.layers[-1].name])
         self.snn.compile('sgd', 'categorical_crossentropy',
-                         metrics=['accuracy'])
+                         ['accuracy'])
         self.snn.set_weights(parsed_model.get_weights())
         for layer in self.snn.layers:
             if hasattr(layer, 'b'):
@@ -202,7 +205,7 @@ class SNN:
         """
 
         # from ann_architectures.imagenet.utils import preprocess_input
-        from snntoolbox.core.util import get_activations_batch, get_top5score
+        from snntoolbox.core.util import get_activations_batch
         from snntoolbox.core.util import echo, get_layer_ops
         from snntoolbox.io_utils.plotting import output_graphs
         from snntoolbox.io_utils.plotting import plot_confusion_matrix
@@ -253,6 +256,7 @@ class SNN:
             int(np.floor(s['num_to_test'] / s['batch_size']))
 
         top5score_moving = 0
+        score_ann = np.zeros(2)
         truth_d = []  # Filled up with correct classes of all test samples.
         guesses_d = []  # Filled up with guessed classes of all test samples.
         guesses_b = np.zeros(s['batch_size'])  # Guesses of one batch.
@@ -273,7 +277,8 @@ class SNN:
             os.remove(path_acc)
 
         self.init_log_vars()
-        self.num_classes = self.snn.layers[-1].output_shape[-1]
+        self.num_classes = int(self.snn.layers[-1].output_shape[-1])
+        self.top_k = min(self.num_classes, 5)
 
         for batch_idx in range(num_batches):
             # Get a batch of samples
@@ -384,6 +389,8 @@ class SNN:
                 # wrongly classified.
                 guesses_b[undecided] = -1
                 self.top1err_b_t[:, sim_step_int] = truth_b != guesses_b
+                self.top5err_b_t[:, sim_step_int] = \
+                    ~in_top_k(output_b_l, truth_b, self.top_k)
                 # Record neuron variables.
                 i = j = 0
                 for layer in self.snn.layers:
@@ -423,21 +430,31 @@ class SNN:
             truth_d += list(truth_b)
             guesses_d += list(guesses_b)
             top1acc_moving = np.mean(np.array(truth_d) == np.array(guesses_d))
-            top5score_moving += get_top5score(truth_b, output_b_l)
+            top5score_moving += sum(in_top_k(output_b_l, truth_b, self.top_k))
             top5acc_moving = top5score_moving / num_samples_seen
             if s['verbose'] > 0:
                 print("\nBatch {} of {} completed ({:.1%})".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
-                print("Moving top-1 accuracy: {:.2%}.\n".format(top1acc_moving))
-                print("Moving top-5 accuracy: {:.2%}.\n".format(top5acc_moving))
+                print("Moving accuracy of SNN (top-1, top-5): {:.2%}, {:.2%}."
+                      "".format(top1acc_moving, top5acc_moving))
             with open(path_acc, 'a') as f_acc:
                 f_acc.write("{} {:.2%} {:.2%}\n".format(
                     num_samples_seen, top1acc_moving, top5acc_moving))
+
+            # Evaluate ANN
+            score = self.parsed_model.test_on_batch(x_b_l, y_b)
+            score_ann += score[1:]
+            top1acc_moving_ann, top5acc_moving_ann = score_ann / num_samples_seen
+            print("Moving accuracy of ANN (top-1, top-5): {:.2%}, {:.2%}."
+                  "\n".format(top1acc_moving_ann, top5acc_moving_ann))
+
             if 'input_image' in s['plot_vars'] and x_b_l is not None:
                 plot_input_image(x_b_l[0], int(truth_b[0]), log_dir)
             if 'error_t' in s['plot_vars']:
                 ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
-                plot_error_vs_time(self.top1err_b_t, ann_err, log_dir)
+                plot_error_vs_time(self.top1err_b_t, self.top5err_b_t,
+                                   top1acc_moving_ann, top5acc_moving_ann,
+                                   log_dir)
             if 'confusion_matrix' in s['plot_vars']:
                 plot_confusion_matrix(truth_d, guesses_d, log_dir,
                                       list(np.arange(self.num_classes)))
@@ -454,6 +471,7 @@ class SNN:
                     self.parsed_model, x_b_l)
             log_vars = {key: getattr(self, key) for key in s['log_vars']}
             log_vars['top1err_b_t'] = self.top1err_b_t
+            log_vars['top5err_b_t'] = self.top5err_b_t
             np.savez_compressed(os.path.join(path_log_vars, str(batch_idx)),
                                 **log_vars)
             plot_vars = {}
@@ -617,6 +635,8 @@ class SNN:
                                          layer.name))
 
         self.top1err_b_t = np.empty((settings['batch_size'], num_timesteps),
+                                    np.bool)
+        self.top5err_b_t = np.empty((settings['batch_size'], num_timesteps),
                                     np.bool)
 
     def set_connectivity(self):

@@ -16,6 +16,7 @@ Created on Tue Dec  8 10:41:10 2015
 from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
+import os
 import warnings
 import numpy as np
 import theano
@@ -34,9 +35,9 @@ rng = RandomStreams()
 
 floatX = theano.config.floatX
 
+# Experimental
 bias_relaxation = False
 clamp_var = False
-clamp_delay = False
 v_clip = False
 
 
@@ -155,7 +156,7 @@ def linear_activation(self):
             t.lt(t.mean(self.var), 1e-4) +
             t.gt(self.time, settings['duration'] / 2),
             self.mem + masked_imp, self.mem)
-    elif clamp_delay:
+    elif settings['filename_clamp_indices'] != '':
         # Set clamp-duration by a specific delay from layer to layer.
         new_mem = theano.ifelse.ifelse(t.lt(self.time, self.clamp_idx),
                                        self.mem, self.mem + masked_imp)
@@ -383,7 +384,7 @@ def init_neurons(self, input_shape, tau_refrac=0.):
     if clamp_var:
         self.spikerate = k.zeros(input_shape)
         self.var = k.zeros(input_shape)
-    if clamp_delay:
+    if settings['filename_clamp_indices'] != '':
         self.clamp_idx = get_clamp_idx(self)
 
 
@@ -413,7 +414,8 @@ def get_clamp_idx(self):
         Time step when to stop clamping.
     """
 
-    clamp_idx = np.loadtxt(settings['path_wd'] + '/clamp_idx.txt', 'int')
+    clamp_idx = np.loadtxt(os.path.join(
+        settings['path_wd'], settings['filename_clamp_indices']), 'int')
     layer_idx = get_layer_idx(self)
     return clamp_idx[layer_idx]
 
@@ -506,7 +508,7 @@ class SpikeDense(Dense):
             self.b0 = None
         if clamp_var:
             self.spikerate = self.var = None
-        if clamp_delay:
+        if settings['filename_clamp_indices'] != '':
             self.clamp_idx = None
 
     def build(self, input_shape):
@@ -583,7 +585,7 @@ class SpikeConv2D(Conv2D):
             self.b0 = None
         if clamp_var:
             self.spikerate = self.var = None
-        if clamp_delay:
+        if settings['filename_clamp_indices'] != '':
             self.clamp_idx = None
 
     def build(self, input_shape):
@@ -653,7 +655,7 @@ class SpikeAveragePooling2D(AveragePooling2D):
         self.refrac_until = self.max_spikerate = None
         if clamp_var:
             self.spikerate = self.var = None
-        if clamp_delay:
+        if settings['filename_clamp_indices'] != '':
             self.clamp_idx = None
 
     def build(self, input_shape):
@@ -719,7 +721,7 @@ class SpikeMaxPooling2D(MaxPooling2D):
         self.refrac_until = self.max_spikerate = None
         if clamp_var:
             self.spikerate = self.var = None
-        if clamp_delay:
+        if settings['filename_clamp_indices'] != '':
             self.clamp_idx = None
 
     def build(self, input_shape):
