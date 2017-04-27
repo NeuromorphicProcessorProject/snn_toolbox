@@ -251,7 +251,8 @@ def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
         "No testsamples provided."
 
     if x_test is not None:
-        score = model.evaluate(x_test, settings['batch_size'], verbose=0)
+        score = model.evaluate(x_test, y_test, settings['batch_size'],
+                               verbose=0)
     else:
         steps = int(settings['num_to_test'] / settings['batch_size'])
         score = model.evaluate_generator(dataflow, steps)

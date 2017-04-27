@@ -184,7 +184,9 @@ def extract(model):
         if layer_type in {'Dense', 'Conv2D'}:
             attributes['parameters'] = layer.get_weights()
             if layer.bias is None:
-                attributes['parameters'].append(np.zeros(layer.filters))
+                n = layer.filters if layer_type == 'Conv2D' else \
+                    layer.output_shape[1]
+                attributes['parameters'].append(np.zeros(n))
                 attributes['use_bias'] = True
             # Get type of nonlinearity
             attributes['activation'] = get_outbound_activation(layer)

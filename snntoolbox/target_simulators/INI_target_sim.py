@@ -256,7 +256,8 @@ class SNN:
             int(np.floor(s['num_to_test'] / s['batch_size']))
 
         top5score_moving = 0
-        score_ann = np.zeros(2)
+        score1_ann = 0
+        score5_ann = 0
         truth_d = []  # Filled up with correct classes of all test samples.
         guesses_d = []  # Filled up with guessed classes of all test samples.
         guesses_b = np.zeros(s['batch_size'])  # Guesses of one batch.
@@ -443,15 +444,16 @@ class SNN:
 
             # Evaluate ANN
             score = self.parsed_model.test_on_batch(x_b_l, y_b)
-            score_ann += score[1:]
-            top1acc_moving_ann, top5acc_moving_ann = score_ann / num_samples_seen
+            score1_ann += score[1] * s['batch_size']
+            score5_ann += score[2] * s['batch_size']
+            top1acc_moving_ann = score1_ann / num_samples_seen
+            top5acc_moving_ann = score5_ann / num_samples_seen
             print("Moving accuracy of ANN (top-1, top-5): {:.2%}, {:.2%}."
                   "\n".format(top1acc_moving_ann, top5acc_moving_ann))
 
             if 'input_image' in s['plot_vars'] and x_b_l is not None:
                 plot_input_image(x_b_l[0], int(truth_b[0]), log_dir)
             if 'error_t' in s['plot_vars']:
-                ann_err = self.ANN_err if hasattr(self, 'ANN_err') else None
                 plot_error_vs_time(self.top1err_b_t, self.top5err_b_t,
                                    top1acc_moving_ann, top5acc_moving_ann,
                                    log_dir)
