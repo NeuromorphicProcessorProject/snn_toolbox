@@ -12,9 +12,6 @@ from collections import OrderedDict
 
 import numpy as np
 
-# specifying the gpu to use
-import theano.sandbox.cuda
-theano.sandbox.cuda.use('gpu0')
 import theano
 import theano.tensor as T
 

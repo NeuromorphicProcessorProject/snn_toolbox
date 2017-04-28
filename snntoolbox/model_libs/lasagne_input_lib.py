@@ -122,6 +122,7 @@ def extract(model):
     layers = []
     idx = 0
     parameters_idx = 0
+    inserted_flatten = False
     for (layer_num, layer) in enumerate(lasagne_layers):
 
         # Convert Lasagne layer names to our 'standard' names.
@@ -148,7 +149,8 @@ def extract(model):
             if len(parameters) == 1:  # No bias
                 parameters.append(np.zeros_like(bn_parameters[0]))
             print("Absorbing batch-normalization parameters into " +
-                  "parameters of previous {}.".format(prev_layer.name))
+                  "parameters of previous {}.".format(
+                      prev_layer.__class__.__name__))
             layers[prev_layer_idx]['parameters'] = absorb_bn(
                 parameters[0], parameters[1], bn_parameters[1],
                 bn_parameters[0], bn_parameters[2], bn_parameters[3])
@@ -178,8 +180,6 @@ def extract(model):
             print("Skipping layer {}.".format(layer_type))
             continue
 
-        print("Parsing layer {}.".format(layer_type))
-
         if idx == 0:
             batch_input_shape = list(layer.input_shape)
             # For flexibility, leave batch size free; else, set to
@@ -194,12 +194,14 @@ def extract(model):
                 layer_type != 'Flatten':
             print("Inserting layer Flatten.")
             num_str = str(idx) if idx > 9 else '0' + str(idx)
-            shape_string = str(np.prod(output_shape[1:]))
+            shape_string = str(np.prod(prev_layer_output_shape[1:]))
             layers.append({'name': num_str + 'Flatten_' + shape_string,
-                           'layer_type': 'Flatten', 'inbound':
-                               get_inbound_names(layers, layer, name_map)})
-            name_map[str(id(layer))] = idx
+                           'layer_type': 'Flatten',
+                           'inbound': [layers[-1]['name']]})
             idx += 1
+            inserted_flatten = True
+
+        print("Parsing layer {}.".format(layer_type))
 
         # Append layer label
         if len(output_shape) == 2:
@@ -219,7 +221,7 @@ def extract(model):
 
             parameters_idx += inc
             if settings['binarize_weights']:
-                print("Binarizing weights...")
+                print("Binarizing weights.")
                 attributes['parameters'] = \
                     (binarize(attributes['parameters'][0]),
                      attributes['parameters'][1])
@@ -256,7 +258,8 @@ def extract(model):
         if layer_type == 'Concatenate':
             attributes.update({'axis': layer.axis})
 
-        attributes['inbound'] = get_inbound_names(layers, layer, name_map)
+        attributes['inbound'] = [layers[-1]['name']] if inserted_flatten else \
+            get_inbound_names(layers, layer, name_map)
 
         # Append layer
         layers.append(attributes)
@@ -275,16 +278,16 @@ def get_inbound_names(layers, layer, name_map):
 
     if len(layers) == 0:
         return ['input_1']
-    else:
-        inbound = get_inbound_layers(layer)
-        for ib in range(len(inbound)):
-            ii = 0
-            while ii < 3 and inbound[ib].__class__.__name__ in \
-                    ['BatchNormLayer', 'NonlinearityLayer', 'DropoutLayer']:
-                inbound[ib] = get_inbound_layers(inbound[ib])[0]
-                ii += 1
-        inb_idxs = [name_map[str(id(inb))] for inb in inbound]
-        return [layers[ii]['name'] for ii in inb_idxs]
+
+    inbound = get_inbound_layers(layer)
+    for ib in range(len(inbound)):
+        ii = 0
+        while ii < 3 and inbound[ib].__class__.__name__ in \
+                ['BatchNormLayer', 'NonlinearityLayer', 'DropoutLayer']:
+            inbound[ib] = get_inbound_layers(inbound[ib])[0]
+            ii += 1
+    inb_idxs = [name_map[str(id(inb))] for inb in inbound]
+    return [layers[ii]['name'] for ii in inb_idxs]
 
 
 def get_inbound_layers(layer):
@@ -305,8 +308,7 @@ def get_inbound_layers(layer):
 
     if layer.__class__.__name__ == 'ConcatLayer':
         return layer.input_layers
-    else:
-        return [layer.input_layer]
+    return [layer.input_layer]
 
 
 def get_inbound_layers_with_params(layer):
@@ -393,10 +395,8 @@ def absorb_bn(w, b, gamma, beta, mean, var_squ_eps_inv):
     layer.
     """
 
-    axis = -1 if w.ndim > 2 else 1
-
     broadcast_shape = [1] * w.ndim  # e.g. [1, 1, 1, 1] for ConvLayer
-    broadcast_shape[axis] = w.shape[axis]  # [64, 1, 1, 1] for 64 features
+    broadcast_shape[-1] = w.shape[-1]  # [1, 1, 1, 64] for 64 features
     var_squ_eps_inv_broadcast = np.reshape(var_squ_eps_inv, broadcast_shape)
     gamma_broadcast = np.reshape(gamma, broadcast_shape)
 

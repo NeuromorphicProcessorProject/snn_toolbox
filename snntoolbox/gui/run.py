@@ -10,22 +10,22 @@ Created on Mon Mar  7 15:30:28 2016
 from snntoolbox.config import update_setup
 from snntoolbox.core.pipeline import test_full
 
-settings = {'path_wd': '/home/rbodo/.snntoolbox/data/cifar10/xu',
-            'dataset_path': '/home/rbodo/.snntoolbox/Datasets/cifar10/mean_subtracted',
+settings = {'path_wd': '/home/rbodo/.snntoolbox/data/cifar10/88.22',
+            'dataset_path': '/home/rbodo/.snntoolbox/Datasets/cifar10/binarynet',
             'dataset_format': 'npz',
-            'filename_ann': '79.83',
-            'model_lib': 'keras',
-            'evaluateANN': False,
+            'filename_ann': '88.22',
+            'model_lib': 'lasagne',
             'normalize': False,
-            'duration': 300,
-            'batch_size': 20,
+            'evaluateANN': True,
+            'duration': 3,
+            'batch_size': 10,
             'num_to_test': 10000,
             'runlabel': '01',
-            'percentile': 99,
-            'softmax_to_relu': False,
+            'maxpool_type': 'binary_sigmoid',
+            'binarize_weights': True,
             'log_vars': {'operations_b_t'},
-            'plot_vars': set({}),#'activations', 'spikerates', 'input_image',
-                          # 'confusion_matrix', 'correlation', 'operations'}
+            'plot_vars': {'activations', 'spikerates', 'input_image',
+                          'confusion_matrix', 'correlation', 'operations'}
             }
 
 update_setup(settings)
