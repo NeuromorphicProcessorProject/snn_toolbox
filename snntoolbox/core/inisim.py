@@ -89,56 +89,6 @@ def update_payload(self, residuals, idxs):
     return payloads, payloads_sum
 
 
-def binary_sigmoid_activation(self):
-    """Binary sigmoid activation."""
-
-    # Destroy impulse if in refractory period
-    masked_imp = self.impulse if settings['tau_refrac'] == 0 else \
-        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > self.time)],
-                        0.)
-
-    # Add impulse
-    new_mem = self.mem + masked_imp
-
-    # Store spiking
-    output_spikes = t.gt(new_mem, 0)
-
-    spike_idxs = output_spikes.nonzero()
-
-    # Reset neurons
-    new_and_reset_mem = t.set_subtensor(new_mem[spike_idxs], 0.)
-
-    add_updates(self, [(self.mem, new_and_reset_mem)])
-
-    return output_spikes
-
-
-def binary_tanh_activation(self):
-    """Binary tanh activation."""
-
-    # Destroy impulse if in refractory period
-    masked_imp = self.impulse if settings['tau_refrac'] == 0 else \
-        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > self.time)],
-                        0.)
-
-    # Add impulse
-    new_mem = self.mem + masked_imp
-
-    # Store spiking
-    signed_spikes = t.set_subtensor(
-        new_mem[t.nonzero(t.gt(new_mem, 0))], self.v_thresh)
-    signed_spikes = t.set_subtensor(
-        signed_spikes[t.nonzero(t.lt(signed_spikes, 0))], -self.v_thresh)
-    output_spikes = t.set_subtensor(new_mem[t.nonzero(new_mem)], self.v_thresh)
-
-    # Reset neurons
-    new_and_reset_mem = t.set_subtensor(new_mem[output_spikes.nonzero()], 0.)
-
-    add_updates(self, [(self.mem, new_and_reset_mem)])
-
-    return signed_spikes
-
-
 def linear_activation(self):
     """Linear activation."""
 
@@ -168,23 +118,11 @@ def linear_activation(self):
 
     # Store spiking
     output_spikes = t.mul(t.ge(new_mem, self.v_thresh), self.v_thresh)
-    spike_idxs = output_spikes.nonzero()
 
-    if settings['reset'] == 'Reset by subtraction':
-        if settings['payloads'] and False:  # Experimental, turn off by default
-            new_and_reset_mem = t.set_subtensor(new_mem[spike_idxs], 0.)
-        else:
-            new_and_reset_mem = t.inc_subtensor(new_mem[spike_idxs],
-                                                -self.v_thresh)
-    elif settings['reset'] == 'Reset by modulo':
-        new_and_reset_mem = t.set_subtensor(new_mem[spike_idxs],
-                                            new_mem[spike_idxs] % self.v_thresh)
-    else:  # settings['reset'] == 'Reset to zero':
-        new_and_reset_mem = t.set_subtensor(new_mem[spike_idxs], 0.)
-
-    add_updates(self, [(self.mem, new_and_reset_mem)])
+    set_reset_mem(self, new_mem, output_spikes)
 
     if settings['payloads']:
+        spike_idxs = output_spikes.nonzero()
         residuals = t.inc_subtensor(new_mem[spike_idxs], -self.v_thresh)
         payloads, payloads_sum = update_payload(self, residuals, spike_idxs)
         add_updates(self, [(self.payloads, payloads)])
@@ -193,31 +131,82 @@ def linear_activation(self):
     return output_spikes
 
 
+def binary_sigmoid_activation(self):
+    """Binary sigmoid activation."""
+
+    new_mem = get_new_mem(self)
+
+    output_spikes = t.mul(t.gt(new_mem, 0), self.v_thresh)
+
+    set_reset_mem(self, new_mem, output_spikes)
+
+    return output_spikes
+
+
+def binary_tanh_activation(self):
+    """Binary tanh activation."""
+
+    new_mem = get_new_mem(self)
+
+    output_spikes = t.mul(t.gt(new_mem, 0), self.v_thresh)
+    output_spikes += t.mul(t.lt(new_mem, 0), -self.v_thresh)
+
+    set_reset_mem(self, new_mem, output_spikes)
+
+    return output_spikes
+
+
 def softmax_activation(self):
     """Softmax activation."""
 
-    # Destroy impulse if in refractory period
-    masked_imp = self.impulse if settings['tau_refrac'] == 0 else \
-        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > self.time)],
-                        0.)
+    new_mem = get_new_mem(self)
 
-    # Add impulse
-    new_mem = self.mem + masked_imp
+    output_spikes = t.mul(t.le(rng.uniform(new_mem.shape),
+                               t.nnet.softmax(new_mem)), self.v_thresh)
 
-    # Store spiking
-    spiking_samples = t.le(rng.uniform([settings['batch_size'], 1]),
-                           settings['softmax_clockrate'] * settings[
-                               'dt'] / 1000.)
-    spiking_neurons = t.repeat(spiking_samples, 10, axis=1)
-    activ = t.nnet.softmax(new_mem)
-    max_activ = t.max(activ, axis=1, keepdims=True)
-    output_spikes = t.eq(activ, max_activ).astype(floatX)
-    output_spikes = t.set_subtensor(
-        output_spikes[t.eq(spiking_neurons, 0).nonzero()], 0.)
-    new_and_reset_mem = t.set_subtensor(new_mem[spiking_neurons.nonzero()], 0.)
-    add_updates(self, [(self.mem, new_and_reset_mem)])
+    set_reset_mem(self, new_mem, output_spikes)
 
     return output_spikes
+
+
+def get_new_mem(self):
+
+    # Destroy impulse if in refractory period
+    masked_impulse = self.impulse if settings['tau_refrac'] == 0 else \
+        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > self.time)],
+                        0.)
+    return self.mem + masked_impulse
+
+
+def set_reset_mem(self, mem, spikes):
+    """
+
+    Parameters
+    ----------
+    
+    self : 
+    mem : 
+    spikes : 
+
+    Returns
+    -------
+
+    """
+
+    spike_idxs = t.nonzero(spikes)
+    if settings['reset'] == 'Reset by subtraction':
+        if settings['payloads'] and False:  # Experimental, turn off by default
+            new = t.set_subtensor(mem[spike_idxs], 0.)
+        else:
+            pos_spike_idxs = t.nonzero(t.gt(spikes, 0))
+            neg_spike_idxs = t.nonzero(t.lt(spikes, 0))
+            new = t.inc_subtensor(mem[pos_spike_idxs], -self.v_thresh)
+            new = t.inc_subtensor(new[neg_spike_idxs], self.v_thresh)
+    elif settings['reset'] == 'Reset by modulo':
+        new = t.set_subtensor(mem[spike_idxs], mem[spike_idxs] % self.v_thresh)
+    else:  # settings['reset'] == 'Reset to zero':
+        new = t.set_subtensor(mem[spike_idxs], 0.)
+    add_updates(self, [(self.mem, new)])
 
 
 def get_new_thresh(self):
@@ -754,7 +743,8 @@ class SpikeMaxPooling2D(MaxPooling2D):
             inp = add_payloads(self.inbound_nodes[0].inbound_layers[0], inp)
 
         if 'binary' in settings['maxpool_type']:
-            self.impulse = super(SpikeMaxPooling2D, self).call(inp)
+            self.impulse = k.pool2d(inp, self.pool_size, self.strides,
+                                    self.padding, pool_mode='max')
         elif settings['maxpool_type'] in ['avg_max', 'fir_max', 'exp_max']:
             if settings['maxpool_type'] == 'avg_max':
                 update_rule = self.spikerate_pre + \

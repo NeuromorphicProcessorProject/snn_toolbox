@@ -167,12 +167,7 @@ softmax_to_relu: boolean, optional
     reduce accuracy, especially top-5. It is safe to do this replacement as long
     as the input to the activation function is not all negative. In that case,
     the ReLU would not be able to determine the winner.
-softmax_clockrate: int, optional
-    In our implementation of a spiking softmax activation function we use an
-    external Poisson clock to trigger calculating the softmax of a layer. The
-    'softmax_clockrate' parameter sets the firing rate in Hz of this external
-    clock. Note that this rate is limited by the maximum firing rate supported
-    by the simulator (given by the inverse time resolution 1000 * 1 / dt Hz).
+
 
 Simulation Parameters
 *********************
@@ -278,8 +273,7 @@ Default values
                   'tau_refrac': 0,
                   'tau_syn_E': 0.01,
                   'tau_syn_I': 0.01,
-                 'softmax_to_relu': True,
-                  'softmax_clockrate': 300}
+                 'softmax_to_relu': True}
     simparams = {'simulator': 'INI',
                  'duration': 200,
                  'dt': 1,
@@ -350,7 +344,6 @@ settings = OrderedDict({
     'v_thresh': 1,
     'tau_refrac': 0,
     'softmax_to_relu': True,
-    'softmax_clockrate': 300,
     'simulator': 'INI',
     'duration': 200,
     'dt': 1,

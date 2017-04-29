@@ -434,7 +434,8 @@ class SNN:
             top5score_moving += sum(in_top_k(output_b_l, truth_b, self.top_k))
             top5acc_moving = top5score_moving / num_samples_seen
             if s['verbose'] > 0:
-                print("\nBatch {} of {} completed ({:.1%})".format(
+                print('\n')
+                print("Batch {} of {} completed ({:.1%})".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
                 print("Moving accuracy of SNN (top-1, top-5): {:.2%}, {:.2%}."
                       "".format(top1acc_moving, top5acc_moving))
@@ -500,7 +501,7 @@ class SNN:
         print("Simulation finished.\n\n")
         print("Total accuracy: {:.2%} on {} test samples.\n\n".format(
             top1acc_total, len(guesses_d)))
-        print("Accuracy averaged over classes: {}".format(avg_acc))
+        print("Accuracy averaged over classes: {:.2%}".format(avg_acc))
 
         return top1acc_total
 

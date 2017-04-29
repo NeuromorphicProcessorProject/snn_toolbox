@@ -466,25 +466,6 @@ class SNNToolboxGUI:
               Only relevant in pyNN-simulators.""")
         ToolTip(tau_syn_inh_frame, text=tip, wraplength=750)
 
-        # Softmax clock-rate
-        softmax_clockrate_frame = tk.Frame(self.cellparams_frame, bg='white')
-        softmax_clockrate_frame.pack(**self.kwargs)
-        self.softmax_clockrate_label = tk.Label(
-            softmax_clockrate_frame, text="Softmax clockrate", bg='white')
-        self.softmax_clockrate_label.pack(fill='both', expand=True)
-        self.softmax_clockrate_sb = tk.Spinbox(
-            softmax_clockrate_frame, from_=0, to_=10000, increment=1, width=10,
-            textvariable=self.settings['softmax_clockrate'], bg='white')
-        self.softmax_clockrate_sb.pack(fill='y', expand=True, ipady=5)
-        tip = dedent("""\
-              In our implementation of a spiking softmax activation function
-              we use an external Poisson clock to trigger calculating the
-              softmax of a layer. The 'softmax_clockrate' parameter sets the
-              firing rate in Hz of this external clock. Note that this rate is
-              limited by the maximum firing rate supported by the simulator
-              (given by the inverse time resolution 1000 * 1 / dt Hz).""")
-        ToolTip(softmax_clockrate_frame, text=tip, wraplength=700)
-
     def simparams_widgets(self):
         """Create a container for individual parameter widgets."""
         self.simparams_frame = tk.LabelFrame(self.main_container,
@@ -1191,7 +1172,6 @@ class SNNToolboxGUI:
                          'tau_m': tk.IntVar(),
                          'tau_syn_E': tk.DoubleVar(),
                          'tau_syn_I': tk.DoubleVar(),
-                         'softmax_clockrate': tk.IntVar(),
                          'dt': tk.DoubleVar(),
                          'simulator': tk.StringVar(),
                          'duration': tk.IntVar(),
