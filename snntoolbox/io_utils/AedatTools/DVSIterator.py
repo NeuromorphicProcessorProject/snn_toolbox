@@ -7,6 +7,7 @@ for use in a time-stepped simulator.
 
 import os
 import numpy as np
+from snntoolbox.io_utils.common import to_categorical
 
 
 class DVSIterator(object):
@@ -68,9 +69,6 @@ class DVSIterator(object):
             self.num_samples, self.num_classes))
 
     def __next__(self):
-        from snntoolbox.io_utils.common import to_categorical
-        from collections import deque
-
         while self.num_events_per_batch * (self.batch_idx + 1) >= \
                 self.num_events_of_sample:
             self.dvs_sample_idx += 1
@@ -86,50 +84,82 @@ class DVSIterator(object):
             print("Number of batches: {:d}.".format(
                 int(self.num_events_of_sample / self.num_events_per_batch)))
 
-        print("Extracting batch of samples à {} events from DVS sequence..."
-              "".format(self.num_events_per_sample))
-        x_b_xaddr = [deque() for _ in range(self.batch_size)]
-        x_b_yaddr = [deque() for _ in range(self.batch_size)]
-        x_b_ts = [deque() for _ in range(self.batch_size)]
-        for sample_idx in range(self.batch_size):
-            start_event = self.num_events_per_batch * self.batch_idx + \
-                          self.num_events_per_sample * sample_idx
-            event_idxs = range(start_event,
-                               start_event + self.num_events_per_sample)
-            event_sums = np.zeros((64, 64), 'int32')
-            xaddr_sub = []
-            yaddr_sub = []
-            for x, y in zip(self.dvs_sample[0][event_idxs],
-                            self.dvs_sample[1][event_idxs]):
-                if self.scale:
-                    # Subsample from 240x180 to e.g. 64x64
-                    x = int(x / self.scale[0])
-                    y = int(y / self.scale[1])
-                event_sums[y, x] += 1
-                xaddr_sub.append(x)
-                yaddr_sub.append(y)
-            sigma = np.std(event_sums[np.nonzero(event_sums)])
-            # Clip number of events per pixel to three-sigma
-            np.clip(event_sums, 0, 3*sigma, event_sums)
-            print("Discarded {} events during 3-sigma standardization.".format(
-                self.num_events_per_sample - np.sum(event_sums)))
-            ts_sample = self.dvs_sample[2][event_idxs]
-            for x, y, ts in zip(xaddr_sub, yaddr_sub, ts_sample):
-                if event_sums[y, x] > 0:
-                    x_b_xaddr[sample_idx].append(x)
-                    x_b_yaddr[sample_idx].append(y)
-                    x_b_ts[sample_idx].append(ts)
-                    event_sums[y, x] -= 1
+        batch_idx = self.batch_idx
+        self.batch_idx += 1
+
+        xaddr_b, yaddr_b, ts_b = extract_batch(
+            self.dvs_sample[0], self.dvs_sample[1], self.dvs_sample[2],
+            self.batch_size, batch_idx, self.num_events_per_sample, self.scale)
 
         # Each sample in the batch has the same label because it is generated
         # from the same DVS sequence.
-        y_b = np.broadcast_to(to_categorical(
+        truth_b = np.broadcast_to(to_categorical(
             [self.labels[self.dvs_sample_idx]], self.num_classes),
             (self.batch_size, self.num_classes))
 
-        self.batch_idx += 1
+        return xaddr_b, yaddr_b, ts_b, truth_b
 
-        return x_b_xaddr, x_b_yaddr, x_b_ts, y_b
+
+def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx=0,
+                  num_events_per_sample=2000, scale=(239/63, 179/63)):
+    """
+    Transform a one-dimensional sequence of AER-events into a batch.
+
+    :param xaddr: 
+    :type xaddr: 
+    :param yaddr: 
+    :type yaddr: 
+    :param timestamps: 
+    :type timestamps: 
+    :param batch_size: 
+    :type batch_size: 
+    :param batch_idx: 
+    :type batch_idx: 
+    :param num_events_per_sample: 
+    :type num_events_per_sample: 
+    :param scale: 
+    :type scale: 
+    :return: 
+    :rtype: 
+    """
+
+    from collections import deque
+
+    print("Extracting batch of samples à {} events from DVS sequence..."
+          "".format(num_events_per_sample))
+
+    x_b_xaddr = [deque() for _ in range(batch_size)]
+    x_b_yaddr = [deque() for _ in range(batch_size)]
+    x_b_ts = [deque() for _ in range(batch_size)]
+    for sample_idx in range(batch_size):
+        start_event = num_events_per_sample * batch_size * batch_idx + \
+                      num_events_per_sample * sample_idx
+        event_idxs = range(start_event, start_event + num_events_per_sample)
+        event_sums = np.zeros((64, 64), 'int32')
+        xaddr_sub = []
+        yaddr_sub = []
+        for x, y in zip(xaddr[event_idxs], yaddr[event_idxs]):
+            if scale:
+                # Subsample from 240x180 to e.g. 64x64
+                x = int(x / scale[0])
+                y = int(y / scale[1])
+            event_sums[y, x] += 1
+            xaddr_sub.append(x)
+            yaddr_sub.append(y)
+        sigma = np.std(event_sums[np.nonzero(event_sums)])
+        # Clip number of events per pixel to three-sigma
+        np.clip(event_sums, 0, 3*sigma, event_sums)
+        print("Discarded {} events during 3-sigma standardization.".format(
+            num_events_per_sample - np.sum(event_sums)))
+        ts_sample = timestamps[event_idxs]
+        for x, y, ts in zip(xaddr_sub, yaddr_sub, ts_sample):
+            if event_sums[y, x] > 0:
+                x_b_xaddr[sample_idx].append(x)
+                x_b_yaddr[sample_idx].append(y)
+                x_b_ts[sample_idx].append(ts)
+                event_sums[y, x] -= 1
+
+    return x_b_xaddr, x_b_yaddr, x_b_ts
 
 
 def remove_outliers(timestamps, xaddr, yaddr, pol, x_max=239, y_max=179):
@@ -165,15 +195,27 @@ def remove_outliers(timestamps, xaddr, yaddr, pol, x_max=239, y_max=179):
 
 def load_dvs_sequence(filename, xyrange=None):
     """
+    Load a sequence of AER-events from an ``.aedat`` file and return three
+    arrays containing the x, y addresses and the timestamps.
+    If an ``xyrange`` is given, events outside this range are removed. 
 
     Parameters
     ----------
 
-    filename:
-    xyrange:
+    filename: str
+        Name of ``.aedat`` file to load.
+    xyrange: tuple[int]
+        Chip dimensions - 1, i.e. largest indices with zero-convention. 
 
     Returns
     -------
+
+    xaddr: np.array
+        The x-addresses.
+    yaddr: np.array
+        The y-addresses.
+    timestamps: np.array
+        The timestamps.
 
     """
 

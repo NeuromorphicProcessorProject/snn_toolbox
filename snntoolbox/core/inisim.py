@@ -92,29 +92,7 @@ def update_payload(self, residuals, idxs):
 def linear_activation(self):
     """Linear activation."""
 
-    # Destroy impulse if in refractory period
-    masked_imp = self.impulse if settings['tau_refrac'] == 0 else \
-        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > self.time)],
-                        0.)
-
-    # Add impulse
-    if clamp_var:
-        # Experimental: Clamp the membrane potential to zero until the
-        # presynaptic neurons fire at their steady-state rates. This helps avoid
-        # a transient response.
-        new_mem = theano.ifelse.ifelse(
-            t.lt(t.mean(self.var), 1e-4) +
-            t.gt(self.time, settings['duration'] / 2),
-            self.mem + masked_imp, self.mem)
-    elif settings['filename_clamp_indices'] != '':
-        # Set clamp-duration by a specific delay from layer to layer.
-        new_mem = theano.ifelse.ifelse(t.lt(self.time, self.clamp_idx),
-                                       self.mem, self.mem + masked_imp)
-    elif v_clip:
-        # Clip membrane potential to [-2, 2] to prevent too strong accumulation.
-        new_mem = theano.tensor.clip(self.mem + masked_imp, -3, 3)
-    else:
-        new_mem = self.mem + masked_imp
+    new_mem = get_new_mem(self)
 
     # Store spiking
     output_spikes = t.mul(t.ge(new_mem, self.v_thresh), self.v_thresh)
@@ -170,12 +148,39 @@ def softmax_activation(self):
 
 
 def get_new_mem(self):
+    """
+
+    :param self: 
+    :type self: 
+    :return: 
+    :rtype: 
+    """
 
     # Destroy impulse if in refractory period
     masked_impulse = self.impulse if settings['tau_refrac'] == 0 else \
         t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > self.time)],
                         0.)
-    return self.mem + masked_impulse
+
+    # Add impulse
+    if clamp_var:
+        # Experimental: Clamp the membrane potential to zero until the
+        # presynaptic neurons fire at their steady-state rates. This helps avoid
+        # a transient response.
+        new_mem = theano.ifelse.ifelse(
+            t.lt(t.mean(self.var), 1e-4) +
+            t.gt(self.time, settings['duration'] / 2),
+            self.mem + masked_impulse, self.mem)
+    elif settings['filename_clamp_indices'] != '':
+        # Set clamp-duration by a specific delay from layer to layer.
+        new_mem = theano.ifelse.ifelse(t.lt(self.time, self.clamp_idx),
+                                       self.mem, self.mem + masked_impulse)
+    elif v_clip:
+        # Clip membrane potential to [-2, 2] to prevent too strong accumulation.
+        new_mem = theano.tensor.clip(self.mem + masked_impulse, -3, 3)
+    else:
+        new_mem = self.mem + masked_impulse
+
+    return new_mem
 
 
 def set_reset_mem(self, mem, spikes):
@@ -362,7 +367,7 @@ def init_neurons(self, input_shape, tau_refrac=0.):
     if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
             'hist_spikerates_activations', 'operations', 'operations_b_t',
             'spiketrains_n_b_l_t'}
-                   & (settings['plot_vars'] | settings['log_vars'])):
+            & (settings['plot_vars'] | settings['log_vars'])):
         self.spiketrain = k.zeros(output_shape)
     if settings['online_normalization']:
         self.spikecounts = k.zeros(output_shape)
@@ -438,6 +443,9 @@ def update_b(self):
 class SpikeConcatenate(Concatenate):
     """Spike merge layer"""
 
+    def _merge_function(self, inputs):
+        return self._merge_function(inputs)
+
     @staticmethod
     def reset(sample_idx):
         """Reset layer variables."""
@@ -488,7 +496,6 @@ class SpikeDense(Dense):
         self.tau_refrac = kwargs['tau_refrac'] if 'tau_refrac' in kwargs else 0.
         self.v_thresh = None
         self.stateful = True
-        self.updates = []
         self._per_input_updates = {}
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
@@ -565,7 +572,6 @@ class SpikeConv2D(Conv2D):
         self.tau_refrac = kwargs['tau_refrac'] if 'tau_refrac' in kwargs else 0.
         self.v_thresh = None
         self.stateful = True
-        self.updates = []
         self._per_input_updates = {}
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
@@ -637,7 +643,6 @@ class SpikeAveragePooling2D(AveragePooling2D):
         self.tau_refrac = kwargs['tau_refrac'] if 'tau_refrac' in kwargs else 0.
         self.v_thresh = None
         self.stateful = True
-        self.updates = []
         self._per_input_updates = {}
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
@@ -703,7 +708,6 @@ class SpikeMaxPooling2D(MaxPooling2D):
         self.tau_refrac = kwargs['tau_refrac'] if 'tau_refrac' in kwargs else 0.
         self.v_thresh = None
         self.stateful = True
-        self.updates = []
         self._per_input_updates = {}
         self.spikerate_pre = self.time = self.previous_x = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
@@ -1094,10 +1098,10 @@ class SpikePool(theano.Op):
                     # index 0 if all rates are equally zero.
                     continue
                 spike_patch = ysn[[region_slices[i][r[i]] for i in range(nd)]]
-                # The first condition is not completely equivalent to the second
-                # because the latter has a higher chance of admitting spikes.
+                # The second condition is not completely equivalent to the first
+                # because the former has a higher chance of admitting spikes.
+                # if (spike_patch*(rate_patch == np.argmax(rate_patch))).any():
                 if spike_patch.flatten()[np.argmax(rate_patch)]:
-                #if (spike_patch * (rate_patch == np.argmax(rate_patch))).any():
                     zzn[r] = spike
 
 

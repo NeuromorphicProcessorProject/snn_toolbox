@@ -19,7 +19,7 @@ from importlib import import_module
 import numpy as np
 from future import standard_library
 import keras
-from keras import backend as k
+from keras import backend
 from snntoolbox.config import settings
 
 standard_library.install_aliases()
@@ -55,7 +55,7 @@ def binary_tanh(x):
         Integer in {-1, 1}
     """
 
-    return k.sign(x)
+    return backend.sign(x)
 
 
 def binary_sigmoid(x):
@@ -73,9 +73,9 @@ def binary_sigmoid(x):
         Integer in {0, 1}
     """
 
-    x = k.clip((x + 1.) / 2., 0, 1)
+    x = backend.clip((x + 1.) / 2., 0, 1)
 
-    return k.round(x)
+    return backend.round(x)
 
 
 def parse(input_model):
@@ -472,17 +472,7 @@ def normalize_parameters(model, **kwargs):
             nonzero_activations = activations[np.nonzero(activations)]
             del activations
             idx = i if settings['normalization_schedule'] else 0
-            if layer.activation.__name__ == 'softmax':
-                # When using a certain percentile or even the max, the scaling
-                # factor can be extremely low in case of many output classes
-                # (e.g. 0.01 for ImageNet). This amplifies weights and biases
-                # greatly. But large biases cause large offsets in the beginning
-                # of the simulation (spike input absent).
-                sf = 1.0  # float(np.max(nonzero_activations))
-                print("Scale factor: {:.2f}.".format(sf))
-            else:
-                sf = get_scale_fac(nonzero_activations, idx)
-            scale_facs[layer.name] = sf
+            scale_facs[layer.name] = get_scale_fac(nonzero_activations, idx)
             # Since we have calculated output activations here, check at this
             # point if the output is mostly negative, in which case we should
             # stick to softmax. Otherwise ReLU is preferred.
@@ -513,7 +503,17 @@ def normalize_parameters(model, **kwargs):
 
         # Scale parameters
         parameters = layer.get_weights()
-        scale_fac = scale_facs[layer.name]
+        if layer.activation.__name__ == 'softmax':
+            # When using a certain percentile or even the max, the scaling
+            # factor can be extremely low in case of many output classes
+            # (e.g. 0.01 for ImageNet). This amplifies weights and biases
+            # greatly. But large biases cause large offsets in the beginning
+            # of the simulation (spike input absent).
+            scale_fac = 1.0
+            print("Using scale factor {:.2f} for softmax layer.".format(
+                scale_fac))
+        else:
+            scale_fac = scale_facs[layer.name]
         inbound = get_inbound_layers_with_params(layer)
         if len(inbound) == 0:  # Input layer
             input_layer = layer.inbound_nodes[0].inbound_layers[0].name

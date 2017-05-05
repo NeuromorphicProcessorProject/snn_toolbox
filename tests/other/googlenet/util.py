@@ -93,3 +93,71 @@ def plot_vmem(mem_layers, spikes_layers, labels, path, T, dt, title='V_mem'):
         ax[i].set_ylabel('V')
         ax[i].legend()
     f.savefig(os.path.join(path, title), bbox_inches='tight')
+
+
+class ExpResults:
+    def __init__(self, dirname, label, marker='.', color1='b', color5='r',
+                 markersize=4, scale=1):
+        self.dirname = dirname
+        self.label = label
+        self.marker = marker
+        self.color1 = color1
+        self.color5 = color5
+        self.markersize = markersize
+        self.scale = scale
+        self.time = None
+        self.mean_computations_t = self.std_computations_t = None
+        self.e1_mean = self.e1_std = self.e5_mean = self.e5_std = None
+        self.num_samples = None
+        self.e1_confidence95 = self.e5_confidence95 = None
+        self.set_spikestats()
+
+    def set_spikestats(self):
+        from snntoolbox.core.util import wilson_score
+
+        num_batches = len(os.listdir(self.dirname))
+        if num_batches == 0:
+            return
+        batch_size, num_timesteps = np.load(os.path.join(
+            self.dirname, '0.npz'))['top1err_b_t'].shape
+        self.time = np.arange(num_timesteps)
+        self.num_samples = num_batches * batch_size
+        e1 = np.empty((self.num_samples, num_timesteps))
+        e5 = np.empty((self.num_samples, num_timesteps))
+
+        # Load operation count
+        operations_d_t = np.empty((self.num_samples, num_timesteps))
+        for batch_idx in range(num_batches):
+            operations_d_t[
+            batch_idx * batch_size:(batch_idx + 1) * batch_size] = \
+                np.load(os.path.join(self.dirname, str(batch_idx) + '.npz'))[
+                    'operations_b_t'] / self.scale
+        self.mean_computations_t = np.mean(operations_d_t, 0)
+        self.std_computations_t = np.std(operations_d_t, 0)
+
+        # Load error
+        for batch_idx in range(num_batches):
+            e1[batch_idx * batch_size: (batch_idx + 1) * batch_size] = \
+                np.multiply(100, np.load(os.path.join(
+                    self.dirname, str(batch_idx) + '.npz'))['top1err_b_t'])
+            e5[batch_idx * batch_size: (batch_idx + 1) * batch_size] = \
+                np.multiply(100, np.load(os.path.join(
+                    self.dirname, str(batch_idx) + '.npz'))['top5err_b_t'])
+
+        # Averaged across samples, shape (1, num_timesteps)
+        self.e1_mean = np.mean(e1, axis=0)
+        self.e1_std = np.std(e1, axis=0)
+        self.e5_mean = np.mean(e5, axis=0)
+        self.e5_std = np.std(e5, axis=0)
+        self.e1_confidence95 = np.array([wilson_score(1-e/100, self.num_samples)
+                                         for e in self.e1_mean]) * 100
+        self.e5_confidence95 = np.array([wilson_score(1-e/100, self.num_samples)
+                                         for e in self.e5_mean]) * 100
+
+def get_std(err):
+    return np.sqrt(err * (100 - err))
+
+
+def get_op_at_err(ops_t, err_SNN, err_ANN):
+    t = np.where(err_SNN <= err_ANN)[0][0]
+    return ops_t[t]
