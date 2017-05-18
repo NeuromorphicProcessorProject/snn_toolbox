@@ -487,8 +487,13 @@ def update_setup(s):
         json_file = settings['filename_ann'] + '.json'
         if not os.path.isfile(os.path.join(settings['path_wd'], json_file)):
             import keras
+            import keras.activations
+            from snntoolbox.core.util import binary_sigmoid, binary_tanh
+            keras.activations.binary_sigmoid = binary_sigmoid
             try:
-                keras.models.load_model(h5_filepath)
+                keras.models.load_model(
+                    h5_filepath, {'binary_sigmoid': binary_sigmoid,
+                                  'binary_tanh': binary_tanh})
             except:
                 raise AssertionError(
                     "Input model could not be loaded. This is likely due to a "

@@ -98,7 +98,7 @@ def plot_vmem(mem_layers, spikes_layers, labels, path, T, dt, title='V_mem'):
 class ExpResults:
     def __init__(self, dirname, label, marker='.', color1='b', color5='r',
                  markersize=4, scale=1):
-        self.dirname = dirname
+        self.dirname = os.path.join(dirname, 'log_vars')
         self.label = label
         self.marker = marker
         self.color1 = color1
@@ -110,6 +110,16 @@ class ExpResults:
         self.e1_mean = self.e1_std = self.e5_mean = self.e5_std = None
         self.num_samples = None
         self.e1_confidence95 = self.e5_confidence95 = None
+        self.op1_0 = self.op1_1 = self.op1_2 = None
+        self.op5_0 = self.op5_1 = self.op5_2 = None
+        self.e1_0 = self.e1_1 = self.e1_2 = None
+        self.e5_0 = self.e5_1 = self.e5_2 = None
+        self.e1_ann = self.e5_ann = None
+        self.e1_confidence95_ann = self.e5_confidence95_ann = None
+        self.e1_std_ann = self.e5_std_ann = None
+        self.operations_ann = None
+        self.e1_optimal = self.op1_optimal = None
+        self.e5_optimal = self.op5_optimal = None
         self.set_spikestats()
 
     def set_spikestats(self):
@@ -128,8 +138,7 @@ class ExpResults:
         # Load operation count
         operations_d_t = np.empty((self.num_samples, num_timesteps))
         for batch_idx in range(num_batches):
-            operations_d_t[
-            batch_idx * batch_size:(batch_idx + 1) * batch_size] = \
+            operations_d_t[batch_idx*batch_size:(batch_idx+1)*batch_size] = \
                 np.load(os.path.join(self.dirname, str(batch_idx) + '.npz'))[
                     'operations_b_t'] / self.scale
         self.mean_computations_t = np.mean(operations_d_t, 0)
@@ -144,6 +153,13 @@ class ExpResults:
                 np.multiply(100, np.load(os.path.join(
                     self.dirname, str(batch_idx) + '.npz'))['top5err_b_t'])
 
+        self.operations_ann = float(np.load(os.path.join(self.dirname, str(
+            num_batches - 1) + '.npz'))['operations_ann'] / self.scale)
+        self.e1_ann = float(np.load(os.path.join(
+            self.dirname, str(num_batches - 1) + '.npz'))['top1err_ann']) * 100
+        self.e5_ann = float(np.load(os.path.join(
+            self.dirname, str(num_batches - 1) + '.npz'))['top5err_ann']) * 100
+
         # Averaged across samples, shape (1, num_timesteps)
         self.e1_mean = np.mean(e1, axis=0)
         self.e1_std = np.std(e1, axis=0)
@@ -154,10 +170,63 @@ class ExpResults:
         self.e5_confidence95 = np.array([wilson_score(1-e/100, self.num_samples)
                                          for e in self.e5_mean]) * 100
 
+        # Get the operation count at which the error is minimal or 1 % above the
+        # min.
+        self.e1_0 = min(self.e1_mean)
+        self.op1_0 = get_op_at_err(self.mean_computations_t, self.e1_mean,
+                                   self.e1_0)
+        self.e1_1 = min(self.e1_mean) + 1
+        self.op1_1 = get_op_at_err(self.mean_computations_t, self.e1_mean,
+                                   self.e1_1)
+        self.e1_2 = get_err_at_op(self.e1_mean, self.mean_computations_t,
+                                  self.operations_ann)
+        self.op1_2 = get_op_at_err(self.mean_computations_t, self.e1_mean,
+                                   self.e1_2)
+        self.e5_0 = min(self.e5_mean)
+        self.op5_0 = get_op_at_err(self.mean_computations_t, self.e5_mean,
+                                   self.e5_0)
+        self.e5_1 = min(self.e5_mean) + 1
+        self.op5_1 = get_op_at_err(self.mean_computations_t, self.e5_mean,
+                                   self.e5_1)
+        self.op5_1 = get_op_at_err(self.mean_computations_t, self.e5_mean,
+                                   self.e5_1)
+        self.e5_2 = get_err_at_op(self.e5_mean, self.mean_computations_t,
+                                  self.operations_ann)
+        self.op5_2 = get_op_at_err(self.mean_computations_t, self.e5_mean,
+                                   self.e5_2)
+
+        self.e1_std_ann = get_std(self.e1_ann)
+        self.e5_std_ann = get_std(self.e5_ann)
+        self.e1_confidence95_ann = wilson_score(1 - self.e1_ann / 100,
+                                                self.num_samples) * 100
+        self.e5_confidence95_ann = wilson_score(1 - self.e5_ann / 100,
+                                                self.num_samples) * 100
+
+        self.e1_optimal, self.op1_optimal = get_minimal_err_and_op(
+            self.mean_computations_t, self.e1_mean)
+
+        self.e5_optimal, self.op5_optimal = get_minimal_err_and_op(
+            self.mean_computations_t, self.e5_mean)
+
 def get_std(err):
     return np.sqrt(err * (100 - err))
 
 
-def get_op_at_err(ops_t, err_SNN, err_ANN):
-    t = np.where(err_SNN <= err_ANN)[0][0]
-    return ops_t[t]
+def get_op_at_err(ops_snn, err_snn, err_ann):
+    t = np.where(err_snn <= err_ann)[0][0]
+    return ops_snn[t]
+
+
+def get_err_at_op(err_snn, ops_snn, ops_ann):
+    if ops_ann > max(ops_snn):
+        ops_ann = max(ops_snn)
+    t = np.where(ops_snn >= ops_ann)[0][0]
+    return err_snn[t]
+
+
+def get_minimal_err_and_op(ops_t, err_t):
+    aa = ops_t / max(ops_t)
+    bb = err_t / 100
+    c = [np.sqrt(a*a + b*b) for a, b in zip(aa, bb)]
+    t = np.argmin(c)
+    return err_t[t], ops_t[t]

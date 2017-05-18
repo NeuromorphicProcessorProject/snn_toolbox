@@ -17,10 +17,6 @@ import numpy as np
 from theano.scalar.basic import UnaryScalarOp, same_out_nocomplex
 from theano.tensor.elemwise import Elemwise
 
-# specifying the gpu to use
-import theano.sandbox.cuda
-theano.sandbox.cuda.use('gpu0')
-
 standard_library.install_aliases()
 
 

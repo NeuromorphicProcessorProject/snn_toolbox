@@ -18,10 +18,7 @@ class Dense(keras.layers.Dense):
         self.W = None
         self.Wb = None
 
-        if self.binary:
-            super(Dense, self).__init__(num_units, init='uniform', **kwargs)
-        else:
-            super(Dense, self).__init__(num_units, **kwargs)
+        super(Dense, self).__init__(num_units, **kwargs)
 
     def get_output_for(self, input_node, deterministic=False, **kwargs):
         """
@@ -62,11 +59,7 @@ class Conv2D(keras.layers.Conv2D):
         self.W = None
         self.Wb = None
 
-        if self.binary:
-            super(Conv2D, self).__init__(filters, kernel_size, init='uniform',
-                                         **kwargs)
-        else:
-            super(Conv2D, self).__init__(filters, kernel_size, **kwargs)
+        super(Conv2D, self).__init__(filters, kernel_size, **kwargs)
 
     def convolve(self, input_node, deterministic=False, **kwargs):
         """Convolution operation.

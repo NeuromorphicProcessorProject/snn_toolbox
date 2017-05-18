@@ -81,7 +81,8 @@ class SNN:
         self.spiketrains_n_b_l_t = self.activations_n_b_l = None
         self.input_b_l_t = self.mem_n_b_l_t = None
         self.top1err_b_t = self.top5err_b_t = None
-        self.operations_b_t = self.ann_ops = None
+        self.operations_b_t = self.operations_ann = None
+        self.top1err_ann = self.top5err_ann = None
         self.num_neurons = self.num_neurons_with_bias = None
         self.fanin = self.fanout = None
         # ``rescale_fac`` globally scales spike probability when using Poisson
@@ -157,9 +158,9 @@ class SNN:
         if self.fanin is None:
             from snntoolbox.core.util import get_ann_ops
             num_neurons, num_neurons_with_bias, fanin = self.set_connectivity()
-            self.ann_ops = get_ann_ops(num_neurons, num_neurons_with_bias,
-                                       fanin)
-            print("Number of operations of ANN: {}".format(self.ann_ops))
+            self.operations_ann = get_ann_ops(num_neurons,
+                                              num_neurons_with_bias, fanin)
+            print("Number of operations of ANN: {}".format(self.operations_ann))
 
     def run(self, x_test=None, y_test=None, dataflow=None, **kwargs):
         """Simulate a SNN with LIF and Poisson input.
@@ -447,16 +448,16 @@ class SNN:
             score = self.parsed_model.test_on_batch(x_b_l, y_b)
             score1_ann += score[1] * s['batch_size']
             score5_ann += score[2] * s['batch_size']
-            top1acc_moving_ann = score1_ann / num_samples_seen
-            top5acc_moving_ann = score5_ann / num_samples_seen
+            self.top1err_ann = 1 - score1_ann / num_samples_seen
+            self.top5err_ann = 1 - score5_ann / num_samples_seen
             print("Moving accuracy of ANN (top-1, top-5): {:.2%}, {:.2%}."
-                  "\n".format(top1acc_moving_ann, top5acc_moving_ann))
+                  "\n".format(1 - self.top1err_ann, 1 - self.top5err_ann))
 
             if 'input_image' in s['plot_vars'] and x_b_l is not None:
                 plot_input_image(x_b_l[0], int(truth_b[0]), log_dir)
             if 'error_t' in s['plot_vars']:
                 plot_error_vs_time(self.top1err_b_t, self.top5err_b_t,
-                                   top1acc_moving_ann, top5acc_moving_ann,
+                                   1 - self.top1err_ann, 1 - self.top5err_ann,
                                    log_dir)
             if 'confusion_matrix' in s['plot_vars']:
                 plot_confusion_matrix(truth_d, guesses_d, log_dir,
@@ -475,6 +476,9 @@ class SNN:
             log_vars = {key: getattr(self, key) for key in s['log_vars']}
             log_vars['top1err_b_t'] = self.top1err_b_t
             log_vars['top5err_b_t'] = self.top5err_b_t
+            log_vars['top1err_ann'] = self.top1err_ann
+            log_vars['top5err_ann'] = self.top5err_ann
+            log_vars['operations_ann'] = self.operations_ann / 1e6
             np.savez_compressed(os.path.join(path_log_vars, str(batch_idx)),
                                 **log_vars)
             plot_vars = {}

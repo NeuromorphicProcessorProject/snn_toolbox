@@ -7,8 +7,6 @@ from __future__ import print_function
 
 import lasagne
 from ann_architectures.BinaryConnect import binary_net
-import theano.sandbox.cuda
-theano.sandbox.cuda.use('gpu0')
 
 
 def build_network():
@@ -32,7 +30,7 @@ def build_network():
     epsilon = 1e-4
 
     # BinaryOut
-    activation = binary_net.binary_sigmoid_unit
+    activation = binary_net.binary_tanh_unit
     print("activation: {}".format(activation))
 
     # BinaryConnect
@@ -135,7 +133,7 @@ if __name__ == "__main__":
     # Training parameters
     batch_size = 128
     print("batch_size = "+str(batch_size))
-    num_epochs = 50
+    num_epochs = 10
     print("num_epochs = "+str(num_epochs))
 
     # Decaying LR
@@ -148,11 +146,11 @@ if __name__ == "__main__":
 
     print("Loading dataset...")
 
-    path_to_dataset = '/home/rbodo/.snntoolbox/Datasets/mnist/model'
-    X_train = load_dataset(path_to_dataset, 'X_norm.npz')
-    Y_train = load_dataset(path_to_dataset, 'Y_train.npz')
-    X_test = load_dataset(path_to_dataset, 'X_test.npz')
-    Y_test = load_dataset(path_to_dataset, 'Y_test.npz')
+    path_to_dataset = '/home/rbodo/.snntoolbox/Datasets/mnist/cnn'
+    X_train = load_dataset(path_to_dataset, 'x_norm.npz').astype('float32')
+    Y_train = load_dataset(path_to_dataset, 'y_train.npz').astype('float32')
+    X_test = load_dataset(path_to_dataset, 'x_test.npz').astype('float32')
+    Y_test = load_dataset(path_to_dataset, 'y_test.npz').astype('float32')
 
     print('Building the CNN...')
 
@@ -171,6 +169,6 @@ if __name__ == "__main__":
     plt.title("Weight distribution of first hidden convolution layer")
 
     # Dump the network weights to a file
-    filepath = '70.14.h5'
+    filepath = 'binarynet_mnist.h5'
     params = lasagne.layers.get_all_param_values(model)
     save_parameters(params, filepath)
