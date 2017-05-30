@@ -7,9 +7,9 @@ The .aedat file format is documented here:
 http://inilabs.com/support/software/fileformat/
     
 2015_12_11 Work in progress: 
-- Reading from a separate prefs file is not implemented yet.  
-- It would be neater (more readable) to turn the xml cell array into a
-    structure.
+    - Reading from a separate prefs file is not implemented yet.  
+    - It would be neater (more readable) to turn the xml cell array into a
+      structure.
 """
 
 from snntoolbox.io_utils.AedatTools.ImportAedatBasicSourceName import \

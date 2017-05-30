@@ -150,13 +150,30 @@ def parse(input_model):
 
 
 def get_dataset(s):
-    """Get data set.
-    TODO: Docstring
+    """Get data set, either from ``.npz`` files or ``keras.ImageDataGenerator``.
+    
+    Parameters
+    ----------
+    
+    s: dict
+        Settings
+        
+    Returns
+    -------
+    
+    Dictionaries with keys ``x_test`` and ``y_test`` if data set was loaded in
+    ``.npz`` format, or with ``dataflow`` key if data will be loaded from
+    ``.jpg`` files by a ``keras.ImageDataGenerator``.
+    
+    normset: dict
+        Used to normalized the network parameters.
+    testset: dict
+        Used to test the networks.
     """
 
     from snntoolbox.io_utils.common import load_dataset
 
-    evalset = normset = testset = None
+    normset = testset = None
     # Instead of loading a normalization set, try to get the scale-factors from
     # a previous run, stored on disk.
     newpath = os.path.join(settings['log_dir_of_current_run'], 'normalization')
@@ -171,28 +188,18 @@ def get_dataset(s):
         print("Loading data set from '.npz' files in {}.\n".format(
             s['dataset_path']))
         if s['evaluateANN'] or s['simulate']:
-            evalset = {'x_test': load_dataset(s['dataset_path'], 'x_test.npz'),
+            testset = {'x_test': load_dataset(s['dataset_path'], 'x_test.npz'),
                        'y_test': load_dataset(s['dataset_path'], 'y_test.npz')}
-#            # Binarize the input. Hack: Should be independent of maxpool type
-#            if s['maxpool_type'] == 'binary_tanh':
-#                evalset['x_test'] = np.sign(evalset['x_test'])
-#            elif s['maxpool_type'] == 'binary_sigmoid':
-#                np.clip((evalset['x_test']+1.)/2., 0, 1, evalset['x_test'])
-#                np.round(evalset['x_test'], out=evalset['x_test'])
-            assert evalset, "Evaluation set empty."
+            assert testset, "Test set empty."
         if s['normalize'] and normset is None:
             normset = {'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
             assert normset, "Normalization set empty."
-        if s['simulate']:
-            testset = evalset
-            assert testset, "Test set empty."
     elif s['dataset_format'] == 'jpg':
-        import ast
         from keras.preprocessing.image import ImageDataGenerator
         print("Loading data set from ImageDataGenerator, using images in "
               "{}.\n".format(s['dataset_path']))
         datagen_kwargs = s['datagen_kwargs']
-        dataflow_kwargs = ast.literal_eval(s['dataflow_kwargs'])
+        dataflow_kwargs = s['dataflow_kwargs']
         dataflow_kwargs['directory'] = s['dataset_path']
         if 'batch_size' not in dataflow_kwargs:
             dataflow_kwargs['batch_size'] = s['batch_size']
@@ -203,17 +210,14 @@ def get_dataset(s):
         x_orig = ImageDataGenerator(rescale=rs).flow_from_directory(
             **dataflow_kwargs).next()[0]
         datagen.fit(x_orig)
-        if s['evaluateANN']:
-            evalset = {
-                'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
-            assert evalset, "Evaluation set empty."
         if s['normalize'] and normset is None:
+            shuffle = dataflow_kwargs['shuffle']
             dataflow_kwargs['shuffle'] = True
             normset = {
                 'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
-            dataflow_kwargs['shuffle'] = False
+            dataflow_kwargs['shuffle'] = shuffle
             assert normset, "Normalization set empty."
-        if s['simulate']:
+        if s['evaluateANN'] or s['simulate']:
             testset = {
                 'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
             assert testset, "Test set empty."
@@ -221,9 +225,9 @@ def get_dataset(s):
         if s['normalize'] and normset is None:
             normset = {'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
             assert normset, "Normalization set empty."
-        evalset = testset = {}
+        testset = {}
 
-    return evalset, normset, testset
+    return normset, testset
 
 
 def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
@@ -311,7 +315,7 @@ def print_description(log=True):
 
     if log:
         f = open(os.path.join(settings['log_dir_of_current_run'],
-                              'settings.txt'), 'w')
+                              'settings_all.txt'), 'w')
     else:
         import sys
         f = sys.stdout
@@ -877,21 +881,17 @@ def extract_label(label):
     Parameters
     ----------
 
-    label: string
+    label: str
         Specifies both the layer type, index and shape, e.g.
         ``'03Conv2D_3x32x32'``.
 
     Returns
     -------
 
-    layer_num: int
-        The index of the layer in the network.
-
-    name: string
-        The type of the layer.
-
-    shape: tuple
-        The shape of the layer
+    : tuple[int, str, tuple]
+        - layer_num: The index of the layer in the network.
+        - name: The type of the layer.
+        - shape: The shape of the layer
     """
 
     l = label.split('_')

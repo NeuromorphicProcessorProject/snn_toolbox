@@ -8,6 +8,8 @@ Created on Thu May 19 08:26:49 2016
 @author: rbodo
 """
 
+import numpy as np
+
 
 def padding_string(pad, pool_size):
     """Get string defining the border mode.
@@ -45,8 +47,6 @@ def absorb_bn(w, b, gamma, beta, mean, var, epsilon, axis=None):
     layer.
     """
 
-    import numpy as np
-
     if axis is None:
         axis = 0 if w.ndim > 2 else 1
 
@@ -61,32 +61,21 @@ def absorb_bn(w, b, gamma, beta, mean, var, epsilon, axis=None):
     return w_bn, b_bn
 
 
-def import_script(path=None, filename=None):
-    """Import python script which builds the model.
-
-    Used if the input model library does not provide loading functions to
-    restore a model from a saved file. In that case, use the script with which
-    the model was compiled in the first place.
+def import_script(path, filename):
+    """Import python script independently from python version.
 
     Parameters
     ----------
 
-    path: string, optional
-        Path to directory where to load model from. Defaults to
-        ``settings['path']``.
+    path: string
+        Path to directory where to load script from.
 
-    filename: string, optional
-        Name of file to load model from. Defaults to ``settings['filename']``.
+    filename: string
+        Name of script file.
     """
 
     import os
     import sys
-    from snntoolbox.config import settings
-
-    if path is None:
-        path = settings['path']
-    if filename is None:
-        filename = settings['filename']
 
     filepath = os.path.join(path, filename + '.py')
 

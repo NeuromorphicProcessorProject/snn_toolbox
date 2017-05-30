@@ -1594,8 +1594,10 @@ class SNN():
         '''
         Method that fetches all the events from all layers after a simulation is over
 
-        Returns: a list of all the events from all the layers
+        Returns
         -------
+
+        A list of all the events from all the layers
 
         '''
         events = []
@@ -1612,8 +1614,10 @@ class SNN():
         Method that fetches all the events from all layers after a simulation is over
         uses the reset signal events to slice the symbols
 
-        Returns: a list of all the events from all the layers
+        Returns
         -------
+
+        A list of all the events from all the layers
 
         '''
         events = []
@@ -1643,8 +1647,10 @@ class SNN():
         """
         Method that fetches the events from the output layer
 
-        Returns: a numpy array of the output events
+        Returns
         -------
+
+        A numpy array of the output events
 
         """
         outspikes_per_symbol = []

@@ -71,7 +71,7 @@ def to_categorical(y, nb_classes):
 
 
 def load_dataset(path, filename):
-    """Load dataset from an ``.npy`` or ``.npz`` file.
+    """Load dataset from an ``.npz`` file.
 
     Parameters
     ----------
@@ -85,96 +85,10 @@ def load_dataset(path, filename):
     -------
 
     : tuple[np.array]
-        The dataset as a numpy array containing samples. Example:
-        With original data of the form (channels, num_rows, num_cols),
-        ``x_train`` and ``x_test`` have dimension
-        (num_samples, channels*num_rows*num_cols) for a fully-connected network,
-        and (num_samples, channels, num_rows, num_cols) otherwise.
-        ``y_train`` and ``y_test`` have dimension (num_samples, num_classes).
+        The dataset as a numpy array containing samples.
     """
 
     return np.load(os.path.join(path, filename))['arr_0']
-
-
-def download_dataset(fname, origin, untar=False):
-    """Download a dataset, if not already there.
-
-    Parameters
-    ----------
-
-    fname: str
-        Full filename of dataset, e.g. ``mnist.pkl.gz``.
-    origin: str
-        Location of dataset, e.g. url
-        https://s3.amazonaws.com/img-datasets/mnist.pkl.gz
-    untar: Optional[bool]
-        If ``True``, untar file.
-
-    Returns
-    -------
-
-    fpath: str
-        The path to the downloaded dataset. If the user has write access to
-        ``home``, the dataset will be stored in ``~/.snntoolbox/datasets/``,
-        otherwise in ``/tmp/.snntoolbox/datasets/``.
-
-    Notes
-    -----
-
-    Test under python2.
-    """
-
-    import tarfile
-    import shutil
-    from six.moves.urllib.error import URLError
-    # Under Python 2, 'urlretrieve' relies on FancyURLopener from legacy
-    # urllib module, known to have issues with proxy management
-    from six.moves.urllib.request import urlretrieve
-
-    datadir_base = os.path.expanduser(os.path.join('~', '.snntoolbox'))
-    if not os.access(datadir_base, os.W_OK):
-        datadir_base = os.path.join('/tmp', '.snntoolbox')
-    datadir = os.path.join(datadir_base, 'datasets')
-    if not os.path.exists(datadir):
-        os.makedirs(datadir)
-
-    untar_fpath = None
-    if untar:
-        untar_fpath = os.path.join(datadir, fname)
-        fpath = untar_fpath + '.tar.gz'
-    else:
-        fpath = os.path.join(datadir, fname)
-
-    if not os.path.exists(fpath):
-        print("Downloading data from {}".format(origin))
-        error_msg = 'URL fetch failure on {}: {} -- {}'
-        try:
-            try:
-                urlretrieve(origin, fpath)
-            except URLError as e:
-                raise Exception(error_msg.format(origin, e.errno, e.reason))
-        except (Exception, KeyboardInterrupt) as e:
-            if os.path.exists(fpath):
-                os.remove(fpath)
-            raise e
-
-    if untar:
-        if not os.path.exists(untar_fpath):
-            print("Untaring file...\n")
-            tfile = tarfile.open(fpath, 'r:gz')
-            try:
-                tfile.extractall(path=datadir)
-            except (Exception, KeyboardInterrupt) as e:
-                if os.path.exists(untar_fpath):
-                    if os.path.isfile(untar_fpath):
-                        os.remove(untar_fpath)
-                    else:
-                        shutil.rmtree(untar_fpath)
-                raise e
-            tfile.close()
-        return untar_fpath
-
-    return fpath
 
 
 def confirm_overwrite(filepath):

@@ -1,40 +1,58 @@
-'''Michael Lange <klappnase (at) freakmail (dot) de>
-The ToolTip class provides a flexible tooltip widget for Tkinter; it is based on IDLE's ToolTip
+# coding=utf-8
+
+"""
+
+Michael Lange <klappnase (at) freakmail (dot) de>
+The ToolTip class provides a flexible tooltip widget for Tkinter; it is based 
+on IDLE's ToolTip
 module which unfortunately seems to be broken (at least the version I saw).
 INITIALIZATION OPTIONS:
-anchor :        where the text should be positioned inside the widget, must be on of "n", "s", "e", "w", "nw" and so on;
-                default is "center"
-bd :            borderwidth of the widget; default is 1 (NOTE: don't use "borderwidth" here)
-bg :            background color to use for the widget; default is "lightyellow" (NOTE: don't use "background")
-delay :         time in ms that it takes for the widget to appear on the screen when the mouse pointer has
-                entered the parent widget; default is 1500
-fg :            foreground (i.e. text) color to use; default is "black" (NOTE: don't use "foreground")
-follow_mouse :  if set to 1 the tooltip will follow the mouse pointer instead of being displayed
-                outside of the parent widget; this may be useful if you want to use tooltips for
-                large widgets like listboxes or canvases; default is 0
+anchor :        where the text should be positioned inside the widget, 
+must be on of "n", "s", "e", "w", "nw" and so on; default is "center"
+bd :            borderwidth of the widget; default is 1 (NOTE: don't use 
+"borderwidth" here)
+bg :            background color to use for the widget; default is 
+"lightyellow" (NOTE: don't use "background")
+delay :         time in ms that it takes for the widget to appear on the 
+screen when the mouse pointer has entered the parent widget; default is 1500
+fg :            foreground (i.e. text) color to use; default is "black" (
+NOTE: don't use "foreground")
+follow_mouse :  if set to 1 the tooltip will follow the mouse pointer instead 
+of being displayed outside of the parent widget; this may be useful if you 
+want to use tooltips for large widgets like listboxes or canvases; default is 0
 font :          font to use for the widget; default is system specific
-justify :       how multiple lines of text will be aligned, must be "left", "right" or "center"; default is "left"
-padx :          extra space added to the left and right within the widget; default is 4
+justify :       how multiple lines of text will be aligned, must be "left", 
+"right" or "center"; default is "left"
+padx :          extra space added to the left and right within the widget; 
+default is 4
 pady :          extra space above and below the text; default is 2
-relief :        one of "flat", "ridge", "groove", "raised", "sunken" or "solid"; default is "solid"
-state :         must be "normal" or "disabled"; if set to "disabled" the tooltip will not appear; default is "normal"
+relief :        one of "flat", "ridge", "groove", "raised", "sunken" or 
+"solid"; default is "solid"
+state :         must be "normal" or "disabled"; if set to "disabled" the 
+tooltip will not appear; default is "normal"
 text :          the text that is displayed inside the widget
-textvariable :  if set to an instance of Tkinter.StringVar() the variable's value will be used as text for the widget
-width :         width of the widget; the default is 0, which means that "wraplength" will be used to limit the widgets width
+textvariable :  if set to an instance of Tkinter.StringVar() the variable's 
+value will be used as text for the widget
+width :         width of the widget; the default is 0, which means that 
+"wraplength" will be used to limit the widgets width
 wraplength :    limits the number of characters in each line; default is 150
-
 WIDGET METHODS:
-configure(**opts) : change one or more of the widget's options as described above; the changes will take effect the
-                    next time the tooltip shows up; NOTE: follow_mouse cannot be changed after widget initialization
+configure(opts) : change one or more of the widget's options as described 
+above; the changes will take effect the next time the tooltip shows up; NOTE: 
+follow_mouse cannot be changed after widget initialization
 
 Other widget methods that might be useful if you want to subclass ToolTip:
 enter() :           callback when the mouse pointer enters the parent widget
 leave() :           called when the mouse pointer leaves the parent widget
-motion() :          is called when the mouse pointer moves inside the parent widget if follow_mouse is set to 1 and the
-                    tooltip has shown up to continually update the coordinates of the tooltip window
+motion() :          is called when the mouse pointer moves inside the parent 
+widget if follow_mouse is set to 1 and the tooltip has shown up to 
+continually update the coordinates of the tooltip window
 coords() :          calculates the screen coordinates of the tooltip window
-create_contents() : creates the contents of the tooltip window (by default a Tkinter.Label)
-'''
+create_contents() : creates the contents of the tooltip window (by default a 
+Tkinter.Label)
+
+"""
+
 # Ideas gleaned from PySol
 
 import tkinter as tk

@@ -8,6 +8,7 @@ import sys
 from codecs import open
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
+# from sphinx.setup_command import BuildDoc
 
 
 # try:
@@ -25,38 +26,38 @@ from setuptools.command.test import test as TestCommand
 #     long_description = ''  # Tox can't find the file...
 
 
-# # Tell setuptools to run 'tox' when calling 'python setup.py test'.
-# class Tox(TestCommand):
-#     user_options = [('tox-args=', 'a', "Arguments to pass to tox")]
-#
-#     def initialize_options(self):
-#         TestCommand.initialize_options(self)
-#         self.tox_args = None
-#
-#     def finalize_options(self):
-#         TestCommand.finalize_options(self)
-#         self.test_args = []
-#         self.test_suite = True
-#
-#     def run_tests(self):
-#         # import here, cause outside the eggs aren't loaded
-#         import tox
-#         import shlex
-#         args = self.tox_args
-#         if args:
-#             args = shlex.split(self.tox_args)
-#         errno = tox.cmdline(args=args)
-#         sys.exit(errno)
+# Tell setuptools to run 'tox' when calling 'python setup.py test'.
+class Tox(TestCommand):
+    user_options = [('tox-args=', 'a', "Arguments to pass to tox")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.tox_args = None
+
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        # import here, cause outside the eggs aren't loaded
+        import tox
+        import shlex
+        args = self.tox_args
+        if args:
+            args = shlex.split(self.tox_args)
+        errno = tox.cmdline(args=args)
+        sys.exit(errno)
 
 setup(
     name='snntoolbox',
-    version='0.3.0',  # see https://www.python.org/dev/peps/pep-0440/
+    version='0.4.0',  # see https://www.python.org/dev/peps/pep-0440/
     description='Spiking Neural Net Conversion',
     # long_description=long_description,
     author='Bodo Rueckauer',
     author_email='bodo.rueckauer@gmail.com',
-    url='https://code.ini.uzh.ch/NPP_theory/SNN_toolbox',
-    download_url='git@code.ini.uzh.ch:NPP_theory/SNN_toolbox.git',
+    url='https://github.com/NeuromorphicProcessorProject/snn_toolbox',
+    download_url='git@github.com:NeuromorphicProcessorProject/snn_toolbox.git',
     license='MIT',
 
     classifiers=[
@@ -87,30 +88,17 @@ setup(
 
     install_requires=[
         'future',
-        'neo',
-        'lazyarray',
-        'sklearn',
-        'sympy',
-        'sphinx',
-        'pyNN',
         'h5py',
-        'pytest',
-        'lmdb',
-        'protobuf',
-        'scikit-image',
-        'Cython',
         'keras',
         'theano',
         'matplotlib',
-        'scipy',
-        'numpy'
     ],
 
     setup_requires=['pytest-runner'],
 
     tests_require=['tox', 'pytest'],
 
-    # cmdclass={'test': Tox},
+    cmdclass={'test': Tox},  # , 'build_doc': BuildDoc},
 
     # Additional groups of dependencies (e.g. development dependencies).
     # Install them with $ pip install -e .[dev,test]
@@ -119,15 +107,16 @@ setup(
     #     'test': ['bar']
     # },
 
-    packages=find_packages(),
+    packages=find_packages(exclude=['ann_architectures', 'deprecated',
+                                    'snntoolbox.scotopic']),
 
-    # Include everything in source control
-    include_package_data=True,
+    package_data={
+        'snntoolbox': ['default_settings.txt']
+    },
 
     # Include documentation
     data_files=[
         ('', ['README.rst']),
-        # ('docs', ['Documentation.html'])
     ],
 
     # To provide executable scripts, use entry points in preference to the
@@ -135,7 +124,8 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts':
-            ['snntoolbox_example=examples.example:main'],
-        'gui_scripts': ['snntoolbox=snntoolbox.gui.gui:main']
+            ['snntoolbox_example=examples.example:main',
+             'snntoolbox=snntoolbox.run:main'],
+        'gui_scripts': ['snntoolbox_gui=snntoolbox.gui.gui:main']
     },
 )

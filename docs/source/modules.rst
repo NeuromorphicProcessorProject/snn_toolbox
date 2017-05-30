@@ -1,11 +1,7 @@
-.. # coding=utf-8
-
-Tools
-=====
+snntoolbox
+==========
 
 .. toctree::
    :maxdepth: 4
 
-   core
-   snntoolbox.io_utils
-
+   snntoolbox

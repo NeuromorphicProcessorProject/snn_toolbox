@@ -39,11 +39,15 @@ from snntoolbox.core.pipeline import test_full
 from snntoolbox.gui.tooltip import ToolTip
 
 if sys.version_info[0] < 3:
+    # noinspection PyPep8Naming,PyUnresolvedReferences,PyPackageRequirements
     import Tkinter as tk
+    # noinspection PyPep8Naming,PyUnresolvedReferences
     import tkFileDialog as filedialog
+    # noinspection PyPep8Naming,PyUnresolvedReferences
     import tkMessageBox as messagebox
+    # noinspection PyPep8Naming,PyUnresolvedReferences
     import tkFont as font
-    # noinspection PyCompatibility
+    # noinspection PyCompatibility,PyUnresolvedReferences
     from Queue import Queue
 else:
     import tkinter as tk
@@ -964,7 +968,7 @@ class SNNToolboxGUI:
                             value=name, command=self.select_layer_rb,
                             variable=self.selected_plots_dir).pack(
                 fill='both', side='bottom', expand=True)
-             for name in plot_dirs]
+                for name in plot_dirs]
         open_new_cb = tk.Checkbutton(self.graph_frame, bg='white', height=2,
                                      width=20, text='open in new window',
                                      variable=self.settings['open_new'])
@@ -994,7 +998,7 @@ class SNNToolboxGUI:
                             value=name, command=self.display_graphs,
                             variable=self.layer_to_plot).pack(
                 fill='both', side='bottom', expand=True)
-             for name in layer_dirs]
+                for name in layer_dirs]
 
     def draw_canvas(self):
         """Draw canvas figure."""
@@ -1149,18 +1153,19 @@ class SNNToolboxGUI:
                          'datagen_kwargs': tk.StringVar(),
                          'dataflow_kwargs': tk.StringVar(),
                          'model_lib': tk.StringVar(),
+                         'path_wd': tk.StringVar(value=snntoolbox.toolbox_root),
+                         'filename_parsed_model': tk.StringVar(),
+                         'filename_ann': tk.StringVar(),
+                         'filename_snn': tk.StringVar(),
+                         'batch_size': tk.IntVar(),
+                         'samples_to_test': tk.StringVar(),
                          'evaluateANN': tk.BooleanVar(),
                          'normalize': tk.BooleanVar(),
                          'percentile': tk.DoubleVar(),
                          'convert': tk.BooleanVar(),
                          'simulate': tk.BooleanVar(),
                          'overwrite': tk.BooleanVar(),
-                         'batch_size': tk.IntVar(),
                          'verbose': tk.IntVar(),
-                         'path_wd': tk.StringVar(value=snntoolbox.toolbox_root),
-                         'filename_ann': tk.StringVar(),
-                         'filename_parsed_model': tk.StringVar(),
-                         'filename_snn': tk.StringVar(),
                          'v_thresh': tk.DoubleVar(),
                          'tau_refrac': tk.DoubleVar(),
                          'v_reset': tk.DoubleVar(),
@@ -1176,6 +1181,11 @@ class SNNToolboxGUI:
                          'simulator': tk.StringVar(),
                          'duration': tk.IntVar(),
                          'poisson_input': tk.BooleanVar(),
+                         'num_poisson_events_per_sample': tk.IntVar(),
+                         'num_dvs_events_per_sample': tk.IntVar(),
+                         'eventframe_width': tk.IntVar(),
+                         'label_dict': tk.Variable(),
+                         'subsample_facs': tk.Variable(),
                          'reset': tk.StringVar(),
                          'input_rate': tk.IntVar(),
                          'diff_to_max_rate': tk.IntVar(),
@@ -1187,15 +1197,21 @@ class SNNToolboxGUI:
                          'open_new': tk.BooleanVar(value=True),
                          'log_dir_of_current_run': tk.StringVar(),
                          'state_pyNN': tk.StringVar(value='normal'),
-                         'samples_to_test': tk.StringVar(),
                          'state_num_to_test': tk.StringVar(value='normal'),
                          'experimental_settings': tk.BooleanVar(),
                          'online_normalization': tk.BooleanVar(),
                          'normalization_schedule': tk.BooleanVar(),
                          'scaling_factor': tk.IntVar(),
                          'maxpool_type': tk.StringVar(),
+                         'max2avg_pool': tk.BooleanVar(),
                          'payloads': tk.BooleanVar(),
-                         'binarize_weights': tk.BooleanVar()}
+                         'binarize_weights': tk.BooleanVar(),
+                         'custom_activation': tk.StringVar(),
+                         'softmax_to_relu': tk.BooleanVar(),
+                         'reset_between_nth_sample': tk.IntVar(),
+                         'filename_clamp_indices': tk.StringVar(),
+                         'log_vars': tk.Variable(),
+                         'plot_vars': tk.Variable()}
 
         # These will not be written to disk as preferences.
         self.is_plot_container_destroyed = True
@@ -1244,22 +1260,24 @@ class SNNToolboxGUI:
             with open(path_to_pref, 'w') as f:
                 f.write(json.dumps(s))
 
-    def load_settings(self):
+    def load_settings(self, s=None):
         """Load a perferences settings."""
-        if self.restore_last_pref:
-            self.restore_last_pref = False
-            if not os.path.isdir(self.default_path_to_pref):
-                return
-            path_to_pref = os.path.join(self.default_path_to_pref,
-                                        '_last_settings.json')
-            if not os.path.isfile(path_to_pref):
-                return
-        else:
-            path_to_pref = filedialog.askopenfilename(
-                defaultextension='.json', filetypes=[("json files", '*.json')],
-                initialdir=self.default_path_to_pref,
-                title="Choose filename")
-        s = json.load(open(path_to_pref))
+        if s is None:
+            if self.restore_last_pref:
+                self.restore_last_pref = False
+                if not os.path.isdir(self.default_path_to_pref):
+                    return
+                path_to_pref = os.path.join(self.default_path_to_pref,
+                                            '_last_settings.json')
+                if not os.path.isfile(path_to_pref):
+                    return
+            else:
+                path_to_pref = filedialog.askopenfilename(
+                    defaultextension='.json', filetypes=[("json files",
+                                                          '*.json')],
+                    initialdir=self.default_path_to_pref,
+                    title="Choose filename")
+            s = json.load(open(path_to_pref))
         self.set_preferences(s)
 
     def start_processing(self):

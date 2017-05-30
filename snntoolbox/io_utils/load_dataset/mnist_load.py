@@ -16,8 +16,10 @@ import sys
 import os
 import gzip
 import numpy as np
+# noinspection PyUnresolvedReferences
 from six.moves import cPickle
-from snntoolbox.io_utils.common import download_dataset, to_categorical
+from keras.datasets.mnist import load_data
+from snntoolbox.io_utils.common import to_categorical
 
 standard_library.install_aliases()
 
@@ -56,9 +58,7 @@ def get_mnist(path=None, filename=None, flat=False):
 
     nb_classes = 10
 
-    d = download_dataset(
-        'mnist.pkl.gz',
-        origin='https://s3.amazonaws.com/img-datasets/mnist.pkl.gz')
+    d = load_data()
 
     if d.endswith('.gz'):
         f = gzip.open(d, 'rb')

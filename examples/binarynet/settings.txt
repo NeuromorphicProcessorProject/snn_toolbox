@@ -1,0 +1,19 @@
+{
+'path_wd': '/home/rbodo/.snntoolbox/data/cifar10/binarynet_heaviside',
+'dataset_path': '/home/rbodo/.snntoolbox/Datasets/cifar10/binarynet',
+'dataset_format': 'npz',
+'filename_ann': '88.63',
+'model_lib': 'lasagne',
+'normalize': False,
+'evaluateANN': False,
+'duration': 30,
+'batch_size': 100,
+'num_to_test': 10000,
+'runlabel': '02',
+'reset': 'Reset to zero',
+'softmax_to_relu': False,
+'maxpool_type': 'binary_tanh',
+'binarize_weights': True,
+'log_vars': {'operations_b_t'},
+'plot_vars': set({})
+}

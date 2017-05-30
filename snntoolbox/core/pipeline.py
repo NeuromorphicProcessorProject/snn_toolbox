@@ -72,7 +72,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         params = [settings[param_name]]
 
     # ____________________________ LOAD DATASET ______________________________ #
-    evalset, normset, testset = get_dataset(settings)
+    normset, testset = get_dataset(settings)
 
     # Instantiate an empty spiking network
     input_model = {}
@@ -91,7 +91,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         # Evaluate ANN
         if settings['evaluateANN']:
             print("Evaluating input model...")
-            model_lib.evaluate(input_model['val_fn'], **evalset)
+            model_lib.evaluate(input_model['val_fn'], **testset)
 
     if settings['convert'] and not is_stop(queue):
         # _____________________________ PARSE ________________________________ #
@@ -104,7 +104,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
         # (Re-) evaluate ANN
         if settings['evaluateANN'] and not is_stop(queue):
             print("Evaluating parsed model...")
-            evaluate_keras(parsed_model, **evalset)
+            evaluate_keras(parsed_model, **testset)
 
         # ____________________________ NORMALIZE _____________________________ #
         # Normalize model
@@ -115,7 +115,7 @@ def test_full(queue=None, params=None, param_name='v_thresh',
             # (Re-) evaluate ANN
             if settings['evaluateANN'] and not is_stop(queue):
                 print("Evaluating normalized model...")
-                evaluate_keras(parsed_model, **evalset)
+                evaluate_keras(parsed_model, **testset)
 
         # __________________________ SAVE PARSED _____________________________ #
         # Write parsed model to disk

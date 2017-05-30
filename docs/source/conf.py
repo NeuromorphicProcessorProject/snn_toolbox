@@ -66,7 +66,7 @@ master_doc = 'index'
 # General information about the project.
 project = 'SNN toolbox'
 # noinspection PyShadowingBuiltins
-copyright = '2016, Bodo Rueckauer'
+copyright = '2017, Bodo Rueckauer'
 author = 'Bodo Rueckauer'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -93,7 +93,7 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = ['../snntoolbox/scotopic/']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -126,7 +126,7 @@ todo_include_todos = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinx_rtd_theme'  # 'alabaster', 'bizstyle', 'nature'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

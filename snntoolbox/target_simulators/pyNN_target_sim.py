@@ -24,6 +24,7 @@ from random import randint
 
 import numpy as np
 from future import standard_library
+# noinspection PyUnresolvedReferences
 from six.moves import cPickle
 from snntoolbox.core.util import echo
 from snntoolbox.config import settings, initialize_simulator
@@ -129,16 +130,16 @@ class SNN:
 
         self.parsed_model = parsed_model
 
-        echo('\n' + "Compiling spiking network...\n")
+        print('\n' + "Compiling spiking network...\n")
 
         self.add_input_layer(parsed_model.layers[0].batch_input_shape)
 
         # Iterate over layers to create spiking neurons and connections.
-        for layer in parsed_model.layers:
+        for layer in parsed_model.layers[1:]:
             layer_type = layer.__class__.__name__
             if 'Flatten' in layer_type:
                 continue
-            echo("Building layer: {}\n".format(layer.name))
+            print("Building layer: {}\n".format(layer.name))
             self.add_layer(layer)
             if layer_type == 'Dense':
                 self.build_dense(layer)
@@ -148,13 +149,13 @@ class SNN:
                 self.build_pooling(layer)
             self.connect_layer()
 
-        echo("Compilation finished.\n\n")
+        print("Compilation finished.\n\n")
 
     def add_input_layer(self, input_shape):
         """Configure input layer."""
 
         self.layers.append(self.sim.Population(
-            np.prod(input_shape[1:], dtype=np.int),
+            np.asscalar(np.prod(input_shape[1:], dtype=np.int)),
             self.sim.SpikeSourcePoisson(), label='InputLayer'))
 
     def add_layer(self, layer):
@@ -162,11 +163,11 @@ class SNN:
 
         self.conns = []
         self.layers.append(self.sim.Population(
-            np.prod(layer.output_shape[1:], dtype=np.int), self.sim.IF_cond_exp,
-            self.cellparams, label=layer.name))
+            np.asscalar(np.prod(layer.output_shape[1:], dtype=np.int)),
+            self.sim.IF_cond_exp, self.cellparams, label=layer.name))
         if hasattr(layer, 'activation') and layer.activation == 'softmax':
-            echo("WARNING: Activation 'softmax' not implemented. " +
-                 "Using 'relu' activation instead.\n")
+            print("WARNING: Activation 'softmax' not implemented. " +
+                  "Using 'relu' activation instead.\n")
 
     def build_dense(self, layer):
         """Build dense layer."""
@@ -191,7 +192,7 @@ class SNN:
         self.layers[-1].set(i_offset=i_offset)
 
         nx = layer.input_shape[3]  # Width of feature map
-        ny = layer.input_shape[2]  # Hight of feature map
+        ny = layer.input_shape[2]  # Height of feature map
         kx, ky = layer.kernel_size  # Width and height of kernel
         px = int((kx - 1) / 2)  # Zero-padding columns
         py = int((ky - 1) / 2)  # Zero-padding rows
@@ -211,12 +212,12 @@ class SNN:
             raise Exception("Border_mode {} not supported".format(
                 layer.padding))
         # Loop over output filters 'fout'
-        for fout in range(weights.shape[0]):
+        for fout in range(weights.shape[3]):
             for y in range(y0, ny - y0):
                 for x in range(x0, nx - x0):
                     target = x - x0 + (y - y0) * mx + fout * mx * my
                     # Loop over input filters 'fin'
-                    for fin in range(weights.shape[1]):
+                    for fin in range(weights.shape[2]):
                         for k in range(-py, py + 1):
                             if not 0 <= y + k < ny:
                                 continue
@@ -225,19 +226,19 @@ class SNN:
                                 if not 0 <= x + l < nx:
                                     continue
                                 self.conns.append((source + l, target,
-                                                   weights[fout, fin,
-                                                           py-k, px-l],
+                                                   weights[py - k, px - l,
+                                                           fin, fout],
                                                    settings['delay']))
                 echo('.')
-            echo(' {:.1%}\n'.format(((fout + 1) * weights.shape[1]) /
-                 (weights.shape[0] * weights.shape[1])))
+            print(' {:.1%}'.format(((fout + 1) * weights.shape[2]) /
+                  (weights.shape[3] * weights.shape[2])))
 
     def build_pooling(self, layer):
         """Build pooling layer."""
 
         if layer.__class__.__name__ == 'MaxPooling2D':
-            echo("WARNING: Layer type 'MaxPooling' not supported yet. " +
-                 "Falling back on 'AveragePooling'.\n")
+            print("WARNING: Layer type 'MaxPooling' not supported yet. " +
+                  "Falling back on 'AveragePooling'.")
         nx = layer.input_shape[3]  # Width of feature map
         ny = layer.input_shape[2]  # Hight of feature map
         dx = layer.pool_size[1]  # Width of pool
@@ -256,7 +257,7 @@ class SNN:
                                                1 / (dx * dy),
                                                settings['delay']))
                 echo('.')
-            echo(' {:.1%}\n'.format((1 + fout) / layer.input_shape[1]))
+            print(' {:.1%}'.format((1 + fout) / layer.input_shape[1]))
 
     def connect_layer(self):
         """Connect layers."""
@@ -269,34 +270,21 @@ class SNN:
                 self.layers[-2], self.layers[-1],
                 self.sim.FromListConnector(self.conns, ['weight', 'delay'])))
 
-    def run(self, x_test, y_test, kwargs):
-        """Simulate a spiking network with IF units and Poisson input in pyNN.
-
-        Simulate a spiking network with IF units and Poisson input in pyNN,
-        using a simulator like Brian, NEST, NEURON, etc.
-
-        This function will randomly select ``settings['num_to_test']`` test
-        samples among ``x_test`` and simulate the network on those.
-
-        Alternatively, a list of specific input samples can be given to the
-        toolbox GUI, which will then be used for testing.
-
-        If ``settings['verbose'] > 1``, the simulator records the
-        spiketrains and membrane potential of each neuron in each layer, for
-        the last sample.
-
-        This is somewhat costly in terms of memory and time, but can be useful
-        for debugging the network's general functioning.
+    def run(self, x_test=None, y_test=None, **kwargs):
+        """
+        Simulate a spiking network in pyNN, using a simulator like Brian, NEST,
+        or NEURON.
 
         Parameters
         ----------
 
         x_test: float32 array
-            The input samples to test. With data of the form
-            (channels, num_rows, num_cols), x_test has dimension
-            (num_samples, channels*num_rows*num_cols) for a multi-layer
-            perceptron, and (num_samples, channels, num_rows, num_cols) for a
-            convolutional net.
+            The input samples to test.
+            With data of the form (channels, num_rows, num_cols),
+            x_test has dimension (num_samples, channels*num_rows*num_cols)
+            for a multi-layer perceptron, and
+            (num_samples, channels, num_rows, num_cols) for a convolutional
+            net.
         y_test: float32 array
             Ground truth of test data. Has dimension (num_samples, num_classes)
         kwargs: Optional[dict]
@@ -310,7 +298,7 @@ class SNN:
         Returns
         -------
 
-        total_acc: float
+        top1acc_total: float
             Number of correctly classified samples divided by total number of
             test samples.
         """
@@ -322,12 +310,13 @@ class SNN:
         log_dir = kwargs['path'] if 'path' in kwargs \
             else s['log_dir_of_current_run']
 
-        # Setup pyNN simulator if it was not passed on from a previous session.
+        # Load neuron layers and connections if conversion was done during a
+        # previous session.
         if len(self.layers) == 0:
-            echo("Restoring layer connections...\n")
+            print("Restoring layer connections...")
             self.load()
             self.parsed_model = keras.models.load_model(os.path.join(
-                s['path'], s['filename_parsed_model'] + '.h5'))
+                s['path_wd'], s['filename_parsed_model'] + '.h5'))
 
         # Set cellparameters of neurons in each layer and initialize membrane
         # potential.
@@ -351,8 +340,8 @@ class SNN:
             if 'spiketrains' in s['plot_vars'] and \
                     test_num == s['num_to_test'] - 1:
                 if s['num_to_test'] > 1:
-                    echo("For last run, record spike rates and membrane " +
-                         "potential of all layers.\n")
+                    print("For last run, record spike rates and membrane " +
+                          "potential of all layers.")
                     self.load()
                 self.layers[0].record(['spikes'])
                 for layer in self.layers[1:]:
@@ -363,22 +352,20 @@ class SNN:
                     else:
                         layer.record(['spikes'])
 
-            # If a list of specific input samples is given, iterate over that,
-            # and otherwise pick a random test sample from among all possible
-            # input samples in x_test.
+            # If a list of specific input samples is given, iterate over that;
+            # otherwise pick a random test sample from among all possible input
+            # samples in x_test.
             si = s['sample_indices_to_test']
             ind = randint(0, len(x_test) - 1) if si == [] else si[test_num]
 
             # Add Poisson input.
-            if s['verbose'] > 1:
-                echo("Creating poisson input...\n")
+            print("Creating poisson input...")
             rates = x_test[ind, :].flatten()
             for (i, ss) in enumerate(self.layers[0]):
-                ss.rate = rates[i] * s['input_rate']
+                ss.rate = rates[i] * s['input_rate'] * s['dt'] / 1000
 
             # Run simulation for 'duration'.
-            if s['verbose'] > 1:
-                echo("Starting new simulation...\n")
+            print("Starting new simulation...")
             self.sim.run(s['duration'])
 
             # Get result by comparing the guessed class (i.e. the index of the
@@ -389,31 +376,28 @@ class SNN:
             truth.append(np.argmax(y_test[ind, :]))
             results.append(guesses[-1] == truth[-1])
 
-            if s['verbose'] > 0:
-                echo("Sample {} of {} completed.\n".format(test_num + 1,
-                     s['num_to_test']))
-                echo("Moving average accuracy: {:.2%}.\n".format(
-                    np.mean(results)))
+            print("Sample {} of {} completed.".format(test_num + 1,
+                  s['num_to_test']))
+            print("Moving average accuracy: {:.2%}.".format(
+                np.mean(results)))
 
             if 'spiketrains' in s['plot_vars'] and \
                     test_num == s['num_to_test'] - 1:
-                echo("Simulation finished. Collecting results...\n")
+                print("Simulation finished. Collecting results...")
                 # self.collect_plot_results(x_test[ind:ind+s['batch_size']],
                 #                           test_num)
 
             # Reset simulation time and recorded network variables for next run
-            if s['verbose'] > 1:
-                echo("Resetting simulator...\n")
+            print("Resetting simulator...")
             self.sim.reset()
-            if s['verbose'] > 1:
-                echo("Done.\n")
+            print("Done.")
 
         if 'confusion_matrix' in s['plot_vars']:
             plot_confusion_matrix(truth, guesses, log_dir)
 
         total_acc = np.mean(results)
         ss = '' if s['num_to_test'] == 1 else 's'
-        echo("Total accuracy: {:.2%} on {} test sample{}.\n\n".format(
+        print("Total accuracy: {:.2%} on {} test sample{}.\n".format(
              total_acc, s['num_to_test'], ss))
 
         return total_acc
@@ -496,7 +480,7 @@ class SNN:
         s['variables'] = variables  # List of variable names.
         s['size'] = len(self.layers)  # Number of populations in assembly.
         cPickle.dump(s, open(filepath, 'wb'))
-        print("Done.\n")
+        print("Done.")
 
     def save_connections(self, path=None):
         """Write parameters of a neural network to disk.
@@ -524,14 +508,14 @@ class SNN:
         if path is None:
             path = settings['path']
 
-        echo("Saving connections to {}...\n".format(path))
+        print("Saving connections to {}...".format(path))
 
         # Iterate over layers to save each projection in a separate txt file.
         for projection in self.connections:
             filepath = os.path.join(path, projection.label.partition('→')[-1])
             if confirm_overwrite(filepath):
                 projection.save('connections', filepath)
-        echo("Done.\n")
+        print("Done.")
 
     def load_assembly(self, path=None, filename=None):
         """Load the populations in an assembly.
@@ -608,7 +592,7 @@ class SNN:
         """
 
         if path is None:
-            path = settings['path']
+            path = settings['path_wd']
         if filename is None:
             filename = settings['filename_snn']
 

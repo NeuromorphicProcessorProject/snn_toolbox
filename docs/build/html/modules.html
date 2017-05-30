@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Tools &mdash; SNN toolbox 0.1 documentation</title>
+  <title>snntoolbox &mdash; SNN toolbox 0.1 documentation</title>
   
 
+  
+  
   
   
 
@@ -30,9 +32,12 @@
   
 
   
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="SNN toolbox 0.1 documentation" href="index.html"/>
-        <link rel="next" title="pipeline" href="core.html"/>
-        <link rel="prev" title="Configuration" href="configure_toolbox.html"/> 
+        <link rel="next" title="snntoolbox package" href="snntoolbox.html"/>
+        <link rel="prev" title="Support" href="support.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -41,6 +46,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -81,23 +87,22 @@
           
             
             
-                <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configure_toolbox.html">Configuration</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Tools</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="core.html">pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.html#module-core.inisim">inisim</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.html#module-core.megasim">megasim</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.html#module-core.util">util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html">cifar10</a></li>
-<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.caltech101_load">caltech101</a></li>
-<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.mnist_load">mnist</a></li>
-<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.facedetection_load">facedetection</a></li>
-<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.plotting">plotting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.common">common</a></li>
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extending.html">Extending the toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="support.html">Support</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.html">snntoolbox package</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="todo.html">Todo</a></li>
 </ul>
 
             
@@ -110,8 +115,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">SNN toolbox</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SNN toolbox</a>
+        
       </nav>
 
 
@@ -120,57 +127,126 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>Tools</li>
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>snntoolbox</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="_sources/modules.txt" rel="nofollow"> View page source</a>
+            
+            <a href="_sources/modules.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="tools">
-<h1>Tools<a class="headerlink" href="#tools" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="snntoolbox">
+<h1>snntoolbox<a class="headerlink" href="#snntoolbox" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="core.html">pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core.html#module-core.inisim">inisim</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core.html#module-core.megasim">megasim</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core.html#module-core.util">util</a></li>
-<li class="toctree-l1"><a class="reference internal" href="snntoolbox.io_utils.html">cifar10</a></li>
-<li class="toctree-l1"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.caltech101_load">caltech101</a></li>
-<li class="toctree-l1"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.mnist_load">mnist</a></li>
-<li class="toctree-l1"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.facedetection_load">facedetection</a></li>
-<li class="toctree-l1"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.plotting">plotting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.common">common</a></li>
+<li class="toctree-l1"><a class="reference internal" href="snntoolbox.html">snntoolbox package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="snntoolbox.core.html">snntoolbox.core package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.core.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.core.html#module-snntoolbox.core.ebsim">snntoolbox.core.ebsim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.core.html#module-snntoolbox.core.inisim">snntoolbox.core.inisim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.core.html#module-snntoolbox.core.megasim">snntoolbox.core.megasim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.core.html#module-snntoolbox.core.pipeline">snntoolbox.core.pipeline module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.core.html#module-snntoolbox.core.util">snntoolbox.core.util module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.core.html#module-snntoolbox.core">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="snntoolbox.gui.html">snntoolbox.gui package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.gui.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.gui.html#module-snntoolbox.gui.gui">snntoolbox.gui.gui module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.gui.html#module-snntoolbox.gui.tooltip">snntoolbox.gui.tooltip module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.gui.html#module-snntoolbox.gui">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="snntoolbox.io_utils.html">snntoolbox.io_utils package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.io_utils.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.io_utils.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.common">snntoolbox.io_utils.common module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.draw_convnet">snntoolbox.io_utils.draw_convnet module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils.plotting">snntoolbox.io_utils.plotting module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.io_utils.html#module-snntoolbox.io_utils">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="snntoolbox.model_libs.html">snntoolbox.model_libs package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.model_libs.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.model_libs.html#module-snntoolbox.model_libs.caffe_input_lib">snntoolbox.model_libs.caffe_input_lib module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.model_libs.html#module-snntoolbox.model_libs.common">snntoolbox.model_libs.common module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.model_libs.html#module-snntoolbox.model_libs.keras_input_lib">snntoolbox.model_libs.keras_input_lib module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.model_libs.html#module-snntoolbox.model_libs.lasagne_input_lib">snntoolbox.model_libs.lasagne_input_lib module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.model_libs.html#module-snntoolbox.model_libs">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="snntoolbox.target_simulators.html">snntoolbox.target_simulators package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.target_simulators.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.target_simulators.html#module-snntoolbox.target_simulators.INI_target_sim">snntoolbox.target_simulators.INI_target_sim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.target_simulators.html#module-snntoolbox.target_simulators.INIeb_target_sim">snntoolbox.target_simulators.INIeb_target_sim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.target_simulators.html#module-snntoolbox.target_simulators.MegaSim_target_sim">snntoolbox.target_simulators.MegaSim_target_sim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.target_simulators.html#module-snntoolbox.target_simulators.Neuron_target_sim">snntoolbox.target_simulators.Neuron_target_sim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.target_simulators.html#module-snntoolbox.target_simulators.brian2_target_sim">snntoolbox.target_simulators.brian2_target_sim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.target_simulators.html#module-snntoolbox.target_simulators.brian_target_sim">snntoolbox.target_simulators.brian_target_sim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.target_simulators.html#module-snntoolbox.target_simulators.common">snntoolbox.target_simulators.common module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.target_simulators.html#module-snntoolbox.target_simulators.nest_target_sim">snntoolbox.target_simulators.nest_target_sim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.target_simulators.html#module-snntoolbox.target_simulators.pyNN_target_sim">snntoolbox.target_simulators.pyNN_target_sim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snntoolbox.target_simulators.html#module-snntoolbox.target_simulators">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.html#module-snntoolbox.config">snntoolbox.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.html#module-snntoolbox.run">snntoolbox.run module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snntoolbox.html#module-snntoolbox">Module contents</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="core.html" class="btn btn-neutral float-right" title="pipeline" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="snntoolbox.html" class="btn btn-neutral float-right" title="snntoolbox package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="configure_toolbox.html" class="btn btn-neutral" title="Configuration" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="support.html" class="btn btn-neutral" title="Support" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -179,8 +255,8 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, Bodo Rueckauer.
-      Last updated on Nov 10, 2016.
+        &copy; Copyright 2017, Bodo Rueckauer.
+      Last updated on May 27, 2017.
 
     </p>
   </div>
@@ -205,13 +281,14 @@
             VERSION:'0.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

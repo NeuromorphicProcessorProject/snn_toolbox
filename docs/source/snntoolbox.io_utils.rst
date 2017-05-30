@@ -1,50 +1,46 @@
-.. # coding=utf-8
+snntoolbox\.io\_utils package
+=============================
 
-cifar10
--------
+Subpackages
+-----------
 
-.. automodule:: snntoolbox.io_utils.cifar10_load
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. toctree::
 
-caltech101
+    snntoolbox.io_utils.AedatTools
+    snntoolbox.io_utils.load_dataset
+
+Submodules
 ----------
 
-.. automodule:: snntoolbox.io_utils.caltech101_load
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-mnist
------
-
-.. automodule:: snntoolbox.io_utils.mnist_load
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-facedetection
--------------
-
-.. automodule:: snntoolbox.io_utils.facedetection_load
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-plotting 
---------
-
-.. automodule:: snntoolbox.io_utils.plotting
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-common
-------
+snntoolbox\.io\_utils\.common module
+------------------------------------
 
 .. automodule:: snntoolbox.io_utils.common
     :members:
     :undoc-members:
     :show-inheritance:
 
+snntoolbox\.io\_utils\.draw\_convnet module
+-------------------------------------------
+
+.. automodule:: snntoolbox.io_utils.draw_convnet
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+snntoolbox\.io\_utils\.plotting module
+--------------------------------------
+
+.. automodule:: snntoolbox.io_utils.plotting
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: snntoolbox.io_utils
+    :members:
+    :undoc-members:
+    :show-inheritance:

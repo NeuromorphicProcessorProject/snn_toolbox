@@ -1,7 +1,7 @@
 # Input model parsing
 
-Methods to parse an input model written in a certain model library and prepare it for further
-processing in the SNN toolbox.
+Methods to parse an input model written in a certain model library and prepare 
+it for further processing in the SNN toolbox.
 
 The idea is to make all further steps in the conversion/simulation pipeline
 independent of the original model format. Therefore, when a developer adds a

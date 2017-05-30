@@ -80,11 +80,13 @@ def extract(model):
     model: dict
         A dictionary of objects that constitute the input model. Contains at
         least the key
+
             - ``model``: A model instance of the network in the respective
               ``model_lib``.
             - ``model_protobuf``: caffe.proto.caffe_pb2.NetParameter protocol
               buffer. The result of reading out the network specification from
               the prototxt file.
+
         For instance, if the input model was written using Keras, the 'model'-
         value would be an instance of ``keras.Model``.
 

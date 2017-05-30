@@ -439,7 +439,11 @@ def load_ann(path=None, filename=None):
 
 
 def model_from_py(path=None, filename=None):
-    """Load model from *.py file.
+    """Load model from ``*.py`` file.
+
+    Used if the input model library does not provide loading functions to
+    restore a model from a saved file. In that case, use the script with which
+    the model was compiled in the first place.
 
     Parameters
     ----------

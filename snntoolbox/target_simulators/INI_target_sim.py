@@ -163,17 +163,9 @@ class SNN:
             print("Number of operations of ANN: {}".format(self.operations_ann))
 
     def run(self, x_test=None, y_test=None, dataflow=None, **kwargs):
-        """Simulate a SNN with LIF and Poisson input.
-
-        Simulate a spiking network with leaky integrate-and-fire units and
-        Poisson input, using mean pooling and a timestepped approach.
-
-        If ``settings['verbose'] > 1``, the toolbox plots the spiketrains
-        and spikerates of each neuron in each layer, for the first sample of
-        the first batch of ``x_test``.
-
-        This is somewhat costly in terms of memory and time, but can be useful
-        for debugging the network's general functioning.
+        """
+        Simulate a spiking network with non-leaky integrate-and-fire units,
+        using a timestepped approach.
 
         Parameters
         ----------
@@ -188,6 +180,7 @@ class SNN:
         y_test: float32 array
             Ground truth of test data. Has dimension (num_samples, num_classes)
         dataflow : keras.DataFlowGenerator
+            Loads images from disk and processes them on the fly.
 
         kwargs: Optional[dict]
             - s: Optional[dict]
@@ -214,6 +207,7 @@ class SNN:
         from snntoolbox.io_utils.plotting import plot_input_image
         from snntoolbox.io_utils.plotting import plot_ops_vs_time
         from snntoolbox.io_utils.AedatTools.DVSIterator import DVSIterator
+        from snntoolbox.target_simulators.common import get_samples_from_list
 
         s = kwargs['settings'] if 'settings' in kwargs else settings
         log_dir = kwargs['path'] if 'path' in kwargs \
@@ -228,28 +222,7 @@ class SNN:
                 s['path_wd'], s['filename_parsed_model']+'.h5'))
 
         # Extract certain samples from test set, if user specified such a list.
-        si = s['sample_indices_to_test'].copy() \
-            if 'sample_indices_to_test' in s else []
-        if not si == []:
-            if dataflow is not None:
-                batch_idx = 0
-                x_test = []
-                y_test = []
-                target_idx = si.pop(0)
-                while len(x_test) < s['num_to_test']:
-                    x_b_l, y_b = dataflow.next()
-                    for i in range(s['batch_size']):
-                        if batch_idx * s['batch_size'] + i == target_idx:
-                            x_test.append(x_b_l[i])
-                            y_test.append(y_b[i])
-                            if len(si) > 0:
-                                target_idx = si.pop(0)
-                    batch_idx += 1
-                x_test = np.array(x_test)
-                y_test = np.array(y_test)
-            else:
-                x_test = np.array([x_test[i] for i in si])
-                y_test = np.array([y_test[i] for i in si])
+        x_test, y_test = get_samples_from_list(x_test, y_test, dataflow, s)
 
         # Divide the test set into batches and run all samples in a batch in
         # parallel.
@@ -525,7 +498,7 @@ class SNN:
         """
 
         if path is None:
-            path = settings['path']
+            path = settings['path_wd']
         if filename is None:
             filename = settings['filename_snn']
         filepath = os.path.join(path, filename + '.h5')

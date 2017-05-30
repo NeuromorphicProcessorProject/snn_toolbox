@@ -174,7 +174,7 @@ def write_data_to_lmdb(db, data_in, labels_in, curr_idx):
     """Given arrays of data and the labels, it writes the information in an
     LMDB
 
-    Parameters:
+    Parameters
     ----------
 
     db: LMDB to write the data into

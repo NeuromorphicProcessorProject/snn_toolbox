@@ -1,22 +1,8 @@
 # Requirements for SNN toolbox #
 ################################
 
-numpy
-scipy
-matplotlib
-theano
 future
-neo
-lazyarray
-sklearn
-sympy
-sphinx
-pyNN
-keras
 h5py
-pytest
-lmdb
-
-# You may need to install 'freetype' (including 'libpng') on system-level
-# to be able to install matplotlib:
-# sudo apt-get install libfreetype6-dev libxft-dev
+keras
+theano
+matplotlib

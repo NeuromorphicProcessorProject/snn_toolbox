@@ -19,15 +19,15 @@ from __future__ import print_function, unicode_literals
 import os
 import warnings
 import numpy as np
+from future import standard_library
 import theano
 import theano.tensor as t
-from future import standard_library
-from keras import backend as k
-from keras.layers import Conv2D, Concatenate
-from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D
-from snntoolbox.config import settings
-from theano.tensor.shared_randomstreams import RandomStreams
 from theano.tensor.signal import pool
+from theano.tensor.shared_randomstreams import RandomStreams
+from keras import backend as k
+from keras.layers import Concatenate
+from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
+from snntoolbox.config import settings
 
 standard_library.install_aliases()
 
@@ -148,13 +148,7 @@ def softmax_activation(self):
 
 
 def get_new_mem(self):
-    """
-
-    :param self: 
-    :type self: 
-    :return: 
-    :rtype: 
-    """
+    """Add input to membrane potential."""
 
     # Destroy impulse if in refractory period
     masked_impulse = self.impulse if settings['tau_refrac'] == 0 else \
@@ -184,18 +178,7 @@ def get_new_mem(self):
 
 
 def set_reset_mem(self, mem, spikes):
-    """
-
-    Parameters
-    ----------
-    
-    self : 
-    mem : 
-    spikes : 
-
-    Returns
-    -------
-
+    """Reset membrane potential ``mem`` array where ``spikes`` array is nonzero.
     """
 
     spike_idxs = t.nonzero(spikes)
@@ -330,7 +313,10 @@ def init_membrane_potential(self, mode='zero'):
 
 
 def reset_spikevars(self, sample_idx):
-    """Reset variables present in spiking layers."""
+    """
+    Reset variables present in spiking layers. Can be turned off for instance 
+    when a video sequence is tested."""
+
     mod = settings['reset_between_nth_sample']
     mod = mod if mod else sample_idx + 1
     do_reset = sample_idx % mod == 0
@@ -384,6 +370,7 @@ def init_neurons(self, input_shape, tau_refrac=0.):
 
 def get_layer_idx(self):
     """Get index of layer."""
+
     l = self.name.split('_')
     layer_idx = None
     for i in range(max(4, len(l) - 2)):
@@ -703,8 +690,9 @@ class SpikeMaxPooling2D(MaxPooling2D):
         super(SpikeMaxPooling2D, self).__init__(**kwargs)
         self.layer_type = self.class_name
         self.ignore_border = True if self.padding == 'valid' else False
-        if 'binary' in settings['maxpool_type']:
-            self.activation_str = settings['maxpool_type']
+        if settings['custom_activation'] is not None \
+                and 'binary' in settings['custom_activation']:
+            self.activation_str = settings['custom_activation']
         self.tau_refrac = kwargs['tau_refrac'] if 'tau_refrac' in kwargs else 0.
         self.v_thresh = None
         self.stateful = True
@@ -746,7 +734,8 @@ class SpikeMaxPooling2D(MaxPooling2D):
             # Add payload from previous layer
             inp = add_payloads(self.inbound_nodes[0].inbound_layers[0], inp)
 
-        if 'binary' in settings['maxpool_type']:
+        if settings['custom_activation'] is not None \
+                and 'binary' in settings['custom_activation']:
             self.impulse = k.pool2d(inp, self.pool_size, self.strides,
                                     self.padding, pool_mode='max')
         elif settings['maxpool_type'] in ['avg_max', 'fir_max', 'exp_max']:

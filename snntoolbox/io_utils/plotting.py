@@ -13,7 +13,6 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 import os
-from typing import Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 from future import standard_library
@@ -290,7 +289,7 @@ def plot_activations(model, x_test):
     ----------
     model: keras.models.Sequential
         Keras model.
-    x_test: np.array
+    x_test: ndarray
         The samples.
     """
 
@@ -321,15 +320,15 @@ def plot_activations_minus_rates(activations, rates, label, path=None):
     Parameters
     ----------
 
-    activations: array
+    activations: ndarray
         The activations of a layer. The shape is that of the original layer,
         e.g. (32, 28, 28) for 32 feature maps of size 28x28.
-    rates: array
+    rates: ndarray
         The spikerates of a layer. The shape is that of the original layer,
         e.g. (32, 28, 28) for 32 feature maps of size 28x28.
-    label: string
+    label: str
         Layer label.
-    path: string, optional
+    path: Optional[str]
         If not ``None``, specifies where to save the resulting image. Else,
         display plots without saving.
     """
@@ -448,10 +447,10 @@ def get_pearson_coefficients(spikerates_batch, activations_batch):
 
     Returns
     -------
+    
+    co: list
 
     """
-
-    from scipy.stats import pearsonr
 
     co = []
     for layer_num in range(len(spikerates_batch)):
@@ -471,8 +470,7 @@ def get_pearson_coefficients(spikerates_batch, activations_batch):
                         aa.append(aaa)
                 s = ss
                 a = aa
-            (r, p) = pearsonr(s, a)
-            c.append(r)
+            c.append(np.corrcoef(s, a)[0, 1])
         co.append(c)
 
     return co
@@ -704,6 +702,7 @@ def plot_hist_combined(data, path=None):
     ax.get_xaxis().set_visible(False)
     axes = [ax]
     fig.subplots_adjust(top=0.8)
+    # noinspection PyUnresolvedReferences
     colors = plt.cm.spectral(np.linspace(0, 0.9, len(keys)))
     for i in range(len(keys)):
         axes.append(ax.twiny())
@@ -871,15 +870,23 @@ def plot_confusion_matrix(y_test, y_pred, path=None, class_labels=None):
     Parameters
     ----------
 
-    y_test :
-    y_pred: Sequence
+    y_test: ndarray
+    y_pred: ndarray
     path: Optional[str]
         Where to save the output.
     class_labels: Optional[list]
         List of class labels.
     """
 
-    from sklearn.metrics import confusion_matrix
+    try:
+        from sklearn.metrics import confusion_matrix
+    except ImportError:
+        print("ERROR: Failed to plot confusion matrix: sklearn package not "
+              "installed. Do 'pip install sklearn' to install.")
+        confusion_matrix = None
+
+    if confusion_matrix is None:
+        return
 
     cm = confusion_matrix(y_test, y_pred, class_labels)
     plt.figure()
