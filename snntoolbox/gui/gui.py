@@ -33,7 +33,7 @@ import snntoolbox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg
 from snntoolbox.config import model_libs, maxpool_types
-from snntoolbox.config import settings, pyNN_settings, update_setup
+from snntoolbox.config import pyNN_keys, update_setup
 from snntoolbox.config import simulators, simulators_pyNN
 from snntoolbox.core.pipeline import test_full
 from snntoolbox.gui.tooltip import ToolTip
@@ -642,13 +642,11 @@ class SNNToolboxGUI:
             fill='both', expand=True)
         self.sample_entry = tk.Entry(
             sample_frame, bg='white', width=20, validate='key',
-            textvariable=self.settings['samples_to_test'],
+            textvariable=self.settings['sample_idxs_to_test'],
             validatecommand=(sample_frame.register(self.check_sample), '%P'))
         self.sample_entry.pack(fill='both', expand=True, side='bottom')
-        tip = dedent("""\
-              List the indices of specific samples you want to test
-              (Don't use brackets or any delimiters other than white spaces).
-              """)
+        tip = dedent(
+            """List the indices of specific samples you want to test.""")
         ToolTip(sample_frame, text=tip, wraplength=750)
 
         # Name of directory where to save plots
@@ -677,10 +675,10 @@ class SNNToolboxGUI:
         ToolTip(self.tools_frame, text=tip, wraplength=750, delay=1499)
 
         # Evaluate ANN
-        self.evaluateANN_cb = tk.Checkbutton(
+        self.evaluate_ann_cb = tk.Checkbutton(
             self.tools_frame, text="Evaluate ANN", bg='white',
-            variable=self.settings['evaluateANN'], height=2, width=20)
-        self.evaluateANN_cb.pack(**self.kwargs)
+            variable=self.settings['evaluate_ann'], height=2, width=20)
+        self.evaluate_ann_cb.pack(**self.kwargs)
         tip = dedent("""\
             If enabled, test the input model before and after it is parsed, to
             ensure we do not lose performance. (Parsing extracts all necessary
@@ -689,7 +687,7 @@ class SNNToolboxGUI:
             If you also enabled 'normalization' (see parameter 'normalize'
             below), then the network will be evaluated again after
             normalization. This operation should preserve accuracy as well.""")
-        ToolTip(self.evaluateANN_cb, text=tip, wraplength=750)
+        ToolTip(self.evaluate_ann_cb, text=tip, wraplength=750)
 
         # Normalize
         self.normalize_cb = tk.Checkbutton(
@@ -1158,8 +1156,8 @@ class SNNToolboxGUI:
                          'filename_ann': tk.StringVar(),
                          'filename_snn': tk.StringVar(),
                          'batch_size': tk.IntVar(),
-                         'samples_to_test': tk.StringVar(),
-                         'evaluateANN': tk.BooleanVar(),
+                         'sample_idxs_to_test': tk.StringVar(),
+                         'evaluate_ann': tk.BooleanVar(),
                          'normalize': tk.BooleanVar(),
                          'percentile': tk.DoubleVar(),
                          'convert': tk.BooleanVar(),
@@ -1229,9 +1227,7 @@ class SNNToolboxGUI:
 
     def restore_default_params(self):
         """Restore default parameters."""
-        defaults = settings
-        defaults.update(pyNN_settings)
-        self.set_preferences(defaults)
+        self.set_preferences(settings)
         self.toggle_state_pynn(self.settings['simulator'].get())
 
     def set_preferences(self, p):
@@ -1459,7 +1455,7 @@ class SNNToolboxGUI:
             self.settings['state_pyNN'].set('disabled')
         else:
             self.settings['state_pyNN'].set('normal')
-        for name in pyNN_settings:
+        for name in pyNN_keys:
             getattr(self, name + '_label').configure(
                 state=self.settings['state_pyNN'].get())
             getattr(self, name + '_sb').configure(

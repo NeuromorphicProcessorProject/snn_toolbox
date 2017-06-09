@@ -1,0 +1,19 @@
+[paths]
+dataset_path = %(path_wd)s/../../datasets/cifar10/binarynet
+filename_ann = 88.22
+
+[input]
+model_lib = lasagne
+
+[tools]
+evaluate_ann = True
+normalize = False
+
+[simulation]
+duration = 30
+num_to_test = 20
+batch_size = 10
+
+[cell]
+binarize_weights = True
+reset = Reset to zero

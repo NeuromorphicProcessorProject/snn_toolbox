@@ -1,0 +1,93 @@
+[paths]
+path_wd =
+dataset_path =
+log_dir_of_current_run =
+runlabel = test
+filename_ann =
+filename_parsed_model =
+filename_snn =
+filename_clamp_indices =
+class_idx_path =
+
+[input]
+model_lib = keras
+dataset_format = npz
+datagen_kwargs = {}
+dataflow_kwargs = {}
+poisson_input = False
+input_rate = 1000
+num_poisson_events_per_sample = -1
+num_dvs_events_per_sample = 2000
+eventframe_width = 10
+label_dict = {}
+subsample_facs = (1 1)
+
+[tools]
+evaluate_ann = True
+normalize = True
+convert = True
+simulate = True
+
+[normalization]
+percentile = 99.9
+normalization_schedule = False
+online_normalization = False
+diff_to_max_rate = 200
+diff_to_min_rate = 100
+timestep_fraction = 10
+
+[conversion]
+softmax_to_relu = False
+max2avg_pool = False
+maxpool_type = fir_max
+
+[simulation]
+simulator = INI
+duration = 200
+dt = 1
+batch_size = 100
+num_to_test = 1000
+sample_idxs_to_test = []
+reset_between_nth_sample = 1
+
+[cell]
+v_thresh = 1
+tau_refrac = 0
+v_reset = 0
+v_rest = 0
+e_rev_E = 10
+e_rev_I = -10
+i_offset = 0
+cm = 0.09
+tau_m = 1000
+tau_syn_E = 0.01
+tau_syn_I = 0.01
+delay = 1
+binarize_weights = False
+scaling_factor = 10000000
+payloads = False
+reset = Reset by subtraction
+
+[parameter_sweep]
+param_values = []
+param_name = v_thresh
+param_logscale = False
+
+[output]
+log_vars = {}
+plot_vars = {}
+verbose = 1
+overwrite = True
+use_simple_labels = True
+plotproperties = {'font.size': 13,
+                  'axes.titlesize': 'xx-large',
+                  'axes.labelsize': 'xx-large',
+                  'xtick.labelsize': 'xx-large',
+                  'xtick.major.size': 7,
+                  'xtick.minor.size': 5,
+                  'ytick.labelsize': 'xx-large',
+                  'ytick.major.size': 7,
+                  'ytick.minor.size': 5,
+                  'legend.fontsize': 'xx-large',
+                  'figure.figsize': (7, 6),
+                  'savefig.format': 'png'}

@@ -13,18 +13,14 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 import os
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 from future import standard_library
-from snntoolbox.config import settings
-from snntoolbox.core.util import extract_label
 
 standard_library.install_aliases()
 
-use_simple_labels = False
 
-
-def output_graphs(plot_vars, path=None, idx=0):
+def output_graphs(plot_vars, config, path=None, idx=0):
     """Wrapper function to display / save a number of plots.
 
     Parameters
@@ -50,9 +46,13 @@ def output_graphs(plot_vars, path=None, idx=0):
         - spikecounts_n_b_l: list[tuple[np.array, str]]
             Spikecounts of the SNN. Used to compute spikerates.
 
+    config: configparser.ConfigParser
+        Settings.
+
     path: Optional[str]
         If not ``None``, specifies where to save the resulting image. Else,
         display plots without saving.
+
     idx: int
         The index of the sample to display. Defaults to 0.
     """
@@ -63,7 +63,11 @@ def output_graphs(plot_vars, path=None, idx=0):
     if plot_vars == {}:
         return
 
-    print("Saving plots of one sample to {}...\n".format(path))
+    if path is not None:
+        print("Saving plots of one sample to {}...\n".format(path))
+
+    plot_keys = eval(config['output']['plot_vars'])
+    duration = config.getint('simulation', 'duration')
 
     if 'activations_n_b_l' in plot_vars:
         plot_vars['activations_n_l'] = \
@@ -73,22 +77,24 @@ def output_graphs(plot_vars, path=None, idx=0):
             get_sample_activity_from_batch(plot_vars['spiketrains_n_b_l_t'],
                                            idx)
         if any({'spikerates', 'correlation', 'hist_spikerates_activations'}
-               & settings['plot_vars']):
+               & plot_keys):
             plot_vars['spikerates_n_b_l'] = \
-                spiketrains_to_rates(plot_vars['spiketrains_n_b_l_t'])
+                spiketrains_to_rates(plot_vars['spiketrains_n_b_l_t'],
+                                     duration)
             plot_vars['spikerates_n_l'] = \
                 get_sample_activity_from_batch(plot_vars['spikerates_n_b_l'],
                                                idx)
 
-    plot_layer_summaries(plot_vars, path)
+    plot_layer_summaries(plot_vars, config, path)
 
     print("Plotting batch run statistics...")
-    if 'spikecounts' in settings['plot_vars']:
-        plot_spikecount_vs_time(plot_vars['spiketrains_n_b_l_t'], path)
-    if 'correlation' in settings['plot_vars']:
+    if 'spikecounts' in plot_keys:
+        plot_spikecount_vs_time(plot_vars['spiketrains_n_b_l_t'], duration,
+                                config.getfloat('simulation', 'dt'), path)
+    if 'correlation' in plot_keys:
         plot_pearson_coefficients(plot_vars['spikerates_n_b_l'],
-                                  plot_vars['activations_n_b_l'], path)
-    if 'hist_spikerates_activations' in settings['plot_vars']:
+                                  plot_vars['activations_n_b_l'], config, path)
+    if 'hist_spikerates_activations' in plot_keys:
         s = a = []
         for ss, aa in zip(plot_vars['spikerates_n_b_l'],
                           plot_vars['activations_n_b_l']):
@@ -98,7 +104,7 @@ def output_graphs(plot_vars, path=None, idx=0):
     print("Done.\n")
 
 
-def plot_layer_summaries(plot_vars, path=None):
+def plot_layer_summaries(plot_vars, config, path=None):
     """Display or save a number of plots for a specific layer.
 
     Parameters
@@ -135,45 +141,51 @@ def plot_layer_summaries(plot_vars, path=None):
             ``label`` is a string specifying both the layer type and the index,
             e.g. ``'03Dense'``.
 
+    config: configparser.ConfigParser
+        Settings.
+
     path: Optional[str]
         If not ``None``, specifies where to save the resulting image. Else,
         display plots without saving.
     """
 
-    keys = list(plot_vars.keys())
-    if len(keys) == 0:
+    from snntoolbox.core.util import extract_label
+
+    plot_keys = eval(config['output']['plot_vars'])
+
+    if len(plot_vars.keys()) == 0:
         return
 
-    num_layers = len(plot_vars[keys[0]])
+    num_layers = len(plot_vars.values()[0])
 
-    # Loop over layers
     for i in range(num_layers):
-        label = plot_vars[keys[0]][i][1]
-        name = extract_label(label)[1] if use_simple_labels else label
+        label = plot_vars.values()[0][i][1]
+        name = extract_label(label)[1] \
+            if config.getboolean('output', 'use_simple_labels') else label
         print("Plotting layer {}".format(label))
         newpath = os.path.join(path, label)
         if not os.path.exists(newpath):
             os.makedirs(newpath)
-        if 'spiketrains' in settings['plot_vars']:
+        if 'spiketrains' in plot_keys:
             plot_spiketrains(plot_vars['spiketrains_n_l_t'][i], newpath)
-        if 'spikerates' in settings['plot_vars']:
-            plot_layer_activity(plot_vars['spikerates_n_l'][i], 'Spikerates',
-                                newpath)
+        if 'spikerates' in plot_keys:
+            plot_layer_activity(plot_vars['spikerates_n_l'][i],
+                                str('Spikerates'), newpath)
             plot_hist(
                 {'Spikerates': plot_vars['spikerates_n_l'][i][0].flatten()},
                 'Spikerates', name, newpath)
-        if 'activations' in settings['plot_vars']:
+        if 'activations' in plot_keys:
             plot_layer_activity(plot_vars['activations_n_l'][i],
-                                'Activations', newpath)
+                                str('Activations'), newpath)
         if 'spikerates_n_l' in plot_vars and 'activations_n_l' in plot_vars:
             plot_activations_minus_rates(plot_vars['spikerates_n_l'][i][0],
                                          plot_vars['activations_n_l'][i][0],
                                          name, newpath)
-        if 'correlation' in settings['plot_vars']:
-            plot_layer_correlation(
-                plot_vars['spikerates_n_l'][i][0].flatten(),
-                plot_vars['activations_n_l'][i][0].flatten(),
-                'ANN-SNN correlations\n of layer ' + name, newpath)
+        if 'correlation' in plot_keys:
+            plot_layer_correlation(plot_vars['spikerates_n_l'][i][0].flatten(),
+                                   plot_vars['activations_n_l'][i][0].flatten(),
+                                   str('ANN-SNN correlations\n of layer '+name),
+                                   config, newpath)
 
 
 def plot_layer_activity(layer, title, path=None, limits=None):
@@ -282,15 +294,20 @@ def plot_layer_activity(layer, title, path=None, limits=None):
     plt.close()
 
 
-def plot_activations(model, x_test):
+def plot_activations(model, x_test, path):
     """Plot activations of a network.
 
     Parameters
     ----------
-    model: keras.models.Sequential
+
+    model: keras.models.Model
         Keras model.
+
     x_test: ndarray
         The samples.
+
+    path: str
+        Where to save plot.
     """
 
     from snntoolbox.core.util import get_activations_batch
@@ -300,12 +317,10 @@ def plot_activations(model, x_test):
     for i in range(len(activations)):
         label = activations[i][1]
         print("Plotting layer {}".format(label))
-        newpath = os.path.join(settings['log_dir_of_current_run'],
-                               model.name+'_activations')
-        if not os.path.exists(newpath):
-            os.makedirs(newpath)
+        if not os.path.exists(path):
+            os.makedirs(path)
         j = str(i) if i > 9 else '0' + str(i)
-        plot_layer_activity(activations[i], j+label, newpath)
+        plot_layer_activity(activations[i], j+label, path)
 
 
 def plot_activations_minus_rates(activations, rates, label, path=None):
@@ -335,11 +350,12 @@ def plot_activations_minus_rates(activations, rates, label, path=None):
 
     activations_norm = activations / np.max(activations)
     rates_norm = rates / np.max(rates) if np.max(rates) != 0 else rates
-    plot_layer_activity((activations_norm - rates_norm, label),
-                        'Activations_minus_Spikerates', path, limits=(-1, 1))
+    plot_layer_activity(
+        (activations_norm - rates_norm, label),
+        str('Activations_minus_Spikerates'), path, limits=(-1, 1))
 
 
-def plot_layer_correlation(rates, activations, title, path=None):
+def plot_layer_correlation(rates, activations, title, config, path=None):
     """
     Plot correlation between spikerates and activations of a specific layer,
     as 2D-dot-plot.
@@ -353,14 +369,17 @@ def plot_layer_correlation(rates, activations, title, path=None):
         The activations of a layer, flattened to 1D.
     title: str
         Plot title.
+    config: configparser.ConfigParser
+        Settings.
     path: Optional[str]
         If not ``None``, specifies where to save the resulting image. Else,
         display plots without saving.
     """
 
     # Determine percentage of saturated neurons. Need to subtract one time step
-    p = np.mean(np.greater_equal(rates, 1000 / settings['dt'] -
-                                 1000 / settings['duration'] / settings['dt']))
+    dt = config.getfloat('simulation', 'dt')
+    duration = config.getint('simulation', 'duration')
+    p = np.mean(np.greater_equal(rates, 1000 / dt - 1000 / duration / dt))
 
     plt.figure()
     plt.plot(activations, rates, '.')
@@ -435,7 +454,7 @@ def plot_correlations(spikerates, layer_activations):
            fontsize=16)
 
 
-def get_pearson_coefficients(spikerates_batch, activations_batch):
+def get_pearson_coefficients(spikerates_batch, activations_batch, max_rate):
     """
     Compute Pearson coefficients.
 
@@ -443,7 +462,9 @@ def get_pearson_coefficients(spikerates_batch, activations_batch):
     ----------
 
     spikerates_batch : 
-    activations_batch : 
+    activations_batch :
+    max_rate: float
+        Highest spike rate.
 
     Returns
     -------
@@ -465,7 +486,7 @@ def get_pearson_coefficients(spikerates_batch, activations_batch):
                 ss = []
                 aa = []
                 for sss, aaa in zip(s, a):
-                    if (sss > 0 or aaa > 0) and aaa < 1. / settings['dt']:
+                    if (sss > 0 or aaa > 0) and aaa < max_rate:
                         ss.append(sss)
                         aa.append(aaa)
                 s = ss
@@ -476,7 +497,8 @@ def get_pearson_coefficients(spikerates_batch, activations_batch):
     return co
 
 
-def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
+def plot_pearson_coefficients(spikerates_batch, activations_batch, config,
+                              path=None):
     """
     Plot the Pearson correlation coefficients for each layer, averaged over one
     mini batch.
@@ -499,18 +521,25 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, path=None):
     activations_batch: list[tuple[np.array, str]]
         Contains the activations of a net. Same structure as
         ``spikerates_batch``.
+
+    config: configparser.ConfigParser
+        Settings.
+
     path: Optional[str]
         Where to save the output.
     """
 
-    co = get_pearson_coefficients(spikerates_batch, activations_batch)
+    from snntoolbox.core.util import extract_label
+
+    max_rate = 1. / config.getfloat('simulation', 'dt')
+    co = get_pearson_coefficients(spikerates_batch, activations_batch, max_rate)
 
     # Average over batch
     corr = np.mean(co, axis=1)
     std = np.std(co, axis=1)
 
     labels = [sp[1] for sp in spikerates_batch]
-    if use_simple_labels:
+    if config.getboolean('output', 'use_simple_labels'):
         labels = [extract_label(label)[1] for label in labels]
 
     plt.figure()
@@ -813,7 +842,7 @@ def plot_spiketrains(layer, path=None):
     plt.close()
 
 
-def plot_potential(times, layer, show_legend=False, path=None):
+def plot_potential(times, layer, config, show_legend=False, path=None):
     """Plot the membrane potential of a layer.
 
     Parameters
@@ -832,6 +861,9 @@ def plot_potential(times, layer, show_legend=False, path=None):
         ``label`` is a string specifying both the layer type and the index,
         e.g. ``'3Dense'``.
 
+    config: configparser.ConfigParser
+        Settings.
+
     show_legend: bool
         If ``True``, shows the legend indicating the neuron indices and lines
         like ``v_thresh``, ``v_rest``, ``v_reset``. Recommended only for layers
@@ -842,15 +874,16 @@ def plot_potential(times, layer, show_legend=False, path=None):
         display plots without saving.
     """
 
+    v_thresh = config.getfloat('cell', 'v_thresh')
+    v_reset = config.getfloat('cell', 'v_reset')
+
     plt.figure()
     # Transpose layer array to get slices of vmem values for each neuron.
     for (neuron, vmem) in enumerate(layer[0]):
         plt.plot(times, vmem)
-    plt.plot(times, np.ones_like(times) * settings['v_thresh'], 'r--',
-             label='V_thresh')
-    plt.plot(times, np.ones_like(times) * settings['v_reset'], 'b-.',
-             label='V_reset')
-    plt.ylim([settings['v_reset'] - 0.1, settings['v_thresh'] + 0.1])
+    plt.plot(times, np.ones_like(times) * v_thresh, 'r--', label='V_thresh')
+    plt.plot(times, np.ones_like(times) * v_reset, 'b-.', label='V_reset')
+    plt.ylim([v_reset - 0.1, v_thresh + 0.1])
     if show_legend:
         plt.legend(loc='upper left', prop={'size': 15})
     plt.xlabel('Time [ms]')
@@ -882,7 +915,7 @@ def plot_confusion_matrix(y_test, y_pred, path=None, class_labels=None):
         from sklearn.metrics import confusion_matrix
     except ImportError:
         print("ERROR: Failed to plot confusion matrix: sklearn package not "
-              "installed. Do 'pip install sklearn' to install.")
+              "installed. Do 'pip install sklearn' to install.\n")
         confusion_matrix = None
 
     if confusion_matrix is None:
@@ -908,7 +941,7 @@ def plot_confusion_matrix(y_test, y_pred, path=None, class_labels=None):
     plt.close()
 
 
-def plot_error_vs_time(top1err_d_t, top5err_d_t,
+def plot_error_vs_time(top1err_d_t, top5err_d_t, duration, dt,
                        top1err_ann=None, top5err_ann=None, path=None):
     """Plot classification error over time.
 
@@ -921,6 +954,10 @@ def plot_error_vs_time(top1err_d_t, top5err_d_t,
     top5err_d_t: np.array
         Batch of top-5 errors over time. Shape: (num_samples, duration).
         Data type: boolean (correct / incorrect classification).
+    duration: int
+        Simulation duration.
+    dt: float
+        Simulation time resolution.
     top1err_ann: Optional[float]
         The top-1 error of the ANN.
     top5err_ann: Optional[float]
@@ -936,7 +973,7 @@ def plot_error_vs_time(top1err_d_t, top5err_d_t,
 
     plt.figure()
 #    plt.title('Error vs simulation time')
-    time = np.arange(0, settings['duration'], settings['dt'])
+    time = np.arange(0, duration, dt)
     plt.plot(time, top1err_t, '.g', label='SNN top-1')
     plt.plot(time, top5err_t, 'xb', label='SNN top-5')
     plt.fill_between(time, top1err_t-top1std_t, top1err_t+top1std_t, alpha=0.1,
@@ -952,7 +989,7 @@ def plot_error_vs_time(top1err_d_t, top5err_d_t,
     plt.legend()
     plt.ylim(0, 100)
     plt.ylabel('Error [%]')
-    plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(settings['dt']))
+    plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(dt))
     if path is not None:
         filename = 'Error_vs_time'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
@@ -961,7 +998,7 @@ def plot_error_vs_time(top1err_d_t, top5err_d_t,
     plt.close()
 
 
-def plot_ops_vs_time(operations_b_t, path=None):
+def plot_ops_vs_time(operations_b_t, duration, dt, path=None):
     """Plot total number of operations over time.
 
     Parameters
@@ -969,13 +1006,17 @@ def plot_ops_vs_time(operations_b_t, path=None):
 
     operations_b_t : ndarray
         Number of operations. Shape: (batch_size, num_timesteps)
+    duration: int
+        Simulation duration.
+    dt: float
+        Simulation time resolution.
     path: Optional[str]
         Where to save the output.
     """
 
     plt.figure()
     plt.title('SNN operations')
-    time = np.arange(0, settings['duration'], settings['dt'])
+    time = np.arange(0, duration, dt)
     mean_ops_t = np.mean(operations_b_t, 0)
     std_ops_t = np.std(operations_b_t, 0)
     plt.plot(time, mean_ops_t, '.b')
@@ -983,7 +1024,7 @@ def plot_ops_vs_time(operations_b_t, path=None):
                      alpha=0.1, color='b')
     plt.ylim(0, None)
     plt.ylabel('MOps')
-    plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(settings['dt']))
+    plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(dt))
     if path is not None:
         filename = 'operations_t'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
@@ -992,13 +1033,17 @@ def plot_ops_vs_time(operations_b_t, path=None):
     plt.close()
 
 
-def plot_spikecount_vs_time(spiketrains_n_b_l_t, path=None):
+def plot_spikecount_vs_time(spiketrains_n_b_l_t, duration, dt, path=None):
     """Plot total spikenumber over time.
 
     Parameters
     ----------
 
     spiketrains_n_b_l_t:
+    duration: int
+        Simulation duration.
+    dt: float
+        Simulation time resolution.
     path: Optional[str]
         Where to save the output.
     """
@@ -1015,7 +1060,7 @@ def plot_spikecount_vs_time(spiketrains_n_b_l_t, path=None):
 
     plt.figure()
     plt.title('SNN spike count')
-    time = np.arange(0, settings['duration'], settings['dt'])
+    time = np.arange(0, duration, dt)
     cum_spikecounts_t = np.mean(cum_spikecounts_b_t, 0)
     std_t = np.std(cum_spikecounts_b_t, 0)
     plt.plot(time, cum_spikecounts_t, '.b')
@@ -1024,7 +1069,7 @@ def plot_spikecount_vs_time(spiketrains_n_b_l_t, path=None):
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
     plt.ylim(0, None)
     plt.ylabel('# spikes')
-    plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(settings['dt']))
+    plt.xlabel('Simulation time [ms] in steps of {} ms.'.format(dt))
     if path is not None:
         filename = 'Total_spike_count'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')

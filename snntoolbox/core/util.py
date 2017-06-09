@@ -13,257 +13,11 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 import os
-import json
-from importlib import import_module
-
 import numpy as np
-from future import standard_library
 import keras
-from keras import backend
-from snntoolbox.config import settings
+from future import standard_library
 
 standard_library.install_aliases()
-
-use_simple_label = True
-
-
-def get_root_dir():
-    """Get toolbox root directory.
-
-    Returns
-    -------
-
-    : str
-        Toolbox root directory.
-    """
-
-    return os.getcwd()
-
-
-def binary_tanh(x):
-    """Round a float to -1 or 1.
-
-    Parameters
-    ----------
-
-    x: float
-
-    Returns
-    -------
-
-    : int
-        Integer in {-1, 1}
-    """
-
-    return backend.sign(x)
-
-
-def binary_sigmoid(x):
-    """Round a float to 0 or 1.
-
-    Parameters
-    ----------
-
-    x: float
-
-    Returns
-    -------
-
-    : int
-        Integer in {0, 1}
-    """
-
-    x = backend.clip((x + 1.) / 2., 0, 1)
-
-    return backend.round(x)
-
-
-def parse(input_model):
-    """Create a Keras model suitable for conversion to SNN.
-
-    This parsing function takes as input an arbitrary neural network and builds
-    a Keras model from it with the same functionality and performance.
-    The resulting model contains all essential information about the network,
-    independently of the model library in which the original network was built
-    (e.g. Caffe). This makes the SNN toolbox stable against changes in input
-    formats. Another advantage is extensibility: In order to add a new input
-    language to the toolbox (e.g. Lasagne), a developer only needs to add a
-    single module to ``model_libs`` package, implementing a number of methods
-    (see the respective functions in 'keras_input_lib.py' for more details.)
-
-    Parameters
-    ----------
-
-    input_model: Any
-        A pretrained neural network model in the respective ``model_lib``.
-
-    Returns
-    -------
-
-    parsed_model: keras.models.Sequential
-        A Keras model functionally equivalent to ``input_model``.
-    """
-
-    # Parse input model to our common format, extracting all necessary
-    # information about layers.
-    model_lib = import_module('snntoolbox.model_libs.' +
-                              settings['model_lib'] + '_input_lib')
-    layers = model_lib.extract(input_model)
-
-    # Create new Keras model
-    img_input = keras.layers.Input(batch_shape=layers[0]['batch_input_shape'])
-    parsed_layers = {'input_1': img_input}
-    print("Building parsed model...")
-    for layer in layers:
-        # Replace 'parameters' key with Keras key 'weights'
-        if 'parameters' in layer:
-            layer['weights'] = layer.pop('parameters')
-        # Remove keys that are not understood by Keras layer constructor
-        layer_type = layer.pop('layer_type')
-        filter_flip = layer.pop('filter_flip', None)
-        if 'activation' in layer:
-            a = layer['activation']
-            if a == 'binary_sigmoid':
-                layer['activation'] = binary_sigmoid
-            elif a == 'binary_tanh':
-                layer['activation'] = binary_tanh
-            elif a == 'softmax' and settings['softmax_to_relu']:
-                layer['activation'] = 'relu'
-                print("Replaced softmax by relu activation function.")
-        # Add layer
-        parsed_layer = getattr(keras.layers, layer_type)
-        if filter_flip:
-            parsed_layer.filter_flip = filter_flip
-        inbound = [parsed_layers[inb] for inb in layer.pop('inbound')]
-        if len(inbound) == 1:
-            inbound = inbound[0]
-        parsed_layers[layer['name']] = parsed_layer(**layer)(inbound)
-    print("Compiling parsed model...")
-    parsed_model = keras.models.Model(img_input,
-                                      parsed_layers[layers[-1]['name']])
-    # Optimizer and loss should not matter at this stage, but it would be
-    # cleaner to set them to the actial values of the input model.
-    parsed_model.compile('sgd', 'categorical_crossentropy',
-                         ['accuracy', keras.metrics.top_k_categorical_accuracy])
-
-    return parsed_model
-
-
-def get_dataset(s):
-    """Get data set, either from ``.npz`` files or ``keras.ImageDataGenerator``.
-    
-    Parameters
-    ----------
-    
-    s: dict
-        Settings
-        
-    Returns
-    -------
-    
-    Dictionaries with keys ``x_test`` and ``y_test`` if data set was loaded in
-    ``.npz`` format, or with ``dataflow`` key if data will be loaded from
-    ``.jpg`` files by a ``keras.ImageDataGenerator``.
-    
-    normset: dict
-        Used to normalized the network parameters.
-    testset: dict
-        Used to test the networks.
-    """
-
-    from snntoolbox.io_utils.common import load_dataset
-
-    normset = testset = None
-    # Instead of loading a normalization set, try to get the scale-factors from
-    # a previous run, stored on disk.
-    newpath = os.path.join(settings['log_dir_of_current_run'], 'normalization')
-    if not os.path.exists(newpath):
-        os.makedirs(newpath)
-    filepath = os.path.join(newpath, str(settings['percentile']) + '.json')
-    if os.path.isfile(filepath):
-        print("Loading scale factors from disk instead of recalculating.")
-        with open(filepath) as f:
-            normset = {'scale_facs': json.load(f)}
-    if s['dataset_format'] == 'npz':
-        print("Loading data set from '.npz' files in {}.\n".format(
-            s['dataset_path']))
-        if s['evaluateANN'] or s['simulate']:
-            testset = {'x_test': load_dataset(s['dataset_path'], 'x_test.npz'),
-                       'y_test': load_dataset(s['dataset_path'], 'y_test.npz')}
-            assert testset, "Test set empty."
-        if s['normalize'] and normset is None:
-            normset = {'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
-            assert normset, "Normalization set empty."
-    elif s['dataset_format'] == 'jpg':
-        from keras.preprocessing.image import ImageDataGenerator
-        print("Loading data set from ImageDataGenerator, using images in "
-              "{}.\n".format(s['dataset_path']))
-        datagen_kwargs = s['datagen_kwargs']
-        dataflow_kwargs = s['dataflow_kwargs']
-        dataflow_kwargs['directory'] = s['dataset_path']
-        if 'batch_size' not in dataflow_kwargs:
-            dataflow_kwargs['batch_size'] = s['batch_size']
-        datagen = ImageDataGenerator(**datagen_kwargs)
-        # Compute quantities required for featurewise normalization
-        # (std, mean, and principal components if ZCA whitening is applied)
-        rs = datagen_kwargs['rescale'] if 'rescale' in datagen_kwargs else None
-        x_orig = ImageDataGenerator(rescale=rs).flow_from_directory(
-            **dataflow_kwargs).next()[0]
-        datagen.fit(x_orig)
-        if s['normalize'] and normset is None:
-            shuffle = dataflow_kwargs['shuffle']
-            dataflow_kwargs['shuffle'] = True
-            normset = {
-                'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
-            dataflow_kwargs['shuffle'] = shuffle
-            assert normset, "Normalization set empty."
-        if s['evaluateANN'] or s['simulate']:
-            testset = {
-                'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
-            assert testset, "Test set empty."
-    elif s['dataset_format'] == 'aedat':
-        if s['normalize'] and normset is None:
-            normset = {'x_norm': load_dataset(s['dataset_path'], 'x_norm.npz')}
-            assert normset, "Normalization set empty."
-        testset = {}
-
-    return normset, testset
-
-
-def evaluate_keras(model, x_test=None, y_test=None, dataflow=None):
-    """Evaluate parsed Keras model.
-
-    Can use either numpy arrays ``x_test, y_test`` containing the test samples,
-    or generate them with a dataflow
-    (``Keras.ImageDataGenerator.flow_from_directory`` object).
-    
-    Parameters
-    ----------
-    
-    model: keras.models.Model
-    
-    x_test: Optional[np.ndarray] 
-    
-    y_test: Optional[np.ndarray]
-    
-    dataflow: keras.ImageDataGenerator.flow_from_directory
-    
-    """
-
-    assert (
-        x_test is not None and y_test is not None or dataflow is not None), \
-        "No testsamples provided."
-
-    if x_test is not None:
-        score = model.evaluate(x_test, y_test, settings['batch_size'],
-                               verbose=0)
-    else:
-        steps = int(settings['num_to_test'] / settings['batch_size'])
-        score = model.evaluate_generator(dataflow, steps)
-    print('')
-    print("Top-1 accuracy: {:.2%}".format(score[1]))
-    print("Top-5 accuracy: {:.2%}".format(score[2]))
-    print('')
 
 
 def get_range(start=0.0, stop=1.0, num=5, method='linear'):
@@ -306,25 +60,6 @@ def get_range(start=0.0, stop=1.0, num=5, method='linear'):
         return np.random.random_sample(num) * (stop - start) + start
 
 
-def print_description(log=True):
-    """
-    Print a summary of the test run, parameters, and network. If ``log==True``,
-    the output is written as ``settings.txt`` file to the folder given by
-    ``settings['log_dir_of_current_run']``.
-    """
-
-    if log:
-        f = open(os.path.join(settings['log_dir_of_current_run'],
-                              'settings_all.txt'), 'w')
-    else:
-        import sys
-        f = sys.stdout
-
-    print("SNN-TOOLBOX SETTINGS", file=f)
-    print("====================\n", file=f)
-    print(settings, file=f)
-
-
 def spikecounts_to_rates(spikecounts_n_b_l_t):
     """Convert spiketrains to spikerates.
 
@@ -350,7 +85,7 @@ def spikecounts_to_rates(spikecounts_n_b_l_t):
             for (spikecounts_b_l_t, name) in spikecounts_n_b_l_t]
 
 
-def spiketrains_to_rates(spiketrains_n_b_l_t):
+def spiketrains_to_rates(spiketrains_n_b_l_t, duration):
     """Convert spiketrains to spikerates.
 
     The output will have the same shape as the input except for the last
@@ -361,6 +96,9 @@ def spiketrains_to_rates(spiketrains_n_b_l_t):
     ----------
 
     spiketrains_n_b_l_t: list[tuple[np.array, str]]
+
+    duration: int
+        Duration of simulation.
 
     Returns
     -------
@@ -381,7 +119,7 @@ def spiketrains_to_rates(spiketrains_n_b_l_t):
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
                     spikerates_n_b_l[i][0][ii, jj] = (
-                        np.count_nonzero(sp[0][ii, jj]) / settings['duration'])
+                        np.count_nonzero(sp[0][ii, jj]) / duration)
                     spikerates_n_b_l[i][0][ii, jj] *= np.sign(
                         np.sum(sp[0][ii, jj]))  # For negative spikes
         elif len(shape) == 4:
@@ -391,7 +129,7 @@ def spiketrains_to_rates(spiketrains_n_b_l_t):
                         for ll in range(len(sp[0][ii, jj, kk])):
                             spikerates_n_b_l[i][0][ii, jj, kk, ll] = (
                                 np.count_nonzero(sp[0][ii, jj, kk, ll]) /
-                                settings['duration'])
+                                duration)
                             spikerates_n_b_l[i][0][ii, jj, kk, ll] *= np.sign(
                                 np.sum(sp[0][ii, jj, kk, ll]))
 
@@ -405,7 +143,7 @@ def get_sample_activity_from_batch(activity_batch, idx=0):
     return [(layer_act[0][idx], layer_act[1]) for layer_act in activity_batch]
 
 
-def normalize_parameters(model, **kwargs):
+def normalize_parameters(model, config, **kwargs):
     """Normalize the parameters of a network.
 
     The parameters of each layer are normalized with respect to the maximum
@@ -415,11 +153,13 @@ def normalize_parameters(model, **kwargs):
     normalization. Note that plotting the activity-distribution can be very
     time- and memory-consuming for larger networks.
     """
+
+    import json
     from collections import OrderedDict
 
     print("Normalizing parameters...")
-    norm_dir = kwargs['path'] if 'path' in kwargs else \
-        os.path.join(settings['log_dir_of_current_run'], 'normalization')
+    norm_dir = kwargs[str('path')] if 'path' in kwargs else \
+        os.path.join(config['paths']['log_dir_of_current_run'], 'normalization')
     activ_dir = os.path.join(norm_dir, 'activations')
     if not os.path.exists(activ_dir):
         os.makedirs(activ_dir)
@@ -436,19 +176,19 @@ def normalize_parameters(model, **kwargs):
     # calculate them.
     x_norm = None
     if 'scale_facs' in kwargs:
-        scale_facs = kwargs['scale_facs']
+        scale_facs = kwargs[str('scale_facs')]
     elif 'x_norm' in kwargs or 'dataflow' in kwargs:
         if 'x_norm' in kwargs:
-            x_norm = kwargs['x_norm']
+            x_norm = kwargs[str('x_norm')]
         elif 'dataflow' in kwargs:
-            x_norm, y = kwargs['dataflow'].next()
+            x_norm, y = kwargs[str('dataflow')].next()
         print("Using {} samples for normalization.".format(len(x_norm)))
         sizes = [
             len(x_norm) * np.array(layer.output_shape[1:]).prod() * 32 /
             (8*1e9) for layer in model.layers if len(layer.weights) > 0]
         size_str = ['{:.2f}'.format(s) for s in sizes]
         print("INFO: Need {} GB for layer activations.\n".format(size_str) +
-              "May have to reduce size of data set used for normalization.\n")
+              "May have to reduce size of data set used for normalization.")
         scale_facs = OrderedDict({model.layers[0].name: 1})
     else:
         print("ERROR: No scale factors or normalization data set could not be "
@@ -469,14 +209,15 @@ def normalize_parameters(model, **kwargs):
                 layer.name, layer.output_shape))
             activations = get_activations_layer(model.input, layer.output,
                                                 x_norm)
-            if 'normalization_activations' in settings['plot_vars']:
+            if 'normalization_activations' in \
+                    eval(config['output']['plot_vars']):
                 print("Writing activations to disk...")
                 np.savez_compressed(os.path.join(activ_dir, layer.name),
                                     activations)
             nonzero_activations = activations[np.nonzero(activations)]
             del activations
-            idx = i if settings['normalization_schedule'] else 0
-            scale_facs[layer.name] = get_scale_fac(nonzero_activations, idx)
+            perc = get_percentile(config, i)
+            scale_facs[layer.name] = get_scale_fac(nonzero_activations, perc)
             # Since we have calculated output activations here, check at this
             # point if the output is mostly negative, in which case we should
             # stick to softmax. Otherwise ReLU is preferred.
@@ -494,9 +235,10 @@ def normalize_parameters(model, **kwargs):
             #         settings['softmax_to_relu'] = False
             i += 1
         # Write scale factors to disk
-        filepath = os.path.join(norm_dir, str(settings['percentile']) + '.json')
-        if confirm_overwrite(filepath):
-            with open(filepath, 'w') as f:
+        filepath = os.path.join(norm_dir, config['normalization']['percentile']
+                                + '.json')
+        if config['output']['overwrite'] or confirm_overwrite(filepath):
+            with open(filepath, str('w')) as f:
                 json.dump(scale_facs, f)
 
     # Apply scale factors to normalize the parameters.
@@ -547,7 +289,7 @@ def normalize_parameters(model, **kwargs):
         layer.set_weights(parameters_norm)
 
     # Plot distributions of weights and activations before and after norm.
-    if 'normalization_activations' in settings['plot_vars']:
+    if 'normalization_activations' in eval(config['output']['plot_vars']):
         from snntoolbox.io_utils.plotting import plot_hist, plot_activ_hist
         from snntoolbox.io_utils.plotting import plot_max_activ_hist
 
@@ -561,8 +303,8 @@ def normalize_parameters(model, **kwargs):
             if len(layer.weights) == 0:
                 continue
 
-            label = str(idx) + layer.__class__.__name__ if use_simple_label \
-                else layer.name
+            label = str(idx) + layer.__class__.__name__ if \
+                config.getboolean('output', 'use_simple_labels') else layer.name
             parameters = weights[layer.name]
             parameters_norm = layer.get_weights()
             weight_dict = {
@@ -589,7 +331,26 @@ def normalize_parameters(model, **kwargs):
             plot_max_activ_hist(
                 {'Activations_max': np.max(activations, axis=ax)},
                 'Maximum Activation', label, norm_dir, scale_fac)
-    print()
+    print('')
+
+
+def has_weights(layer):
+    """Return ``True`` if layer has weights.
+
+    Parameters
+    ----------
+
+    layer : keras.layers.Layer
+        Keras layer
+
+    Returns
+    -------
+
+    : bool
+        ``True`` if layer has weights.
+    """
+
+    return len(layer.weights)
 
 
 def get_inbound_layers_with_params(layer):
@@ -613,12 +374,12 @@ def get_inbound_layers_with_params(layer):
         inbound = get_inbound_layers(inbound)
         if len(inbound) == 1:
             inbound = inbound[0]
-            if len(inbound.weights) > 0:
+            if has_weights(inbound) > 0:
                 return [inbound]
         else:
             result = []
             for inb in inbound:
-                if len(inb.weights) > 0:
+                if has_weights(inb):
                     result.append(inb)
                 else:
                     result += get_inbound_layers_with_params(inb)
@@ -703,18 +464,11 @@ def get_outbound_activation(layer):
 
     activation = layer.activation.__name__
     outbound = layer
-    for i in range(2):
+    for _ in range(2):
         outbound = get_outbound_layers(outbound)
-        if len(outbound) == 0:
-            break
-        elif len(outbound) == 1:
-            outbound = outbound[0]
-            if outbound.__class__.__name__ == 'Activation':
-                activation = outbound.activation.__name__
-        else:
-            print("Activation following Conv or Dense must be unique.")
-            raise Exception
-
+        if len(outbound) == 1 and \
+                outbound[0].__class__.__name__ == 'Activation':
+            activation = outbound[0].activation.__name__
     return activation
 
 
@@ -751,8 +505,9 @@ def get_spiking_outbound_layers(layer):
             return result
 
 
-def get_scale_fac(activations, idx=0):
-    """Determine the maximum activation of a layer.
+def get_scale_fac(activations, percentile):
+    """
+    Determine the activation value at ``percentile`` of the layer distribution.
 
     Parameters
     ----------
@@ -760,9 +515,8 @@ def get_scale_fac(activations, idx=0):
     activations: np.array
         The activations of cells in a specific layer, flattened to 1-d.
 
-    idx: int, optional
-        The index of the layer. May be used to decrease the scale factor in
-        higher layers, to maintain high spike rates.
+    percentile: int
+        Percentile at which to determine activation.
 
     Returns
     -------
@@ -772,10 +526,62 @@ def get_scale_fac(activations, idx=0):
         Parameters of the respective layer are scaled by this value.
     """
 
-    scale_fac = np.percentile(activations, int(settings['percentile']-idx*0.02))
+    scale_fac = np.percentile(activations, percentile)
     print("Scale factor: {:.2f}.".format(scale_fac))
 
     return scale_fac
+
+
+def get_percentile(config, layer_idx):
+    """Get percentile at which to draw the maximum activation of a layer.
+
+    Parameters
+    ----------
+
+    config: configparser.ConfigParser
+        Settings.
+
+    layer_idx: int
+        Layer index.
+
+    Returns
+    -------
+
+    : int
+        Percentile.
+
+    """
+
+    perc = config.getfloat('normalization', 'percentile')
+
+    if config.getboolean('normalization', 'normalization_schedule'):
+        perc = apply_normalization_schedule(perc, layer_idx)
+
+    return perc
+
+
+def apply_normalization_schedule(perc, layer_idx):
+    """Transform percentile according to some rule, depending on layer index.
+
+    Parameters
+    ----------
+
+    perc: float
+        Original percentile.
+
+    layer_idx: int
+        Layer index, used to decrease the scale factor in higher layers, to
+        maintain high spike rates.
+
+    Returns
+    -------
+
+    : int
+        Modified percentile.
+
+    """
+
+    return int(perc - layer_idx * 0.02)
 
 
 def get_activations_layer(layer_in, layer_out, x):
@@ -846,6 +652,14 @@ def get_activations_batch(ann, x_batch):
                                          layer.output).predict_on_batch(x_batch)
         activations_batch.append((activations, layer.name))
     return activations_batch
+
+
+def get_log_keys(config):
+    return set(eval(config['output']['log_vars']))
+
+
+def get_plot_keys(config):
+    return set(eval(config['output']['plot_vars']))
 
 
 def wilson_score(p, n):

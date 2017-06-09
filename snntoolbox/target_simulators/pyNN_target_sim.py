@@ -79,13 +79,13 @@ class SNN:
         Clean up after simulation.
     """
 
-    def __init__(self, s=None):
+    def __init__(self, config, queue=None):
         """Init function."""
 
-        if s is None:
-            s = settings
-
-        self.sim = initialize_simulator(s['simulator'], dt=s['dt'])
+        self.config = config
+        self.queue = queue
+        self.sim = initialize_simulator(config['simulation']['simulator'],
+                                        dt=config.getfloat('simulation', 'dt'))
         self.layers = []
         self.conns = []  # Temporary container for each layer.
         self.connections = []  # Final container for all layers.
@@ -124,8 +124,7 @@ class SNN:
         ----------
 
         parsed_model: Keras model
-            Parsed input model; result of applying
-            ``model_lib.extract(input_model)`` to the ``input model``.
+            Parsed input model.
         """
 
         self.parsed_model = parsed_model
@@ -355,7 +354,7 @@ class SNN:
             # If a list of specific input samples is given, iterate over that;
             # otherwise pick a random test sample from among all possible input
             # samples in x_test.
-            si = s['sample_indices_to_test']
+            si = eval(s['sample_idxs_to_test'])
             ind = randint(0, len(x_test) - 1) if si == [] else si[test_num]
 
             # Add Poisson input.
@@ -459,7 +458,7 @@ class SNN:
 
         filepath = os.path.join(path, filename)
 
-        if not confirm_overwrite(filepath):
+        if not (config['output']['overwrite'] or confirm_overwrite(filepath)):
             return
 
         print("Saving assembly to {}...".format(filepath))
@@ -513,7 +512,7 @@ class SNN:
         # Iterate over layers to save each projection in a separate txt file.
         for projection in self.connections:
             filepath = os.path.join(path, projection.label.partition('→')[-1])
-            if confirm_overwrite(filepath):
+            if config['output']['overwrite'] or confirm_overwrite(filepath):
                 projection.save('connections', filepath)
         print("Done.")
 

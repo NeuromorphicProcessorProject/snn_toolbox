@@ -8,21 +8,6 @@ from __future__ import absolute_import, print_function
 
 import os
 
-# Set a base directory for the toolbox.
-_base_dir = os.path.expanduser('~')
-if not os.access(_base_dir, os.W_OK):
-    _base_dir = '/tmp'
-
-# Toolbox root directory.
-toolbox_root = os.path.join(_base_dir, '.snntoolbox')
-if not os.path.exists(toolbox_root):
-    os.makedirs(toolbox_root)
-
-# Path to toolbox preferences.
-_config_path = os.path.join(toolbox_root, 'preferences')
-if not os.path.exists(_config_path):
-    os.makedirs(_config_path)
-
 # Create a Keras config file so that even when importing Keras for the first
 # time, the backend will be 'theano', not default 'tensorflow'.
 _keras_base_dir = os.path.expanduser('~')

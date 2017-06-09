@@ -1,0 +1,21 @@
+[paths]
+dataset_path = %(path_wd)s/../../datasets/imagenet/validation
+filename_ann = 76.28_93.03
+filename_clamp_indices = clamp_idx_10.json
+class_idx_path = %(dataset_path)s/../imagenet_class_index_1000.json
+
+[tools]
+evaluate_ann = True
+
+[input]
+dataset_format = jpg
+datagen_kwargs = {'preprocessing_function': 'helper_functions'}
+dataflow_kwargs = {'target_size': (299, 299), 'shuffle': True}
+
+[simulation]
+duration = 600
+batch_size = 1
+num_to_test = 2
+
+[normalization]
+percentile = 100

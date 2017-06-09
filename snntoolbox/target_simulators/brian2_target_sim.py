@@ -81,13 +81,12 @@ class SNN:
         Clean up after simulation.
     """
 
-    def __init__(self, s=None):
+    def __init__(self, config, queue=None):
         """Init function."""
 
-        if s is None:
-            s = settings
-
-        self.sim = initialize_simulator(s['simulator'])
+        self.config = config
+        self.queue = queue
+        self.sim = initialize_simulator(config['simulation']['simulator'])
         self.connections = []
         self.threshold = 'v > v_thresh'
         self.reset = 'v = v_reset'
@@ -106,8 +105,7 @@ class SNN:
         ----------
 
         parsed_model: Keras model
-            Parsed input model; result of applying
-            ``model_lib.extract(input_model)`` to the ``input model``.
+            Parsed input model.
         """
 
         self.parsed_model = parsed_model
@@ -341,18 +339,16 @@ class SNN:
             # If a list of specific input samples is given, iterate over that,
             # and otherwise pick a random test sample from among all possible
             # input samples in x_test.
-            si = s['sample_indices_to_test']
+            si = eval(s['sample_idxs_to_test'])
             ind = randint(0, len(x_test) - 1) if si == [] else si[test_num]
 
             # Add Poisson input.
-            if s['verbose'] > 1:
-                echo("Creating poisson input...\n")
+            echo("Creating poisson input...\n")
             input_layer.rates = x_test[ind, :].flatten() * s['input_rate'] * \
                 self.sim.Hz
 
             # Run simulation for 'duration'.
-            if s['verbose'] > 1:
-                echo("Starting new simulation...\n")
+            echo("Starting new simulation...\n")
             self.snn.store()
             self.snn.run(s['duration'] * self.sim.ms, namespace=namespace)
 
@@ -376,13 +372,11 @@ class SNN:
 
             # Reset simulation time and recorded network variables for next
             # run.
-            if s['verbose'] > 1:
-                echo("Resetting simulator...\n")
+            echo("Resetting simulator...\n")
             # Skip during last run so the recorded variables are not discarded
             if test_num < s['num_to_test'] - 1:
                 self.snn.restore()
-            if s['verbose'] > 1:
-                echo("Done.\n")
+            echo("Done.\n")
 
         if 'confusion_matrix' in s['plot_vars']:
             plot_confusion_matrix(truth, guesses, log_dir)

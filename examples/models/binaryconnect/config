@@ -1,0 +1,20 @@
+[paths]
+dataset_path = %(path_wd)s/../../datasets/cifar10/binaryconnect
+filename_ann = 91.91
+
+[input]
+model_lib = lasagne
+
+[tools]
+normalize = True
+
+[normalization]
+percentile = 99.99
+
+[simulation]
+duration = 100
+num_to_test = 20
+batch_size = 10
+
+[cell]
+binarize_weights = False

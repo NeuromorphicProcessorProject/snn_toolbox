@@ -20,7 +20,7 @@ from keras.layers import MaxPooling2D, Dropout, Flatten
 from ann_architectures.BinaryConnect.binary_net_keras import Conv2D
 from ann_architectures.BinaryConnect.binary_net_keras import Dense
 from ann_architectures.BinaryConnect.common import binary_sigmoid_unit
-from snntoolbox.io_utils.common import load_dataset
+from snntoolbox.io_utils.common import load_npz
 from snntoolbox.io_utils.plotting import plot_history
 
 
@@ -59,10 +59,10 @@ model.compile(loss='categorical_crossentropy', optimizer='adam',
               metrics=['accuracy'])
 
 path_to_dataset = '/home/rbodo/.snntoolbox/Datasets/mnist/cnn'
-X_train = load_dataset(path_to_dataset, 'x_norm.npz')
-Y_train = load_dataset(path_to_dataset, 'y_train.npz')
-X_test = load_dataset(path_to_dataset, 'x_test.npz')
-Y_test = load_dataset(path_to_dataset, 'y_test.npz')
+X_train = load_npz(path_to_dataset, 'x_norm.npz')
+Y_train = load_npz(path_to_dataset, 'y_train.npz')
+X_test = load_npz(path_to_dataset, 'x_test.npz')
+Y_test = load_npz(path_to_dataset, 'y_test.npz')
 
 history = model.fit(X_train, Y_train, batch_size, nb_epoch,
                     validation_data=(X_test, Y_test))

@@ -1,0 +1,11 @@
+[paths]
+dataset_path = %(path_wd)s/../../../datasets/mnist
+filename_ann = 90.00
+
+[input]
+model_lib = caffe
+
+[simulation]
+duration = 30
+num_to_test = 100
+batch_size = 10

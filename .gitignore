@@ -1,6 +1,6 @@
 # Logs and databases #
 ######################
-*.log
+examples/models/**/log
 
 # Builds #
 ##########
@@ -15,10 +15,12 @@ snntoolbox.egg-info/
 .cache/
 .idea/
 .tox/
-docs/build/html/.doctrees/
-examples/dataset/
-examples/log/
-snntoolbox/gui/console_starter.py
 
 # OSX index file
 .DS_Store
+
+# Models #
+##########
+/examples/models/vgg16/64.27_85.59.h5
+/examples/models/**/*_INI*
+/examples/models/**/*_parsed*

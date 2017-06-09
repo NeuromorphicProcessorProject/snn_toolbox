@@ -1056,15 +1056,13 @@ class SNN():
     ----------
 
     ann: dict
-        Parsed input model; result of applying ``model_lib.extract(in)`` to the
-        input model ``in``.
+        Parsed input model.
 
     Attributes
     ----------
 
     ann: dict
-        Parsed input model; result of applying ``model_lib.extract(in)`` to the
-        input model ``in``.
+        Parsed input model.
 
     sim: Simulator
         Module containing utility functions of spiking simulator. Result of
@@ -1139,10 +1137,10 @@ class SNN():
 
     """
 
-    def __init__(self, s=None):
-        if s is None:
-            s = settings
-        self.sim = initialize_simulator(s['simulator']) #TODO i can get the megasim path from here!
+    def __init__(self, config, queue=None):
+        self.config = config
+        self.queue = queue
+        self.sim = initialize_simulator(config['simulation']['simulator'])  #TODO i can get the megasim path from here!
         self.megasim_path = self.sim.megasim_path()
         self.connections = []
         self.spikemonitors = []
@@ -1768,8 +1766,7 @@ class SNN():
             self.spikemonitors = []
 
             # Add Poisson input.
-            if s['verbose'] > 1:
-                echo("Creating poisson input...\n")
+            echo("Creating poisson input...\n")
 
             if s['poisson_input']:
                 np.random.seed(1)

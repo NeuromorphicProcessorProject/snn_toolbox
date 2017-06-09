@@ -1,0 +1,6 @@
+# Minimal configuration file
+
+[paths]
+path_wd = /mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/lenet5/keras
+dataset_path = %(path_wd)s/../../../datasets/mnist
+filename_ann = 98.96

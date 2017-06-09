@@ -108,10 +108,10 @@ setup(
     # },
 
     packages=find_packages(exclude=['ann_architectures', 'deprecated',
-                                    'snntoolbox.scotopic']),
+                                    'snntoolbox.scotopic', 'scripts']),
 
     package_data={
-        'snntoolbox': ['default_settings.txt']
+        'snntoolbox': ['config_defaults']
     },
 
     # Include documentation

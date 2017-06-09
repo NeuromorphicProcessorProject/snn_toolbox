@@ -5,25 +5,25 @@
 import numpy as np
 
 
-def get_samples_from_list(x_test, y_test, dataflow, settings):
+def get_samples_from_list(x_test, y_test, dataflow, config):
     """
     If user specified a list of samples to test with
-    ``settings['sample_indices_to_test']``, this function extract them from the
+    ``settings['sample_idxs_to_test']``, this function extract them from the
     test set.
     """
 
-    si = settings['sample_indices_to_test'].copy() \
-        if 'sample_indices_to_test' in settings else []
+    si = eval(config['simulation']['sample_idxs_to_test'])
     if not si == []:
         if dataflow is not None:
             batch_idx = 0
             x_test = []
             y_test = []
             target_idx = si.pop(0)
-            while len(x_test) < settings['num_to_test']:
+            while len(x_test) < config.getint('simulation', 'num_to_test'):
                 x_b_l, y_b = dataflow.next()
-                for i in range(settings['batch_size']):
-                    if batch_idx * settings['batch_size'] + i == target_idx:
+                for i in range(config.getint('simulation', 'batch_size')):
+                    if batch_idx * config.getint('simulation', 'batch_size') \
+                            + i == target_idx:
                         x_test.append(x_b_l[i])
                         y_test.append(y_b[i])
                         if len(si) > 0:

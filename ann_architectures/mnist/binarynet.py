@@ -127,7 +127,7 @@ def build_network():
 if __name__ == "__main__":
 
     import numpy as np
-    from snntoolbox.io_utils.common import load_dataset, save_parameters
+    from snntoolbox.io_utils.common import load_npz, save_parameters
     np.random.seed(1234)
 
     # Training parameters
@@ -147,10 +147,10 @@ if __name__ == "__main__":
     print("Loading dataset...")
 
     path_to_dataset = '/home/rbodo/.snntoolbox/Datasets/mnist/cnn'
-    X_train = load_dataset(path_to_dataset, 'x_norm.npz').astype('float32')
-    Y_train = load_dataset(path_to_dataset, 'y_train.npz').astype('float32')
-    X_test = load_dataset(path_to_dataset, 'x_test.npz').astype('float32')
-    Y_test = load_dataset(path_to_dataset, 'y_test.npz').astype('float32')
+    X_train = load_npz(path_to_dataset, 'x_norm.npz').astype('float32')
+    Y_train = load_npz(path_to_dataset, 'y_train.npz').astype('float32')
+    X_test = load_npz(path_to_dataset, 'x_test.npz').astype('float32')
+    Y_test = load_npz(path_to_dataset, 'y_test.npz').astype('float32')
 
     print('Building the CNN...')
 
