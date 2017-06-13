@@ -64,13 +64,12 @@ class ModelParser(AbstractModelParser):
                     break
         return inbound
 
-    def get_batch_input_shape(self):
-        return (None,) + \
-               tuple(self.get_layer_iterable()[0].input_param.shape[0].dim)
+    def get_input_shape(self):
+        return tuple(self.get_layer_iterable()[0].input_param.shape[0].dim[1:])
 
     def get_output_shape(self, layer):
         try:
-            return self.input_model[0].blobs[layer.name].shape
+            return tuple(self.input_model[0].blobs[layer.name].shape)
         except KeyError:
             print("Can't get output_shape because layer has no blobs.")
 
@@ -89,8 +88,8 @@ class ModelParser(AbstractModelParser):
         weights = self.input_model[0].params[layer.name][0].data
         bias = self.input_model[0].params[layer.name][1].data
         weights = weights[:, :, ::-1, ::-1]
-        print("Flipped kernels.")
         weights = np.transpose(weights, (2, 3, 1, 0))
+        print("Flipped kernels.")
         attributes['parameters'] = [weights, bias]
         p = layer.convolution_param
         # Take maximum here because sometimes not not all fields are set
@@ -102,8 +101,7 @@ class ModelParser(AbstractModelParser):
         attributes.update({'filters': p.num_output,
                            'kernel_size': filter_size,
                            'padding': padding,
-                           'strides': (p.stride[0], p.stride[0]),
-                           'filter_flip': False})  # p.filter_flip
+                           'strides': (p.stride[0], p.stride[0])})
 
     def parse_pooling(self, layer, attributes):
         p = layer.pooling_param
@@ -123,13 +121,10 @@ class ModelParser(AbstractModelParser):
 
     def get_outbound_layers(self, layer):
         layers = self.get_layer_iterable()
-        outbound = []
-        for outb in layer.top:  # Contains only labels
-            for layer in layers:
-                if outb == layer.name:
-                    outbound.append(layer)
-                    break
-        return outbound
+        layer_ids = [id(l) for l in layers]
+        current_idx = layer_ids.index(id(layer))
+        return [] if current_idx + 1 >= len(layer_ids) \
+            else [layers[current_idx + 1]]
 
     def parse_concatenate(self, layer, attributes):
         attributes.update({'mode': 'concat',

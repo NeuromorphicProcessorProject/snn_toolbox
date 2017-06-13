@@ -48,9 +48,8 @@ class ModelParser(AbstractModelParser):
         attributes.update(layer.get_config())
         return attributes
 
-    def get_batch_input_shape(self):
-        return \
-            (None,) + tuple(self.get_layer_iterable()[0].batch_input_shape[1:])
+    def get_input_shape(self):
+        return tuple(self.get_layer_iterable()[0].batch_input_shape[1:])
 
     def get_output_shape(self, layer):
         return layer.output_shape

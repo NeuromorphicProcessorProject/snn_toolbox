@@ -59,8 +59,10 @@ def get_dataset(config):
         print("Loading data set from '.npz' files in {}.\n".format(
             dataset_path))
         if is_testset_needed:
-            testset = {'x_test': load_npz(dataset_path, 'x_test.npz'),
-                       'y_test': load_npz(dataset_path, 'y_test.npz')}
+            num_to_test = config.getint('simulation', 'num_to_test')
+            testset = {
+                'x_test': load_npz(dataset_path, 'x_test.npz')[:num_to_test],
+                'y_test': load_npz(dataset_path, 'y_test.npz')[:num_to_test]}
             assert testset, "Test set empty."
         if is_normset_needed:
             normset = {'x_norm': load_npz(dataset_path, 'x_norm.npz')}

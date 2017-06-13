@@ -72,8 +72,8 @@ class ModelParser(AbstractModelParser):
             return layer.input_layers
         return [layer.input_layer]
 
-    def get_batch_input_shape(self):
-        return tuple(self.get_layer_iterable()[0].shape)
+    def get_input_shape(self):
+        return tuple(self.get_layer_iterable()[0].shape[1:])
 
     def get_output_shape(self, layer):
         return layer.output_shape

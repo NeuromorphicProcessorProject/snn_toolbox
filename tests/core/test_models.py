@@ -12,7 +12,7 @@ class TestInputModel:
         score = model_lib.evaluate(input_model['val_fn'], batch_size,
                                    num_to_test, **_testset)
         target_acc = _input_model_and_lib['target_acc']
-        assert round(100 * score, 2) == target_acc
+        assert round(100 * score, 2) >= target_acc
 
     def test_parsing(self, _input_model_and_lib, _testset, _config):
         batch_size = _config.getint('simulation', 'batch_size')
@@ -24,7 +24,7 @@ class TestInputModel:
         score = model_parser.evaluate_parsed(batch_size, num_to_test,
                                              **_testset)
         target_acc = _input_model_and_lib['target_acc']
-        assert round(100 * score[1], 2) == target_acc
+        assert round(100 * score[1], 2) >= target_acc
 
     def test_normalizing(self, _input_model_and_lib, _normset, _testset,
                          _config):
@@ -33,7 +33,7 @@ class TestInputModel:
         # Need to test only once because normalization is independent of
         # input library.
         if 'keras' not in _input_model_and_lib['model_lib'].__name__:
-            assert True
+            return
 
         batch_size = _config.getint('simulation', 'batch_size')
         num_to_test = _config.getint('simulation', 'num_to_test')
@@ -46,7 +46,7 @@ class TestInputModel:
                                              **_testset)
         target_acc = _input_model_and_lib['target_acc']
 
-        assert round(100 * score[1], 2) == target_acc
+        assert round(100 * score[1], 2) >= target_acc
 
 
 class TestOutputModel:

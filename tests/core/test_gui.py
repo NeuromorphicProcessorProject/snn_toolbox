@@ -14,5 +14,5 @@ def test_gui():
     app = SNNToolboxGUI(root)
     root.update_idletasks()
     root.update()
-    time.sleep(1)
+    time.sleep(0.1)
     app.quit_toolbox()

@@ -65,7 +65,8 @@ class SNNToolboxGUI:
         """Init method of SNNToolboxGUI."""
         self.initialized = False
         self.root = root
-        self.default_path_to_pref = os.path.join(snntoolbox.toolbox_root,
+        self.toolbox_root = os.getcwd()
+        self.default_path_to_pref = os.path.join(self.toolbox_root,
                                                  'preferences')
         self.define_style()
         self.declare_parameter_vars()
@@ -1151,7 +1152,7 @@ class SNNToolboxGUI:
                          'datagen_kwargs': tk.StringVar(),
                          'dataflow_kwargs': tk.StringVar(),
                          'model_lib': tk.StringVar(),
-                         'path_wd': tk.StringVar(value=snntoolbox.toolbox_root),
+                         'path_wd': tk.StringVar(value=self.toolbox_root),
                          'filename_parsed_model': tk.StringVar(),
                          'filename_ann': tk.StringVar(),
                          'filename_snn': tk.StringVar(),
@@ -1432,13 +1433,13 @@ class SNNToolboxGUI:
     def set_cwd(self):
         """Set current working directory."""
         p = filedialog.askdirectory(title="Set directory",
-                                    initialdir=snntoolbox.toolbox_root)
+                                    initialdir=self.toolbox_root)
         self.check_path(p)
 
     def set_dataset_path(self):
         """Set path to dataset."""
         p = filedialog.askdirectory(title="Set directory",
-                                    initialdir=snntoolbox.toolbox_root)
+                                    initialdir=self.toolbox_root)
         self.check_dataset_path(p)
 
     def __scroll_handler(self, *l):

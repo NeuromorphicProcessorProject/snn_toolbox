@@ -195,6 +195,8 @@ def normalize_parameters(model, config, **kwargs):
               "loaded. Proceeding without normalization.")
         return
 
+    batch_size = config.getint('simulation', 'batch_size')
+
     # If scale factors have not been computed in a previous run, do so now.
     if len(scale_facs) == 1:
         from snntoolbox.io_utils.common import confirm_overwrite
@@ -208,7 +210,7 @@ def normalize_parameters(model, config, **kwargs):
             print("Calculating activations of layer {} ...".format(
                 layer.name, layer.output_shape))
             activations = get_activations_layer(model.input, layer.output,
-                                                x_norm)
+                                                x_norm, batch_size)
             if 'normalization_activations' in \
                     eval(config['output']['plot_vars']):
                 print("Writing activations to disk...")
@@ -317,8 +319,8 @@ def normalize_parameters(model, config, **kwargs):
                                                layer.name + '.npz'))['arr_0']
             # Compute activations with modified parameters
             nonzero_activations = activations[np.nonzero(activations)]
-            activations_norm = get_activations_layer(model.input,
-                                                     layer.output, x_norm)
+            activations_norm = get_activations_layer(model.input, layer.output,
+                                                     x_norm, batch_size)
             activation_dict = {
                 'Activations': nonzero_activations, 'Activations_norm':
                     activations_norm[np.nonzero(activations_norm)]}
@@ -584,7 +586,7 @@ def apply_normalization_schedule(perc, layer_idx):
     return int(perc - layer_idx * 0.02)
 
 
-def get_activations_layer(layer_in, layer_out, x):
+def get_activations_layer(layer_in, layer_out, x, batch_size=None):
     """
     Get activations of a specific layer, iterating batch-wise over the complete
     data set.
@@ -612,7 +614,9 @@ def get_activations_layer(layer_in, layer_out, x):
         ``layer_out``.
     """
 
-    return keras.models.Model(layer_in, layer_out).predict(x)
+    kwargs = {} if batch_size is None else {'batch_size': batch_size}
+
+    return keras.models.Model(layer_in, layer_out).predict(x, **kwargs)
 
 
 def get_activations_batch(ann, x_batch):

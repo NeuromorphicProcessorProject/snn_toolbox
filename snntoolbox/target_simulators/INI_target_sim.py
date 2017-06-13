@@ -417,7 +417,8 @@ class SNN:
                 top1err = np.around(np.mean(self.top1err_b_t[:, sim_step_int]),
                                     4)
                 sim_step_int += 1
-                if self.config['output']['verbose'] > 0 and sim_step % 1 == 0:
+                if self.config.getint('output', 'verbose') > 0 \
+                        and sim_step % 1 == 0:
                     echo('{:.2%}_'.format(1-top1err))
 
             num_samples_seen = (batch_idx + 1) * batch_size
@@ -426,7 +427,7 @@ class SNN:
             top1acc_moving = np.mean(np.array(truth_d) == np.array(guesses_d))
             top5score_moving += sum(in_top_k(output_b_l, truth_b, self.top_k))
             top5acc_moving = top5score_moving / num_samples_seen
-            if self.config['output']['verbose'] > 0:
+            if self.config.getint('output', 'verbose') > 0:
                 print('\n')
                 print("Batch {} of {} completed ({:.1%})".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
@@ -448,9 +449,9 @@ class SNN:
             if 'input_image' in plot_keys and x_b_l is not None:
                 plot_input_image(x_b_l[0], int(truth_b[0]), log_dir)
             if 'error_t' in plot_keys:
-                plot_error_vs_time(self.top1err_b_t, self.top5err_b_t,
-                                   1 - self.top1err_ann, 1 - self.top5err_ann,
-                                   log_dir)
+                plot_error_vs_time(self.top1err_b_t, self.top5err_b_t, duration,
+                                   dt, 1 - self.top1err_ann,
+                                   1 - self.top5err_ann, log_dir)
             if 'confusion_matrix' in plot_keys:
                 plot_confusion_matrix(truth_d, guesses_d, log_dir,
                                       list(np.arange(self.num_classes)))

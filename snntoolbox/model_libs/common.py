@@ -345,8 +345,13 @@ class AbstractModelParser:
         return {}
 
     @abstractmethod
-    def get_batch_input_shape(self):
+    def get_input_shape(self):
         pass
+
+    def get_batch_input_shape(self):
+        input_shape = tuple(self.get_input_shape())
+        batch_size = self.config.getint('simulation', 'batch_size')
+        return (batch_size,) + input_shape
 
     def get_name(self, layer, idx, layer_type=None):
         if layer_type is None:
@@ -385,8 +390,10 @@ class AbstractModelParser:
                 self.get_type(layer) != 'Flatten':
             assert len(previous_layers) == 1, "Layer to flatten must be unique."
             print("Inserting layer Flatten.")
+            num_str = str(idx) if idx > 9 else '0' + str(idx)
+            shape_string = str(np.prod(prev_layer_output_shape[1:]))
             self.layer_list.append({
-                'name': self.get_name(layer, idx, 'Flatten'),
+                'name': num_str + 'Flatten_' + shape_string,
                 'layer_type': 'Flatten',
                 'inbound': self.get_inbound_names(layer, name_map)})
             name_map['Flatten' + str(idx)] = idx

@@ -90,7 +90,6 @@ setup(
         'future',
         'h5py',
         'keras',
-        'theano',
         'matplotlib',
     ],
 

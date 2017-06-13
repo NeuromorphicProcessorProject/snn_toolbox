@@ -57,15 +57,18 @@ def get_input_libs():
     if is_module_installed('keras'):
         ml.append({'input': {'model_lib': 'keras'},
                    'paths': {'filename_ann': '98.96', 'path_wd':
-                       os.path.join( path_wd, 'lenet5', 'keras')}})
+                             os.path.join( path_wd, 'lenet5', 'keras')},
+                   'simulation': {'target_acc': '98.50'}})
     if is_module_installed('caffe'):
         ml.append({'input': {'model_lib': 'caffe'},
-                   'paths': {'filename_ann': '99.00', 'path_wd':
-                       os.path.join( path_wd, 'lenet5', 'caffe')}})
+                   'paths': {'filename_ann': '96.13', 'path_wd':
+                             os.path.join( path_wd, 'lenet5', 'caffe')},
+                   'simulation': {'target_acc': '95.10'}})
     if is_module_installed('lasagne'):
         ml.append({'input': {'model_lib': 'lasagne'},
                    'paths': {'filename_ann': '99.02', 'path_wd':
-                       os.path.join( path_wd, 'lenet5', 'lasagne')}})
+                             os.path.join( path_wd, 'lenet5', 'lasagne')},
+                   'simulation': {'target_acc': '98.00'}})
     return ml
 
 _ml = get_input_libs()
@@ -91,7 +94,7 @@ def _input_model_and_lib_single(_config, p):
     input_model = model_lib.load(_config['paths']['path_wd'],
                                  _config['paths']['filename_ann'])
     return {'model_lib': model_lib, 'input_model': input_model,
-            'target_acc': _config.getfloat('paths', 'filename_ann')}
+            'target_acc': _config.getfloat('simulation', 'target_acc')}
 
 
 @pytest.fixture(scope='module', params=_ml)

@@ -1,6 +1,6 @@
 [paths]
 dataset_path = %(path_wd)s/../../../datasets/mnist
-filename_ann = 90.00
+filename_ann = 96.13
 
 [input]
 model_lib = caffe

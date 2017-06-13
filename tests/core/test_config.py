@@ -55,7 +55,7 @@ _simulators = [
     ('INI', {}, True),
     ('brian2', {}, False),
     ('MegaSim', {}, True),
-    ('brian', {'dt': 1}, True),
+    ('brian', {'dt': 1}, False),
     ('nest', {'dt': 1}, False),
     ('Neuron', {'dt': 1}, False)]
 

@@ -3,13 +3,25 @@
 Installation
 ============
 
+Requirements
+------------
+
+First, install `Theano <http://www.deeplearning.net/software/theano/install_ubuntu.html>`_.
+
+Stable version
+--------------
+
 Run ``pip install snntoolbox``.
 
-This will install the minimum dependencies (Theano, Keras). Follow the guidelines `here <http://www.deeplearning.net/software/theano/install_ubuntu.html>`_ to configure Theano to use the GPU.
+This will install the other minimum dependencies (Keras, matplotlib, h5py).
 
-For testing a converted network, the toolbox includes a ready-to-use spiking simulator. In addition, you may install and use one of the simulators described :ref:`here <simulating>`.
+For testing a converted network, the toolbox includes a ready-to-use spiking
+simulator. In addition, you may install and use one of the simulators described
+:ref:`here <simulating>`.
 
-We recommend installing the toolbox in a virtual environment, because simulators supported by pyNN may require different versions of their dependencies; Brian for instance only works with python2.
+We recommend installing the toolbox in a virtual environment, because simulators
+supported by pyNN may require different versions of their dependencies; Brian
+for instance only works with python2.
 
 Development version
 -------------------
