@@ -20,19 +20,12 @@ import warnings
 import numpy as np
 from future import standard_library
 import theano
-import theano.tensor as t
-from theano.tensor.signal import pool
-from theano.tensor.shared_randomstreams import RandomStreams
 from keras import backend as k
 from keras.layers import Concatenate
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
 from snntoolbox.core.util import get_inbound_layers
 
 standard_library.install_aliases()
-
-rng = RandomStreams()
-
-floatX = theano.config.floatX
 
 # Experimental
 bias_relaxation = False
@@ -57,22 +50,23 @@ def update_neurons(self):
 
     # Store refractory
     if self.tau_refrac > 0:
-        new_refractory = t.set_subtensor(
+        new_refractory = k.T.set_subtensor(
             self.refrac_until[output_spikes.nonzero()],
             self.time + self.tau_refrac)
         add_updates(self, [(self.refrac_until, new_refractory)])
 
     if self.online_normalization:
-        add_updates(self, [(self.spikecounts,
-                            t.add(self.spikecounts, t.neq(output_spikes, 0)))])
-        add_updates(self, [(self.max_spikerate, t.max(self.spikecounts) *
+        add_updates(
+            self, [(self.spikecounts, k.T.add(self.spikecounts,
+                                              k.not_equal(output_spikes, 0)))])
+        add_updates(self, [(self.max_spikerate, k.max(self.spikecounts) *
                             self.dt / self.time)])
 
     if self.spiketrain is not None:
         add_updates(self, [(self.spiketrain,
-                            self.time * t.neq(output_spikes, 0))])
+                            self.time * k.not_equal(output_spikes, 0))])
 
-    return t.cast(output_spikes, floatX)
+    return k.cast(output_spikes, k.floatx())
 
 
 def update_payload(self, residuals, idxs):
@@ -81,9 +75,9 @@ def update_payload(self, residuals, idxs):
     Uses the residual of the membrane potential after spike.
     """
 
-    payloads = t.set_subtensor(
+    payloads = k.T.set_subtensor(
         self.payloads[idxs], residuals[idxs] - self.payloads_sum[idxs])
-    payloads_sum = t.set_subtensor(
+    payloads_sum = k.T.set_subtensor(
         self.payloads_sum[idxs], self.payloads_sum[idxs] + self.payloads[idxs])
     return payloads, payloads_sum
 
@@ -94,13 +88,14 @@ def linear_activation(self):
     new_mem = get_new_mem(self)
 
     # Store spiking
-    output_spikes = t.mul(t.ge(new_mem, self.v_thresh), self.v_thresh)
+    output_spikes = k.T.mul(k.greater_equal(new_mem, self.v_thresh),
+                            self.v_thresh)
 
     set_reset_mem(self, new_mem, output_spikes)
 
     if self.payloads:
         spike_idxs = output_spikes.nonzero()
-        residuals = t.inc_subtensor(new_mem[spike_idxs], -self.v_thresh)
+        residuals = k.T.inc_subtensor(new_mem[spike_idxs], -self.v_thresh)
         payloads, payloads_sum = update_payload(self, residuals, spike_idxs)
         add_updates(self, [(self.payloads, payloads)])
         add_updates(self, [(self.payloads_sum, payloads_sum)])
@@ -113,7 +108,7 @@ def binary_sigmoid_activation(self):
 
     new_mem = get_new_mem(self)
 
-    output_spikes = t.mul(t.gt(new_mem, 0), self.v_thresh)
+    output_spikes = k.T.mul(k.greater(new_mem, 0), self.v_thresh)
 
     set_reset_mem(self, new_mem, output_spikes)
 
@@ -125,8 +120,8 @@ def binary_tanh_activation(self):
 
     new_mem = get_new_mem(self)
 
-    output_spikes = t.mul(t.gt(new_mem, 0), self.v_thresh)
-    output_spikes += t.mul(t.lt(new_mem, 0), -self.v_thresh)
+    output_spikes = k.T.mul(k.greater(new_mem, 0), self.v_thresh)
+    output_spikes += k.T.mul(k.less(new_mem, 0), -self.v_thresh)
 
     set_reset_mem(self, new_mem, output_spikes)
 
@@ -138,8 +133,8 @@ def softmax_activation(self):
 
     new_mem = get_new_mem(self)
 
-    output_spikes = t.mul(t.le(rng.uniform(new_mem.shape),
-                               t.nnet.softmax(new_mem)), self.v_thresh)
+    output_spikes = k.T.mul(k.less_equal(k.random_uniform(new_mem.shape),
+                                         k.softmax(new_mem)), self.v_thresh)
 
     set_reset_mem(self, new_mem, output_spikes)
 
@@ -151,25 +146,24 @@ def get_new_mem(self):
 
     # Destroy impulse if in refractory period
     masked_impulse = self.impulse if self.tau_refrac == 0 else \
-        t.set_subtensor(self.impulse[t.nonzero(self.refrac_until > self.time)],
-                        0.)
+        k.T.set_subtensor(
+            self.impulse[k.T.nonzero(self.refrac_until > self.time)], 0.)
 
     # Add impulse
     if clamp_var:
         # Experimental: Clamp the membrane potential to zero until the
         # presynaptic neurons fire at their steady-state rates. This helps avoid
         # a transient response.
-        new_mem = theano.ifelse.ifelse(
-            t.lt(t.mean(self.var), 1e-4) +
-            t.gt(self.time, self.duration / 2),
-            self.mem + masked_impulse, self.mem)
+        new_mem = k.ifelse.ifelse(k.less(k.mean(self.var), 1e-4) +
+                                  k.greater(self.time, self.duration / 2),
+                                  self.mem + masked_impulse, self.mem)
     elif hasattr(self, 'clamp_idx'):
         # Set clamp-duration by a specific delay from layer to layer.
-        new_mem = theano.ifelse.ifelse(t.lt(self.time, self.clamp_idx),
-                                       self.mem, self.mem + masked_impulse)
+        new_mem = k.ifelse.ifelse(k.less(self.time, self.clamp_idx),
+                                  self.mem, self.mem + masked_impulse)
     elif v_clip:
         # Clip membrane potential to [-2, 2] to prevent too strong accumulation.
-        new_mem = theano.tensor.clip(self.mem + masked_impulse, -3, 3)
+        new_mem = k.clip(self.mem + masked_impulse, -3, 3)
     else:
         new_mem = self.mem + masked_impulse
 
@@ -180,19 +174,20 @@ def set_reset_mem(self, mem, spikes):
     """Reset membrane potential ``mem`` array where ``spikes`` array is nonzero.
     """
 
-    spike_idxs = t.nonzero(spikes)
+    spike_idxs = k.T.nonzero(spikes)
     if self.config['cell']['reset'] == 'Reset by subtraction':
         if self.payloads and False:  # Experimental, turn off by default
-            new = t.set_subtensor(mem[spike_idxs], 0.)
+            new = k.T.set_subtensor(mem[spike_idxs], 0.)
         else:
-            pos_spike_idxs = t.nonzero(t.gt(spikes, 0))
-            neg_spike_idxs = t.nonzero(t.lt(spikes, 0))
-            new = t.inc_subtensor(mem[pos_spike_idxs], -self.v_thresh)
-            new = t.inc_subtensor(new[neg_spike_idxs], self.v_thresh)
+            pos_spike_idxs = k.T.nonzero(k.greater(spikes, 0))
+            neg_spike_idxs = k.T.nonzero(k.less(spikes, 0))
+            new = k.T.inc_subtensor(mem[pos_spike_idxs], -self.v_thresh)
+            new = k.T.inc_subtensor(new[neg_spike_idxs], self.v_thresh)
     elif self.config['cell']['reset'] == 'Reset by modulo':
-        new = t.set_subtensor(mem[spike_idxs], mem[spike_idxs] % self.v_thresh)
+        new = k.T.set_subtensor(mem[spike_idxs],
+                                mem[spike_idxs] % self.v_thresh)
     else:  # self.config['cell']['reset'] == 'Reset to zero':
-        new = t.set_subtensor(mem[spike_idxs], 0.)
+        new = k.T.set_subtensor(mem[spike_idxs], 0.)
     add_updates(self, [(self.mem, new)])
 
 
@@ -204,10 +199,10 @@ def get_new_thresh(self):
     r_lim = 1 / self.dt
     return thr_min + (thr_max - thr_min) * self.max_spikerate / r_lim
 
-    # return theano.ifelse.ifelse(
-    #     t.eq(self.time / self.dt % settings['timestep_fraction'], 0) *
-    #     t.gt(self.max_spikerate, settings['diff_to_min_rate'] / 1000) *
-    #     t.gt(1 / self.dt - self.max_spikerate,
+    # return k.ifelse.ifelse(
+    #     k.equal(self.time / self.dt % settings['timestep_fraction'], 0) *
+    #     k.greater(self.max_spikerate, settings['diff_to_min_rate'] / 1000) *
+    #     k.greater(1 / self.dt - self.max_spikerate,
     #          settings['diff_to_max_rate'] / 1000),
     #     self.max_spikerate, self.v_thresh)
 
@@ -251,10 +246,10 @@ def add_payloads(prev_layer, input_spikes):
     """Get payloads from previous layer."""
 
     # Get only payloads of those pre-synaptic neurons that spiked
-    payloads = t.set_subtensor(
-        prev_layer.payloads[t.nonzero(t.eq(input_spikes, 0.))], 0.)
+    payloads = k.T.set_subtensor(
+        prev_layer.payloads[k.T.nonzero(k.equal(input_spikes, 0.))], 0.)
     print("Using spikes with payloads from layer {}".format(prev_layer.name))
-    return t.add(input_spikes, payloads)
+    return k.T.add(input_spikes, payloads)
 
 
 def add_updates(self, updates):
@@ -270,7 +265,7 @@ def add_updates(self, updates):
         pass
 
 
-def init_membrane_potential(self, mode='zero'):
+def init_membrane_potential(self, output_shape=None, mode='zero'):
     """Initialize membrane potential.
 
     Helpful to avoid transient response in the beginning of the simulation.
@@ -282,6 +277,8 @@ def init_membrane_potential(self, mode='zero'):
 
     self: Subclass[keras.layers.core.Layer]
         The layer.
+    output_shape: Optional[tuple]
+        Output shape
     mode: str
         Initialization mode.
 
@@ -293,22 +290,25 @@ def init_membrane_potential(self, mode='zero'):
     Returns
     -------
 
-    init_mem: theano.tensor.sharedvar
+    init_mem: ndarray
         A tensor of ``self.output_shape`` (same as layer).
     """
 
+    if output_shape is None:
+        output_shape = self.output_shape
+
     if mode == 'uniform':
-        init_mem = k.random_uniform(self.output_shape,
+        init_mem = k.random_uniform(output_shape,
                                     -self.v_thresh, self.v_thresh)
     elif mode == 'bias':
-        init_mem = np.zeros(self.output_shape, floatX)
+        init_mem = np.zeros(output_shape)
         if hasattr(self, 'b'):
             b = self.get_weights()[1]
             for i in range(len(b)):
                 init_mem[:, i, Ellipsis] = np.float32(-b[i])
     else:  # mode == 'zero':
-        init_mem = np.zeros(self.output_shape, floatX)
-    return init_mem
+        init_mem = np.zeros(output_shape)
+    return k.cast(init_mem, k.floatx())
 
 
 def reset_spikevars(self, sample_idx):
@@ -323,19 +323,19 @@ def reset_spikevars(self, sample_idx):
         self.mem.set_value(init_membrane_potential(self))
     self.time.set_value(np.float32(self.dt))
     if self.tau_refrac > 0:
-        self.refrac_until.set_value(np.zeros(self.output_shape, floatX))
+        self.refrac_until.set_value(np.zeros(self.output_shape, k.floatx()))
     if self.spiketrain is not None:
-        self.spiketrain.set_value(np.zeros(self.output_shape, floatX))
+        self.spiketrain.set_value(np.zeros(self.output_shape, k.floatx()))
     if self.payloads:
-        self.payloads.set_value(np.zeros(self.output_shape, floatX))
-        self.payloads_sum.set_value(np.zeros(self.output_shape, floatX))
+        self.payloads.set_value(np.zeros(self.output_shape, k.floatx()))
+        self.payloads_sum.set_value(np.zeros(self.output_shape, k.floatx()))
     if self.online_normalization and do_reset:
-        self.spikecounts.set_value(np.zeros(self.output_shape, floatX))
+        self.spikecounts.set_value(np.zeros(self.output_shape, k.floatx()))
         self.max_spikerate.set_value(np.float32(0.))
         self.v_thresh.set_value(np.float32(self.v_thresh))
     if clamp_var and do_reset:
-        self.spikerate.set_value(np.zeros(self.input_shape, floatX))
-        self.var.set_value(np.zeros(self.input_shape, floatX))
+        self.spikerate.set_value(np.zeros(self.input_shape, k.floatx()))
+        self.var.set_value(np.zeros(self.input_shape, k.floatx()))
 
 
 def init_neurons(self, input_shape, tau_refrac=0.):
@@ -344,10 +344,10 @@ def init_neurons(self, input_shape, tau_refrac=0.):
     from snntoolbox.core.util import get_log_keys, get_plot_keys
 
     output_shape = self.compute_output_shape(input_shape)
-    self.v_thresh = theano.shared(np.float32(self.v_thresh))
+    self.v_thresh = k.variable(self.v_thresh)
     self.tau_refrac = tau_refrac
-    self.mem = k.zeros(output_shape)
-    self.time = theano.shared(np.float32(self.dt))
+    self.mem = k.variable(init_membrane_potential(self, output_shape))
+    self.time = k.variable(self.dt)
     # To save memory and computations, allocate only where needed:
     if self.tau_refrac > 0:
         self.refrac_until = k.zeros(output_shape)
@@ -358,7 +358,7 @@ def init_neurons(self, input_shape, tau_refrac=0.):
         self.spiketrain = k.zeros(output_shape)
     if self.online_normalization:
         self.spikecounts = k.zeros(output_shape)
-        self.max_spikerate = theano.shared(np.float32(0))
+        self.max_spikerate = k.variable(0)
     if self.payloads:
         self.payloads = k.zeros(output_shape)
         self.payloads_sum = k.zeros(output_shape)
@@ -539,7 +539,7 @@ class SpikeFlatten(Flatten):
     def call(self, x, mask=None):
         """Layer functionality."""
 
-        return t.cast(super(SpikeFlatten, self).call(x), floatX)
+        return k.cast(super(SpikeFlatten, self).call(x), k.floatx())
 
     @staticmethod
     def reset(sample_idx):
@@ -679,8 +679,8 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
 
         MaxPooling2D.build(self, input_shape)
         init_neurons(self, input_shape)
-        self.spikerate_pre = theano.shared(np.zeros(input_shape, floatX))
-        self.previous_x = theano.shared(np.zeros(input_shape, floatX))
+        self.spikerate_pre = k.variable(np.zeros(input_shape))
+        self.previous_x = k.variable(np.zeros(input_shape))
 
     @spike_call
     def call(self, x, mask=None):
@@ -720,7 +720,7 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
         mod = self.config.getint('simulation', 'reset_between_nth_sample')
         mod = mod if mod else sample_idx + 1
         if sample_idx % mod == 0:
-            self.spikerate_pre.set_value(np.zeros(self.input_shape, floatX))
+            self.spikerate_pre.set_value(np.zeros(self.input_shape, k.floatx()))
 
     @property
     def class_name(self):
@@ -777,8 +777,8 @@ def spike_pool2d(inputs, pool_size, strides=(1, 1), padding='valid',
         pool_out = spike_pool_2d(inputs, pool_size, True, strides, pad,
                                  str('max'))
     elif pool_mode == 'avg':
-        pool_out = pool.pool_2d(y, ws=pool_size, stride=strides, pad=pad,
-                                ignore_border=True, mode='average_exc_pad')
+        pool_out = k.pool.pool_2d(y, ws=pool_size, stride=strides, pad=pad,
+                                  ignore_border=True, mode='average_exc_pad')
     else:
         raise Exception('Invalid pooling mode: ' + str(pool_mode))
 
@@ -803,7 +803,7 @@ def spike_pool_2d(inputs, ws, ignore_border=None, stride=None, pad=(0, 0),
 
     Parameters
     ----------
-    inputs : list[N-D theano tensors of input images]
+    inputs : list[N-D tensors of input images]
         Input images. Max pooling will be done over the 2 last dimensions.
     ws : tuple of length 2
         Factor by which to downscale (vertical ds, horizontal ds).
@@ -930,7 +930,7 @@ class SpikePool(theano.Op):
         """
 
         for i in range(len(x)):
-            x[i] = t.as_tensor_variable(x[i])
+            x[i] = k.T.as_tensor_variable(x[i])
 
         nd = self.ndim
         if stride is None:
@@ -945,23 +945,24 @@ class SpikePool(theano.Op):
                 if any(pad[i] >= ws[i] for i in range(nd)):
                     raise NotImplementedError(
                         'padding must be smaller than strides')
-        ws = t.as_tensor_variable(ws)
-        stride = t.as_tensor_variable(stride)
-        pad = t.as_tensor_variable(pad)
+        ws = k.T.as_tensor_variable(ws)
+
+        stride = k.T.as_tensor_variable(stride)
+        pad = k.T.as_tensor_variable(pad)
         assert ws.ndim == 1
         assert stride.ndim == 1
         assert pad.ndim == 1
         if x[0].type.ndim < nd:
             raise TypeError()
-        if ws.dtype not in t.int_dtypes:
+        if ws.dtype not in k.T.int_dtypes:
             raise TypeError('Pool downsample parameters must be ints.')
-        if stride.dtype not in t.int_dtypes:
+        if stride.dtype not in k.T.int_dtypes:
             raise TypeError('Stride parameters must be ints.')
-        if pad.dtype not in t.int_dtypes:
+        if pad.dtype not in k.T.int_dtypes:
             raise TypeError('Padding parameters must be ints.')
         # If the input shape are broadcastable we can have 0 in the output shape
         broad = x[0].broadcastable[:-nd] + (False,) * nd
-        out = t.TensorType(x[0].dtype, broad)
+        out = k.T.TensorType(x[0].dtype, broad)
         return theano.gof.Apply(self, x+[ws, stride, pad], [out()])
 
     def perform(self, node, inp, out, **kwargs):
@@ -984,8 +985,8 @@ class SpikePool(theano.Op):
         if len(xr.shape) < nd:
             raise NotImplementedError(
                 'Pool requires input with {} or more dimensions'.format(nd))
-        z_shape = pool.Pool.out_shape(xr.shape, ws, self.ignore_border, stride,
-                                      pad, nd)
+        z_shape = k.pool.Pool.out_shape(xr.shape, ws, self.ignore_border,
+                                        stride, pad, nd)
         if not self.ignore_border:
             assert all(z > 0 for z in z_shape[-nd:])
         if (z[0] is None) or (z[0].shape != z_shape):

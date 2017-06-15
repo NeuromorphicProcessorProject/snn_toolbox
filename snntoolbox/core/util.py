@@ -143,6 +143,23 @@ def get_sample_activity_from_batch(activity_batch, idx=0):
     return [(layer_act[0][idx], layer_act[1]) for layer_act in activity_batch]
 
 
+def try_reload_activations(layer, model, x_norm, batch_size, activ_dir):
+    try:
+        activations = np.load(os.path.join(activ_dir,
+                                           layer.name + '.npz'))['arr_0']
+    except FileNotFoundError:
+        if x_norm is None:
+            return
+
+        print("Calculating activations of layer {} ...".format(layer.name))
+        activations = get_activations_layer(model.input, layer.output, x_norm,
+                                            batch_size)
+        print("Writing activations to disk...")
+        np.savez_compressed(os.path.join(activ_dir, layer.name), activations)
+
+    return activations
+
+
 def normalize_parameters(model, config, **kwargs):
     """Normalize the parameters of a network.
 
@@ -207,15 +224,8 @@ def normalize_parameters(model, config, **kwargs):
             if len(layer.weights) == 0:
                 continue
 
-            print("Calculating activations of layer {} ...".format(
-                layer.name, layer.output_shape))
-            activations = get_activations_layer(model.input, layer.output,
-                                                x_norm, batch_size)
-            if 'normalization_activations' in \
-                    eval(config['output']['plot_vars']):
-                print("Writing activations to disk...")
-                np.savez_compressed(os.path.join(activ_dir, layer.name),
-                                    activations)
+            activations = try_reload_activations(layer, model, x_norm,
+                                                 batch_size, activ_dir)
             nonzero_activations = activations[np.nonzero(activations)]
             del activations
             perc = get_percentile(config, i)
@@ -315,8 +325,12 @@ def normalize_parameters(model, config, **kwargs):
             plot_hist(weight_dict, 'Weight', label, norm_dir)
 
             # Load activations of model before normalization
-            activations = np.load(os.path.join(activ_dir,
-                                               layer.name + '.npz'))['arr_0']
+            activations = try_reload_activations(layer, model, x_norm,
+                                                 batch_size, activ_dir)
+
+            if activations is None:
+                continue
+
             # Compute activations with modified parameters
             nonzero_activations = activations[np.nonzero(activations)]
             activations_norm = get_activations_layer(model.input, layer.output,
@@ -468,8 +482,7 @@ def get_outbound_activation(layer):
     outbound = layer
     for _ in range(2):
         outbound = get_outbound_layers(outbound)
-        if len(outbound) == 1 and \
-                outbound[0].__class__.__name__ == 'Activation':
+        if len(outbound) == 1 and get_type(outbound[0]) == 'Activation':
             activation = outbound[0].activation.__name__
     return activation
 
@@ -495,12 +508,12 @@ def get_spiking_outbound_layers(layer):
         outbound = get_outbound_layers(outbound)
         if len(outbound) == 1:
             outbound = outbound[0]
-            if hasattr(outbound, 'spiketrain'):
+            if is_spiking(outbound):
                 return [outbound]
         else:
             result = []
             for outb in outbound:
-                if hasattr(outb, 'spiketrain'):
+                if is_spiking(outb):
                     result.append(outb)
                 else:
                     result += get_spiking_outbound_layers(outb)
@@ -605,6 +618,9 @@ def get_activations_layer(layer_in, layer_out, x, batch_size=None):
         (channels, num_rows, num_cols), x_train has dimension
         (batch_size, channels*num_rows*num_cols) for a multi-layer perceptron,
         and (batch_size, channels, num_rows, num_cols) for a convolutional net.
+
+    batch_size: Optional[int]
+        Batch size
 
     Returns
     -------
@@ -872,6 +888,28 @@ def get_fanout(layer):
     return fanout
 
 
+def is_spiking(layer):
+    """Test if layer is going to be converted to a layer that spikes.
+
+    Parameters
+    ----------
+
+    layer: Keras.layers.Layer
+        Layer of parsed model.
+
+    Returns
+    -------
+
+    : boolean
+        ``True`` if converted layer will have spiking neurons.
+
+    """
+
+    from snntoolbox.config import spiking_layers
+
+    return get_type(layer) in spiking_layers
+
+
 def get_ann_ops(num_neurons, num_neurons_with_bias, fanin):
     """
     Compute number of operations performed by an ANN in one forward pass.
@@ -897,3 +935,23 @@ def get_ann_ops(num_neurons, num_neurons_with_bias, fanin):
     """
 
     return 2 * np.dot(num_neurons, fanin) + np.sum(num_neurons_with_bias)
+
+
+def get_type(layer):
+    """Get type of Keras layer.
+
+    Parameters
+    ----------
+
+    layer: Keras.layers.Layer
+        Keras layer.
+
+    Returns
+    -------
+
+    : str
+        Layer type.
+
+    """
+
+    return layer.__class__.__name__

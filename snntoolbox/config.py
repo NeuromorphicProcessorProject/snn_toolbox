@@ -21,8 +21,9 @@ plot_vars = {'activations', 'spiketrains', 'spikecounts', 'spikerates',
              'operations', 'all'}
 
 # Layers that can be implemented by our spiking neuron simulators
-spiking_layers = {'Dense', 'Conv2D', 'MaxPooling2D', 'AveragePooling2D',
-                  'Flatten', 'Concatenate'}
+spiking_layers = {'Dense', 'Conv2D', 'MaxPooling2D', 'AveragePooling2D'}
+
+snn_layers = spiking_layers | {'Flatten', 'Concatenate'}
 
 # pyNN specific parameters.
 pyNN_keys = {

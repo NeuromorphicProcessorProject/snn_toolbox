@@ -142,14 +142,14 @@ def load(path, filename):
     Returns
     -------
 
-    : dict[str, Union[lasagne.layers.Layer, theano.function]]
+    : dict[str, Union[lasagne.layers.Layer, function]]
         A dictionary of objects that constitute the input model. It must
         contain the following two keys:
 
         - 'model': lasagne.layers.Layer
             Lasagne model instance of the network, given by the last layer.
-        - 'val_fn': Theano function that allows evaluating the original
-          model.
+        - 'val_fn':
+            Function that allows evaluating the original model.
     """
 
     import os

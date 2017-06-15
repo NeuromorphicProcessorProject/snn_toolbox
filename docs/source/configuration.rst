@@ -132,8 +132,9 @@ eventframe_width: int, optional
 label_dict: dict, optional
     Dictionary containing the class labels. Only needed with ``.aedat`` input.
 
-subsample_facs: tuple, optional
-    When using ``.aedat`` input, the addresses can be subsampled using these factors.
+target_size: tuple, optional
+    When using ``.aedat`` input, the addresses can be subsampled to these image
+    dimension. Set to ``None`` to leave unchanged.
 
 [tools]
 -------

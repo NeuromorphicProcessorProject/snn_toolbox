@@ -17,7 +17,8 @@ class ModelParser(AbstractModelParser):
         return self.input_model.layers
 
     def get_type(self, layer):
-        return layer.__class__.__name__
+        from snntoolbox.core.util import get_type
+        return get_type(layer)
 
     def get_batchnorm_parameters(self, layer):
         mean = layer.moving_mean.get_value()
@@ -98,14 +99,14 @@ def load(path, filename):
     Returns
     -------
 
-    : dict[str, Union[keras.models.Sequential, theano.function]]
+    : dict[str, Union[keras.models.Sequential, function]]
         A dictionary of objects that constitute the input model. It must
         contain the following two keys:
 
         - 'model': keras.models.Sequential
             Keras model instance of the network.
-        - 'val_fn': theano.function
-            Theano function that allows evaluating the original model.
+        - 'val_fn': function
+            Function that allows evaluating the original model.
     """
 
     import os

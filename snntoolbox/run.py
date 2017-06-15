@@ -18,9 +18,10 @@ def main():
                              'Omit this flag to open GUI.')
     args = parser.parse_args()
 
-    filepath = os.path.abspath(args.config_filepath)
-    #filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/lenet5/caffe/config'
-    #args.terminal = True
+    #filepath = os.path.abspath(args.config_filepath)
+    filepath = os.path.abspath(os.path.dirname(__file__) +
+                               '/../examples/models/lenet5/keras/config')
+    args.terminal = True
     if filepath is not None:
         assert os.path.isfile(filepath), \
             "Configuration file not found at {}.".format(filepath)

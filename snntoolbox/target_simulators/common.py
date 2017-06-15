@@ -2,7 +2,595 @@
 
 """Common functions for spiking simulators."""
 
+import os
 import numpy as np
+from abc import abstractmethod
+from snntoolbox.core.util import is_spiking, get_plot_keys, get_log_keys
+
+
+class AbstractSNN:
+    """
+    The compiled spiking neural network, using layers derived from
+    Keras base classes.
+
+    Aims at simulating the network on a self-implemented Integrate-and-Fire
+    simulator using a timestepped approach.
+
+    Attributes
+    ----------
+
+    sim: Simulator
+        Module containing utility functions of spiking simulator. Result of
+        calling ``snntoolbox.config.initialize_simulator()``. For instance, if
+        using Brian simulator, this initialization would be equivalent to
+        ``import pyNN.brian as sim``.
+
+    Methods
+    -------
+
+    build:
+        Convert an ANN to a spiking neural network, using layers derived from
+        Keras base classes.
+    run:
+        Simulate a spiking network.
+    save:
+        Write model architecture and parameters to disk.
+    load:
+        Load model architecture and parameters from disk.
+    end_sim:
+        Clean up after simulation. Not needed in this simulator, so do a
+        ``pass``.
+    """
+
+    def __init__(self, config, queue=None):
+        from snntoolbox.config import initialize_simulator
+
+        self.config = config
+        self.queue = queue
+        self.parsed_model = None
+        self.is_built = False
+        self.is_parallelizable = True
+        self._batch_size = None  # Store original batch_size here.
+        self.batch_size = self.adjust_batchsize()
+
+        # Logging variables
+        self.spiketrains_n_b_l_t = self.activations_n_b_l = None
+        self.input_b_l_t = self.mem_n_b_l_t = None
+        self.top1err_b_t = self.top5err_b_t = None
+        self.operations_b_t = self.operations_ann = None
+        self.top1err_ann = self.top5err_ann = None
+        self.num_neurons = self.num_neurons_with_bias = None
+        self.fanin = self.fanout = None
+        self._dt = self.config.getfloat('simulation', 'dt')
+        self._duration = self.config.getint('simulation', 'duration')
+        self._num_timesteps = int(self._duration / self._dt)
+        # ``rescale_fac`` globally scales spike probability when using Poisson
+        # input.
+        self.rescale_fac = 1000 / (self.config.getint('input', 'input_rate') *
+                                   self._dt)
+        self.num_classes = None
+        self.top_k = None
+
+        self.sim = initialize_simulator(config['simulation']['simulator'],
+                                        dt=config.getfloat('simulation', 'dt'))
+
+        self._dataset_format = self.config['input']['dataset_format']
+        self._poisson_input = self.config.getboolean('input', 'poisson_input')
+        self._num_poisson_events_per_sample = \
+            self.config.getint('input', 'num_poisson_events_per_sample')
+        self._input_spikecount = 0
+
+        self._plot_keys = get_plot_keys(self.config)
+        self._log_keys = get_log_keys(self.config)
+
+    def build(self, parsed_model):
+        """
+        Compile a spiking neural network to prepare for simulation.
+
+        Written in pyNN (http://neuralensemble.org/docs/PyNN/).
+        pyNN is a simulator-independent language for building neural
+        network
+        models. It allows running the converted net in a Spiking
+        Simulator like
+        Brian, NEURON, or NEST.
+
+        During compilation, two lists are created and stored to disk:
+        ``layers`` and ``connections``. Each entry in ``layers``
+        represents a
+        population of neurons, given by a pyNN ``Population`` object. The
+        neurons in these layers are connected by pyNN ``Projection`` s,
+        stored
+        in ``connections`` list.
+
+        This compilation method performs the connection process between
+        layers.
+        This means, if the session was started with a call to
+        ``sim.setup()``,
+        the converted network can be tested right away, using the simulator
+        ``sim``.
+
+        However, when starting a new session (calling ``sim.setup()`` after
+        conversion), the ``layers`` have to be reloaded from disk using
+        ``load_assembly``, and the connections reestablished manually.
+        This is
+        implemented in ``run`` method, go there for details.
+        See ``snntoolbox.core.pipeline.test_full`` about how to simulate
+        after
+        converting.
+
+        Parameters
+        ----------
+
+        parsed_model: Keras model
+         Parsed input model.
+        """
+
+        from snntoolbox.core.util import get_type
+
+        print("Building spiking model...")
+
+        self.parsed_model = parsed_model
+        self.num_classes = int(self.parsed_model.layers[-1].output_shape[-1])
+        self.top_k = min(self.num_classes, 5)
+
+        # Get batch input shape
+        batch_shape = list(parsed_model.layers[0].batch_input_shape)
+        batch_shape[0] = self.batch_size
+
+        self.add_input_layer(batch_shape)
+
+        # Iterate over layers to create spiking neurons and connections.
+        for layer in parsed_model.layers[1:]:
+            print("Building layer: {}".format(layer.name))
+            self.add_layer(layer)
+            layer_type = get_type(layer)
+            if layer_type == 'Dense':
+                self.build_dense(layer)
+            elif layer_type == 'Conv2D':
+                self.build_convolution(layer)
+            elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
+                self.build_pooling(layer)
+
+        print("Compiling spiking model...\n")
+        self.compile()
+
+        # Compute number of operations of ANN.
+        if self.fanin is None:
+            from snntoolbox.core.util import get_ann_ops
+            num_neurons, num_neurons_with_bias, fanin = self.set_connectivity()
+            self.operations_ann = get_ann_ops(num_neurons,
+                                              num_neurons_with_bias, fanin)
+            print("Number of operations of ANN: {}\n".format(
+                self.operations_ann))
+
+        self.is_built = True
+
+    @abstractmethod
+    def add_input_layer(self, input_shape):
+        pass
+
+    @abstractmethod
+    def add_layer(self, layer):
+        pass
+
+    @abstractmethod
+    def build_dense(self, layer):
+        pass
+
+    @abstractmethod
+    def build_convolution(self, layer):
+        pass
+
+    @abstractmethod
+    def build_pooling(self, layer):
+        pass
+
+    @abstractmethod
+    def compile(self):
+        pass
+
+    def run(self, x_test=None, y_test=None, dataflow=None, **kwargs):
+        """
+        Simulate a spiking network.
+
+        Parameters
+        ----------
+
+        x_test: float32 array
+            The input samples to test.
+            With data of the form (channels, num_rows, num_cols),
+            x_test has dimension (num_samples, channels*num_rows*num_cols)
+            for a multi-layer perceptron, and
+            (num_samples, channels, num_rows, num_cols) for a convolutional
+            net.
+        y_test: float32 array
+            Ground truth of test data. Has dimension (num_samples, num_classes)
+        dataflow : keras.DataFlowGenerator
+            Loads images from disk and processes them on the fly.
+
+        kwargs: Optional[dict]
+            - path: Optional[str]
+                Where to store the output plots. If no path given, this value is
+                taken from the settings dictionary.
+
+        Returns
+        -------
+
+        top1acc_total: float
+            Number of correctly classified samples divided by total number of
+            test samples.
+        """
+
+        from functools import partial
+        from snntoolbox.core.util import get_activations_batch, in_top_k
+        import snntoolbox.io_utils.plotting as snn_plt
+
+        # Get directory where logging quantities will be stored.
+        log_dir = kwargs[str('path')] if 'path' in kwargs \
+            else self.config['paths']['log_dir_of_current_run']
+
+        # Load neuron layers and connections if conversion was done during a
+        # previous session.
+        if not self.is_built:
+            self.restore_snn()
+
+        # Extract certain samples from test set, if user specified such a list.
+        x_test, y_test = get_samples_from_list(x_test, y_test, dataflow,
+                                               self.config)
+
+        # Divide the test set into batches and run all samples in a batch in
+        # parallel.
+        dataset_format = self.config['input']['dataset_format']
+        num_batches = int(1e9) if dataset_format == 'aedat' else \
+            int(np.floor(self.config.getint('simulation', 'num_to_test') /
+                         self.batch_size))
+
+        # Initialize intermediate variables for computing statistics.
+        top5score_moving = 0
+        score1_ann = 0
+        score5_ann = 0
+        truth_d = []  # Filled up with correct classes of all test samples.
+        guesses_d = []  # Filled up with guessed classes of all test samples.
+
+        # Prepare files for storage of logging quantities.
+        path_log_vars = os.path.join(log_dir, 'log_vars')
+        if not os.path.isdir(path_log_vars):
+            os.makedirs(path_log_vars)
+        path_acc = os.path.join(log_dir, 'accuracy.txt')
+        if os.path.isfile(path_acc):
+            os.remove(path_acc)
+
+        self.init_log_vars()
+
+        self.init_cells()
+
+        # This dict will be used to pass a batch of data to the simulator.
+        data_batch_kwargs = {}
+
+        # If DVS events are used as input, instantiate a DVSIterator.
+        if dataset_format == 'aedat':
+            from snntoolbox.io_utils.AedatTools.DVSIterator import DVSIterator
+            batch_shape = self.parsed_model.get_batch_input_shape()
+            batch_shape[0] = self.batch_size
+            dvs_gen = DVSIterator(
+                self.config['paths']['dataset_path'], batch_shape,
+                self.config.getint('input', 'eventframe_width'),
+                self.config.getint('input', 'num_dvs_events_per_sample'),
+                batch_shape[2:], eval(self.config['input']['target_size']),
+                eval(self.config['input']['label_dict']))
+            data_batch_kwargs['dvs_gen'] = dvs_gen
+
+        # Simulate the SNN on a batch of samples in parallel.
+        for batch_idx in range(num_batches):
+
+            # Get a batch of samples
+            if x_test is not None:
+                batch_idxs = range(self.batch_size * batch_idx,
+                                   self.batch_size * (batch_idx + 1))
+                x_b_l = x_test[batch_idxs, :]
+                if y_test is not None:
+                    y_b = y_test[batch_idxs, :]
+            elif dataflow is not None:
+                x_b_l, y_b = dataflow.next()
+            elif dataset_format == 'aedat':
+                try:
+                    data_batch_kwargs['dvs_gen'].next_sequence_batch()
+                    y_b = data_batch_kwargs['dvs_gen'].y_b
+                except StopIteration:
+                    break
+
+                # Generate frames so we can compare with ANN.
+                if any({'activations', 'correlation', 'input_image',
+                        'hist_spikerates_activations'} & self._plot_keys) or \
+                        'activations_n_b_l' in self._log_keys:
+                    x_b_l = data_batch_kwargs['dvs_gen'].get_frames_batch()
+
+            truth_b = np.argmax(y_b, axis=1)
+            data_batch_kwargs['truth_b'] = truth_b
+            data_batch_kwargs['x_b_l'] = x_b_l
+
+            # Main step: Run the network on a batch of samples for the duration
+            # of the simulation.
+            print("Starting new simulation...\n")
+            output_b_l_t = self.simulate(**data_batch_kwargs)
+
+            # Get classification result by comparing the guessed class (i.e. the
+            # index of the neuron in the last layer which spiked most) to the
+            # ground truth.
+            guesses_b_t = np.argmax(output_b_l_t, axis=1)
+            # Find sample indices for which there was no output spike yet.
+            undecided_b_t = np.where(np.sum(np.nonzero(output_b_l_t), 1) == 0)
+            # Assign negative value such that undecided samples count as
+            # wrongly classified.
+            guesses_b_t[undecided_b_t] = -1
+
+            # Get classification error of current batch, for each time step.
+            self.top1err_b_t = guesses_b_t != np.broadcast_to(
+                np.expand_dims(truth_b, 1), guesses_b_t.shape)
+            self.top5err_b_t = ~np.array(list(map(partial(
+                in_top_k, targets=truth_b, k=self.top_k), output_b_l_t)))
+
+            # Add results of current batch to previous results.
+            truth_d += list(truth_b)
+            guesses_d += list(guesses_b_t[:, -1])
+
+            # Print current accuracy.
+            num_samples_seen = (batch_idx + 1) * self.batch_size
+            top1acc_moving = np.mean(np.array(truth_d) == np.array(guesses_d))
+            top5score_moving += sum(in_top_k(output_b_l_t[..., -1], truth_b,
+                                             self.top_k))
+            top5acc_moving = top5score_moving / num_samples_seen
+            if self.config.getint('output', 'verbose') > 0:
+                print("\nBatch {} of {} completed ({:.1%})".format(
+                    batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
+                print("Moving accuracy of SNN (top-1, top-5): {:.2%}, {:.2%}."
+                      "".format(top1acc_moving, top5acc_moving))
+            with open(path_acc, str('a')) as f_acc:
+                f_acc.write(str("{} {:.2%} {:.2%}\n".format(
+                    num_samples_seen, top1acc_moving, top5acc_moving)))
+
+            # Evaluate ANN on the same batch as SNN for a direct comparison.
+            score = self.parsed_model.test_on_batch(x_b_l, y_b)
+            score1_ann += score[1] * self.batch_size
+            score5_ann += score[2] * self.batch_size
+            self.top1err_ann = 1 - score1_ann / num_samples_seen
+            self.top5err_ann = 1 - score5_ann / num_samples_seen
+            print("Moving accuracy of ANN (top-1, top-5): {:.2%}, {:.2%}."
+                  "\n".format(1 - self.top1err_ann, 1 - self.top5err_ann))
+
+            # Plot input image.
+            if 'input_image' in self._plot_keys:
+                snn_plt.plot_input_image(x_b_l[0], int(truth_b[0]), log_dir)
+
+            # Plot error vs time.
+            if 'error_t' in self._plot_keys:
+                snn_plt.plot_error_vs_time(
+                    self.top1err_b_t, self.top5err_b_t, self._duration,
+                    self._dt, 1 - self.top1err_ann, 1 - self.top5err_ann,
+                    log_dir)
+
+            # Plot confusion matrix.
+            if 'confusion_matrix' in self._plot_keys:
+                snn_plt.plot_confusion_matrix(truth_d, guesses_d, log_dir,
+                                              list(np.arange(self.num_classes)))
+
+            # Cumulate operation count over time and scale to MOps.
+            if self.operations_b_t is not None:
+                np.cumsum(np.divide(self.operations_b_t, 1e6), 1,
+                          out=self.operations_b_t)
+
+            # Plot operations vs time.
+            if 'operations' in self._plot_keys:
+                snn_plt.plot_ops_vs_time(self.operations_b_t, self._duration,
+                                         self._dt, log_dir)
+
+            # Calculate ANN activations for plots.
+            if any({'activations', 'correlation', 'hist_spikerates_activations'}
+                   & self._plot_keys) or 'activations_n_b_l' in self._log_keys:
+                print("Calculating activations...\n")
+                self.activations_n_b_l = get_activations_batch(
+                    self.parsed_model, x_b_l)
+
+            # Save log variables to disk.
+            log_vars = {key: getattr(self, key) for key in self._log_keys}
+            log_vars['top1err_b_t'] = self.top1err_b_t
+            log_vars['top5err_b_t'] = self.top5err_b_t
+            log_vars['top1err_ann'] = self.top1err_ann
+            log_vars['top5err_ann'] = self.top5err_ann
+            log_vars['operations_ann'] = self.operations_ann / 1e6
+            np.savez_compressed(os.path.join(path_log_vars, str(batch_idx)),
+                                **log_vars)
+
+            # More plotting.
+            plot_vars = {}
+            if any({'activations', 'correlation',
+                    'hist_spikerates_activations'} & self._plot_keys):
+                plot_vars['activations_n_b_l'] = self.activations_n_b_l
+            if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
+                    'hist_spikerates_activations'} & self._plot_keys):
+                plot_vars['spiketrains_n_b_l_t'] = self.spiketrains_n_b_l_t
+            snn_plt.output_graphs(plot_vars, self.config, log_dir, 0)
+
+            # Reset network variables.
+            self.reset(batch_idx)
+
+        # Plot confusion matrix for whole data set.
+        if 'confusion_matrix' in self._plot_keys:
+            snn_plt.plot_confusion_matrix(truth_d, guesses_d, log_dir,
+                                          list(np.arange(self.num_classes)))
+
+        # Compute average accuracy, taking into account number of samples per
+        # class
+        count = np.zeros(self.num_classes)
+        match = np.zeros(self.num_classes)
+        for gt, p in zip(truth_d, guesses_d):
+            count[gt] += 1
+            if gt == p:
+                match[gt] += 1
+        avg_acc = np.mean(np.true_divide(match, count))
+        top1acc_total = np.mean(np.array(truth_d) == np.array(guesses_d))
+
+        # Print final result.
+        print("Simulation finished.\n\n")
+        ss = '' if self.config.getint('simulation', 'num_to_test') == 1 else 's'
+        print("Total accuracy: {:.2%} on {} test sample{}.\n\n".format(
+            top1acc_total, len(guesses_d), ss))
+        print("Accuracy averaged over classes: {:.2%}".format(avg_acc))
+
+        # If batch_size was modified, change back to original value now.
+        if self.batch_size != self._batch_size:
+            self.config.set('simulation', 'batch_size', str(self._batch_size))
+
+        return top1acc_total
+
+    def adjust_batchsize(self):
+        self._batch_size = self.config.getint('simulation', 'batch_size')
+        if self._batch_size > 1 and not self.is_parallelizable:
+            self.config.set('simulation', 'batch_size', '1')
+            print("Temporarily setting batch_size to 1 because simulator does "
+                  "not support parallel testing of multiple samples.")
+            return 1
+        return self._batch_size
+
+    def restore_snn(self):
+        import keras
+        print("Restoring spiking network...\n")
+        self.load(self.config['paths']['path_wd'],
+                  self.config['paths']['filename_snn'])
+        self.parsed_model = keras.models.load_model(os.path.join(
+            self.config['paths']['path_wd'],
+            self.config['paths']['filename_parsed_model'] + '.h5'))
+
+    def init_cells(self):
+        """
+        Set cellparameters of neurons in each layer and initialize membrane
+        potential.
+        """
+
+        pass
+
+    def init_log_vars(self):
+        """Initialize debug variables."""
+
+        if 'input_b_l_t' in self._log_keys:
+            self.input_b_l_t = np.empty(list(self.parsed_model.input_shape) +
+                                        [self._num_timesteps], np.bool)
+
+        if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
+                'hist_spikerates_activations'} & self._plot_keys) \
+                or 'spiketrains_n_b_l_t' in self._log_keys:
+            self.spiketrains_n_b_l_t = []
+            for layer in self.parsed_model.layers:
+                if not is_spiking(layer):
+                    continue
+                shape = list(layer.output_shape) + [self._num_timesteps]
+                self.spiketrains_n_b_l_t.append((np.zeros(shape, 'float32'),
+                                                 layer.name))
+
+        if 'operations' in self._plot_keys or \
+                'operations_b_t' in self._log_keys:
+            self.operations_b_t = np.zeros((self.batch_size,
+                                            self._num_timesteps))
+
+        if 'mem_n_b_l_t' in self._log_keys or 'mem' in self._plot_keys:
+            self.mem_n_b_l_t = []
+            for layer in self.parsed_model.layers:
+                if not is_spiking(layer):
+                    continue
+                shape = list(layer.output_shape) + [self._num_timesteps]
+                self.mem_n_b_l_t.append((np.zeros(shape, 'float32'),
+                                         layer.name))
+
+        self.top1err_b_t = np.empty((self.batch_size, self._num_timesteps),
+                                    np.bool)
+        self.top5err_b_t = np.empty((self.batch_size, self._num_timesteps),
+                                    np.bool)
+
+    @abstractmethod
+    def simulate(self, **kwargs):
+        """
+
+        Returns
+        -------
+
+        output_b_l_t: ndarray
+            Array of shape (batch_size, num_classes, num_timesteps), containing
+            the number of output spikes of the neurons in the final layer, for
+            each sample and for each time step during the simulation.
+        """
+
+        pass
+
+    @abstractmethod
+    def reset(self, sample_idx):
+        """Reset network variables."""
+
+        pass
+
+    @abstractmethod
+    def end_sim(self):
+        """Clean up after simulation."""
+        pass
+
+    @abstractmethod
+    def save(self, path, filename):
+        """Write model architecture and parameters to disk.
+
+        Parameters
+        ----------
+
+        path: string
+            Path to directory where to save model.
+
+        filename: string
+            Name of file to write model to.
+        """
+
+        pass
+
+    @abstractmethod
+    def load(self, path, filename):
+        """Load model architecture and parameters from disk.
+
+        Parameters
+        ----------
+
+        path: str
+            Path to directory where to load model from.
+
+        filename: str
+            Name of file to load model from.
+        """
+
+        pass
+
+    def set_connectivity(self):
+        """
+        Set connectivity statistics needed to compute the number of operations
+        in the network, e.g. fanin, fanout, number_of_neurons,
+        number_of_neurons_with_bias.
+        """
+
+        from snntoolbox.core.util import get_fanin, get_fanout
+        self.fanin = [0]
+        self.fanout = [int(np.multiply(
+            np.prod(self.parsed_model.layers[1].kernel_size),
+            self.parsed_model.layers[1].filters))]
+        self.num_neurons = [np.product(self.parsed_model.input_shape[1:])]
+        self.num_neurons_with_bias = [0]
+
+        for layer in self.parsed_model.layers:
+            if is_spiking(layer):
+                self.fanin.append(get_fanin(layer))
+                self.fanout.append(get_fanout(layer))
+                self.num_neurons.append(np.prod(layer.output_shape[1:]))
+                if hasattr(layer, 'b') and any(layer.b.get_value()):
+                    print("Detected layer with biases: {}".format(layer.name))
+                    self.num_neurons_with_bias.append(self.num_neurons[-1])
+                else:
+                    self.num_neurons_with_bias.append(0)
+
+        return self.num_neurons, self.num_neurons_with_bias, self.fanin
 
 
 def get_samples_from_list(x_test, y_test, dataflow, config):
@@ -12,8 +600,9 @@ def get_samples_from_list(x_test, y_test, dataflow, config):
     test set.
     """
 
-    si = eval(config['simulation']['sample_idxs_to_test'])
-    if not si == []:
+    batch_size = config.getint('simulation', 'batch_size')
+    si = list(eval(config['simulation']['sample_idxs_to_test']))
+    if not len(si) == 0:
         if dataflow is not None:
             batch_idx = 0
             x_test = []
@@ -21,9 +610,8 @@ def get_samples_from_list(x_test, y_test, dataflow, config):
             target_idx = si.pop(0)
             while len(x_test) < config.getint('simulation', 'num_to_test'):
                 x_b_l, y_b = dataflow.next()
-                for i in range(config.getint('simulation', 'batch_size')):
-                    if batch_idx * config.getint('simulation', 'batch_size') \
-                            + i == target_idx:
+                for i in range(batch_size):
+                    if batch_idx * batch_size + i == target_idx:
                         x_test.append(x_b_l[i])
                         y_test.append(y_b[i])
                         if len(si) > 0:
@@ -31,7 +619,7 @@ def get_samples_from_list(x_test, y_test, dataflow, config):
                 batch_idx += 1
             x_test = np.array(x_test)
             y_test = np.array(y_test)
-        else:
+        elif x_test is not None:
             x_test = np.array([x_test[i] for i in si])
             y_test = np.array([y_test[i] for i in si])
 

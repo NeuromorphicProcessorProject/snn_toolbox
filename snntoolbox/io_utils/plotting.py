@@ -156,10 +156,10 @@ def plot_layer_summaries(plot_vars, config, path=None):
     if len(plot_vars.keys()) == 0:
         return
 
-    num_layers = len(plot_vars.values()[0])
+    num_layers = len(list(plot_vars.values())[0])
 
     for i in range(num_layers):
-        label = plot_vars.values()[0][i][1]
+        label = list(plot_vars.values())[0][i][1]
         name = extract_label(label)[1] \
             if config.getboolean('output', 'use_simple_labels') else label
         print("Plotting layer {}".format(label))
@@ -903,8 +903,8 @@ def plot_confusion_matrix(y_test, y_pred, path=None, class_labels=None):
     Parameters
     ----------
 
-    y_test: ndarray
-    y_pred: ndarray
+    y_test: list
+    y_pred: list
     path: Optional[str]
         Where to save the output.
     class_labels: Optional[list]

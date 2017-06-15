@@ -20,7 +20,7 @@ num_poisson_events_per_sample = -1
 num_dvs_events_per_sample = 2000
 eventframe_width = 10
 label_dict = {}
-subsample_facs = (1 1)
+target_size = None
 
 [tools]
 evaluate_ann = True

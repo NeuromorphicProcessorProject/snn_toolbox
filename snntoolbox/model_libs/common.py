@@ -110,7 +110,7 @@ class AbstractModelParser:
             - strides (list): The stepsize in each dimension during pooling.
         """
 
-        from snntoolbox.config import spiking_layers
+        from snntoolbox.config import snn_layers
 
         layers = self.get_layer_iterable()
 
@@ -157,7 +157,7 @@ class AbstractModelParser:
                 idx += 1
                 inserted_flatten = True
 
-            if layer_type not in spiking_layers:
+            if layer_type not in snn_layers:
                 print("Skipping layer {}.".format(layer_type))
                 continue
 
@@ -322,18 +322,6 @@ class AbstractModelParser:
 
         self._layers_to_skip: List[str]
         """
-
-        # inp_names = list(self.layer_dict.keys())
-        # std_names = list(self.layer_dict.values())
-        # std_names_to_skip = ['BatchNormalization', 'Activation', 'Dropout']
-        # inp_names_to_skip = []
-        # for std_name_to_skip in std_names_to_skip:
-        #     if std_name_to_skip in std_names:
-        #         inp_name_to_skip = inp_names[std_names.index(std_name_to_skip)]
-        #     else:
-        #         inp_name_to_skip = std_name_to_skip
-        #     inp_names_to_skip.append(inp_name_to_skip)
-        # return inp_names_to_skip
 
         return ['BatchNormalization', 'Activation', 'Dropout']
 
@@ -700,7 +688,7 @@ def hard_sigmoid(x):
 
 
 def binarize_var(w, h=1., deterministic=True):
-    """Binarize theano shared variable.
+    """Binarize shared variable.
 
     Parameters
     ----------
