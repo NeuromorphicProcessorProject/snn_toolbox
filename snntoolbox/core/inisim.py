@@ -301,14 +301,14 @@ def init_membrane_potential(self, output_shape=None, mode='zero'):
         init_mem = k.random_uniform(output_shape,
                                     -self.v_thresh, self.v_thresh)
     elif mode == 'bias':
-        init_mem = np.zeros(output_shape)
+        init_mem = np.zeros(output_shape, k.floatx())
         if hasattr(self, 'b'):
             b = self.get_weights()[1]
             for i in range(len(b)):
-                init_mem[:, i, Ellipsis] = np.float32(-b[i])
+                init_mem[:, i, Ellipsis] = -b[i]
     else:  # mode == 'zero':
-        init_mem = np.zeros(output_shape)
-    return k.cast(init_mem, k.floatx())
+        init_mem = np.zeros(output_shape, k.floatx())
+    return init_mem
 
 
 def reset_spikevars(self, sample_idx):

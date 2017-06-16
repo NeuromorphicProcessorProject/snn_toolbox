@@ -6,9 +6,13 @@ filename_ann = 98.96
 evaluate_ann = False
 
 [simulation]
+simulator = brian2
 duration = 30
 num_to_test = 100
 batch_size = 10
+
+[input]
+poisson_input = True
 
 [output]
 log_vars = {'all'}

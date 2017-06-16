@@ -178,6 +178,8 @@ class ExpResults:
         self.e1_1 = min(self.e1_mean) + 1
         self.op1_1 = get_op_at_err(self.mean_computations_t, self.e1_mean,
                                    self.e1_1)
+        self.e1_1 = get_err_at_op(self.e1_mean, self.mean_computations_t,
+                                  self.op1_1)
         self.e1_2 = get_err_at_op(self.e1_mean, self.mean_computations_t,
                                   self.operations_ann)
         self.op1_2 = get_op_at_err(self.mean_computations_t, self.e1_mean,
@@ -188,6 +190,8 @@ class ExpResults:
         self.e5_1 = min(self.e5_mean) + 1
         self.op5_1 = get_op_at_err(self.mean_computations_t, self.e5_mean,
                                    self.e5_1)
+        self.e5_1 = get_err_at_op(self.e5_mean, self.mean_computations_t,
+                                  self.op5_1)
         self.op5_1 = get_op_at_err(self.mean_computations_t, self.e5_mean,
                                    self.e5_1)
         self.e5_2 = get_err_at_op(self.e5_mean, self.mean_computations_t,
@@ -213,16 +217,14 @@ def get_std(err):
     return np.sqrt(err * (100 - err))
 
 
-def get_op_at_err(ops_snn, err_snn, err_ann):
-    t = np.where(err_snn <= err_ann)[0][0]
-    return ops_snn[t]
+def get_op_at_err(ops_t, err_t, err_ref):
+    return ops_t[np.where(err_t <= err_ref)[0][0]]
 
 
-def get_err_at_op(err_snn, ops_snn, ops_ann):
-    if ops_ann > max(ops_snn):
-        ops_ann = max(ops_snn)
-    t = np.where(ops_snn >= ops_ann)[0][0]
-    return err_snn[t]
+def get_err_at_op(err_t, ops_t, ops_ref):
+    if ops_ref > max(ops_t):
+        ops_ref = max(ops_t)
+    return err_t[np.where(ops_t >= ops_ref)[0][0]]
 
 
 def get_minimal_err_and_op(ops_t, err_t):

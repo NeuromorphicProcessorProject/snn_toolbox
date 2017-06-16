@@ -5,7 +5,7 @@
 import os
 import numpy as np
 from abc import abstractmethod
-from snntoolbox.core.util import is_spiking, get_plot_keys, get_log_keys
+from snntoolbox.core.util import is_spiking, get_plot_keys, get_log_keys, echo
 
 
 class AbstractSNN:
@@ -82,6 +82,88 @@ class AbstractSNN:
 
         self._plot_keys = get_plot_keys(self.config)
         self._log_keys = get_log_keys(self.config)
+
+    @abstractmethod
+    def add_input_layer(self, input_shape):
+        pass
+
+    @abstractmethod
+    def add_layer(self, layer):
+        pass
+
+    @abstractmethod
+    def build_dense(self, layer):
+        pass
+
+    @abstractmethod
+    def build_convolution(self, layer):
+        pass
+
+    @abstractmethod
+    def build_pooling(self, layer):
+        pass
+
+    @abstractmethod
+    def compile(self):
+        pass
+
+    @abstractmethod
+    def simulate(self, **kwargs):
+        """
+
+        Returns
+        -------
+
+        output_b_l_t: ndarray
+            Array of shape (batch_size, num_classes, num_timesteps), containing
+            the number of output spikes of the neurons in the final layer, for
+            each sample and for each time step during the simulation.
+        """
+
+        pass
+
+    @abstractmethod
+    def reset(self, sample_idx):
+        """Reset network variables."""
+
+        pass
+
+    @abstractmethod
+    def end_sim(self):
+        """Clean up after simulation."""
+        pass
+
+    @abstractmethod
+    def save(self, path, filename):
+        """Write model architecture and parameters to disk.
+
+        Parameters
+        ----------
+
+        path: string
+            Path to directory where to save model.
+
+        filename: string
+            Name of file to write model to.
+        """
+
+        pass
+
+    @abstractmethod
+    def load(self, path, filename):
+        """Load model architecture and parameters from disk.
+
+        Parameters
+        ----------
+
+        path: str
+            Path to directory where to load model from.
+
+        filename: str
+            Name of file to load model from.
+        """
+
+        pass
 
     def build(self, parsed_model):
         """
@@ -165,30 +247,6 @@ class AbstractSNN:
 
         self.is_built = True
 
-    @abstractmethod
-    def add_input_layer(self, input_shape):
-        pass
-
-    @abstractmethod
-    def add_layer(self, layer):
-        pass
-
-    @abstractmethod
-    def build_dense(self, layer):
-        pass
-
-    @abstractmethod
-    def build_convolution(self, layer):
-        pass
-
-    @abstractmethod
-    def build_pooling(self, layer):
-        pass
-
-    @abstractmethod
-    def compile(self):
-        pass
-
     def run(self, x_test=None, y_test=None, dataflow=None, **kwargs):
         """
         Simulate a spiking network.
@@ -221,7 +279,6 @@ class AbstractSNN:
             test samples.
         """
 
-        from functools import partial
         from snntoolbox.core.util import get_activations_batch, in_top_k
         import snntoolbox.io_utils.plotting as snn_plt
 
@@ -313,7 +370,7 @@ class AbstractSNN:
             # of the simulation.
             print("Starting new simulation...\n")
             output_b_l_t = self.simulate(**data_batch_kwargs)
-
+            print(output_b_l_t.shape)
             # Get classification result by comparing the guessed class (i.e. the
             # index of the neuron in the last layer which spiked most) to the
             # ground truth.
@@ -327,8 +384,9 @@ class AbstractSNN:
             # Get classification error of current batch, for each time step.
             self.top1err_b_t = guesses_b_t != np.broadcast_to(
                 np.expand_dims(truth_b, 1), guesses_b_t.shape)
-            self.top5err_b_t = ~np.array(list(map(partial(
-                in_top_k, targets=truth_b, k=self.top_k), output_b_l_t)))
+            for t in range(self._num_timesteps):
+                self.top5err_b_t[:, t] = ~in_top_k(output_b_l_t[:, :, t],
+                                                   truth_b, self.top_k)
 
             # Add results of current batch to previous results.
             truth_d += list(truth_b)
@@ -337,7 +395,7 @@ class AbstractSNN:
             # Print current accuracy.
             num_samples_seen = (batch_idx + 1) * self.batch_size
             top1acc_moving = np.mean(np.array(truth_d) == np.array(guesses_d))
-            top5score_moving += sum(in_top_k(output_b_l_t[..., -1], truth_b,
+            top5score_moving += sum(in_top_k(output_b_l_t[:, :, -1], truth_b,
                                              self.top_k))
             top5acc_moving = top5score_moving / num_samples_seen
             if self.config.getint('output', 'verbose') > 0:
@@ -443,6 +501,14 @@ class AbstractSNN:
 
         return top1acc_total
 
+    def init_cells(self):
+        """
+        Set cellparameters of neurons in each layer and initialize membrane
+        potential.
+        """
+
+        pass
+
     def adjust_batchsize(self):
         self._batch_size = self.config.getint('simulation', 'batch_size')
         if self._batch_size > 1 and not self.is_parallelizable:
@@ -460,14 +526,6 @@ class AbstractSNN:
         self.parsed_model = keras.models.load_model(os.path.join(
             self.config['paths']['path_wd'],
             self.config['paths']['filename_parsed_model'] + '.h5'))
-
-    def init_cells(self):
-        """
-        Set cellparameters of neurons in each layer and initialize membrane
-        potential.
-        """
-
-        pass
 
     def init_log_vars(self):
         """Initialize debug variables."""
@@ -505,64 +563,6 @@ class AbstractSNN:
                                     np.bool)
         self.top5err_b_t = np.empty((self.batch_size, self._num_timesteps),
                                     np.bool)
-
-    @abstractmethod
-    def simulate(self, **kwargs):
-        """
-
-        Returns
-        -------
-
-        output_b_l_t: ndarray
-            Array of shape (batch_size, num_classes, num_timesteps), containing
-            the number of output spikes of the neurons in the final layer, for
-            each sample and for each time step during the simulation.
-        """
-
-        pass
-
-    @abstractmethod
-    def reset(self, sample_idx):
-        """Reset network variables."""
-
-        pass
-
-    @abstractmethod
-    def end_sim(self):
-        """Clean up after simulation."""
-        pass
-
-    @abstractmethod
-    def save(self, path, filename):
-        """Write model architecture and parameters to disk.
-
-        Parameters
-        ----------
-
-        path: string
-            Path to directory where to save model.
-
-        filename: string
-            Name of file to write model to.
-        """
-
-        pass
-
-    @abstractmethod
-    def load(self, path, filename):
-        """Load model architecture and parameters from disk.
-
-        Parameters
-        ----------
-
-        path: str
-            Path to directory where to load model from.
-
-        filename: str
-            Name of file to load model from.
-        """
-
-        pass
 
     def set_connectivity(self):
         """
@@ -624,3 +624,96 @@ def get_samples_from_list(x_test, y_test, dataflow, config):
             y_test = np.array([y_test[i] for i in si])
 
     return x_test, y_test
+
+
+def build_convolution(layer, delay):
+    """Build convolution layer."""
+
+    weights, biases = layer.get_weights()
+
+    # Biases.
+    i_offset = np.empty(np.prod(layer.output_shape[1:]))
+    n = int(len(i_offset) / len(biases))
+    for i in range(len(biases)):
+        i_offset[i:(i + 1) * n] = biases[i]
+
+    nx = layer.input_shape[3]  # Width of feature map
+    ny = layer.input_shape[2]  # Height of feature map
+    kx, ky = layer.kernel_size  # Width and height of kernel
+    px = int((kx - 1) / 2)  # Zero-padding columns
+    py = int((ky - 1) / 2)  # Zero-padding rows
+
+    if layer.padding == 'valid':
+        # In padding 'valid', the original sidelength is
+        # reduced by one less than the kernel size.
+        mx = nx - kx + 1  # Number of columns in output filters
+        my = ny - ky + 1  # Number of rows in output filters
+        x0 = px
+        y0 = py
+    elif layer.padding == 'same':
+        mx = nx
+        my = ny
+        x0 = 0
+        y0 = 0
+    else:
+        raise NotImplementedError("Border_mode {} not supported".format(
+            layer.padding))
+
+    connections = []
+
+    # Loop over output filters 'fout'
+    for fout in range(weights.shape[3]):
+        for y in range(y0, ny - y0):
+            for x in range(x0, nx - x0):
+                target = x - x0 + (y - y0) * mx + fout * mx * my
+                # Loop over input filters 'fin'
+                for fin in range(weights.shape[2]):
+                    for k in range(-py, py + 1):
+                        if not 0 <= y + k < ny:
+                            continue
+                        source = x + (y + k) * nx + fin * nx * ny
+                        for l in range(-px, px + 1):
+                            if not 0 <= x + l < nx:
+                                continue
+                            connections.append((source + l, target,
+                                                weights[py - k, px - l, fin,
+                                                        fout], delay))
+            echo('.')
+        print(' {:.1%}'.format(((fout + 1) * weights.shape[2]) /
+                               (weights.shape[3] * weights.shape[2])))
+
+    return connections, i_offset
+
+
+def build_pooling(layer, delay):
+    """Build pooling layer."""
+
+    if layer.__class__.__name__ == 'MaxPooling2D':
+        import warnings
+
+        warnings.warn("Layer type 'MaxPooling' not supported yet. " +
+                      "Falling back on 'AveragePooling'.", RuntimeWarning)
+
+    nx = layer.input_shape[3]  # Width of feature map
+    ny = layer.input_shape[2]  # Hight of feature map
+    dx = layer.pool_size[1]  # Width of pool
+    dy = layer.pool_size[0]  # Hight of pool
+    sx = layer.strides[1]
+    sy = layer.strides[0]
+
+    connections = []
+
+    for fout in range(layer.input_shape[1]):  # Feature maps
+        for y in range(0, ny - dy + 1, sy):
+            for x in range(0, nx - dx + 1, sx):
+                target = int(x / sx + y / sy * ((nx - dx) / sx + 1) +
+                             fout * nx * ny / (dx * dy))
+                for k in range(dy):
+                    source = x + (y + k) * nx + fout * nx * ny
+                    for l in range(dx):
+                        connections.append((source + l, target, 1 / (dx * dy),
+                                            delay))
+            echo('.')
+        print(' {:.1%}'.format((1 + fout) / layer.input_shape[1]))
+
+    return connections

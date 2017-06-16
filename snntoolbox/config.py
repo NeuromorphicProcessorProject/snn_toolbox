@@ -225,17 +225,19 @@ def update_setup(config_filepath):
     assert all([v in plot_vars for v in plot_var]), \
         "Plot variable(s) {} not understood.".format(
             [v for v in plot_var if v not in plot_vars])
+    if 'all' in plot_var:
+        plot_vars_all = plot_vars.copy()
+        plot_vars_all.remove('all')
+        config.set('output', 'plot_vars', str(plot_vars_all))
 
     log_var = get_log_keys(config)
     assert all([v in log_vars for v in log_var]), \
         "Log variable(s) {} not understood.".format(
             [v for v in log_var if v not in log_vars])
-
-    if 'all' in plot_var:
-        config.set('output', 'plot_vars', str(plot_vars))
-
     if 'all' in log_var:
-        config.set('output', 'log_vars', str(log_vars))
+        log_vars_all = log_vars.copy()
+        log_vars_all.remove('all')
+        config.set('output', 'log_vars', str(log_vars_all))
 
     # Change matplotlib plot properties, e.g. label font size
     mpl.rcParams.update(eval(config.get('output', 'plotproperties')))

@@ -147,10 +147,10 @@ class SNN(AbstractSNN):
 
             # Add current spikes to previous spikes.
             if remove_classifier:  # Need to flatten output.
-                output_b_l_t[..., sim_step_int] += np.argmax(np.reshape(
+                output_b_l_t[:, :, sim_step_int] += np.argmax(np.reshape(
                     out_spikes.astype('int32'), (out_spikes.shape[0], -1)), 1)
             else:
-                output_b_l_t[..., sim_step_int] += out_spikes.astype('int32')
+                output_b_l_t[:, :, sim_step_int] += out_spikes.astype('int32')
 
             # Record neuron variables.
             i = j = 0
@@ -158,8 +158,8 @@ class SNN(AbstractSNN):
                 if hasattr(layer, 'spiketrain'):
                     spiketrains_b_l = layer.spiketrain.get_value()
                     if self.spiketrains_n_b_l_t is not None:
-                        self.spiketrains_n_b_l_t[i][0][..., sim_step_int] = \
-                            spiketrains_b_l
+                        self.spiketrains_n_b_l_t[i][0][
+                            Ellipsis, sim_step_int] = spiketrains_b_l
                     if self.operations_b_t is not None:
                         self.operations_b_t[:, sim_step_int] += get_layer_ops(
                             spiketrains_b_l, self.fanout[i + 1],
@@ -182,10 +182,41 @@ class SNN(AbstractSNN):
 
             if self.config.getint('output', 'verbose') > 0 \
                     and sim_step % 1 == 0:
-                guesses_b = np.argmax(output_b_l_t[..., sim_step_int], 1)
+                guesses_b = np.argmax(output_b_l_t[:, :, sim_step_int], 1)
                 echo('{:.2%}_'.format(np.mean(kwargs['truth_b'] == guesses_b)))
 
         return output_b_l_t
+
+    def reset(self, sample_idx):
+
+        for layer in self.snn.layers[1:]:  # Skip input layer
+            layer.reset(sample_idx)
+
+    def end_sim(self):
+        pass
+
+    def save(self, path, filename):
+
+        filepath = os.path.join(path, filename + '.h5')
+        print("Saving model to {}...\n".format(filepath))
+        self.snn.save(filepath, self.config.getboolean('output', 'overwrite'))
+
+    def load(self, path, filename):
+
+        from snntoolbox.core.inisim import custom_layers
+
+        filepath = os.path.join(path, filename + '.h5')
+
+        try:
+            self.snn = keras.models.load_model(filepath, custom_layers)
+        except KeyError:
+            raise NotImplementedError(
+                "Loading SNN for INIsim is not supported yet.")
+            # Loading does not work anymore because the configparser object
+            # needed by the custom layers is not stored when saving the model.
+            # Could be implemented by overriding Keras' save / load methods, but
+            # since converting even large Keras models from scratch is so fast,
+            # there's really no need.
 
     def get_poisson_frame_batch(self, x_b_l):
         if self._input_spikecount < self._num_poisson_events_per_sample \
@@ -219,34 +250,3 @@ class SNN(AbstractSNN):
         for layer in self.snn.layers[1:]:
             if self.sim.get_time(layer) is not None:  # Has time attribute
                 self.sim.set_time(layer, np.float32(t))
-
-    def reset(self, sample_idx):
-
-        for layer in self.snn.layers[1:]:  # Skip input layer
-            layer.reset(sample_idx)
-
-    def save(self, path, filename):
-
-        filepath = os.path.join(path, filename + '.h5')
-        print("Saving model to {}...\n".format(filepath))
-        self.snn.save(filepath, self.config.getboolean('output', 'overwrite'))
-
-    def load(self, path, filename):
-
-        from snntoolbox.core.inisim import custom_layers
-
-        filepath = os.path.join(path, filename + '.h5')
-
-        try:
-            self.snn = keras.models.load_model(filepath, custom_layers)
-        except KeyError:
-            raise NotImplementedError(
-                "Loading SNN for INIsim is not supported yet.")
-            # Loading does not work anymore because the configparser object
-            # needed by the custom layers is not stored when saving the model.
-            # Could be implemented by overriding Keras' save / load methods, but
-            # since converting even large Keras models from scratch is so fast,
-            # there's really no need.
-
-    def end_sim(self):
-        pass
