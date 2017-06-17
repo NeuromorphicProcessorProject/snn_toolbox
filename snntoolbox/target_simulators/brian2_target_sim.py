@@ -80,9 +80,9 @@ class SNN(AbstractSNN):
         self._conns = []  # Temporary container for layer connections.
         self._biases = []  # Temporary container for layer biases.
         self.connections = []  # Final container for all layers.
-        self.threshold = 'v > v_thresh'
+        self.threshold = 'v >= v_thresh'
         self.reset = 'v = v_reset'
-        self.eqs = 'dv/dt = -v/tau_m : volt'
+        self.eqs = 'v = 0 : 1'
         self.spikemonitors = []
         self.statemonitors = []
         self.snn = None
@@ -93,6 +93,10 @@ class SNN(AbstractSNN):
         # appended above (because settings['verbose'] < 1)
         if len(self.spikemonitors) < len(self.layers):
             self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[-1]))
+
+    @property
+    def is_parallelizable(self):
+        return False
 
     def add_input_layer(self, input_shape):
 
@@ -110,11 +114,10 @@ class SNN(AbstractSNN):
 
         self._conns = []
         self.layers.append(self.sim.NeuronGroup(
-            np.prod(layer.output_shape[1:]), model=self.eqs,
-            threshold=self.threshold, reset=self.reset, dt=self._dt*self.sim.ms,
-            method='linear'))
+            np.prod(layer.output_shape[1:]), self.eqs, 'linear', self.threshold,
+            self.reset, dt=self._dt*self.sim.ms))
         self.connections.append(self.sim.Synapses(
-            self.layers[-2], self.layers[-1], model='w:volt', on_pre='v+=w',
+            self.layers[-2], self.layers[-1], 'w:1', on_pre='v+=w',
             dt=self._dt*self.sim.ms))
         self.layers[-1].add_attribute('label')
         self.layers[-1].label = layer.name
@@ -122,7 +125,7 @@ class SNN(AbstractSNN):
             self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[-1]))
         if 'v_mem' in self._plot_keys:
             self.statemonitors.append(self.sim.StateMonitor(self.layers[-1],
-                                                            'v', record=True))
+                                                            'v'))
 
     def build_dense(self, layer):
 
@@ -133,7 +136,7 @@ class SNN(AbstractSNN):
         weights, self._biases = layer.get_weights()
         self.set_biases()
         self.connections[-1].connect(True)
-        self.connections[-1].w = weights.flatten() * self.sim.volt
+        self.connections[-1].w = weights.flatten()
 
     def build_convolution(self, layer):
         from snntoolbox.target_simulators.common import build_convolution
@@ -148,8 +151,7 @@ class SNN(AbstractSNN):
             i = conn[0]
             j = conn[1]
             self.connections[-1].connect(i=i, j=j)
-            self.connections[-1].w[i, j] = conn[2] * self.sim.volt
-        print("Done.")
+            self.connections[-1].w[i, j] = conn[2]
 
     def build_pooling(self, layer):
         from snntoolbox.target_simulators.common import build_pooling
@@ -159,12 +161,14 @@ class SNN(AbstractSNN):
 
         for conn in self._conns:
             self.connections[-1].connect(i=conn[0], j=conn[1])
-            self.connections[-1].w = self.sim.volt / np.prod(layer.pool_size)
+            self.connections[-1].w = 1 / np.prod(layer.pool_size)
 
     def compile(self):
 
         self.snn = self.sim.Network(self.layers, self.connections,
                                     self.spikemonitors, self.statemonitors)
+        self.snn.store()
+
         # Set input layer
         for obj in self.snn.objects:
             if 'poissongroup' in obj.name and 'thresholder' not in obj.name:
@@ -173,119 +177,34 @@ class SNN(AbstractSNN):
 
     def simulate(self, **kwargs):
 
-        from snntoolbox.io_utils.plotting import plot_potential
-        from snntoolbox.core.util import get_layer_ops
-
         if self._poisson_input:
             self._input_layer.rates = kwargs['x_b_l'].flatten() * 1000 / \
                                       self.rescale_fac * self.sim.Hz
         elif self._dataset_format == 'aedat':
+            # TODO: Implement by using brian2.SpikeGeneratorGroup.
             raise NotImplementedError
         else:
             try:
-                # TODO: Implement constant input currents.
+                # TODO: Implement constant input by using brian2.TimedArray.
                 self._input_layer.current = kwargs['x_b_l'].flatten()
             except AttributeError:
                 raise NotImplementedError
 
-        self.snn.store()
-        self.snn.run(self._duration * self.sim.ms, namespace=self._cell_params)
+        self.snn.run(self._duration*self.sim.ms, namespace=self._cell_params,
+                     report='stdout', report_period=10*self.sim.ms)
 
-        out_spikes = self.spikemonitors[-1].spiketrains
-
-        # For each time step, get number of spikes of all neurons in the output
-        # layer.
-        output_b_l_t = np.zeros((self.batch_size, self.num_classes,
-                                 self._num_timesteps), 'int32')
-        for k, spiketrain in enumerate(out_spikes):
-            for t in range(len(self._num_timesteps)):
-                output_b_l_t[0, k, t] = np.count_nonzero(spiketrain <=
-                                                         t * self._dt)
-
-        # Record neuron variables.
-        for i in range(len(self.layers[1:])):
-
-            # Get spike trains.
-            try:
-                spiketrain_dict = self.spikemonitors[i].spike_trains()
-                spiketrains = np.array([spiketrain_dict[key] / self.sim.ms
-                                        for key in spiketrain_dict.keys()])
-            except AttributeError:
-                continue
-
-            # Convert list of spike times into array where nonzero entries
-            # (indicating spike times) are properly spread out across array.
-            layer_shape = self.spiketrains_n_b_l_t[i][0].shape
-            spiketrains_flat = np.zeros((np.prod(layer_shape),
-                                         self._num_timesteps))
-            for k, spiketrain in enumerate(spiketrains):
-                for t in spiketrain:
-                    spiketrains_flat[k, int(t / self._dt)] = t
-
-            # Reshape flat spike train array to original layer shape.
-            spiketrains_b_l_t = np.reshape(spiketrains_flat, layer_shape)
-
-            # Add spike trains to log variables.
-            if self.spiketrains_n_b_l_t is not None:
-                self.spiketrains_n_b_l_t[i][0] = spiketrains_b_l_t
-
-            # Use spike trains to compute the number of operations.
-            if self.operations_b_t is not None:
-                for t in range(len(self._num_timesteps)):
-                    self.operations_b_t[:, t] += get_layer_ops(
-                        spiketrains_b_l_t[t], self.fanout[i + 1],
-                        self.num_neurons_with_bias[i + 1])
-
-        for i in range(len(self.layers[1:])):
-
-            # Get membrane potentials.
-            try:
-                mem = np.array([
-                    np.true_divide(v, 1e6 / self.sim.mV).transpose() for v in
-                    self.statemonitors[i - 1].v])
-            except AttributeError:
-                continue
-
-            # Reshape flat array to original layer shape.
-            layer_shape = self.mem_n_b_l_t[i][0].shape
-            self.mem_n_b_l_t[i][0] = np.reshape(mem, layer_shape)
-
-            # Plot membrane potentials of layer.
-            times = self.statemonitors[0].t / self.sim.ms
-            show_legend = True if i >= len(self.layers) - 2 else False
-            plot_potential(times, self.mem_n_b_l_t[i], self.config, show_legend,
-                           self.config['paths']['log_dir_of_current_run'])
-
-        # Get spike trains of input layer.
-        spiketrain_dict = self.spikemonitors[0].spike_trains()
-        spiketrains = np.array([spiketrain_dict[key] / self.sim.ms
-                                for key in spiketrain_dict.keys()])
-
-        # Convert list of spike times into array where nonzero entries
-        # (indicating spike times) are properly spread out across array.
-        layer_shape = self.parsed_model.get_batch_input_shape()
-        spiketrains_flat = np.zeros((np.prod(layer_shape), self._num_timesteps))
-        for k, spiketrain in enumerate(spiketrains):
-            for t in spiketrain:
-                spiketrains_flat[k, int(t / self._dt)] = t
-
-        # Reshape flat spike train array to original layer shape.
-        input_b_l_t = np.reshape(spiketrains_flat, layer_shape)
-
-        if 'input_b_l_t' in self._log_keys:
-            self.input_b_l_t = input_b_l_t
-
-        if self.operations_b_t is not None:
-            for t in range(self._duration):
-                if self._poisson_input or self._dataset_format == 'aedat':
-                    input_ops = get_layer_ops(input_b_l_t[t], self.fanout[0])
-                else:
-                    input_ops = np.ones(self.batch_size) * self.num_neurons[1]
-                    if t == 0:
-                        input_ops *= 2 * self.fanin[1]  # MACs for convol.
-                self.operations_b_t[:, t] += input_ops
+        output_b_l_t = self.get_recorded_vars(self.layers)
 
         return output_b_l_t
+
+    def get_spiketrains(self, layer, i):
+        spiketrain_dict = self.spikemonitors[i].spike_trains()
+        return np.array([spiketrain_dict[key] / self.sim.ms for key in
+                         spiketrain_dict.keys()])
+
+    def get_vmem(self, layer, i):
+        return np.array([np.array(v).transpose()
+                         for v in self.statemonitors[i].v])
 
     def reset(self, sample_idx):
         mod = self.config.getint('simulation', 'reset_between_nth_sample')
@@ -312,8 +231,8 @@ class SNN(AbstractSNN):
     def init_cells(self):
         cell_conf = self.config['cell']
         self._cell_params = {
-            'v_thresh': cell_conf.getfloat('v_thresh') * self.sim.volt,
-            'v_reset': cell_conf.getfloat('v_reset') * self.sim.volt,
+            'v_thresh': cell_conf.getfloat('v_thresh'),
+            'v_reset': cell_conf.getfloat('v_reset'),
             'tau_m': cell_conf.getfloat('tau_m') * self.sim.ms}
 
     def set_biases(self):

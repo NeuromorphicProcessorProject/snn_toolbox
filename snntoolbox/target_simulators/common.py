@@ -6,6 +6,7 @@ import os
 import numpy as np
 from abc import abstractmethod
 from snntoolbox.core.util import is_spiking, get_plot_keys, get_log_keys, echo
+from snntoolbox.core.util import get_layer_ops
 
 
 class AbstractSNN:
@@ -49,7 +50,6 @@ class AbstractSNN:
         self.queue = queue
         self.parsed_model = None
         self.is_built = False
-        self.is_parallelizable = True
         self._batch_size = None  # Store original batch_size here.
         self.batch_size = self.adjust_batchsize()
 
@@ -82,6 +82,11 @@ class AbstractSNN:
 
         self._plot_keys = get_plot_keys(self.config)
         self._log_keys = get_log_keys(self.config)
+
+    @property
+    @abstractmethod
+    def is_parallelizable(self):
+        pass
 
     @abstractmethod
     def add_input_layer(self, input_shape):
@@ -592,6 +597,134 @@ class AbstractSNN:
 
         return self.num_neurons, self.num_neurons_with_bias, self.fanin
 
+    def get_recorded_vars(self, layers):
+        """Retrieve neuron variables recorded during simulation."""
+
+        # Get spike trains.
+        i = 0
+        for layer in layers:
+            try:
+                spiketrains = self.get_spiketrains(layer, i)
+            except AttributeError:
+                continue
+
+            if i == 0:
+                self.set_spiketrain_stats_input(spiketrains)
+            else:
+                self.set_spiketrain_stats(spiketrains, i)
+            i += 1
+
+        # Get membrane potentials.
+        i = 0
+        for layer in layers[1:]:
+            try:
+                mem = self.get_vmem(layer, i)
+            except AttributeError:
+                continue
+
+            self.set_mem_stats(mem, i)
+            i += 1
+
+        # For each time step, get number of spikes of all neurons in the output
+        # layer.
+        out_spikes = self.get_spiketrains(layers[-1], -1)
+        output_b_l_t = np.zeros((self.batch_size, self.num_classes,
+                                 self._num_timesteps), 'int32')
+        for k, spiketrain in enumerate(out_spikes):
+            for t in range(self._num_timesteps):
+                output_b_l_t[0, k, t] = np.count_nonzero(spiketrain <=
+                                                         t * self._dt)
+        return output_b_l_t
+
+    def get_spiketrains(self, layer, i):
+        """Get spike trains of a layer.
+
+        Parameters
+        ----------
+
+        layer :
+            Layer.
+        i : int
+            Layer index.
+
+        Returns
+        -------
+
+        spiketrains : ndarray
+            Spike trains.
+        """
+
+        pass
+
+    def get_vmem(self, layer, i):
+        pass
+
+    def set_mem_stats(self, mem, i):
+
+        from snntoolbox.io_utils.plotting import plot_potential
+
+        # Reshape flat array to original layer shape.
+        self.mem_n_b_l_t[i] = (np.reshape(mem, self.mem_n_b_l_t[i][0].shape),
+                               self.mem_n_b_l_t[i][1])
+
+        # Plot membrane potentials of layer.
+        times = self._dt * np.arange(self._num_timesteps)
+        show_legend = True if i >= len(self.mem_n_b_l_t) - 2 else False
+        plot_potential(times, self.mem_n_b_l_t[i], self.config, show_legend,
+                       self.config['paths']['log_dir_of_current_run'])
+
+    def set_spiketrain_stats_input(self, spiketrains):
+
+        input_b_l_t = self.reshape_flattened_spiketrains(
+            spiketrains, self.input_b_l_t.shape)
+
+        if 'input_b_l_t' in self._log_keys:
+            self.input_b_l_t = input_b_l_t
+
+        if self.operations_b_t is not None:
+            for t in range(self._num_timesteps):
+                if self._poisson_input or self._dataset_format == 'aedat':
+                    input_ops = get_layer_ops(input_b_l_t[Ellipsis, t],
+                                              self.fanout[0])
+                else:
+                    input_ops = np.ones(self.batch_size) * self.num_neurons[1]
+                    if t == 0:
+                        input_ops *= 2 * self.fanin[1]  # MACs for convol.
+                self.operations_b_t[:, t] += input_ops
+
+    def set_spiketrain_stats(self, spiketrains, i):
+
+        spiketrains_b_l_t = self.reshape_flattened_spiketrains(
+            spiketrains, self.spiketrains_n_b_l_t[i][0].shape)
+
+        # Add spike trains to log variables.
+        if self.spiketrains_n_b_l_t is not None:
+            self.spiketrains_n_b_l_t[i] = (spiketrains_b_l_t,
+                                           self.spiketrains_n_b_l_t[i][1])
+
+        # Use spike trains to compute the number of operations.
+        if self.operations_b_t is not None:
+            for t in range(self._num_timesteps):
+                self.operations_b_t[:, t] += get_layer_ops(
+                    spiketrains_b_l_t[Ellipsis, t], self.fanout[i + 1],
+                    self.num_neurons_with_bias[i + 1])
+
+    def reshape_flattened_spiketrains(self, spiketrains, shape):
+        """
+        Convert list of spike times into array where nonzero entries (indicating
+        spike times) are properly spread out across array. Then reshape the flat
+        array into original layer shape.
+        """
+
+        spiketrains_flat = np.zeros((np.prod(shape[:-1]), shape[-1]))
+        for k, spiketrain in enumerate(spiketrains):
+            for t in spiketrain:
+                spiketrains_flat[k, int(t / self._dt)] = t
+
+        spiketrains_b_l_t = np.reshape(spiketrains_flat, shape)
+
+        return spiketrains_b_l_t
+
 
 def get_samples_from_list(x_test, y_test, dataflow, config):
     """
@@ -678,9 +811,8 @@ def build_convolution(layer, delay):
                             connections.append((source + l, target,
                                                 weights[py - k, px - l, fin,
                                                         fout], delay))
-            echo('.')
-        print(' {:.1%}'.format(((fout + 1) * weights.shape[2]) /
-                               (weights.shape[3] * weights.shape[2])))
+        echo('.')
+    print('')
 
     return connections, i_offset
 
@@ -713,7 +845,7 @@ def build_pooling(layer, delay):
                     for l in range(dx):
                         connections.append((source + l, target, 1 / (dx * dy),
                                             delay))
-            echo('.')
-        print(' {:.1%}'.format((1 + fout) / layer.input_shape[1]))
+        echo('.')
+    print('')
 
     return connections

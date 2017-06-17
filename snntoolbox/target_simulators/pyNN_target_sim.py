@@ -79,6 +79,10 @@ class SNN(AbstractSNN):
         self.cellparams = {key: config.getfloat('cell', key) for key in
                            cellparams_pyNN}
 
+    @property
+    def is_parallelizable(self):
+        return False
+
     def add_input_layer(self, input_shape):
 
         self.layers.append(self.sim.Population(
@@ -130,9 +134,6 @@ class SNN(AbstractSNN):
 
     def simulate(self, **kwargs):
 
-        from snntoolbox.io_utils.plotting import plot_potential
-        from snntoolbox.core.util import get_layer_ops
-
         if self._poisson_input:
             rates = kwargs['x_b_l'].flatten()
             for neuron_idx, neuron in enumerate(self.layers[0]):
@@ -150,102 +151,16 @@ class SNN(AbstractSNN):
 
         self.sim.run(self._duration)
 
-        # Get spiketrains of output layer.
-        out_spikes = self.layers[-1].get_data().segments[-1].spiketrains
-
-        # For each time step, get number of spikes of all neurons in the output
-        # layer.
-        output_b_l_t = np.zeros((self.batch_size, self.num_classes,
-                                 self._num_timesteps), 'int32')
-        for k, spiketrain in enumerate(out_spikes):
-            for t in range(len(self._num_timesteps)):
-                output_b_l_t[0, k, t] = np.count_nonzero(spiketrain <=
-                                                         t * self._dt)
-
-        # Record neuron variables.
-        i = 0
-        for layer in self.layers[1:]:
-
-            # Get spike trains.
-            try:
-                spiketrains = layer.get_data().segments[-1].spiketrains
-            except AttributeError:
-                continue
-
-            # Convert list of spike times into array where nonzero entries
-            # (indicating spike times) are properly spread out across array.
-            layer_shape = self.spiketrains_n_b_l_t[i][0].shape
-            spiketrains_flat = np.zeros((np.prod(layer_shape),
-                                         self._num_timesteps))
-            for k, spiketrain in enumerate(spiketrains):
-                for t in spiketrain:
-                    spiketrains_flat[k, int(t / self._dt)] = t
-
-            # Reshape flat spike train array to original layer shape.
-            spiketrains_b_l_t = np.reshape(spiketrains_flat, layer_shape)
-
-            # Add spike trains to log variables.
-            if self.spiketrains_n_b_l_t is not None:
-                self.spiketrains_n_b_l_t[i][0] = spiketrains_b_l_t
-
-            # Use spike trains to compute the number of operations.
-            if self.operations_b_t is not None:
-                for t in range(len(self._num_timesteps)):
-                    self.operations_b_t[:, t] += get_layer_ops(
-                        spiketrains_b_l_t[t], self.fanout[i + 1],
-                        self.num_neurons_with_bias[i + 1])
-            i += 1
-
-        i = 0
-        for layer in self.layers[1:]:
-
-            # Get membrane potentials.
-            try:
-                mem = np.array([
-                    np.array(v) for v in
-                    layer.get_data().segments[-1].analogsignalarrays])
-            except AttributeError:
-                continue
-
-            # Reshape flat array to original layer shape.
-            layer_shape = self.mem_n_b_l_t[i][0].shape
-            self.mem_n_b_l_t[i][0] = np.reshape(mem, layer_shape)
-
-            # Plot membrane potentials of layer.
-            times = self._dt * np.arange(self._num_timesteps)
-            show_legend = True if i >= len(self.layers) - 2 else False
-            plot_potential(times, self.mem_n_b_l_t[i], self.config, show_legend,
-                           self.config['paths']['log_dir_of_current_run'])
-            i += 1
-
-        # Get spike trains of input layer.
-        spiketrains = self.layers[0].get_data().segments[-1].spiketrains
-
-        # Convert list of spike times into array where nonzero entries
-        # (indicating spike times) are properly spread out across array.
-        layer_shape = self.parsed_model.get_batch_input_shape()
-        spiketrains_flat = np.zeros((np.prod(layer_shape), self._num_timesteps))
-        for k, spiketrain in enumerate(spiketrains):
-            for t in spiketrain:
-                spiketrains_flat[k, int(t / self._dt)] = t
-
-        # Reshape flat spike train array to original layer shape.
-        input_b_l_t = np.reshape(spiketrains_flat, layer_shape)
-
-        if 'input_b_l_t' in self._log_keys:
-            self.input_b_l_t = input_b_l_t
-
-        if self.operations_b_t is not None:
-            for t in range(self._duration):
-                if self._poisson_input or self._dataset_format == 'aedat':
-                    input_ops = get_layer_ops(input_b_l_t[t], self.fanout[0])
-                else:
-                    input_ops = np.ones(self.batch_size) * self.num_neurons[1]
-                    if t == 0:
-                        input_ops *= 2 * self.fanin[1]  # MACs for convol.
-                self.operations_b_t[:, t] += input_ops
+        output_b_l_t = self.get_recorded_vars(self.layers)
 
         return output_b_l_t
+
+    def get_spiketrains(self, layer, i):
+        return layer.get_data().segments[-1].spiketrains
+
+    def get_vmem(self, layer, i):
+        return np.array([np.array(v) for v in
+                         layer.get_data().segments[-1].analogsignalarrays])
 
     def reset(self, sample_idx):
 

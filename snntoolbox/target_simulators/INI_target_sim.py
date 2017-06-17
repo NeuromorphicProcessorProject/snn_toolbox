@@ -72,6 +72,10 @@ class SNN(AbstractSNN):
         self._input_images = None
         self._binary_activation = None
 
+    @property
+    def is_parallelizable(self):
+        return False
+
     def add_input_layer(self, input_shape):
         self._input_images = keras.layers.Input(batch_shape=input_shape)
         self._spiking_layers[self.parsed_model.layers[0].name] = \
