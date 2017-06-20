@@ -18,7 +18,7 @@ log_vars = {'activations_n_b_l', 'spiketrains_n_b_l_t', 'input_b_l_t',
 plot_vars = {'activations', 'spiketrains', 'spikecounts', 'spikerates',
              'input_image', 'error_t', 'confusion_matrix', 'correlation',
              'hist_spikerates_activations', 'normalization_activations',
-             'operations', 'all'}
+             'operations', 'v_mem', 'all'}
 
 # Layers that can be implemented by our spiking neuron simulators
 spiking_layers = {'Dense', 'Conv2D', 'MaxPooling2D', 'AveragePooling2D'}
@@ -282,7 +282,7 @@ def initialize_simulator(simulator, **kwargs):
     elif simulator == 'INI':
         sim = import_module('snntoolbox.core.inisim')
     elif simulator == 'MegaSim':
-        sim = import_module('snntoolbox.core.megasim')
+        sim = import_module('snntoolbox.target_simulators.megasim')
     elif simulator == 'INIed':
         sim = import_module('snntoolbox.core.inied')
     assert sim, "Simulator {} could not be initialized.".format(simulator)

@@ -70,20 +70,17 @@ def output_graphs(plot_vars, config, path=None, idx=0):
     duration = config.getint('simulation', 'duration')
 
     if 'activations_n_b_l' in plot_vars:
-        plot_vars['activations_n_l'] = \
-            get_sample_activity_from_batch(plot_vars['activations_n_b_l'], idx)
+        plot_vars['activations_n_l'] = get_sample_activity_from_batch(
+            plot_vars['activations_n_b_l'], idx)
     if 'spiketrains_n_b_l_t' in plot_vars:
-        plot_vars['spiketrains_n_l_t'] = \
-            get_sample_activity_from_batch(plot_vars['spiketrains_n_b_l_t'],
-                                           idx)
+        plot_vars['spiketrains_n_l_t'] = get_sample_activity_from_batch(
+            plot_vars['spiketrains_n_b_l_t'], idx)
         if any({'spikerates', 'correlation', 'hist_spikerates_activations'}
                & plot_keys):
-            plot_vars['spikerates_n_b_l'] = \
-                spiketrains_to_rates(plot_vars['spiketrains_n_b_l_t'],
-                                     duration)
-            plot_vars['spikerates_n_l'] = \
-                get_sample_activity_from_batch(plot_vars['spikerates_n_b_l'],
-                                               idx)
+            plot_vars['spikerates_n_b_l'] = spiketrains_to_rates(
+                plot_vars['spiketrains_n_b_l_t'], duration)
+            plot_vars['spikerates_n_l'] = get_sample_activity_from_batch(
+                plot_vars['spikerates_n_b_l'], idx)
 
     plot_layer_summaries(plot_vars, config, path)
 
@@ -879,7 +876,8 @@ def plot_potential(times, layer, config, show_legend=False, path=None):
 
     plt.figure()
     # Transpose layer array to get slices of vmem values for each neuron.
-    for (neuron, vmem) in enumerate(layer[0]):
+    layer_flat = np.reshape(layer[0], (-1, layer[0].shape[-1]))
+    for (neuron, vmem) in enumerate(layer_flat):
         plt.plot(times, vmem)
     plt.plot(times, np.ones_like(times) * v_thresh, 'r--', label='V_thresh')
     plt.plot(times, np.ones_like(times) * v_reset, 'b-.', label='V_reset')
@@ -1083,7 +1081,7 @@ def plot_input_image(x, label, path=None):
 
     Parameters
     ----------
-    x: np.array
+    x: ndarray
         The sample to plot.
     label: int
         Class label (index) of sample.
@@ -1093,7 +1091,12 @@ def plot_input_image(x, label, path=None):
 
     plt.figure()
     plt.title('Input image (class: {})'.format(label))
-    x = x.transpose(1, 2, 0) if x.shape[0] == 3 else x[0]
+    if x.ndim == 1:
+        try:
+            x = np.reshape(x, (1, int(np.sqrt(len(x))), -1))
+        except RuntimeError:
+            return
+    x = np.transpose(x, (1, 2, 0)) if x.shape[0] == 3 else x[0]
     plt.imshow(x)
     if path is not None:
         filename = 'input_image'

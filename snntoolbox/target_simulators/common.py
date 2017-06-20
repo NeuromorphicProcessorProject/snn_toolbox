@@ -82,6 +82,8 @@ class AbstractSNN:
 
         self._plot_keys = get_plot_keys(self.config)
         self._log_keys = get_log_keys(self.config)
+        self._mem_container_counter = None
+        self._spiketrains_container_counter = None
 
     @property
     @abstractmethod
@@ -106,6 +108,9 @@ class AbstractSNN:
 
     @abstractmethod
     def build_pooling(self, layer):
+        pass
+
+    def build_flatten(self, layer):
         pass
 
     @abstractmethod
@@ -237,6 +242,8 @@ class AbstractSNN:
                 self.build_convolution(layer)
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
                 self.build_pooling(layer)
+            elif layer_type == 'Flatten':
+                self.build_flatten(layer)
 
         print("Compiling spiking model...\n")
         self.compile()
@@ -375,13 +382,13 @@ class AbstractSNN:
             # of the simulation.
             print("Starting new simulation...\n")
             output_b_l_t = self.simulate(**data_batch_kwargs)
-            print(output_b_l_t.shape)
+
             # Get classification result by comparing the guessed class (i.e. the
             # index of the neuron in the last layer which spiked most) to the
             # ground truth.
             guesses_b_t = np.argmax(output_b_l_t, axis=1)
             # Find sample indices for which there was no output spike yet.
-            undecided_b_t = np.where(np.sum(np.nonzero(output_b_l_t), 1) == 0)
+            undecided_b_t = np.nonzero(np.sum(output_b_l_t, 1) == 0)
             # Assign negative value such that undecided samples count as
             # wrongly classified.
             guesses_b_t[undecided_b_t] = -1
@@ -576,11 +583,15 @@ class AbstractSNN:
         number_of_neurons_with_bias.
         """
 
-        from snntoolbox.core.util import get_fanin, get_fanout
+        from snntoolbox.core.util import get_fanin, get_fanout, get_type
+
+        first_hidden_layer = self.parsed_model.layers[1]
         self.fanin = [0]
-        self.fanout = [int(np.multiply(
-            np.prod(self.parsed_model.layers[1].kernel_size),
-            self.parsed_model.layers[1].filters))]
+        if 'Dense' in get_type(first_hidden_layer):
+            self.fanout = [first_hidden_layer.units]
+        else:
+            self.fanout = [int(np.multiply(np.prod(
+                first_hidden_layer.kernel_size), first_hidden_layer.filters))]
         self.num_neurons = [np.product(self.parsed_model.input_shape[1:])]
         self.num_neurons_with_bias = [0]
 
@@ -600,58 +611,61 @@ class AbstractSNN:
     def get_recorded_vars(self, layers):
         """Retrieve neuron variables recorded during simulation."""
 
-        # Get spike trains.
-        i = 0
-        for layer in layers:
-            try:
-                spiketrains = self.get_spiketrains(layer, i)
-            except AttributeError:
-                continue
+        self.set_spiketrain_stats_input()
 
-            if i == 0:
-                self.set_spiketrain_stats_input(spiketrains)
-            else:
-                self.set_spiketrain_stats(spiketrains, i)
-            i += 1
+        self.reset_container_counters()
 
-        # Get membrane potentials.
-        i = 0
-        for layer in layers[1:]:
-            try:
-                mem = self.get_vmem(layer, i)
-            except AttributeError:
-                continue
+        for i in range(len(layers)):
+            kwargs = {'layer': layers[i], 'monitor_index': i, 'shape':
+                      self.spiketrains_n_b_l_t[
+                      self._spiketrains_container_counter][0].shape}
 
-            self.set_mem_stats(mem, i)
-            i += 1
+            spiketrains_b_l_t = self.get_spiketrains(**kwargs)
+            if spiketrains_b_l_t is not None:
+                self.set_spiketrain_stats(spiketrains_b_l_t)
+
+            mem = self.get_vmem(**kwargs)
+            if mem is not None:
+                self.set_mem_stats(mem)
 
         # For each time step, get number of spikes of all neurons in the output
         # layer.
-        out_spikes = self.get_spiketrains(layers[-1], -1)
-        output_b_l_t = np.zeros((self.batch_size, self.num_classes,
-                                 self._num_timesteps), 'int32')
-        for k, spiketrain in enumerate(out_spikes):
-            for t in range(self._num_timesteps):
-                output_b_l_t[0, k, t] = np.count_nonzero(spiketrain <=
-                                                         t * self._dt)
+        shape = (self._batch_size, self.num_classes, self._num_timesteps)
+        output_b_l_t = np.zeros(shape, 'int32')
+        kwargs = {'layer': layers[-1], 'monitor_index': -1, 'shape': shape}
+        spiketrains_b_l_t = self.get_spiketrains(**kwargs)
+        for b in range(shape[0]):
+            for l in range(shape[1]):
+                for t in range(shape[2]):
+                    output_b_l_t[b, l, t] = np.count_nonzero(
+                        spiketrains_b_l_t[b, l, :t])
         return output_b_l_t
 
-    def get_spiketrains(self, layer, i):
+    def reset_container_counters(self):
+        self._mem_container_counter = 0
+        self._spiketrains_container_counter = 0
+
+    def get_spiketrains(self, **kwargs):
         """Get spike trains of a layer.
-
-        Parameters
-        ----------
-
-        layer :
-            Layer.
-        i : int
-            Layer index.
 
         Returns
         -------
 
-        spiketrains : ndarray
+        spiketrains_b_l_t : ndarray
             Spike trains.
+        """
+
+        pass
+
+    @abstractmethod
+    def get_spiketrains_input(self):
+        """Get spike trains of input layer.
+
+        Returns
+        -------
+
+        spiketrains_b_l_t : ndarray
+            Spike trains of input.
         """
 
         pass
@@ -659,11 +673,12 @@ class AbstractSNN:
     def get_vmem(self, layer, i):
         pass
 
-    def set_mem_stats(self, mem, i):
+    def set_mem_stats(self, mem):
 
         from snntoolbox.io_utils.plotting import plot_potential
 
         # Reshape flat array to original layer shape.
+        i = self._mem_container_counter
         self.mem_n_b_l_t[i] = (np.reshape(mem, self.mem_n_b_l_t[i][0].shape),
                                self.mem_n_b_l_t[i][1])
 
@@ -673,34 +688,35 @@ class AbstractSNN:
         plot_potential(times, self.mem_n_b_l_t[i], self.config, show_legend,
                        self.config['paths']['log_dir_of_current_run'])
 
-    def set_spiketrain_stats_input(self, spiketrains):
+        self._mem_container_counter += 1
 
-        input_b_l_t = self.reshape_flattened_spiketrains(
-            spiketrains, self.input_b_l_t.shape)
+    def set_spiketrain_stats_input(self):
 
-        if 'input_b_l_t' in self._log_keys:
-            self.input_b_l_t = input_b_l_t
+        if self._poisson_input or self._dataset_format == 'aedat':
+            spiketrains_b_l_t = self.get_spiketrains_input()
+            if self.input_b_l_t is not None:
+                self.input_b_l_t = spiketrains_b_l_t
+            if self.operations_b_t is not None:
+                for t in range(self._num_timesteps):
+                    self.operations_b_t[:, t] += get_layer_ops(
+                        spiketrains_b_l_t[Ellipsis, t], self.fanout[0])
+        else:
+            if self.input_b_l_t is not None:
+                raise NotImplementedError
+            if self.operations_b_t is not None:
+                input_ops = np.ones(self.batch_size) * self.num_neurons[1]
+                self.operations_b_t[:, 0] += input_ops * self.fanin[1] * 2
+                for t in range(self._num_timesteps):
+                    self.operations_b_t[:, t] += input_ops
 
-        if self.operations_b_t is not None:
-            for t in range(self._num_timesteps):
-                if self._poisson_input or self._dataset_format == 'aedat':
-                    input_ops = get_layer_ops(input_b_l_t[Ellipsis, t],
-                                              self.fanout[0])
-                else:
-                    input_ops = np.ones(self.batch_size) * self.num_neurons[1]
-                    if t == 0:
-                        input_ops *= 2 * self.fanin[1]  # MACs for convol.
-                self.operations_b_t[:, t] += input_ops
-
-    def set_spiketrain_stats(self, spiketrains, i):
-
-        spiketrains_b_l_t = self.reshape_flattened_spiketrains(
-            spiketrains, self.spiketrains_n_b_l_t[i][0].shape)
+    def set_spiketrain_stats(self, spiketrains_b_l_t):
 
         # Add spike trains to log variables.
         if self.spiketrains_n_b_l_t is not None:
+            i = self._spiketrains_container_counter
             self.spiketrains_n_b_l_t[i] = (spiketrains_b_l_t,
                                            self.spiketrains_n_b_l_t[i][1])
+            self._spiketrains_container_counter += 1
 
         # Use spike trains to compute the number of operations.
         if self.operations_b_t is not None:

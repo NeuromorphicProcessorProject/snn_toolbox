@@ -43,7 +43,7 @@ class SNN(AbstractSNN):
     threshold: string
         Defines spiking threshold.
 
-    reset: string
+    v_reset: string
         Defines reset potential.
 
     eqs: string
@@ -81,7 +81,7 @@ class SNN(AbstractSNN):
         self._biases = []  # Temporary container for layer biases.
         self.connections = []  # Final container for all layers.
         self.threshold = 'v >= v_thresh'
-        self.reset = 'v = v_reset'
+        self.v_reset = 'v = v_reset'
         self.eqs = 'v = 0 : 1'
         self.spikemonitors = []
         self.statemonitors = []
@@ -103,9 +103,12 @@ class SNN(AbstractSNN):
         self.layers.append(self.sim.PoissonGroup(
             np.prod(input_shape[1:]), rates=0*self.sim.Hz,
             dt=self._dt*self.sim.ms))
-        self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[0]))
         self.layers[0].add_attribute('label')
         self.layers[0].label = 'InputLayer'
+        self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[0]))
+        # Need placeholders "None" for layers without states:
+        self.statemonitors.append(self.sim.StateMonitor(self.layers[0], [],
+                                                        False))
 
     def add_layer(self, layer):
 
@@ -115,7 +118,7 @@ class SNN(AbstractSNN):
         self._conns = []
         self.layers.append(self.sim.NeuronGroup(
             np.prod(layer.output_shape[1:]), self.eqs, 'linear', self.threshold,
-            self.reset, dt=self._dt*self.sim.ms))
+            self.v_reset, dt=self._dt*self.sim.ms))
         self.connections.append(self.sim.Synapses(
             self.layers[-2], self.layers[-1], 'w:1', on_pre='v+=w',
             dt=self._dt*self.sim.ms))
@@ -125,7 +128,7 @@ class SNN(AbstractSNN):
             self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[-1]))
         if 'v_mem' in self._plot_keys:
             self.statemonitors.append(self.sim.StateMonitor(self.layers[-1],
-                                                            'v'))
+                                                            'v', True))
 
     def build_dense(self, layer):
 
@@ -197,15 +200,6 @@ class SNN(AbstractSNN):
 
         return output_b_l_t
 
-    def get_spiketrains(self, layer, i):
-        spiketrain_dict = self.spikemonitors[i].spike_trains()
-        return np.array([spiketrain_dict[key] / self.sim.ms for key in
-                         spiketrain_dict.keys()])
-
-    def get_vmem(self, layer, i):
-        return np.array([np.array(v).transpose()
-                         for v in self.statemonitors[i].v])
-
     def reset(self, sample_idx):
         mod = self.config.getint('simulation', 'reset_between_nth_sample')
         mod = mod if mod else sample_idx + 1
@@ -234,6 +228,32 @@ class SNN(AbstractSNN):
             'v_thresh': cell_conf.getfloat('v_thresh'),
             'v_reset': cell_conf.getfloat('v_reset'),
             'tau_m': cell_conf.getfloat('tau_m') * self.sim.ms}
+
+    def get_spiketrains(self, **kwargs):
+        # Outer for-loop that calls this function starts with
+        # 'monitor_index' = 0, but this is reserved for the input and handled by
+        # `get_spiketrains_input()`.
+        i = len(self.spikemonitors) if kwargs['monitor_index'] == -1 else \
+            kwargs['monitor_index'] + 1
+        spiketrain_dict = self.spikemonitors[i].spike_trains()
+        spiketrains_flat = np.array([spiketrain_dict[key] / self.sim.ms for key
+                                     in spiketrain_dict.keys()])
+        spiketrains_b_l_t = self.reshape_flattened_spiketrains(spiketrains_flat,
+                                                               kwargs['shape'])
+        return spiketrains_b_l_t
+
+    def get_spiketrains_input(self):
+        shape = self.parsed_model.layers[0].batch_shape
+        spiketrain_dict = self.spikemonitors[0].spike_trains()
+        spiketrains_flat = np.array([spiketrain_dict[key] / self.sim.ms for key
+                                     in spiketrain_dict.keys()])
+        spiketrains_b_l_t = self.reshape_flattened_spiketrains(spiketrains_flat,
+                                                               shape)
+        return spiketrains_b_l_t
+
+    def get_vmem(self, **kwargs):
+        return np.array([np.array(v).transpose() for v in
+                         self.statemonitors[kwargs['monitor_index']].v])
 
     def set_biases(self):
         if any(self._biases):  # TODO: Implement biases.

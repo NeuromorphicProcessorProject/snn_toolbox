@@ -74,7 +74,7 @@ class SNN(AbstractSNN):
 
     @property
     def is_parallelizable(self):
-        return False
+        return True
 
     def add_input_layer(self, input_shape):
         self._input_images = keras.layers.Input(batch_shape=input_shape)

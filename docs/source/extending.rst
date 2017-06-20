@@ -20,9 +20,9 @@ used by the toolbox further down the line.
 Output side: Adding a custom simulator
 --------------------------------------
 
-Similarly, adding another simulator to run converted networks implies adding a file to the
-``target_simulators`` package. Each file in there allows building a spiking network
-and exporting it for use in a specific spiking simulator.
+Similarly, adding another simulator to run converted networks implies adding a
+file to the ``target_simulators`` package. Each file in there allows building a
+spiking network and exporting it for use in a specific spiking simulator.
 
 To add a simulator called 'custom', put a file named ``<custom>_target_sim.py``
 into ``target_simulators``. Then implement the class ``SNN`` with its methods
@@ -31,11 +31,4 @@ into ``target_simulators``. Then implement the class ``SNN`` with its methods
 Requested extensions
 --------------------
 
-This is a TODO-list to lift current limitations of the toolbox.
-
-* Implement nonzero biases for pyNN and Brian2 simulators (working for INIsim).
-  Currently, biases in our pyNN export are included as offset currents, but
-  this does not seem to have any effect...
-* In pyNN and Brian2, implement analog input currents instead of Poisson input (works in
-  INIsim)
-
+* Add support for TensorFlow input models.

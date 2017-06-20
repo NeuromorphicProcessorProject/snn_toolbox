@@ -155,13 +155,6 @@ class SNN(AbstractSNN):
 
         return output_b_l_t
 
-    def get_spiketrains(self, layer, i):
-        return layer.get_data().segments[-1].spiketrains
-
-    def get_vmem(self, layer, i):
-        return np.array([np.array(v) for v in
-                         layer.get_data().segments[-1].analogsignalarrays])
-
     def reset(self, sample_idx):
 
         mod = self.config.getint('simulation', 'reset_between_nth_sample')
@@ -229,6 +222,28 @@ class SNN(AbstractSNN):
             vars_to_record.append('v')
 
         return vars_to_record
+
+    def get_spiketrains(self, **kwargs):
+        # Outer for-loop that calls this function starts with
+        # 'monitor_index' = 0, but this is reserved for the input and handled by
+        # `get_spiketrains_input()`.
+        i = len(self.layers) if kwargs['monitor_index'] == -1 else \
+            kwargs['monitor_index'] + 1
+        spiketrains_flat = self.layers[i].get_data().segments[-1].spiketrains
+        spiketrains_b_l_t = self.reshape_flattened_spiketrains(spiketrains_flat,
+                                                               kwargs['shape'])
+        return spiketrains_b_l_t
+
+    def get_spiketrains_input(self):
+        shape = self.parsed_model.layers[0].batch_shape
+        spiketrains_flat = self.layers[0].get_data().segments[-1].spiketrains
+        spiketrains_b_l_t = self.reshape_flattened_spiketrains(spiketrains_flat,
+                                                               shape)
+        return spiketrains_b_l_t
+
+    def get_vmem(self, **kwargs):
+        vs = kwargs['layer'].get_data().segments[-1].analogsignalarrays
+        return np.array([np.array(v) for v in vs])
 
     def save_assembly(self, path, filename):
         """Write layers of neural network to disk.

@@ -125,7 +125,7 @@ def get_parameters_for_simtests():
     except ImportError:
         pass
     try:
-        import_module('snntoolbox.core.megasim')
+        import_module('snntoolbox.target_simulators.megasim')
         sm.append({'simulation': {'simulator': 'MegaSim', 'target_acc': 99.00,
                    'num_to_test': 2, 'poisson_input': True, 'batch_size': 1}})
     except ImportError:

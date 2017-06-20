@@ -328,7 +328,7 @@ def normalize_parameters(model, config, **kwargs):
             activations = try_reload_activations(layer, model, x_norm,
                                                  batch_size, activ_dir)
 
-            if activations is None:
+            if activations is None or x_norm is None:
                 continue
 
             # Compute activations with modified parameters
