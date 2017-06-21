@@ -38,6 +38,7 @@ class ModelParser(AbstractModelParser):
 
     @property
     def layers_to_skip(self):
+        # noinspection PyArgumentList
         return AbstractModelParser.layers_to_skip.fget(self)
 
     def has_weights(self, layer):

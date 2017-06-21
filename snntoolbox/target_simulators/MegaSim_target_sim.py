@@ -1300,7 +1300,7 @@ class SNN(AbstractSNN):
             spiketrains_b_l_t = np.zeros(list(layer.output_shapes) +
                                          [self._num_timesteps])
         except AttributeError:
-            return None
+            return
 
         module_string = layer.module_string
 
@@ -1336,9 +1336,9 @@ class SNN(AbstractSNN):
                         t -= t_first + i
                         spiketrains_b_l_t[i, f, e[4], e[3], t] = t
         elif module_string == 'module_flatten':
-            raise AttributeError
+            return
         else:
-            raise AttributeError
+            return
 
         return spiketrains_b_l_t
 

@@ -224,18 +224,24 @@ class SNN(AbstractSNN):
         return vars_to_record
 
     def get_spiketrains(self, **kwargs):
+        j = self._spiketrains_container_counter
+        if j >= len(self.spiketrains_n_b_l_t):
+            return None
+
+        shape = self.spiketrains_n_b_l_t[j][0].shape
+
         # Outer for-loop that calls this function starts with
         # 'monitor_index' = 0, but this is reserved for the input and handled by
         # `get_spiketrains_input()`.
-        i = len(self.layers) if kwargs['monitor_index'] == -1 else \
+        i = len(self.layers) - 1 if kwargs['monitor_index'] == -1 else \
             kwargs['monitor_index'] + 1
         spiketrains_flat = self.layers[i].get_data().segments[-1].spiketrains
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(spiketrains_flat,
-                                                               kwargs['shape'])
+                                                               shape)
         return spiketrains_b_l_t
 
     def get_spiketrains_input(self):
-        shape = self.parsed_model.layers[0].batch_shape
+        shape = list(self.parsed_model.input_shape) + [self._num_timesteps]
         spiketrains_flat = self.layers[0].get_data().segments[-1].spiketrains
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(spiketrains_flat,
                                                                shape)
@@ -375,6 +381,9 @@ class SNN(AbstractSNN):
             layers.append(population)
 
         return layers
+
+    def set_spiketrain_stats_input(self):
+        AbstractSNN.set_spiketrain_stats_input(self)
 
 
 def connect(f):

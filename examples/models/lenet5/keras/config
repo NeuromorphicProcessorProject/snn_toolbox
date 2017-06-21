@@ -6,7 +6,7 @@ filename_ann = 98.96
 evaluate_ann = False
 
 [simulation]
-simulator = brian2
+simulator = INI
 duration = 30
 num_to_test = 100
 batch_size = 10

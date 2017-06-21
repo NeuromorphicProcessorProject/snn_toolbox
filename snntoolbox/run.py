@@ -18,11 +18,8 @@ def main():
                              'Omit this flag to open GUI.')
     args = parser.parse_args()
 
-    #filepath = os.path.abspath(args.config_filepath)
-    filepath = os.path.abspath(os.path.dirname(__file__) + '/../examples/models/lenet5/keras/config')
-    #filepath = '/home/rbodo/.snntoolbox/data/mnist/mlp/98.09/Megasim/config'
+    filepath = os.path.abspath(args.config_filepath)
 
-    args.terminal = True
     if filepath is not None:
         assert os.path.isfile(filepath), \
             "Configuration file not found at {}.".format(filepath)

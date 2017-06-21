@@ -616,10 +616,7 @@ class AbstractSNN:
         self.reset_container_counters()
 
         for i in range(len(layers)):
-            kwargs = {'layer': layers[i], 'monitor_index': i, 'shape':
-                      self.spiketrains_n_b_l_t[
-                      self._spiketrains_container_counter][0].shape}
-
+            kwargs = {'layer': layers[i], 'monitor_index': i}
             spiketrains_b_l_t = self.get_spiketrains(**kwargs)
             if spiketrains_b_l_t is not None:
                 self.set_spiketrain_stats(spiketrains_b_l_t)
@@ -630,10 +627,14 @@ class AbstractSNN:
 
         # For each time step, get number of spikes of all neurons in the output
         # layer.
-        shape = (self._batch_size, self.num_classes, self._num_timesteps)
+        shape = (self.batch_size, self.num_classes, self._num_timesteps)
         output_b_l_t = np.zeros(shape, 'int32')
-        kwargs = {'layer': layers[-1], 'monitor_index': -1, 'shape': shape}
+        kwargs = {'layer': layers[-1], 'monitor_index': -1}
+        # Need to reduce counter here to be able to access the last monitor.
+        # TODO: Remove this ugly hack!
+        self._spiketrains_container_counter -= 1
         spiketrains_b_l_t = self.get_spiketrains(**kwargs)
+        self._spiketrains_container_counter += 1
         for b in range(shape[0]):
             for l in range(shape[1]):
                 for t in range(shape[2]):
