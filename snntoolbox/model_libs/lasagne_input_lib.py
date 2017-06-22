@@ -15,17 +15,17 @@ class ModelParser(AbstractModelParser):
 
     def __init__(self, input_model, config):
         AbstractModelParser.__init__(self, input_model, config)
-        self.layer_dict = {'DenseLayer': 'Dense',
-                           'Conv2DLayer': 'Conv2D',
-                           'Conv2DDNNLayer': 'Conv2D',
-                           'MaxPool2DLayer': 'MaxPooling2D',
-                           'Pool2DLayer': 'AveragePooling2D',
-                           'DropoutLayer': 'Dropout',
-                           'FlattenLayer': 'Flatten',
-                           'BatchNormLayer': 'BatchNormalization',
-                           'NonlinearityLayer': 'Activation',
-                           'ConcatLayer': 'Concatenate',
-                           'GlobalPoolLayer': 'GlobalAveragePooling2D'}
+        self._layer_dict = {'DenseLayer': 'Dense',
+                            'Conv2DLayer': 'Conv2D',
+                            'Conv2DDNNLayer': 'Conv2D',
+                            'MaxPool2DLayer': 'MaxPooling2D',
+                            'Pool2DLayer': 'AveragePooling2D',
+                            'DropoutLayer': 'Dropout',
+                            'FlattenLayer': 'Flatten',
+                            'BatchNormLayer': 'BatchNormalization',
+                            'NonlinearityLayer': 'Activation',
+                            'ConcatLayer': 'Concatenate',
+                            'GlobalPoolLayer': 'GlobalAveragePooling2D'}
         self.activation_dict = {'rectify': 'relu',
                                 'softmax': 'softmax',
                                 'binary_tanh_unit': 'binary_tanh',
@@ -39,7 +39,7 @@ class ModelParser(AbstractModelParser):
         class_name = layer.__class__.__name__
         if class_name == 'Pool2DLayer' and layer.mode == 'max':
             class_name = 'MaxPool2DLayer'
-        return self.layer_dict.get(class_name, class_name)
+        return self._layer_dict.get(class_name, class_name)
 
     def get_batchnorm_parameters(self, layer):
         mean = layer.mean.get_value()
@@ -153,7 +153,7 @@ def load(path, filename):
     """
 
     import os
-    from snntoolbox.model_libs.common import import_script
+    from snntoolbox.io_utils.common import import_script
 
     filepath = os.path.join(path, filename)
 

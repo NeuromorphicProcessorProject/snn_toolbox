@@ -744,7 +744,7 @@ def extract_label(label):
 
 
 def in_top_k(predictions, targets, k):
-    """Returns whether the `targets` are in the top `k` `predictions`
+    """Returns whether the ``targets`` are in the top ``k`` ``predictions``.
 
     # Arguments
         predictions: A tensor of shape batch_size x classess and type float32.

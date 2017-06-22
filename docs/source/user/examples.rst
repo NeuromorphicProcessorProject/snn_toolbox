@@ -33,6 +33,7 @@ Keras
 .....
 
 .. include:: ../../examples/models/lenet5/keras/config
+    :literal:
 
 The most important part to specify in the ``config`` file is the
 ``filename_ann`` and ``dataset_path`` parameter in the ``paths`` section. This
@@ -62,7 +63,7 @@ Here we need to change the ``model_lib`` option from default ``keras`` to
 ``caffe``. The ``filename_ann`` also changes, the rest can stay the same.
 
 .. include:: ../../examples/models/lenet5/caffe/config
-
+    :literal:
 
 Lasagne
 .......
@@ -72,6 +73,7 @@ You need to have Lasagne installed to run this example.
 We can also use Poisson input as shown below:
 
 .. include:: ../../examples/models/lenet5/lasagne/config
+    :literal:
 
 
 .. _ExampleB:
@@ -86,7 +88,7 @@ full-precision or binary weights. Set the ``binarize_weights`` option
 accordingly.
 
 .. include:: ../../examples/models/binaryconnect/config
-
+    :literal:
 
 .. _ExampleC:
 
@@ -102,7 +104,7 @@ Note how we turn off ``normalize`` in ``tools``. Parameter normalization is not
 required here because activations never exceed threshold anyways.
 
 .. include:: ../../examples/models/binarynet/config
-
+    :literal:
 
 .. _ExampleD:
 
@@ -122,7 +124,7 @@ For memory reasons we do not include the model file here, but the example should
 work when instantiating VGG-16 from the Keras model zoo.
 
 .. include:: ../../examples/models/vgg16/config
-
+    :literal:
 
 .. _ExampleE:
 
@@ -136,4 +138,4 @@ module containing the preprocessing function. The toolbox will import and use
 the function from there.
 
 .. include:: ../../examples/models/inceptionV3/config
-
+    :literal:

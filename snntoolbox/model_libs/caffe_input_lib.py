@@ -14,7 +14,7 @@ class ModelParser(AbstractModelParser):
 
     def __init__(self, input_model, config):
         AbstractModelParser.__init__(self, input_model, config)
-        self.layer_dict = {'InnerProduct': 'Dense',
+        self._layer_dict = {'InnerProduct': 'Dense',
                            'Convolution': 'Conv2D',
                            'MaxPooling2D': 'MaxPooling2D',
                            'AveragePooling2D': 'AveragePooling2D',
@@ -34,7 +34,7 @@ class ModelParser(AbstractModelParser):
             pooling = layer.pooling_param.PoolMethod.DESCRIPTOR.values[0].name
             class_name = 'MaxPooling2D' if pooling == 'MAX' \
                 else 'AveragePooling2D'
-        return self.layer_dict.get(class_name, class_name)
+        return self._layer_dict.get(class_name, class_name)
 
     def get_batchnorm_parameters(self, layer):
         raise NotImplementedError

@@ -79,15 +79,16 @@ plot_vars = {}
 verbose = 1
 overwrite = True
 use_simple_labels = True
-plotproperties = {'font.size': 13,
-                  'axes.titlesize': 'xx-large',
-                  'axes.labelsize': 'xx-large',
-                  'xtick.labelsize': 'xx-large',
-                  'xtick.major.size': 7,
-                  'xtick.minor.size': 5,
-                  'ytick.labelsize': 'xx-large',
-                  'ytick.major.size': 7,
-                  'ytick.minor.size': 5,
-                  'legend.fontsize': 'xx-large',
-                  'figure.figsize': (7, 6),
-                  'savefig.format': 'png'}
+plotproperties = {
+    'font.size': 13,
+    'axes.titlesize': 'xx-large',
+    'axes.labelsize': 'xx-large',
+    'xtick.labelsize': 'xx-large',
+    'xtick.major.size': 7,
+    'xtick.minor.size': 5,
+    'ytick.labelsize': 'xx-large',
+    'ytick.major.size': 7,
+    'ytick.minor.size': 5,
+    'legend.fontsize': 'xx-large',
+    'figure.figsize': (7, 6),
+    'savefig.format': 'png'}

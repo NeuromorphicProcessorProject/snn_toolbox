@@ -7,6 +7,26 @@ network library and prepares it for further processing in the SNN toolbox.
 The idea is to make all further steps in the conversion/simulation pipeline
 independent of the original model format.
 
+The core of this module is an abstract base class for parsing neural network
+models:
+
+.. autosummary::
+    :nosignatures:
+
+    AbstractModelParser
+
+Helper functions used for modifying the network parameters during parsing:
+
+.. autosummary::
+    :nosignatures:
+
+    absorb_bn_parameters
+    binary_tanh
+    binary_sigmoid
+    binarize
+    binarize_var
+    padding_string
+
 Created on Thu May 19 08:26:49 2016
 
 @author: rbodo
@@ -20,94 +40,67 @@ from abc import abstractmethod
 class AbstractModelParser:
     """Abstract base class for neural network model parsers.
 
+    Parameters
+    ----------
+
+    input_model: dict
+        The input network object.
+    config: configparser.Configparser
+        Contains the toolbox configuration for a particular experiment.
+
     Attributes
     ----------
 
-    layer_list: list[dict]
+    input_model: dict
+        The input network object.
+    config: configparser.Configparser
+        Contains the toolbox configuration for a particular experiment.
+    _layer_list: list[dict]
         A list where each entry is a dictionary containing layer
-        specifications. Can be obtained by calling
-        ``model_lib.extract(input_model)`` (see ``snntoolbox.model_libs``
-        package).
-
+        specifications. Obtained by calling `parse`. Used to build new, parsed
+        Keras model.
+    _layer_dict: dict
+        Maps the layer names of the specific input model library to our standard
+        names (currently Keras).
+    parsed_model: keras.models.Model
+        The parsed model.
     """
 
     def __init__(self, input_model, config):
         self.input_model = input_model
         self.config = config
-        self.layer_list = []
-        self.layer_dict = {}
+        self._layer_list = []
+        self._layer_dict = {}
         self.parsed_model = None
 
     def parse(self):
         """Extract the essential information about a neural network.
 
-        This method serves to abstract the conversion process of a network
-        from the
-        language the input model was built in (e.g. Keras or Lasagne).
+        This method serves to abstract the conversion process of a network from
+        the language the input model was built in (e.g. Keras or Lasagne).
 
-        To extend the toolbox by another input format (e.g. Caffe),
-        this method has
-        to be implemented for the respective model library.
-
-        Implementation details:
         The methods iterates over all layers of the input model and writes the
-        layer specifications and parameters into a dictionary. The keys are
-        chosen
-        in accordance with Keras layer attributes to facilitate instantiation
-        of a
-        new, parsed Keras model (done in a later step by the method
-        ``core.util.parse``).
+        layer specifications and parameters into `_layer_list`. The keys are
+        chosen in accordance with Keras layer attributes to facilitate
+        instantiation of a new, parsed Keras model (done in a later step by
+        `build_parsed_model`).
 
         This function applies several simplifications and adaptations to prepare
         the model for conversion to spiking. These modifications include:
 
         - Removing layers only used during training (Dropout,
-        BatchNormalization,
-          ...)
+          BatchNormalization, ...)
         - Absorbing the parameters of BatchNormalization layers into the
-        parameters
-          of the preceeding layer. This does not affect performance because
-          batch-norm-parameters are constant at inference time.
+          parameters of the preceeding layer. This does not affect performance
+          because batch-norm-parameters are constant at inference time.
         - Removing ReLU activation layers, because their function is inherent to
           the spike generation mechanism. The information which nonlinearity was
-          used in the original model is preserved in the layer specifications of
-          the parsed model. If the output layer employs the softmax function, a
+          used in the original model is preserved in the ``activation`` key in
+          `_layer_list`. If the output layer employs the softmax function, a
           spiking version is used when testing the SNN in INIsim or MegaSim
           simulators.
         - Inserting a Flatten layer between Conv and FC layers, if the input
-        model
-          did not explicitly include one.
-
-        Returns
-        -------
-
-        Dictionary containing the parsed network specifications.
-
-        layers: list
-            List of all the layers of the network, where each layer contains a
-            dictionary with keys
-
-            - layer_type (string): Describing the type, e.g. `Dense`,
-              `Convolution`, `Pool`.
-
-            In addition, `Dense` and `Convolution` layer types contain
-
-            - parameters (array): The weights and biases connecting this
-            layer with
-              the previous.
-
-            `Convolution` layers contain further
-
-            - kernel_size (tuple/list of 2 ints): The x- and y-dimension of
-            filters.
-            - padding (string): How to handle borders during convolution, e.g.
-              `full`, `valid`, `same`.
-
-            `Pooling` layers contain
-
-            - pool_size (list): Specifies the subsampling factor in each
-            dimension.
-            - strides (list): The stepsize in each dimension during pooling.
+          model did not explicitly include one.
         """
 
         from snntoolbox.config import snn_layers
@@ -129,18 +122,19 @@ class AbstractModelParser:
                     "preceeding BatchNorm layer."
                 prev_layer = inbound[0]
                 prev_layer_idx = name_map[str(id(prev_layer))]
-                parameters = list(self.layer_list[prev_layer_idx]['parameters'])
+                parameters = list(
+                    self._layer_list[prev_layer_idx]['parameters'])
                 print("Absorbing batch-normalization parameters into " +
                       "parameters of previous {}.".format(self.get_type(
                           prev_layer)))
-                self.layer_list[prev_layer_idx]['parameters'] = \
+                self._layer_list[prev_layer_idx]['parameters'] = \
                     absorb_bn_parameters(*(parameters + parameters_bn))
 
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
                       "plus Flatten.")
                 pool_size = [layer.input_shape[-2], layer.input_shape[-1]]
-                self.layer_list.append(
+                self._layer_list.append(
                     {'layer_type': 'AveragePooling2D',
                      'name': self.get_name(layer, idx, 'AveragePooling2D'),
                      'input_shape': layer.input_shape, 'pool_size': pool_size,
@@ -149,10 +143,10 @@ class AbstractModelParser:
                 idx += 1
                 num_str = str(idx) if idx > 9 else '0' + str(idx)
                 shape_string = str(np.prod(layer.output_shape[1:]))
-                self.layer_list.append(
+                self._layer_list.append(
                     {'name': num_str + 'Flatten_' + shape_string,
                      'layer_type': 'Flatten',
-                     'inbound': [self.layer_list[-1]['name']]})
+                     'inbound': [self._layer_list[-1]['name']]})
                 name_map['Flatten' + str(idx)] = idx
                 idx += 1
                 inserted_flatten = True
@@ -173,7 +167,7 @@ class AbstractModelParser:
                 layer_type = 'AveragePooling2D'
 
             if inserted_flatten:
-                inbound = [self.layer_list[-1]['name']]
+                inbound = [self._layer_list[-1]['name']]
                 inserted_flatten = False
             else:
                 inbound = self.get_inbound_names(layer, name_map)
@@ -205,7 +199,7 @@ class AbstractModelParser:
             if layer_type == 'Concatenate':
                 self.parse_concatenate(layer, attributes)
 
-            self.layer_list.append(attributes)
+            self._layer_list.append(attributes)
 
             # Map layer index to layer id. Needed for inception modules.
             name_map[str(id(layer))] = idx
@@ -220,7 +214,7 @@ class AbstractModelParser:
         Returns
         -------
 
-        layers: List
+        layers: list
         """
 
         pass
@@ -288,7 +282,7 @@ class AbstractModelParser:
 
         """
 
-        if len(self.layer_list) == 0:
+        if len(self._layer_list) == 0:
             return ['input']
 
         inbound = self.get_inbound_layers(layer)
@@ -299,7 +293,7 @@ class AbstractModelParser:
                 else:
                     break
         inb_idxs = [name_map[str(id(inb))] for inb in inbound]
-        return [self.layer_list[i]['name'] for i in inb_idxs]
+        return [self._layer_list[i]['name'] for i in inb_idxs]
 
     @abstractmethod
     def get_inbound_layers(self, layer):
@@ -380,7 +374,7 @@ class AbstractModelParser:
             print("Inserting layer Flatten.")
             num_str = str(idx) if idx > 9 else '0' + str(idx)
             shape_string = str(np.prod(prev_layer_output_shape[1:]))
-            self.layer_list.append({
+            self._layer_list.append({
                 'name': num_str + 'Flatten_' + shape_string,
                 'layer_type': 'Flatten',
                 'inbound': self.get_inbound_names(layer, name_map)})
@@ -477,7 +471,7 @@ class AbstractModelParser:
                                        name='input')
         parsed_layers = {'input': img_input}
         print("Building parsed model...\n")
-        for layer in self.layer_list:
+        for layer in self._layer_list:
             # Replace 'parameters' key with Keras key 'weights'
             if 'parameters' in layer:
                 layer['weights'] = layer.pop('parameters')
@@ -492,7 +486,7 @@ class AbstractModelParser:
 
         print("Compiling parsed model...\n")
         self.parsed_model = keras.models.Model(img_input, parsed_layers[
-            self.layer_list[-1]['name']])
+            self._layer_list[-1]['name']])
         # Optimizer and loss do not matter because we only do inference.
         self.parsed_model.compile(
             'sgd', 'categorical_crossentropy',
@@ -599,42 +593,6 @@ def padding_string(pad, pool_size):
     return padding
 
 
-def import_script(path, filename):
-    """Import python script independently from python version.
-
-    Parameters
-    ----------
-
-    path: string
-        Path to directory where to load script from.
-
-    filename: string
-        Name of script file.
-    """
-
-    import os
-    import sys
-
-    filepath = os.path.join(path, filename + '.py')
-
-    v = sys.version_info
-    if v >= (3, 5):
-        import importlib.util
-        spec = importlib.util.spec_from_file_location(filename, filepath)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-    elif v >= (3, 3):
-        # noinspection PyCompatibility,PyUnresolvedReferences
-        from importlib.machinery import SourceFileLoader
-        mod = SourceFileLoader(filename, filepath).load_module()
-    else:
-        # noinspection PyDeprecation
-        import imp
-        # noinspection PyDeprecation
-        mod = imp.load_source(filename, filepath)
-    return mod
-
-
 def binary_tanh(x):
     """Round a float to -1 or 1.
 
@@ -739,7 +697,7 @@ def binarize(w, h=1., deterministic=True):
     """
 
     # [-1, 1] -> [0, 1]
-    wb = np.clip((w / h + 1.) / 2., 0, 1)
+    wb = np.clip((np.add(np.true_divide(w, h), 1.)) / 2., 0, 1)
 
     # Deterministic / stochastic rounding
     wb = np.round(wb) if deterministic else np.random.binomial(1, wb)

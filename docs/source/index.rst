@@ -1,23 +1,50 @@
 .. -*- coding=utf-8 -*-
 
-.. SNN toolbox documentation master file,
-   created by sphinx-quickstart on Sun Mar 13 07:59:47 2016.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Spiking neural network conversion toolbox
+=========================================
 
+The SNN conversion toolbox contains functions to transform rate-based artificial
+neural networks into spiking neural networks, and to simulate them. The source
+code can be found on `GitHub`_.
 
-SNN conversion toolbox
-======================
+User Guide
+----------
+
+These sections guide you through the installation, configuration and running of
+the toolbox. Examples are included.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 1
 
-   intro
-   installation
-   running
-   configuration
-   extending
-   examples
-   citation
-   support
-   API <modules>
+   user/intro
+   user/installation
+   user/running
+   user/configuration
+   user/extending
+   user/examples
+   user/citation
+   user/support
+
+API Reference
+-------------
+
+Here you find detailed descriptions of specific functions and classes.
+
+.. toctree::
+   :maxdepth: 2
+
+   modules/core
+   modules/model_libs
+   modules/target_simulators
+   modules/io_utils
+   modules/gui
+   modules/snntoolbox
+
+Indices and tables
+------------------
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+.. _GitHub: https://github.com/NeuromorphicProcessorProject/snn_toolbox

@@ -51,7 +51,7 @@ class Tox(TestCommand):
 
 setup(
     name='snntoolbox',
-    version='0.4.0',  # see https://www.python.org/dev/peps/pep-0440/
+    version='0.1.0',  # see https://www.python.org/dev/peps/pep-0440/
     description='Spiking Neural Net Conversion',
     # long_description=long_description,
     author='Bodo Rueckauer',

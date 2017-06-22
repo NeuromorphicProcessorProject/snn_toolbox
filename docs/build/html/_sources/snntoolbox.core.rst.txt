@@ -20,14 +20,6 @@ snntoolbox\.core\.inisim module
     :undoc-members:
     :show-inheritance:
 
-snntoolbox\.core\.megasim module
---------------------------------
-
-.. automodule:: snntoolbox.core.megasim
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 snntoolbox\.core\.pipeline module
 ---------------------------------
 

@@ -243,7 +243,8 @@ def confirm_overwrite(filepath):
 def to_json(data, path):
     """Write ``data`` dictionary to ``path``.
 
-    A ``TypeError`` is raised if objects in ``data`` are not JSON serializable.
+    A :py:exc:`TypeError` is raised if objects in ``data`` are not JSON
+    serializable.
     """
 
     def get_json_type(obj):
@@ -284,12 +285,12 @@ def import_helpers(filepath, config):
     Parameters
     ----------
 
-    filepath : str
+    filepath: str
         Filename or relative or absolute path of module to import. If only
         the filename is given, module is assumed to be in current working
         directory (``config['paths']['path_wd']). Non-absolute paths are taken
         relative to working dir.
-    config : configparser.ConfigParser
+    config: configparser.ConfigParser
         Settings.
 
     Returns
@@ -299,8 +300,6 @@ def import_helpers(filepath, config):
         Module with helper functions.
 
     """
-
-    from snntoolbox.model_libs.common import import_script
 
     path, filename = get_abs_path(filepath, config)
 
@@ -313,12 +312,12 @@ def get_abs_path(filepath, config):
     Parameters
     ----------
 
-    filepath : str
+    filepath: str
         Filename or relative or absolute path. If only the filename is given,
         file is assumed to be in current working directory
         (``config['paths']['path_wd']). Non-absolute paths are interpreted
         relative to working dir.
-    config : configparser.ConfigParser
+    config: configparser.ConfigParser
         Settings.
 
     Returns
@@ -335,3 +334,38 @@ def get_abs_path(filepath, config):
     elif not os.path.isabs(path):
         path = os.path.abspath(os.path.join(config['paths']['path_wd'], path))
     return path, filename
+
+
+def import_script(path, filename):
+    """Import python script independently from python version.
+
+    Parameters
+    ----------
+
+    path: string
+        Path to directory where to load script from.
+
+    filename: string
+        Name of script file.
+    """
+
+    import sys
+
+    filepath = os.path.join(path, filename + '.py')
+
+    v = sys.version_info
+    if v >= (3, 5):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(filename, filepath)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    elif v >= (3, 3):
+        # noinspection PyCompatibility,PyUnresolvedReferences
+        from importlib.machinery import SourceFileLoader
+        mod = SourceFileLoader(filename, filepath).load_module()
+    else:
+        # noinspection PyDeprecation
+        import imp
+        # noinspection PyDeprecation
+        mod = imp.load_source(filename, filepath)
+    return mod

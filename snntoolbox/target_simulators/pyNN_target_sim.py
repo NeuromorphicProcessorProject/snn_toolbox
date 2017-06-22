@@ -31,6 +31,25 @@ cellparams_pyNN = {'v_thresh', 'v_reset', 'v_rest', 'e_rev_E', 'e_rev_I', 'cm',
                    'i_offset', 'tau_refrac', 'tau_m', 'tau_syn_E', 'tau_syn_I'}
 
 
+def connect(f):
+    """Connect layers."""
+
+    from functools import wraps
+
+    @wraps(f)
+    def wrapper(self):
+        f(self)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            warnings.warn('deprecated', UserWarning)
+
+            self.connections.append(self.sim.Projection(
+                self.layers[-2], self.layers[-1],
+                self.sim.FromListConnector(self._conns,
+                                           ['weight', 'delay'])))
+        return wrapper
+
+
 class SNN(AbstractSNN):
     """Class to hold the compiled spiking neural network.
 
@@ -384,19 +403,3 @@ class SNN(AbstractSNN):
 
     def set_spiketrain_stats_input(self):
         AbstractSNN.set_spiketrain_stats_input(self)
-
-
-def connect(f):
-    """Connect layers."""
-
-    def wrapper(self):
-        f(self)
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            warnings.warn('deprecated', UserWarning)
-
-            self.connections.append(self.sim.Projection(
-                self.layers[-2], self.layers[-1],
-                self.sim.FromListConnector(self._conns,
-                                           ['weight', 'delay'])))
-        return wrapper

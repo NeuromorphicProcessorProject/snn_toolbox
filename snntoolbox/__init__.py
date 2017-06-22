@@ -8,6 +8,8 @@ from __future__ import absolute_import, print_function
 
 import os
 
+__version__ = '0.1.0'
+
 # Create a Keras config file so that even when importing Keras for the first
 # time, the backend will be 'theano', not default 'tensorflow'.
 _keras_base_dir = os.path.expanduser('~')

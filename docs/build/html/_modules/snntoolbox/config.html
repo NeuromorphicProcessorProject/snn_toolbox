@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>snntoolbox.config &mdash; SNN toolbox 0.1 documentation</title>
+  <title>snntoolbox.config &mdash; SNN toolbox 0.1.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../genindex.html"/>
         <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="SNN toolbox 0.1 documentation" href="../../index.html"/>
+    <link rel="top" title="SNN toolbox 0.1.0 documentation" href="../../index.html"/>
         <link rel="up" title="Module code" href="../index.html"/> 
 
   
@@ -90,15 +90,22 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../running.html">Getting started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../extending.html">Extending the toolbox</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../citation.html">Citation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../support.html">Support</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../modules.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user/intro.html">Spiking neural network conversion toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user/running.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user/configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user/extending.html">Extending the toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user/citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user/support.html">Support</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/core.html"><code class="docutils literal"><span class="pre">snntoolbox.core</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/model_libs.html">snntoolbox.model_libs package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/target_simulators.html">snntoolbox.target_simulators package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/io_utils.html">snntoolbox.io_utils package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/gui.html">snntoolbox.gui package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules/snntoolbox.html">snntoolbox package</a></li>
 </ul>
 
             
@@ -168,39 +175,14 @@
 <span class="sd">&quot;&quot;&quot;Configure SNN toolbox and check that user specified settings are valid.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
-<span class="kn">from</span> <span class="nn">textwrap</span> <span class="k">import</span> <span class="n">dedent</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
-
-<span class="c1"># Define text sizes of various plot properties relative to font.size, using the</span>
-<span class="c1"># following values: xx-small, x-small, small, medium, large, x-large, xx-large,</span>
-<span class="c1"># larger, or smaller.</span>
-<span class="n">plotproperties</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;font.size&#39;</span><span class="p">:</span> <span class="mi">13</span><span class="p">,</span>
-                  <span class="s1">&#39;axes.titlesize&#39;</span><span class="p">:</span> <span class="s1">&#39;xx-large&#39;</span><span class="p">,</span>
-                  <span class="s1">&#39;axes.labelsize&#39;</span><span class="p">:</span> <span class="s1">&#39;x-large&#39;</span><span class="p">,</span>
-                  <span class="s1">&#39;xtick.labelsize&#39;</span><span class="p">:</span> <span class="s1">&#39;x-large&#39;</span><span class="p">,</span>
-                  <span class="s1">&#39;xtick.major.size&#39;</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
-                  <span class="s1">&#39;xtick.minor.size&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-                  <span class="s1">&#39;ytick.labelsize&#39;</span><span class="p">:</span> <span class="s1">&#39;x-large&#39;</span><span class="p">,</span>
-                  <span class="s1">&#39;ytick.major.size&#39;</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
-                  <span class="s1">&#39;ytick.minor.size&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-                  <span class="s1">&#39;legend.fontsize&#39;</span><span class="p">:</span> <span class="s1">&#39;x-large&#39;</span><span class="p">,</span>
-                  <span class="s1">&#39;figure.figsize&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
-                  <span class="s1">&#39;savefig.format&#39;</span><span class="p">:</span> <span class="s1">&#39;png&#39;</span><span class="p">}</span>
-<span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">plotproperties</span><span class="p">)</span>
 
 <span class="c1"># List supported model libraries, simulators, etc.</span>
 <span class="n">model_libs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;keras&#39;</span><span class="p">,</span> <span class="s1">&#39;lasagne&#39;</span><span class="p">,</span> <span class="s1">&#39;caffe&#39;</span><span class="p">}</span>
 <span class="n">maxpool_types</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;fir_max&#39;</span><span class="p">,</span> <span class="s1">&#39;exp_max&#39;</span><span class="p">,</span> <span class="s1">&#39;avg_max&#39;</span><span class="p">}</span>
-<span class="n">custom_activations</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;binary_tanh&#39;</span><span class="p">,</span> <span class="s1">&#39;binary_sigmoid&#39;</span><span class="p">}</span>
 <span class="n">simulators_pyNN</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;nest&#39;</span><span class="p">,</span> <span class="s1">&#39;brian&#39;</span><span class="p">,</span> <span class="s1">&#39;Neuron&#39;</span><span class="p">}</span>
 <span class="n">simulators_other</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;INI&#39;</span><span class="p">,</span> <span class="s1">&#39;brian2&#39;</span><span class="p">,</span> <span class="s1">&#39;MegaSim&#39;</span><span class="p">}</span>
 <span class="n">simulators</span> <span class="o">=</span> <span class="n">simulators_pyNN</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="n">simulators</span> <span class="o">|=</span> <span class="n">simulators_other</span>
-
-<span class="c1"># Default parameters:</span>
-<span class="n">path_default</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s1">&#39;default_settings.txt&#39;</span><span class="p">)</span>
-<span class="n">settings</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">path_default</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()))</span>
 
 <span class="c1"># Possible variables to monitor and save / plot:</span>
 <span class="n">log_vars</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;activations_n_b_l&#39;</span><span class="p">,</span> <span class="s1">&#39;spiketrains_n_b_l_t&#39;</span><span class="p">,</span> <span class="s1">&#39;input_b_l_t&#39;</span><span class="p">,</span>
@@ -208,10 +190,15 @@
 <span class="n">plot_vars</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;activations&#39;</span><span class="p">,</span> <span class="s1">&#39;spiketrains&#39;</span><span class="p">,</span> <span class="s1">&#39;spikecounts&#39;</span><span class="p">,</span> <span class="s1">&#39;spikerates&#39;</span><span class="p">,</span>
              <span class="s1">&#39;input_image&#39;</span><span class="p">,</span> <span class="s1">&#39;error_t&#39;</span><span class="p">,</span> <span class="s1">&#39;confusion_matrix&#39;</span><span class="p">,</span> <span class="s1">&#39;correlation&#39;</span><span class="p">,</span>
              <span class="s1">&#39;hist_spikerates_activations&#39;</span><span class="p">,</span> <span class="s1">&#39;normalization_activations&#39;</span><span class="p">,</span>
-             <span class="s1">&#39;operations&#39;</span><span class="p">,</span> <span class="s1">&#39;all&#39;</span><span class="p">}</span>
+             <span class="s1">&#39;operations&#39;</span><span class="p">,</span> <span class="s1">&#39;v_mem&#39;</span><span class="p">,</span> <span class="s1">&#39;all&#39;</span><span class="p">}</span>
+
+<span class="c1"># Layers that can be implemented by our spiking neuron simulators</span>
+<span class="n">spiking_layers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Dense&#39;</span><span class="p">,</span> <span class="s1">&#39;Conv2D&#39;</span><span class="p">,</span> <span class="s1">&#39;MaxPooling2D&#39;</span><span class="p">,</span> <span class="s1">&#39;AveragePooling2D&#39;</span><span class="p">}</span>
+
+<span class="n">snn_layers</span> <span class="o">=</span> <span class="n">spiking_layers</span> <span class="o">|</span> <span class="p">{</span><span class="s1">&#39;Flatten&#39;</span><span class="p">,</span> <span class="s1">&#39;Concatenate&#39;</span><span class="p">}</span>
 
 <span class="c1"># pyNN specific parameters.</span>
-<span class="n">pyNN_keys</span> <span class="o">=</span> <span class="p">[</span>
+<span class="n">pyNN_keys</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s1">&#39;v_reset&#39;</span><span class="p">,</span>
     <span class="s1">&#39;v_rest&#39;</span><span class="p">,</span>  <span class="c1"># Initial neuron potential</span>
     <span class="s1">&#39;e_rev_E&#39;</span><span class="p">,</span>  <span class="c1"># Pull v towards +10 mV during spike</span>
@@ -221,112 +208,102 @@
     <span class="s1">&#39;tau_m&#39;</span><span class="p">,</span>  <span class="c1"># No leakage</span>
     <span class="s1">&#39;tau_syn_E&#39;</span><span class="p">,</span>  <span class="c1"># Excitatory synaptic cond decays fast</span>
     <span class="s1">&#39;tau_syn_I&#39;</span><span class="p">,</span>  <span class="c1"># Inhibitory synaptic cond decays fast</span>
-    <span class="s1">&#39;delay&#39;</span><span class="p">]</span>  <span class="c1"># Constraint: delay &gt;= dt</span>
-
-<span class="n">pyNN_settings</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">pyNN_keys</span><span class="p">:</span>
-    <span class="n">pyNN_settings</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-
-<span class="c1"># Layers that can be implemented by our spiking neuron simulators</span>
-<span class="n">spiking_layers</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Dense&#39;</span><span class="p">,</span> <span class="s1">&#39;Conv2D&#39;</span><span class="p">,</span> <span class="s1">&#39;MaxPooling2D&#39;</span><span class="p">,</span> <span class="s1">&#39;AveragePooling2D&#39;</span><span class="p">,</span>
-                  <span class="s1">&#39;Flatten&#39;</span><span class="p">,</span> <span class="s1">&#39;Concatenate&#39;</span><span class="p">]</span>
+    <span class="s1">&#39;delay&#39;</span><span class="p">}</span>  <span class="c1"># Constraint: delay &gt;= dt</span>
 
 
-<div class="viewcode-block" id="file_not_found_msg"><a class="viewcode-back" href="../../snntoolbox.html#snntoolbox.config.file_not_found_msg">[docs]</a><span class="k">def</span> <span class="nf">file_not_found_msg</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return string stating that file was not found at path.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    filename: str</span>
-<span class="sd">    path: Optional[str]</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-
-<span class="sd">    : str</span>
+<div class="viewcode-block" id="load_config"><a class="viewcode-back" href="../../modules/snntoolbox.html#snntoolbox.config.load_config">[docs]</a><span class="k">def</span> <span class="nf">load_config</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load a config file from ``filepath``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">path</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="s2">&quot;Input model file </span><span class="si">{}</span><span class="s2"> not found in working dir </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span>
-                                                                    <span class="n">path</span><span class="p">)</span></div>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">configparser</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="c1"># noinspection PyPep8Naming</span>
+        <span class="kn">import</span> <span class="nn">ConfigParser</span> <span class="k">as</span> <span class="nn">configparser</span>
+
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">),</span> \
+        <span class="s2">&quot;Configuration file not found at </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">config</span></div>
 
 
-<div class="viewcode-block" id="update_setup"><a class="viewcode-back" href="../../snntoolbox.html#snntoolbox.config.update_setup">[docs]</a><span class="k">def</span> <span class="nf">update_setup</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+<div class="viewcode-block" id="update_setup"><a class="viewcode-back" href="../../modules/snntoolbox.html#snntoolbox.config.update_setup">[docs]</a><span class="k">def</span> <span class="nf">update_setup</span><span class="p">(</span><span class="n">config_filepath</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Update parameters.</span>
 
-<span class="sd">    Check that parameter choices ``s`` are valid and update the global</span>
-<span class="sd">    parameter settings ``snntoolbox.config.settings`` with the user-specified</span>
-<span class="sd">    values. Default values are filled in where user did not give any.</span>
+<span class="sd">    Load settings from configuration file at ``config_filepath``, and check that</span>
+<span class="sd">    parameter choices are valid. Non-specified settings are filled in with</span>
+<span class="sd">    defaults.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">os</span>
-    <span class="kn">import</span> <span class="nn">snntoolbox</span>
 
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">dict</span><span class="p">),</span> <span class="s2">&quot;Input argument must be a dictionary.&quot;</span>
+    <span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
+    <span class="kn">from</span> <span class="nn">textwrap</span> <span class="k">import</span> <span class="n">dedent</span>
 
-    <span class="c1"># Update settings with user specified settings.</span>
-    <span class="n">settings</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="c1"># Load defaults.</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span>
+                                      <span class="s1">&#39;config_defaults&#39;</span><span class="p">))</span>
+
+    <span class="c1"># Overwrite with user settings.</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">config_filepath</span><span class="p">)</span>
 
     <span class="c1"># Name of input file must be given.</span>
-    <span class="k">assert</span> <span class="s1">&#39;filename_ann&#39;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">,</span> <span class="s2">&quot;Filename of input model not specified.&quot;</span>
+    <span class="n">filename_ann</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">filename_ann</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s2">&quot;Filename of input model not specified.&quot;</span>
 
     <span class="c1"># Check that simulator choice is valid.</span>
-    <span class="k">assert</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">simulators</span><span class="p">,</span> \
-        <span class="s2">&quot;Simulator &#39;</span><span class="si">{}</span><span class="s2">&#39; not supported.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">])</span> <span class="o">+</span> \
-        <span class="s2">&quot; Choose from </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">simulators</span><span class="p">)</span>
+    <span class="n">simulator</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;simulation&#39;</span><span class="p">][</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">simulator</span> <span class="ow">in</span> <span class="n">simulators</span><span class="p">,</span> \
+        <span class="s2">&quot;Simulator &#39;</span><span class="si">{}</span><span class="s2">&#39; not supported. Choose from </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">simulator</span><span class="p">,</span>
+                                                              <span class="n">simulators</span><span class="p">)</span>
 
     <span class="c1"># Warn user that it is not possible to use Brian2 simulator by loading a</span>
     <span class="c1"># pre-converted network from disk.</span>
-    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;brian2&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;convert&#39;</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">simulator</span> <span class="o">==</span> <span class="s1">&#39;brian2&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s1">&#39;tools&#39;</span><span class="p">,</span> <span class="s1">&#39;convert&#39;</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">dedent</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;\ </span><span class="se">\n</span><span class="s2"></span>
 <span class="s2">            SNN toolbox Warning: When using Brian 2 simulator, you need to</span>
 <span class="s2">            convert the network each time you start a new session. (No</span>
 <span class="s2">            saving/reloading methods implemented.) Setting convert = True.</span>
 <span class="s2">            </span><span class="se">\n</span><span class="s2">&quot;&quot;&quot;</span><span class="p">))</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;convert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;tools&#39;</span><span class="p">,</span> <span class="s1">&#39;convert&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
 
-    <span class="c1"># Set default path if user passed empty string.</span>
-    <span class="k">if</span> <span class="s1">&#39;path_wd&#39;</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">and</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">snntoolbox</span><span class="o">.</span><span class="n">toolbox_root</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span>
-                                           <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">],</span>
-                                           <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">])</span>
+    <span class="c1"># Set default path if user did not specify it.</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;path_wd&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;paths&#39;</span><span class="p">,</span> <span class="s1">&#39;path_wd&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">config_filepath</span><span class="p">))</span>
 
     <span class="c1"># Check specified working directory exists.</span>
-    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">]),</span> \
-        <span class="s2">&quot;Working directory </span><span class="si">{}</span><span class="s2"> does not exist.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">])</span>
+    <span class="n">path_wd</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;path_wd&#39;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path_wd</span><span class="p">),</span> \
+        <span class="s2">&quot;Working directory </span><span class="si">{}</span><span class="s2"> does not exist.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path_wd</span><span class="p">)</span>
 
     <span class="c1"># Check that choice of input model library is valid.</span>
-    <span class="k">assert</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;model_lib&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">model_libs</span><span class="p">,</span> \
-        <span class="s2">&quot;Input model library &#39;</span><span class="si">{}</span><span class="s2">&#39; &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;model_lib&#39;</span><span class="p">])</span> <span class="o">+</span> \
-        <span class="s2">&quot;not supported yet. Possible values: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model_libs</span><span class="p">)</span>
+    <span class="n">model_lib</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;input&#39;</span><span class="p">][</span><span class="s1">&#39;model_lib&#39;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">model_lib</span> <span class="ow">in</span> <span class="n">model_libs</span><span class="p">,</span> <span class="s2">&quot;ERROR: Input model library &#39;</span><span class="si">{}</span><span class="s2">&#39; &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">model_lib</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;not supported yet. Possible values: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model_libs</span><span class="p">)</span>
 
     <span class="c1"># Check input model is found and has the right format for the specified</span>
     <span class="c1"># model library.</span>
-    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;model_lib&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;caffe&#39;</span><span class="p">:</span>
-        <span class="n">caffemodel_file</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.caffemodel&#39;</span>
-        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span> <span class="n">caffemodel_file</span><span class="p">)),</span> \
-            <span class="n">file_not_found_msg</span><span class="p">(</span><span class="n">caffemodel_file</span><span class="p">)</span>
-        <span class="n">prototxt_file</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.prototxt&#39;</span>
-        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span> <span class="n">prototxt_file</span><span class="p">)),</span> \
-            <span class="n">file_not_found_msg</span><span class="p">(</span><span class="n">prototxt_file</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;model_lib&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;keras&#39;</span><span class="p">:</span>
-        <span class="n">h5_file</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
-        <span class="n">h5_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span> <span class="n">h5_file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">model_lib</span> <span class="o">==</span> <span class="s1">&#39;caffe&#39;</span><span class="p">:</span>
+        <span class="n">caffemodel_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path_wd</span><span class="p">,</span>
+                                           <span class="n">filename_ann</span> <span class="o">+</span> <span class="s1">&#39;.caffemodel&#39;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">caffemodel_filepath</span><span class="p">),</span> \
+            <span class="s2">&quot;File </span><span class="si">{}</span><span class="s2"> not found.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">caffemodel_filepath</span><span class="p">)</span>
+        <span class="n">prototxt_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path_wd</span><span class="p">,</span> <span class="n">filename_ann</span> <span class="o">+</span> <span class="s1">&#39;.prototxt&#39;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">prototxt_filepath</span><span class="p">),</span> \
+            <span class="s2">&quot;File </span><span class="si">{}</span><span class="s2"> not found.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prototxt_filepath</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_lib</span> <span class="o">==</span> <span class="s1">&#39;keras&#39;</span><span class="p">:</span>
+        <span class="n">h5_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path_wd</span><span class="p">,</span> <span class="n">filename_ann</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">h5_filepath</span><span class="p">),</span> \
-            <span class="n">file_not_found_msg</span><span class="p">(</span><span class="n">h5_file</span><span class="p">)</span>
-        <span class="n">json_file</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span> <span class="n">json_file</span><span class="p">)):</span>
+            <span class="s2">&quot;File </span><span class="si">{}</span><span class="s2"> not found.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">h5_filepath</span><span class="p">)</span>
+        <span class="n">json_file</span> <span class="o">=</span> <span class="n">filename_ann</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path_wd</span><span class="p">,</span> <span class="n">json_file</span><span class="p">)):</span>
             <span class="kn">import</span> <span class="nn">keras</span>
-            <span class="c1"># TODO: enable loading custom activation functions</span>
             <span class="c1"># from snntoolbox.core.util import binary_sigmoid, binary_tanh</span>
-            <span class="c1"># import keras.activations</span>
-            <span class="c1"># keras.activations.binary_sigmoid = binary_sigmoid</span>
             <span class="n">custom_objects</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># {&#39;binary_sigmoid&#39;: binary_sigmoid}</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span>
-                    <span class="n">h5_filepath</span><span class="p">,</span> <span class="n">custom_objects</span><span class="p">)</span>
+                <span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">h5_filepath</span><span class="p">,</span> <span class="n">custom_objects</span><span class="p">)</span>
             <span class="k">except</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
                     <span class="s2">&quot;Input model could not be loaded. This is likely due to a &quot;</span>
@@ -334,145 +311,124 @@
                     <span class="s2">&quot;might have provided an h5 file with weights, but without &quot;</span>
                     <span class="s2">&quot;network configuration. In earlier versions of Keras, this &quot;</span>
                     <span class="s2">&quot;is contained in a json file.&quot;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;model_lib&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;lasagne&#39;</span><span class="p">:</span>
-        <span class="n">h5_file</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
-        <span class="n">pkl_file</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.pkl&#39;</span>
-        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span> <span class="n">h5_file</span><span class="p">))</span> <span class="ow">or</span> \
-            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span> <span class="n">pkl_file</span><span class="p">)),</span> \
-            <span class="n">file_not_found_msg</span><span class="p">(</span><span class="s1">&#39;.h5 or .pkl&#39;</span><span class="p">)</span>
-        <span class="n">py_file</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.py&#39;</span>
-        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span> <span class="n">py_file</span><span class="p">)),</span> \
-            <span class="n">file_not_found_msg</span><span class="p">(</span><span class="n">py_file</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_lib</span> <span class="o">==</span> <span class="s1">&#39;lasagne&#39;</span><span class="p">:</span>
+        <span class="n">h5_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path_wd</span><span class="p">,</span> <span class="n">filename_ann</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span><span class="p">)</span>
+        <span class="n">pkl_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path_wd</span><span class="p">,</span> <span class="n">filename_ann</span> <span class="o">+</span> <span class="s1">&#39;.pkl&#39;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">h5_filepath</span><span class="p">)</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">pkl_filepath</span><span class="p">),</span> \
+            <span class="s2">&quot;File </span><span class="si">{}</span><span class="s2"> not found.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;.h5 or .pkl&#39;</span><span class="p">)</span>
+        <span class="n">py_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path_wd</span><span class="p">,</span> <span class="n">filename_ann</span> <span class="o">+</span> <span class="s1">&#39;.py&#39;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">py_filepath</span><span class="p">),</span> \
+            <span class="s2">&quot;File </span><span class="si">{}</span><span class="s2"> not found.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">py_filepath</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;For the specified input model library </span><span class="si">{}</span><span class="s2">, &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;model_lib&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;no test is implemented to check if input &quot;</span>
-            <span class="s2">&quot;model files exist in the specified working directory!&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;For the specified input model library </span><span class="si">{}</span><span class="s2">, &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model_lib</span><span class="p">)</span> <span class="o">+</span>
+              <span class="s2">&quot;no test is implemented to check if input model files exist in &quot;</span>
+              <span class="s2">&quot;the specified working directory!&quot;</span><span class="p">)</span>
 
-    <span class="c1"># Check that the data set path is valid and contains the data in the</span>
-    <span class="c1"># specified format. For jpg format we only do a superficial check because</span>
-    <span class="c1"># listing the subdirectory contents becomes too costly for large data sets.</span>
-    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">]),</span> \
-        <span class="s2">&quot;Path to data set does not exist.&quot;</span>
-    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;normalize&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_format&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;npz&#39;</span> <span class="ow">and</span> <span class="ow">not</span> \
-            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span>
-                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">],</span> <span class="s1">&#39;x_norm.npz&#39;</span><span class="p">)):</span>
-        <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+    <span class="c1"># Set default path if user did not specify it.</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;paths&#39;</span><span class="p">,</span> <span class="s1">&#39;dataset_path&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+
+    <span class="c1"># Check that the data set path is valid.</span>
+    <span class="n">dataset_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">])</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;paths&#39;</span><span class="p">,</span> <span class="s1">&#39;dataset_path&#39;</span><span class="p">,</span> <span class="n">dataset_path</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">),</span> <span class="s2">&quot;Path to data set does not exist: &quot;</span> \
+                                         <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">)</span>
+
+    <span class="c1"># Check that data set path contains the data in the specified format.</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">),</span> <span class="s2">&quot;Data set directory is empty.&quot;</span>
+    <span class="n">normalize</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s1">&#39;tools&#39;</span><span class="p">,</span> <span class="s1">&#39;normalize&#39;</span><span class="p">)</span>
+    <span class="n">dataset_format</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;input&#39;</span><span class="p">][</span><span class="s1">&#39;dataset_format&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">dataset_format</span> <span class="o">==</span> <span class="s1">&#39;npz&#39;</span> <span class="ow">and</span> <span class="n">normalize</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s1">&#39;x_norm.npz&#39;</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeWarning</span><span class="p">(</span>
             <span class="s2">&quot;No data set file &#39;x_norm.npz&#39; found in specified data set path &quot;</span> <span class="o">+</span>
-            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">. Add it, or disable normalization.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">]))</span>
-    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_format&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;npz&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-            <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">],</span> <span class="s1">&#39;x_test.npz&#39;</span><span class="p">))</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">],</span> <span class="s1">&#39;y_test.npz&#39;</span><span class="p">))):</span>
-        <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">. Add it, or disable normalization.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">dataset_format</span> <span class="o">==</span> <span class="s1">&#39;npz&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">dataset_path</span><span class="p">,</span> <span class="s1">&#39;x_test.npz&#39;</span><span class="p">))</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">dataset_path</span><span class="p">,</span> <span class="s1">&#39;y_test.npz&#39;</span><span class="p">))):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeWarning</span><span class="p">(</span>
             <span class="s2">&quot;Data set file &#39;x_test.npz&#39; or &#39;y_test.npz&#39; was not found in &quot;</span>
-            <span class="s2">&quot;specified data set path </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">]))</span>
-    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_format&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;jpg&#39;</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">]),</span> <span class="s2">&quot;Data set directory is &quot;</span> \
-                                                     <span class="s2">&quot;empty.&quot;</span>
-        <span class="c1"># Transform str to dict</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;datagen_kwargs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;datagen_kwargs&#39;</span><span class="p">])</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataflow_kwargs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataflow_kwargs&#39;</span><span class="p">])</span>
+            <span class="s2">&quot;specified data set path </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">))</span>
 
-        <span class="c1"># Get class labels</span>
-        <span class="k">if</span> <span class="s1">&#39;class_idx_path&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataflow_kwargs&#39;</span><span class="p">]:</span>
-            <span class="kn">import</span> <span class="nn">json</span>
-            <span class="n">class_idx</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span>
-                <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataflow_kwargs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;class_idx_path&#39;</span><span class="p">),</span> <span class="s1">&#39;r&#39;</span><span class="p">))</span>
-            <span class="n">classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">class_idx</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="p">)][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">class_idx</span><span class="p">))]</span>
-            <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataflow_kwargs&#39;</span><span class="p">][</span><span class="s1">&#39;classes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">classes</span>
-
-        <span class="c1"># Get proprocessing function</span>
-        <span class="k">if</span> <span class="s1">&#39;preprocessing_function&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;datagen_kwargs&#39;</span><span class="p">]:</span>
-            <span class="kn">from</span> <span class="nn">snntoolbox.model_libs.common</span> <span class="k">import</span> <span class="n">import_script</span>
-            <span class="n">helpers</span> <span class="o">=</span> <span class="n">import_script</span><span class="p">(</span>
-                <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;datagen_kwargs&#39;</span><span class="p">][</span><span class="s1">&#39;preprocessing_function&#39;</span><span class="p">])</span>
-            <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;datagen_kwargs&#39;</span><span class="p">][</span><span class="s1">&#39;preprocessing_function&#39;</span><span class="p">]</span> <span class="o">=</span> \
-                <span class="n">helpers</span><span class="o">.</span><span class="n">preprocessing_function</span>
-    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_format&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;aedat&#39;</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">]),</span> <span class="s2">&quot;Data set directory is &quot;</span> \
-                                                     <span class="s2">&quot;empty.&quot;</span>
-
-    <span class="c1"># Convert string containing sample indices to list of indices.</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;samples_to_test&#39;</span><span class="p">],</span> <span class="nb">str</span><span class="p">),</span> <span class="s2">&quot;The parameter &quot;</span> <span class="o">+</span> \
-        <span class="s2">&quot;&#39;samples_to_test&#39; must be of type &#39;string&#39;. Given: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;samples_to_test&#39;</span><span class="p">]</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
-    <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;sample_indices_to_test&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;samples_to_test&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">()]</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;sample_indices_to_test&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="p">[]:</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;sample_indices_to_test&#39;</span><span class="p">])</span> <span class="o">!=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;num_to_test&#39;</span><span class="p">]:</span>
+    <span class="n">sample_idxs_to_test</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;simulation&#39;</span><span class="p">][</span><span class="s1">&#39;sample_idxs_to_test&#39;</span><span class="p">])</span>
+    <span class="n">num_to_test</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getint</span><span class="p">(</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;num_to_test&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sample_idxs_to_test</span> <span class="o">==</span> <span class="p">[]:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_idxs_to_test</span><span class="p">)</span> <span class="o">!=</span> <span class="n">num_to_test</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="n">dedent</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">            SNN toolbox Warning: Settings mismatch. Adjusting &#39;num_to_test&#39; to</span>
-<span class="s2">            equal the number of &#39;samples_to_test&#39;.&quot;&quot;&quot;</span><span class="p">))</span>
-            <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;num_to_test&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;sample_indices_to_test&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataset_format&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;jpg&#39;</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="s2">&quot;&#39;shuffle&#39;: False&quot;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dataflow_kwargs&#39;</span><span class="p">],</span> <span class="n">dedent</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">                SNN toolbox Warning: You gave a list of specific samples to be</span>
-<span class="s2">                tested. For this to work in combination with a  </span>
-<span class="s2">                DataImageGenerator, you should set shuffling=False in </span>
-<span class="s2">                settings[&#39;dataflow_kwargs&#39;].&quot;&quot;&quot;</span><span class="p">)</span>
+<span class="s2">            SNN toolbox warning: Settings mismatch. Adjusting &#39;num_to_test&#39; to </span>
+<span class="s2">            equal the number of &#39;sample_idxs_to_test&#39;.&quot;&quot;&quot;</span><span class="p">))</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;num_to_test&#39;</span><span class="p">,</span>
+                       <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sample_idxs_to_test</span><span class="p">)))</span>
 
     <span class="c1"># Create log directory if it does not exist.</span>
-    <span class="k">if</span> <span class="s1">&#39;log_dir_of_current_run&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-            <span class="n">s</span><span class="p">[</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span> <span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="s1">&#39;gui&#39;</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;runlabel&#39;</span><span class="p">])</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">]):</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;paths&#39;</span><span class="p">,</span> <span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">path_wd</span><span class="p">,</span> <span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="s1">&#39;gui&#39;</span><span class="p">,</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;runlabel&#39;</span><span class="p">]))</span>
+    <span class="n">log_dir_of_current_run</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">log_dir_of_current_run</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">log_dir_of_current_run</span><span class="p">)</span>
 
     <span class="c1"># Specify filenames for models at different stages of the conversion.</span>
-    <span class="k">if</span> <span class="s1">&#39;filename_parsed_model&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">or</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_parsed_model&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_parsed_model&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_parsed&#39;</span>
-    <span class="k">if</span> <span class="s1">&#39;filename_snn&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">or</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;filename_snn&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_snn&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;filename_ann&#39;</span><span class="p">],</span>
-                                                  <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;filename_parsed_model&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;paths&#39;</span><span class="p">,</span> <span class="s1">&#39;filename_parsed_model&#39;</span><span class="p">,</span> <span class="n">filename_ann</span> <span class="o">+</span> <span class="s1">&#39;_parsed&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;filename_snn&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;paths&#39;</span><span class="p">,</span> <span class="s1">&#39;filename_snn&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename_ann</span><span class="p">,</span>
+                                                           <span class="n">simulator</span><span class="p">))</span>
 
-    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;simulator&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;INI&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;poisson_input&#39;</span><span class="p">]:</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;poisson_input&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">simulator</span> <span class="o">!=</span> <span class="s1">&#39;INI&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="s1">&#39;poisson_input&#39;</span><span class="p">):</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="s1">&#39;poisson_input&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">dedent</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
 <span class="s2">            SNN toolbox Warning: Currently, turning off Poisson input is</span>
 <span class="s2">            only possible in INI simulator. Falling back on Poisson input.&quot;&quot;&quot;</span><span class="p">))</span>
 
     <span class="c1"># Make sure the number of samples to test is not lower than the batch size.</span>
-    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;num_to_test&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]:</span>
+    <span class="n">batch_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getint</span><span class="p">(</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;batch_size&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">getint</span><span class="p">(</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;num_to_test&#39;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">batch_size</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">dedent</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
 <span class="s2">            SNN toolbox Warning: &#39;num_to_test&#39; set lower than &#39;batch_size&#39;.</span>
 <span class="s2">            In simulators that test samples batch-wise (e.g. INIsim), this</span>
 <span class="s2">            can lead to undesired behavior. Setting &#39;num_to_test&#39; equal to</span>
 <span class="s2">            &#39;batch_size&#39;.&quot;&quot;&quot;</span><span class="p">))</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;num_to_test&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;num_to_test&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">batch_size</span><span class="p">))</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;convert&#39;</span><span class="p">]:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;SNN toolbox Warning: You have restored a previously converted &quot;</span>
-              <span class="s2">&quot;SNN from disk. If this net uses an activation function unknown &quot;</span>
-              <span class="s2">&quot;to Keras, this custom function will not have been saved and &quot;</span>
-              <span class="s2">&quot;reloaded, but replaced by default &#39;linear&#39;. Convert from &quot;</span>
-              <span class="s2">&quot;scratch before simulating to use custom function.&quot;</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="k">import</span> <span class="n">get_plot_keys</span><span class="p">,</span> <span class="n">get_log_keys</span>
 
-    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">v</span> <span class="ow">in</span> <span class="n">plot_vars</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]]),</span> \
+    <span class="n">plot_var</span> <span class="o">=</span> <span class="n">get_plot_keys</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">v</span> <span class="ow">in</span> <span class="n">plot_vars</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">plot_var</span><span class="p">]),</span> \
         <span class="s2">&quot;Plot variable(s) </span><span class="si">{}</span><span class="s2"> not understood.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">plot_vars</span><span class="p">])</span>
+            <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">plot_var</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">plot_vars</span><span class="p">])</span>
+    <span class="k">if</span> <span class="s1">&#39;all&#39;</span> <span class="ow">in</span> <span class="n">plot_var</span><span class="p">:</span>
+        <span class="n">plot_vars_all</span> <span class="o">=</span> <span class="n">plot_vars</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">plot_vars_all</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">,</span> <span class="s1">&#39;plot_vars&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">plot_vars_all</span><span class="p">))</span>
 
-    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">v</span> <span class="ow">in</span> <span class="n">log_vars</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;log_vars&#39;</span><span class="p">]]),</span> \
+    <span class="n">log_var</span> <span class="o">=</span> <span class="n">get_log_keys</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">v</span> <span class="ow">in</span> <span class="n">log_vars</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">log_var</span><span class="p">]),</span> \
         <span class="s2">&quot;Log variable(s) </span><span class="si">{}</span><span class="s2"> not understood.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;log_vars&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">log_vars</span><span class="p">])</span>
+            <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">log_var</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">log_vars</span><span class="p">])</span>
+    <span class="k">if</span> <span class="s1">&#39;all&#39;</span> <span class="ow">in</span> <span class="n">log_var</span><span class="p">:</span>
+        <span class="n">log_vars_all</span> <span class="o">=</span> <span class="n">log_vars</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">log_vars_all</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">,</span> <span class="s1">&#39;log_vars&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">log_vars_all</span><span class="p">))</span>
 
-    <span class="k">if</span> <span class="s1">&#39;all&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;log_vars&#39;</span><span class="p">]:</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;log_vars&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">log_vars</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;log_vars&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+    <span class="c1"># Change matplotlib plot properties, e.g. label font size</span>
+    <span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">,</span> <span class="s1">&#39;plotproperties&#39;</span><span class="p">)))</span>
 
-    <span class="k">if</span> <span class="s1">&#39;all&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]:</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">plot_vars</span>
-        <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+    <span class="c1"># Check settings for parameter sweep</span>
+    <span class="n">param_name</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;parameter_sweep&#39;</span><span class="p">][</span><span class="s1">&#39;param_name&#39;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;cell&#39;</span><span class="p">],</span> \
+        <span class="s2">&quot;Unkown parameter name </span><span class="si">{}</span><span class="s2"> to sweep.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">eval</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;parameter_sweep&#39;</span><span class="p">][</span><span class="s1">&#39;param_values&#39;</span><span class="p">]):</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;parameter_sweep&#39;</span><span class="p">,</span> <span class="s1">&#39;param_values&#39;</span><span class="p">,</span>
+                   <span class="nb">str</span><span class="p">([</span><span class="nb">eval</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;cell&#39;</span><span class="p">][</span><span class="n">param_name</span><span class="p">])]))</span>
 
-    <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;custom_activation&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;custom_activation&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">custom_activations</span><span class="p">,</span> \
-            <span class="s2">&quot;Custom activation </span><span class="si">{}</span><span class="s2"> not understood. Choose from </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;custom_activation&#39;</span><span class="p">],</span> <span class="n">custom_activations</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_dir_of_current_run</span><span class="p">,</span> <span class="s1">&#39;.config&#39;</span><span class="p">),</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="kc">True</span></div>
+    <span class="k">return</span> <span class="n">config</span></div>
 
 
-<div class="viewcode-block" id="initialize_simulator"><a class="viewcode-back" href="../../snntoolbox.html#snntoolbox.config.initialize_simulator">[docs]</a><span class="k">def</span> <span class="nf">initialize_simulator</span><span class="p">(</span><span class="n">simulator</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="initialize_simulator"><a class="viewcode-back" href="../../modules/snntoolbox.html#snntoolbox.config.initialize_simulator">[docs]</a><span class="k">def</span> <span class="nf">initialize_simulator</span><span class="p">(</span><span class="n">simulator</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Import a module that contains utility functions of spiking simulator.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">importlib</span> <span class="k">import</span> <span class="n">import_module</span>
 
@@ -498,7 +454,7 @@
     <span class="k">elif</span> <span class="n">simulator</span> <span class="o">==</span> <span class="s1">&#39;INI&#39;</span><span class="p">:</span>
         <span class="n">sim</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;snntoolbox.core.inisim&#39;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">simulator</span> <span class="o">==</span> <span class="s1">&#39;MegaSim&#39;</span><span class="p">:</span>
-        <span class="n">sim</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;snntoolbox.core.megasim&#39;</span><span class="p">)</span>
+        <span class="n">sim</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;snntoolbox.target_simulators.megasim&#39;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">simulator</span> <span class="o">==</span> <span class="s1">&#39;INIed&#39;</span><span class="p">:</span>
         <span class="n">sim</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;snntoolbox.core.inied&#39;</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">sim</span><span class="p">,</span> <span class="s2">&quot;Simulator </span><span class="si">{}</span><span class="s2"> could not be initialized.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">simulator</span><span class="p">)</span>
@@ -519,7 +475,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2017, Bodo Rueckauer.
-      Last updated on May 27, 2017.
+      Last updated on Jun 22, 2017.
 
     </p>
   </div>
@@ -541,7 +497,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
-            VERSION:'0.1',
+            VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

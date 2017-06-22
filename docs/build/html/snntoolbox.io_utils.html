@@ -92,7 +92,7 @@
             
             
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Spiking neural network conversion toolbox</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Getting started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
@@ -228,13 +228,87 @@ networks from disk.</p>
 <dl class="function">
 <dt id="snntoolbox.io_utils.common.confirm_overwrite">
 <code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">confirm_overwrite</code><span class="sig-paren">(</span><em>filepath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#confirm_overwrite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.confirm_overwrite" title="Permalink to this definition">¶</a></dt>
-<dd><p>If settings[‘overwrite’]==False and the file exists, ask user if it should
-be overwritten.</p>
+<dd><p>If config[‘output’][‘overwrite’]==False and the file exists, ask user if it
+should be overwritten.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="snntoolbox.io_utils.common.load_dataset">
-<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">load_dataset</code><span class="sig-paren">(</span><em>path</em>, <em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#load_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.load_dataset" title="Permalink to this definition">¶</a></dt>
+<dt id="snntoolbox.io_utils.common.get_abs_path">
+<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">get_abs_path</code><span class="sig-paren">(</span><em>filepath</em>, <em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#get_abs_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.get_abs_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an absolute path, possibly using current toolbox working dir.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – Filename or relative or absolute path. If only the filename is given,
+file is assumed to be in current working directory
+(<a href="#id1"><span class="problematic" id="id2">``</span></a>config[‘paths’][‘path_wd’]). Non-absolute paths are interpreted
+relative to working dir.</li>
+<li><strong>config</strong> (<em>configparser.ConfigParser</em>) – Settings.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>path</strong> – Absolute path to file.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)">str</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.common.get_dataset">
+<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">get_dataset</code><span class="sig-paren">(</span><em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#get_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.get_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get data set, either from <code class="docutils literal"><span class="pre">.npz</span></code> files or <code class="docutils literal"><span class="pre">keras.ImageDataGenerator</span></code>.</p>
+<p>Returns Dictionaries with keys <code class="docutils literal"><span class="pre">x_test</span></code> and <code class="docutils literal"><span class="pre">y_test</span></code> if data set was
+loaded in <code class="docutils literal"><span class="pre">.npz</span></code> format, or with <code class="docutils literal"><span class="pre">dataflow</span></code> key if data will be loaded
+from <code class="docutils literal"><span class="pre">.jpg</span></code> files by a <code class="docutils literal"><span class="pre">keras.ImageDataGenerator</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<em>configparser.ConfigParser</em>) – Settings.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
+<li><strong>normset</strong> (<em>dict</em>) – Used to normalized the network parameters.</li>
+<li><strong>testset</strong> (<em>dict</em>) – Used to test the networks.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.common.import_helpers">
+<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">import_helpers</code><span class="sig-paren">(</span><em>filepath</em>, <em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#import_helpers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.import_helpers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import a module with helper functions from <code class="docutils literal"><span class="pre">filepath</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – Filename or relative or absolute path of module to import. If only
+the filename is given, module is assumed to be in current working
+directory (<a href="#id3"><span class="problematic" id="id4">``</span></a>config[‘paths’][‘path_wd’]). Non-absolute paths are taken
+relative to working dir.</li>
+<li><strong>config</strong> (<em>configparser.ConfigParser</em>) – Settings.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Module with helper functions.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.common.load_npz">
+<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">load_npz</code><span class="sig-paren">(</span><em>path</em>, <em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#load_npz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.load_npz" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load dataset from an <code class="docutils literal"><span class="pre">.npz</span></code> file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -281,7 +355,29 @@ to <code class="docutils literal"><span class="pre">nb_classes</span></code>, th
 <dt id="snntoolbox.io_utils.common.to_json">
 <code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">to_json</code><span class="sig-paren">(</span><em>data</em>, <em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#to_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.to_json" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write <code class="docutils literal"><span class="pre">data</span></code> dictionary to <code class="docutils literal"><span class="pre">path</span></code>.</p>
-<p>A <code class="docutils literal"><span class="pre">TypeError</span></code> is raised if objects in <code class="docutils literal"><span class="pre">data</span></code> are not JSON serializable.</p>
+<p>A <code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> is raised if objects in <code class="docutils literal"><span class="pre">data</span></code> are not JSON
+serializable.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="snntoolbox.io_utils.common.try_get_normset_from_scalefacs">
+<code class="descclassname">snntoolbox.io_utils.common.</code><code class="descname">try_get_normset_from_scalefacs</code><span class="sig-paren">(</span><em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/common.html#try_get_normset_from_scalefacs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.common.try_get_normset_from_scalefacs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instead of loading a normalization data set to calculate scale-factors, try
+to get the scale-factors stored on disk during a previous run.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<em>configparser.ConfigParser</em>) – Settings.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A dictionary with single key ‘scale_facs’. The corresponding value is
+itself a dictionary containing the scale factors for each layer.
+Returns <code class="docutils literal"><span class="pre">None</span></code> if no scale factors were found.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Union[<a class="reference external" href="https://docs.python.org/2/library/stdtypes.html#dict" title="(in Python v2.7)">dict</a>, <a class="reference external" href="https://docs.python.org/2/library/constants.html#None" title="(in Python v2.7)">None</a>]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>
@@ -380,9 +476,9 @@ POSSIBILITY OF SUCH DAMAGE.</dd>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>xy</strong> (<em>list</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a><em>]</em><em></em>) – </li>
+<li><strong>xy</strong> (<em>list</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a><em>]</em>) – </li>
 <li><strong>text</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – </li>
-<li><strong>xy_off</strong> (<em>Optional</em><em>[</em><em>list</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a><em>]</em><em></em><em>]</em><em></em>) – </li>
+<li><strong>xy_off</strong> (<em>Optional</em><em>[</em><em>list</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a><em>]</em><em>]</em>) – </li>
 </ul>
 </td>
 </tr>
@@ -399,7 +495,7 @@ network.</p>
 <p>&#64;author: rbodo</p>
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.get_pearson_coefficients">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">get_pearson_coefficients</code><span class="sig-paren">(</span><em>spikerates_batch</em>, <em>activations_batch</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#get_pearson_coefficients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.get_pearson_coefficients" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">get_pearson_coefficients</code><span class="sig-paren">(</span><em>spikerates_batch</em>, <em>activations_batch</em>, <em>max_rate</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#get_pearson_coefficients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.get_pearson_coefficients" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute Pearson coefficients.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -408,6 +504,7 @@ network.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>spikerates_batch</strong> – </li>
 <li><strong>activations_batch</strong> – </li>
+<li><strong>max_rate</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – Highest spike rate.</li>
 </ul>
 </td>
 </tr>
@@ -423,7 +520,7 @@ network.</p>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.output_graphs">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">output_graphs</code><span class="sig-paren">(</span><em>plot_vars</em>, <em>path=None</em>, <em>idx=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#output_graphs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.output_graphs" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">output_graphs</code><span class="sig-paren">(</span><em>plot_vars</em>, <em>config</em>, <em>path=None</em>, <em>idx=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#output_graphs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.output_graphs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wrapper function to display / save a number of plots.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -457,7 +554,8 @@ e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</
 </li>
 </ul>
 </li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+<li><strong>config</strong> (<em>configparser.ConfigParser</em>) – Settings.</li>
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
 display plots without saving.</li>
 <li><strong>idx</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – The index of the sample to display. Defaults to 0.</li>
 </ul>
@@ -493,15 +591,16 @@ title.</li>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_activations">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_activations</code><span class="sig-paren">(</span><em>model</em>, <em>x_test</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_activations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_activations" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_activations</code><span class="sig-paren">(</span><em>model</em>, <em>x_test</em>, <em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_activations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_activations" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot activations of a network.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>model</strong> (<em>keras.models.Sequential</em>) – Keras model.</li>
+<li><strong>model</strong> (<em>keras.models.Model</em>) – Keras model.</li>
 <li><strong>x_test</strong> (<em>ndarray</em>) – The samples.</li>
+<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – Where to save plot.</li>
 </ul>
 </td>
 </tr>
@@ -527,7 +626,7 @@ e.g. (32, 28, 28) for 32 feature maps of size 28x28.</li>
 <li><strong>rates</strong> (<em>ndarray</em>) – The spikerates of a layer. The shape is that of the original layer,
 e.g. (32, 28, 28) for 32 feature maps of size 28x28.</li>
 <li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – Layer label.</li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
 display plots without saving.</li>
 </ul>
 </td>
@@ -544,10 +643,10 @@ display plots without saving.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>y_test</strong> (<em>ndarray</em>) – </li>
-<li><strong>y_pred</strong> (<em>ndarray</em>) – </li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – Where to save the output.</li>
-<li><strong>class_labels</strong> (<em>Optional</em><em>[</em><em>list</em><em>]</em><em></em>) – List of class labels.</li>
+<li><strong>y_test</strong> (<em>list</em>) – </li>
+<li><strong>y_pred</strong> (<em>list</em>) – </li>
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – Where to save the output.</li>
+<li><strong>class_labels</strong> (<em>Optional</em><em>[</em><em>list</em><em>]</em>) – List of class labels.</li>
 </ul>
 </td>
 </tr>
@@ -587,7 +686,7 @@ layer, containing the activations of Dense or Convolution layers.</p>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_error_vs_time">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_error_vs_time</code><span class="sig-paren">(</span><em>top1err_d_t</em>, <em>top5err_d_t</em>, <em>top1err_ann=None</em>, <em>top5err_ann=None</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_error_vs_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_error_vs_time" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_error_vs_time</code><span class="sig-paren">(</span><em>top1err_d_t</em>, <em>top5err_d_t</em>, <em>duration</em>, <em>dt</em>, <em>top1err_ann=None</em>, <em>top5err_ann=None</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_error_vs_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_error_vs_time" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot classification error over time.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -598,9 +697,11 @@ layer, containing the activations of Dense or Convolution layers.</p>
 Data type: boolean (correct / incorrect classification).</li>
 <li><strong>top5err_d_t</strong> (<em>np.array</em>) – Batch of top-5 errors over time. Shape: (num_samples, duration).
 Data type: boolean (correct / incorrect classification).</li>
-<li><strong>top1err_ann</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a><em>]</em><em></em>) – The top-1 error of the ANN.</li>
-<li><strong>top5err_ann</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a><em>]</em><em></em>) – The top-5 error of the ANN.</li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – Where to save the output.</li>
+<li><strong>duration</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – Simulation duration.</li>
+<li><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – Simulation time resolution.</li>
+<li><strong>top1err_ann</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a><em>]</em>) – The top-1 error of the ANN.</li>
+<li><strong>top5err_ann</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a><em>]</em>) – The top-5 error of the ANN.</li>
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – Where to save the output.</li>
 </ul>
 </td>
 </tr>
@@ -675,9 +776,9 @@ during training.</td>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>x</strong> (<em>np.array</em>) – The sample to plot.</li>
+<li><strong>x</strong> (<em>ndarray</em>) – The sample to plot.</li>
 <li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – Class label (index) of sample.</li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – Where to save the image.</li>
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – Where to save the image.</li>
 </ul>
 </td>
 </tr>
@@ -697,16 +798,16 @@ The activity is encoded by color.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>layer</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a><em>[</em><em>np.array</em><em>, </em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – <p><code class="docutils literal"><span class="pre">(activity,</span> <span class="pre">label)</span></code>.</p>
+<li><strong>layer</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a><em>[</em><em>np.array</em><em>, </em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – <p><code class="docutils literal"><span class="pre">(activity,</span> <span class="pre">label)</span></code>.</p>
 <p><code class="docutils literal"><span class="pre">activity</span></code> is an array of the same shape as the original layer,
 containing e.g. the spikerates or activations of neurons in a layer.</p>
 <p><code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
 e.g. <code class="docutils literal"><span class="pre">'3Dense'</span></code>.</p>
 </li>
 <li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – Figure title.</li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
 display plots without saving.</li>
-<li><strong>limits</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a><em>]</em><em></em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, the colormap of the resulting image is limited by this
+<li><strong>limits</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a><em>]</em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, the colormap of the resulting image is limited by this
 tuple.</li>
 </ul>
 </td>
@@ -717,7 +818,7 @@ tuple.</li>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_layer_correlation">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_layer_correlation</code><span class="sig-paren">(</span><em>rates</em>, <em>activations</em>, <em>title</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_layer_correlation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_layer_correlation" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_layer_correlation</code><span class="sig-paren">(</span><em>rates</em>, <em>activations</em>, <em>title</em>, <em>config</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_layer_correlation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_layer_correlation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot correlation between spikerates and activations of a specific layer,
 as 2D-dot-plot.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -726,9 +827,10 @@ as 2D-dot-plot.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>rates</strong> (<em>np.array</em>) – The spikerates of a layer, flattened to 1D.</li>
-<li><strong>activations</strong> (<em>Union</em><em>[</em><em>ndarray</em><em>, </em><em>Iterable</em><em>]</em><em></em>) – The activations of a layer, flattened to 1D.</li>
+<li><strong>activations</strong> (<em>Union</em><em>[</em><em>ndarray</em><em>, </em><em>Iterable</em><em>]</em>) – The activations of a layer, flattened to 1D.</li>
 <li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – Plot title.</li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+<li><strong>config</strong> (<em>configparser.ConfigParser</em>) – Settings.</li>
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
 display plots without saving.</li>
 </ul>
 </td>
@@ -739,7 +841,7 @@ display plots without saving.</li>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_layer_summaries">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_layer_summaries</code><span class="sig-paren">(</span><em>plot_vars</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_layer_summaries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_layer_summaries" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_layer_summaries</code><span class="sig-paren">(</span><em>plot_vars</em>, <em>config</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_layer_summaries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_layer_summaries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Display or save a number of plots for a specific layer.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -779,7 +881,8 @@ e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</
 </li>
 </ul>
 </li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+<li><strong>config</strong> (<em>configparser.ConfigParser</em>) – Settings.</li>
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
 display plots without saving.</li>
 </ul>
 </td>
@@ -814,7 +917,7 @@ title.</li>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_ops_vs_time">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_ops_vs_time</code><span class="sig-paren">(</span><em>operations_b_t</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_ops_vs_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_ops_vs_time" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_ops_vs_time</code><span class="sig-paren">(</span><em>operations_b_t</em>, <em>duration</em>, <em>dt</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_ops_vs_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_ops_vs_time" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot total number of operations over time.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -822,7 +925,9 @@ title.</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>operations_b_t</strong> (<em>ndarray</em>) – Number of operations. Shape: (batch_size, num_timesteps)</li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – Where to save the output.</li>
+<li><strong>duration</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – Simulation duration.</li>
+<li><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – Simulation time resolution.</li>
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – Where to save the output.</li>
 </ul>
 </td>
 </tr>
@@ -839,10 +944,10 @@ title.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>results</strong> (<em>list</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a><em>]</em><em></em>) – The accuracy or loss for a number of experiments, each of which used
+<li><strong>results</strong> (<em>list</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a><em>]</em>) – The accuracy or loss for a number of experiments, each of which used
 different parameters.</li>
 <li><strong>n</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – The number of test samples used for each experiment.</li>
-<li><strong>params</strong> (<em>list</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a><em>]</em><em></em>) – The parameter values that changed during each experiment.</li>
+<li><strong>params</strong> (<em>list</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a><em>]</em>) – The parameter values that changed during each experiment.</li>
 <li><strong>param_name</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – The name of the parameter that varied.</li>
 <li><strong>param_logscale</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – Whether to plot the parameter axis in log-scale.</li>
 </ul>
@@ -854,7 +959,7 @@ different parameters.</li>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_pearson_coefficients">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_pearson_coefficients</code><span class="sig-paren">(</span><em>spikerates_batch</em>, <em>activations_batch</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_pearson_coefficients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_pearson_coefficients" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_pearson_coefficients</code><span class="sig-paren">(</span><em>spikerates_batch</em>, <em>activations_batch</em>, <em>config</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_pearson_coefficients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_pearson_coefficients" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the Pearson correlation coefficients for each layer, averaged over one
 mini batch.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -862,7 +967,7 @@ mini batch.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>spikerates_batch</strong> (<em>list</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a><em>[</em><em>np.array</em><em>, </em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em><em>]</em><em></em>) – <p>Each entry in <code class="docutils literal"><span class="pre">spikerates_batch</span></code> contains a tuple
+<li><strong>spikerates_batch</strong> (<em>list</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a><em>[</em><em>np.array</em><em>, </em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em>]</em>) – <p>Each entry in <code class="docutils literal"><span class="pre">spikerates_batch</span></code> contains a tuple
 <code class="docutils literal"><span class="pre">(spikerates,</span> <span class="pre">label)</span></code> for each layer of the network (for the first
 batch only, and excluding <code class="docutils literal"><span class="pre">Flatten</span></code> layers).</p>
 <p><code class="docutils literal"><span class="pre">spikerates</span></code> contains the average firing rates of all neurons in a
@@ -871,9 +976,10 @@ layer. It has the same shape as the original layer, e.g.
 <p><code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
 e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</p>
 </li>
-<li><strong>activations_batch</strong> (<em>list</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a><em>[</em><em>np.array</em><em>, </em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em><em>]</em><em></em>) – Contains the activations of a net. Same structure as
+<li><strong>activations_batch</strong> (<em>list</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a><em>[</em><em>np.array</em><em>, </em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em>]</em>) – Contains the activations of a net. Same structure as
 <code class="docutils literal"><span class="pre">spikerates_batch</span></code>.</li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – Where to save the output.</li>
+<li><strong>config</strong> (<em>configparser.ConfigParser</em>) – Settings.</li>
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – Where to save the output.</li>
 </ul>
 </td>
 </tr>
@@ -883,7 +989,7 @@ e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_potential">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_potential</code><span class="sig-paren">(</span><em>times</em>, <em>layer</em>, <em>show_legend=False</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_potential"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_potential" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_potential</code><span class="sig-paren">(</span><em>times</em>, <em>layer</em>, <em>config</em>, <em>show_legend=False</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_potential"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_potential" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the membrane potential of a layer.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -891,17 +997,18 @@ e.g. <code class="docutils literal"><span class="pre">'03Dense'</span></code>.</
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>times</strong> (<em>np.array</em>) – The time values where the potential was sampled.</li>
-<li><strong>layer</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a><em>[</em><em>np.array</em><em>, </em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – <p><code class="docutils literal"><span class="pre">(vmem,</span> <span class="pre">label)</span></code>.</p>
+<li><strong>layer</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a><em>[</em><em>np.array</em><em>, </em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – <p><code class="docutils literal"><span class="pre">(vmem,</span> <span class="pre">label)</span></code>.</p>
 <p><code class="docutils literal"><span class="pre">vmem</span></code> is a 2D array where the first index runs over the number of
 neurons in the layer, and the second index contains the membrane
 potential of the specific neuron.</p>
 <p><code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
 e.g. <code class="docutils literal"><span class="pre">'3Dense'</span></code>.</p>
 </li>
+<li><strong>config</strong> (<em>configparser.ConfigParser</em>) – Settings.</li>
 <li><strong>show_legend</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – If <code class="docutils literal"><span class="pre">True</span></code>, shows the legend indicating the neuron indices and lines
 like <code class="docutils literal"><span class="pre">v_thresh</span></code>, <code class="docutils literal"><span class="pre">v_rest</span></code>, <code class="docutils literal"><span class="pre">v_reset</span></code>. Recommended only for layers
 with few neurons.</li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
 display plots without saving.</li>
 </ul>
 </td>
@@ -912,7 +1019,7 @@ display plots without saving.</li>
 
 <dl class="function">
 <dt id="snntoolbox.io_utils.plotting.plot_spikecount_vs_time">
-<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_spikecount_vs_time</code><span class="sig-paren">(</span><em>spiketrains_n_b_l_t</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_spikecount_vs_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_spikecount_vs_time" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">snntoolbox.io_utils.plotting.</code><code class="descname">plot_spikecount_vs_time</code><span class="sig-paren">(</span><em>spiketrains_n_b_l_t</em>, <em>duration</em>, <em>dt</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snntoolbox/io_utils/plotting.html#plot_spikecount_vs_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snntoolbox.io_utils.plotting.plot_spikecount_vs_time" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot total spikenumber over time.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -920,7 +1027,9 @@ display plots without saving.</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>spiketrains_n_b_l_t</strong> – </li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – Where to save the output.</li>
+<li><strong>duration</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) – Simulation duration.</li>
+<li><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) – Simulation time resolution.</li>
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – Where to save the output.</li>
 </ul>
 </td>
 </tr>
@@ -937,14 +1046,14 @@ display plots without saving.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>layer</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a><em>[</em><em>np.array</em><em>, </em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – <p><code class="docutils literal"><span class="pre">(spiketimes,</span> <span class="pre">label)</span></code>.</p>
+<li><strong>layer</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#tuple" title="(in Python v2.7)"><em>tuple</em></a><em>[</em><em>np.array</em><em>, </em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – <p><code class="docutils literal"><span class="pre">(spiketimes,</span> <span class="pre">label)</span></code>.</p>
 <p><code class="docutils literal"><span class="pre">spiketimes</span></code> is a 2D array where the first index runs over the number
 of neurons in the layer, and the second index contains the spike times
 of the specific neuron.</p>
 <p><code class="docutils literal"><span class="pre">label</span></code> is a string specifying both the layer type and the index,
 e.g. <code class="docutils literal"><span class="pre">'3Dense'</span></code>.</p>
 </li>
-<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em><em></em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
+<li><strong>path</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a><em>]</em>) – If not <code class="docutils literal"><span class="pre">None</span></code>, specifies where to save the resulting image. Else,
 display plots without saving.</li>
 </ul>
 </td>
@@ -983,7 +1092,7 @@ display plots without saving.</li>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2017, Bodo Rueckauer.
-      Last updated on May 27, 2017.
+      Last updated on Jun 22, 2017.
 
     </p>
   </div>

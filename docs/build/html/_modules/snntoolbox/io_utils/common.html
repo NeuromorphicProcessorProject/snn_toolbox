@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>snntoolbox.io_utils.common &mdash; SNN toolbox 0.1 documentation</title>
+  <title>snntoolbox.io_utils.common &mdash; SNN toolbox 0.1.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="SNN toolbox 0.1 documentation" href="../../../index.html"/>
+    <link rel="top" title="SNN toolbox 0.1.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -90,15 +90,22 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../intro.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../running.html">Getting started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../configuration.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../extending.html">Extending the toolbox</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../citation.html">Citation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../support.html">Support</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/intro.html">Spiking neural network conversion toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/running.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/extending.html">Extending the toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/support.html">Support</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/core.html"><code class="docutils literal"><span class="pre">snntoolbox.core</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/model_libs.html">snntoolbox.model_libs package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/target_simulators.html">snntoolbox.target_simulators package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/io_utils.html">snntoolbox.io_utils package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/gui.html">snntoolbox.gui package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/snntoolbox.html">snntoolbox package</a></li>
 </ul>
 
             
@@ -183,12 +190,146 @@
 <span class="kn">import</span> <span class="nn">h5py</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">future</span> <span class="k">import</span> <span class="n">standard_library</span>
-<span class="kn">from</span> <span class="nn">snntoolbox.config</span> <span class="k">import</span> <span class="n">settings</span>
 
 <span class="n">standard_library</span><span class="o">.</span><span class="n">install_aliases</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="load_parameters"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.common.load_parameters">[docs]</a><span class="k">def</span> <span class="nf">load_parameters</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+<div class="viewcode-block" id="get_dataset"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.common.get_dataset">[docs]</a><span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get data set, either from ``.npz`` files or ``keras.ImageDataGenerator``.</span>
+
+<span class="sd">    Returns Dictionaries with keys ``x_test`` and ``y_test`` if data set was</span>
+<span class="sd">    loaded in ``.npz`` format, or with ``dataflow`` key if data will be loaded</span>
+<span class="sd">    from ``.jpg`` files by a ``keras.ImageDataGenerator``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    config: configparser.ConfigParser</span>
+<span class="sd">        Settings.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    normset: dict</span>
+<span class="sd">        Used to normalized the network parameters.</span>
+
+<span class="sd">    testset: dict</span>
+<span class="sd">        Used to test the networks.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">testset</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">normset</span> <span class="o">=</span> <span class="n">try_get_normset_from_scalefacs</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">dataset_path</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;dataset_path&#39;</span><span class="p">]</span>
+    <span class="n">is_testset_needed</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s1">&#39;tools&#39;</span><span class="p">,</span> <span class="s1">&#39;evaluate_ann&#39;</span><span class="p">)</span> <span class="ow">or</span> \
+        <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s1">&#39;tools&#39;</span><span class="p">,</span> <span class="s1">&#39;simulate&#39;</span><span class="p">)</span>
+    <span class="n">is_normset_needed</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s1">&#39;tools&#39;</span><span class="p">,</span> <span class="s1">&#39;normalize&#39;</span><span class="p">)</span> <span class="ow">and</span> \
+        <span class="n">normset</span> <span class="ow">is</span> <span class="kc">None</span>
+
+    <span class="c1"># ________________________________ npz ____________________________________#</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;input&#39;</span><span class="p">][</span><span class="s1">&#39;dataset_format&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;npz&#39;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loading data set from &#39;.npz&#39; files in </span><span class="si">{}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">dataset_path</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">is_testset_needed</span><span class="p">:</span>
+            <span class="n">num_to_test</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getint</span><span class="p">(</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;num_to_test&#39;</span><span class="p">)</span>
+            <span class="n">testset</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;x_test&#39;</span><span class="p">:</span> <span class="n">load_npz</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s1">&#39;x_test.npz&#39;</span><span class="p">)[:</span><span class="n">num_to_test</span><span class="p">],</span>
+                <span class="s1">&#39;y_test&#39;</span><span class="p">:</span> <span class="n">load_npz</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s1">&#39;y_test.npz&#39;</span><span class="p">)[:</span><span class="n">num_to_test</span><span class="p">]}</span>
+            <span class="k">assert</span> <span class="n">testset</span><span class="p">,</span> <span class="s2">&quot;Test set empty.&quot;</span>
+        <span class="k">if</span> <span class="n">is_normset_needed</span><span class="p">:</span>
+            <span class="n">normset</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x_norm&#39;</span><span class="p">:</span> <span class="n">load_npz</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s1">&#39;x_norm.npz&#39;</span><span class="p">)}</span>
+            <span class="k">assert</span> <span class="n">normset</span><span class="p">,</span> <span class="s2">&quot;Normalization set empty.&quot;</span>
+
+    <span class="c1"># ________________________________ jpg ____________________________________#</span>
+    <span class="k">elif</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;input&#39;</span><span class="p">][</span><span class="s1">&#39;dataset_format&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;jpg&#39;</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">keras.preprocessing.image</span> <span class="k">import</span> <span class="n">ImageDataGenerator</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loading data set from ImageDataGenerator, using images in &quot;</span>
+              <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">))</span>
+        <span class="c1"># Transform str to dict</span>
+        <span class="n">datagen_kwargs</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;input&#39;</span><span class="p">][</span><span class="s1">&#39;datagen_kwargs&#39;</span><span class="p">])</span>
+        <span class="n">dataflow_kwargs</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;input&#39;</span><span class="p">][</span><span class="s1">&#39;dataflow_kwargs&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Get class labels</span>
+        <span class="n">class_idx_path</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;class_idx_path&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">class_idx_path</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">class_idx</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">class_idx_path</span><span class="p">)))</span>
+            <span class="n">dataflow_kwargs</span><span class="p">[</span><span class="s1">&#39;classes&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="p">[</span><span class="n">class_idx</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="p">)][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">class_idx</span><span class="p">))]</span>
+
+        <span class="c1"># Get proprocessing function</span>
+        <span class="k">if</span> <span class="s1">&#39;preprocessing_function&#39;</span> <span class="ow">in</span> <span class="n">datagen_kwargs</span><span class="p">:</span>
+            <span class="n">helpers</span> <span class="o">=</span> <span class="n">import_helpers</span><span class="p">(</span><span class="n">datagen_kwargs</span><span class="p">[</span><span class="s1">&#39;preprocessing_function&#39;</span><span class="p">],</span>
+                                     <span class="n">config</span><span class="p">)</span>
+            <span class="n">datagen_kwargs</span><span class="p">[</span><span class="s1">&#39;preprocessing_function&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">helpers</span><span class="o">.</span><span class="n">preprocessing_function</span>
+
+        <span class="n">dataflow_kwargs</span><span class="p">[</span><span class="s1">&#39;directory&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_path</span>
+        <span class="k">if</span> <span class="s1">&#39;batch_size&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataflow_kwargs</span><span class="p">:</span>
+            <span class="n">dataflow_kwargs</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getint</span><span class="p">(</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span>
+                                                          <span class="s1">&#39;batch_size&#39;</span><span class="p">)</span>
+        <span class="n">datagen</span> <span class="o">=</span> <span class="n">ImageDataGenerator</span><span class="p">(</span><span class="o">**</span><span class="n">datagen_kwargs</span><span class="p">)</span>
+        <span class="c1"># Compute quantities required for featurewise normalization</span>
+        <span class="c1"># (std, mean, and principal components if ZCA whitening is applied)</span>
+        <span class="n">rs</span> <span class="o">=</span> <span class="n">datagen_kwargs</span><span class="p">[</span><span class="s1">&#39;rescale&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;rescale&#39;</span> <span class="ow">in</span> <span class="n">datagen_kwargs</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">x_orig</span> <span class="o">=</span> <span class="n">ImageDataGenerator</span><span class="p">(</span><span class="n">rescale</span><span class="o">=</span><span class="n">rs</span><span class="p">)</span><span class="o">.</span><span class="n">flow_from_directory</span><span class="p">(</span>
+            <span class="o">**</span><span class="n">dataflow_kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">next</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">datagen</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x_orig</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_normset_needed</span><span class="p">:</span>
+            <span class="n">shuffle</span> <span class="o">=</span> <span class="n">dataflow_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;shuffle&#39;</span><span class="p">)</span>
+            <span class="n">dataflow_kwargs</span><span class="p">[</span><span class="s1">&#39;shuffle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">normset</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;dataflow&#39;</span><span class="p">:</span> <span class="n">datagen</span><span class="o">.</span><span class="n">flow_from_directory</span><span class="p">(</span><span class="o">**</span><span class="n">dataflow_kwargs</span><span class="p">)}</span>
+            <span class="n">dataflow_kwargs</span><span class="p">[</span><span class="s1">&#39;shuffle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">shuffle</span>
+            <span class="k">assert</span> <span class="n">normset</span><span class="p">,</span> <span class="s2">&quot;Normalization set empty.&quot;</span>
+        <span class="k">if</span> <span class="n">is_testset_needed</span><span class="p">:</span>
+            <span class="n">testset</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;dataflow&#39;</span><span class="p">:</span> <span class="n">datagen</span><span class="o">.</span><span class="n">flow_from_directory</span><span class="p">(</span><span class="o">**</span><span class="n">dataflow_kwargs</span><span class="p">)}</span>
+            <span class="k">assert</span> <span class="n">testset</span><span class="p">,</span> <span class="s2">&quot;Test set empty.&quot;</span>
+
+    <span class="c1"># _______________________________ aedat ___________________________________#</span>
+    <span class="k">elif</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;input&#39;</span><span class="p">][</span><span class="s1">&#39;dataset_format&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;aedat&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_normset_needed</span><span class="p">:</span>
+            <span class="n">normset</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x_norm&#39;</span><span class="p">:</span> <span class="n">load_npz</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s1">&#39;x_norm.npz&#39;</span><span class="p">)}</span>
+            <span class="k">assert</span> <span class="n">normset</span><span class="p">,</span> <span class="s2">&quot;Normalization set empty.&quot;</span>
+        <span class="n">testset</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">return</span> <span class="n">normset</span><span class="p">,</span> <span class="n">testset</span></div>
+
+
+<div class="viewcode-block" id="try_get_normset_from_scalefacs"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.common.try_get_normset_from_scalefacs">[docs]</a><span class="k">def</span> <span class="nf">try_get_normset_from_scalefacs</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Instead of loading a normalization data set to calculate scale-factors, try</span>
+<span class="sd">    to get the scale-factors stored on disk during a previous run.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    config: configparser.ConfigParser</span>
+<span class="sd">        Settings.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    : Union[dict, None]</span>
+<span class="sd">        A dictionary with single key &#39;scale_facs&#39;. The corresponding value is</span>
+<span class="sd">        itself a dictionary containing the scale factors for each layer.</span>
+<span class="sd">        Returns ``None`` if no scale factors were found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">newpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">],</span>
+                           <span class="s1">&#39;normalization&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">newpath</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">newpath</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">newpath</span><span class="p">,</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;normalization&#39;</span><span class="p">][</span><span class="s1">&#39;percentile&#39;</span><span class="p">]</span> <span class="o">+</span>
+                            <span class="s1">&#39;.json&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loading scale factors from disk instead of recalculating.&quot;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;scale_facs&#39;</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)}</span></div>
+
+
+<div class="viewcode-block" id="load_parameters"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.common.load_parameters">[docs]</a><span class="k">def</span> <span class="nf">load_parameters</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Load all layer parameters from an HDF5 file.&quot;&quot;&quot;</span>
 
     <span class="n">f</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
@@ -202,12 +343,12 @@
     <span class="k">return</span> <span class="n">params</span></div>
 
 
-<div class="viewcode-block" id="save_parameters"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.common.save_parameters">[docs]</a><span class="k">def</span> <span class="nf">save_parameters</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">fileformat</span><span class="o">=</span><span class="s1">&#39;h5&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="save_parameters"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.common.save_parameters">[docs]</a><span class="k">def</span> <span class="nf">save_parameters</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">fileformat</span><span class="o">=</span><span class="s1">&#39;h5&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Save all layer parameters to an HDF5 file.&quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">fileformat</span> <span class="o">==</span> <span class="s1">&#39;pkl&#39;</span><span class="p">:</span>
         <span class="kn">import</span> <span class="nn">pickle</span>
-        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span> <span class="o">+</span> <span class="s1">&#39;.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">))</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span> <span class="o">+</span> <span class="s1">&#39;.pkl&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="s1">&#39;wb&#39;</span><span class="p">)))</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
@@ -220,7 +361,7 @@
                 <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;param_&#39;</span><span class="o">+</span><span class="n">j</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">p</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="to_categorical"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.common.to_categorical">[docs]</a><span class="k">def</span> <span class="nf">to_categorical</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">nb_classes</span><span class="p">):</span>
+<div class="viewcode-block" id="to_categorical"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.common.to_categorical">[docs]</a><span class="k">def</span> <span class="nf">to_categorical</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">nb_classes</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Convert class vector to binary class matrix.</span>
 
 <span class="sd">    If the input ``y`` has shape (``nb_samples``,) and contains integers from 0</span>
@@ -235,7 +376,7 @@
     <span class="k">return</span> <span class="n">y_cat</span></div>
 
 
-<div class="viewcode-block" id="load_dataset"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.common.load_dataset">[docs]</a><span class="k">def</span> <span class="nf">load_dataset</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<div class="viewcode-block" id="load_npz"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.common.load_npz">[docs]</a><span class="k">def</span> <span class="nf">load_npz</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Load dataset from an ``.npz`` file.</span>
 
 <span class="sd">    Parameters</span>
@@ -256,13 +397,13 @@
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">))[</span><span class="s1">&#39;arr_0&#39;</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="confirm_overwrite"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.common.confirm_overwrite">[docs]</a><span class="k">def</span> <span class="nf">confirm_overwrite</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+<div class="viewcode-block" id="confirm_overwrite"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.common.confirm_overwrite">[docs]</a><span class="k">def</span> <span class="nf">confirm_overwrite</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    If settings[&#39;overwrite&#39;]==False and the file exists, ask user if it should</span>
-<span class="sd">    be overwritten.</span>
+<span class="sd">    If config[&#39;output&#39;][&#39;overwrite&#39;]==False and the file exists, ask user if it </span>
+<span class="sd">    should be overwritten.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;overwrite&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
         <span class="n">overwrite</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;[WARNING] </span><span class="si">{}</span><span class="s2"> already exists - &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="o">+</span>
                           <span class="s2">&quot;overwrite? [y/n]&quot;</span><span class="p">)</span>
         <span class="k">while</span> <span class="n">overwrite</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;n&#39;</span><span class="p">]:</span>
@@ -271,10 +412,11 @@
     <span class="k">return</span> <span class="kc">True</span></div>
 
 
-<div class="viewcode-block" id="to_json"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.common.to_json">[docs]</a><span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<div class="viewcode-block" id="to_json"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.common.to_json">[docs]</a><span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Write ``data`` dictionary to ``path``.</span>
 
-<span class="sd">    A ``TypeError`` is raised if objects in ``data`` are not JSON serializable.</span>
+<span class="sd">    A :py:exc:`TypeError` is raised if objects in ``data`` are not JSON</span>
+<span class="sd">    serializable.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">get_json_type</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
@@ -306,7 +448,99 @@
 
         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> not JSON serializable&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
 
-    <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="n">get_json_type</span><span class="p">)</span></div>
+    <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="s1">&#39;w&#39;</span><span class="p">)),</span> <span class="n">default</span><span class="o">=</span><span class="n">get_json_type</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="import_helpers"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.common.import_helpers">[docs]</a><span class="k">def</span> <span class="nf">import_helpers</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Import a module with helper functions from ``filepath``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    filepath: str</span>
+<span class="sd">        Filename or relative or absolute path of module to import. If only</span>
+<span class="sd">        the filename is given, module is assumed to be in current working</span>
+<span class="sd">        directory (``config[&#39;paths&#39;][&#39;path_wd&#39;]). Non-absolute paths are taken</span>
+<span class="sd">        relative to working dir.</span>
+<span class="sd">    config: configparser.ConfigParser</span>
+<span class="sd">        Settings.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    :</span>
+<span class="sd">        Module with helper functions.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">path</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">get_abs_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">import_script</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_abs_path"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.common.get_abs_path">[docs]</a><span class="k">def</span> <span class="nf">get_abs_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get an absolute path, possibly using current toolbox working dir.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    filepath: str</span>
+<span class="sd">        Filename or relative or absolute path. If only the filename is given,</span>
+<span class="sd">        file is assumed to be in current working directory</span>
+<span class="sd">        (``config[&#39;paths&#39;][&#39;path_wd&#39;]). Non-absolute paths are interpreted</span>
+<span class="sd">        relative to working dir.</span>
+<span class="sd">    config: configparser.ConfigParser</span>
+<span class="sd">        Settings.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    path: str</span>
+<span class="sd">        Absolute path to file.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">path</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;path_wd&#39;</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;paths&#39;</span><span class="p">][</span><span class="s1">&#39;path_wd&#39;</span><span class="p">],</span> <span class="n">path</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">path</span><span class="p">,</span> <span class="n">filename</span></div>
+
+
+<div class="viewcode-block" id="import_script"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.common.import_script">[docs]</a><span class="k">def</span> <span class="nf">import_script</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Import python script independently from python version.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    path: string</span>
+<span class="sd">        Path to directory where to load script from.</span>
+
+<span class="sd">    filename: string</span>
+<span class="sd">        Name of script file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="kn">import</span> <span class="nn">sys</span>
+
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span> <span class="o">+</span> <span class="s1">&#39;.py&#39;</span><span class="p">)</span>
+
+    <span class="n">v</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span>
+    <span class="k">if</span> <span class="n">v</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">importlib.util</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">filepath</span><span class="p">)</span>
+        <span class="n">mod</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+        <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">v</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+        <span class="c1"># noinspection PyCompatibility,PyUnresolvedReferences</span>
+        <span class="kn">from</span> <span class="nn">importlib.machinery</span> <span class="k">import</span> <span class="n">SourceFileLoader</span>
+        <span class="n">mod</span> <span class="o">=</span> <span class="n">SourceFileLoader</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">load_module</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># noinspection PyDeprecation</span>
+        <span class="kn">import</span> <span class="nn">imp</span>
+        <span class="c1"># noinspection PyDeprecation</span>
+        <span class="n">mod</span> <span class="o">=</span> <span class="n">imp</span><span class="o">.</span><span class="n">load_source</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">filepath</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mod</span></div>
 </pre></div>
 
            </div>
@@ -322,7 +556,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2017, Bodo Rueckauer.
-      Last updated on May 27, 2017.
+      Last updated on Jun 22, 2017.
 
     </p>
   </div>
@@ -344,7 +578,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1',
+            VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

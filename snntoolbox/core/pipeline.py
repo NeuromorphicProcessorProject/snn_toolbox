@@ -2,7 +2,7 @@
 """
 Wrapper script that combines all tools of SNN Toolbox.
 
-Created on Thu May 19 16:37:29 2016
+
 
 @author: rbodo
 """

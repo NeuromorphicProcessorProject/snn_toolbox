@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>SNN conversion toolbox &mdash; SNN toolbox 0.1 documentation</title>
+  <title>Spiking neural network conversion toolbox &mdash; SNN toolbox 0.1.0 documentation</title>
   
 
   
@@ -35,8 +35,8 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="SNN toolbox 0.1 documentation" href="#"/>
-        <link rel="next" title="Introduction" href="intro.html"/> 
+    <link rel="top" title="SNN toolbox 0.1.0 documentation" href="#"/>
+        <link rel="next" title="Spiking neural network conversion toolbox" href="user/intro.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -90,15 +90,22 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="running.html">Getting started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="extending.html">Extending the toolbox</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="citation.html">Citation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="support.html">Support</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/intro.html">Spiking neural network conversion toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/running.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/extending.html">Extending the toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/support.html">Support</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules/core.html"><code class="docutils literal"><span class="pre">snntoolbox.core</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/model_libs.html">snntoolbox.model_libs package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/target_simulators.html">snntoolbox.target_simulators package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/io_utils.html">snntoolbox.io_utils package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/gui.html">snntoolbox.gui package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/snntoolbox.html">snntoolbox package</a></li>
 </ul>
 
             
@@ -143,7 +150,7 @@
     
       <li><a href="#">Docs</a> &raquo;</li>
         
-      <li>SNN conversion toolbox</li>
+      <li>Spiking neural network conversion toolbox</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -162,58 +169,97 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="snn-conversion-toolbox">
-<h1>SNN conversion toolbox<a class="headerlink" href="#snn-conversion-toolbox" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="spiking-neural-network-conversion-toolbox">
+<h1>Spiking neural network conversion toolbox<a class="headerlink" href="#spiking-neural-network-conversion-toolbox" title="Permalink to this headline">¶</a></h1>
+<p>The SNN conversion toolbox contains functions to transform rate-based artificial
+neural networks into spiking neural networks, and to simulate them. The source
+code can be found on <a class="reference external" href="https://github.com/NeuromorphicProcessorProject/snn_toolbox">GitHub</a>.</p>
+<div class="section" id="user-guide">
+<h2>User Guide<a class="headerlink" href="#user-guide" title="Permalink to this headline">¶</a></h2>
+<p>These sections guide you through the installation, configuration and running of
+the toolbox. Examples are included.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#internal-workflow">Internal workflow</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#parsing-and-converting">Parsing and converting</a></li>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#simulating">Simulating</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/intro.html">Spiking neural network conversion toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/running.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/extending.html">Extending the toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user/support.html">Support</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="api-reference">
+<h2>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h2>
+<p>Here you find detailed descriptions of specific functions and classes.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules/core.html"><code class="docutils literal"><span class="pre">snntoolbox.core</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/core.html#module-snntoolbox.core.inisim"><code class="docutils literal"><span class="pre">snntoolbox.core.inisim</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/core.html#module-snntoolbox.core.pipeline">snntoolbox.core.pipeline module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/core.html#module-snntoolbox.core.util">snntoolbox.core.util module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/core.html#module-snntoolbox.core">Module contents</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#gui-beta">GUI (beta)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/model_libs.html">snntoolbox.model_libs package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/model_libs.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/model_libs.html#module-snntoolbox.model_libs.caffe_input_lib">snntoolbox.model_libs.caffe_input_lib module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/model_libs.html#module-snntoolbox.model_libs.common">snntoolbox.model_libs.common module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/model_libs.html#module-snntoolbox.model_libs.keras_input_lib">snntoolbox.model_libs.keras_input_lib module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/model_libs.html#module-snntoolbox.model_libs.lasagne_input_lib">snntoolbox.model_libs.lasagne_input_lib module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/model_libs.html#module-snntoolbox.model_libs">Module contents</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#development-version">Development version</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/target_simulators.html">snntoolbox.target_simulators package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/target_simulators.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/target_simulators.html#module-snntoolbox.target_simulators.INI_target_sim">snntoolbox.target_simulators.INI_target_sim module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/target_simulators.html#module-snntoolbox.target_simulators.INIeb_target_sim">snntoolbox.target_simulators.INIeb_target_sim module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/target_simulators.html#module-snntoolbox.target_simulators.MegaSim_target_sim">snntoolbox.target_simulators.MegaSim_target_sim module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/target_simulators.html#module-snntoolbox.target_simulators.Neuron_target_sim">snntoolbox.target_simulators.Neuron_target_sim module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/target_simulators.html#module-snntoolbox.target_simulators.brian2_target_sim">snntoolbox.target_simulators.brian2_target_sim module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/target_simulators.html#module-snntoolbox.target_simulators.brian_target_sim">snntoolbox.target_simulators.brian_target_sim module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/target_simulators.html#module-snntoolbox.target_simulators.common">snntoolbox.target_simulators.common module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/target_simulators.html#module-snntoolbox.target_simulators.megasim">snntoolbox.target_simulators.megasim module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/target_simulators.html#module-snntoolbox.target_simulators.nest_target_sim">snntoolbox.target_simulators.nest_target_sim module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/target_simulators.html#module-snntoolbox.target_simulators.pyNN_target_sim">snntoolbox.target_simulators.pyNN_target_sim module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/target_simulators.html#module-snntoolbox.target_simulators">Module contents</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="running.html">Getting started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#global-parameters">Global Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#cell-parameters">Cell Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#simulation-parameters">Simulation Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#snn-toolbox-default-settings">SNN toolbox default settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/io_utils.html">snntoolbox.io_utils package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/io_utils.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/io_utils.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/io_utils.html#module-snntoolbox.io_utils.common">snntoolbox.io_utils.common module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/io_utils.html#module-snntoolbox.io_utils.draw_convnet">snntoolbox.io_utils.draw_convnet module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/io_utils.html#module-snntoolbox.io_utils.plotting">snntoolbox.io_utils.plotting module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/io_utils.html#module-snntoolbox.io_utils">Module contents</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="extending.html">Extending the toolbox</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="extending.html#input-side-adding-a-new-model-library">Input side: Adding a new model library</a></li>
-<li class="toctree-l2"><a class="reference internal" href="extending.html#output-side-adding-a-custom-simulator">Output side: Adding a custom simulator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="extending.html#requested-extensions">Requested extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/gui.html">snntoolbox.gui package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/gui.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/gui.html#module-snntoolbox.gui.gui">snntoolbox.gui.gui module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/gui.html#module-snntoolbox.gui.tooltip">snntoolbox.gui.tooltip module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/gui.html#module-snntoolbox.gui">Module contents</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#example-a-lenet-on-mnist">Example A - LeNet on MNIST</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#example-b-alexnet-on-cifar-10">Example B - AlexNet on CIFAR-10</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#example-c-binarynet-on-cifar-10">Example C - BinaryNet on CIFAR-10</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#example-d-vgg-16-on-imagenet">Example D - VGG-16 on ImageNet</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#example-e-inception-v3-on-imagenet">Example E - Inception-V3 on ImageNet</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="citation.html">Citation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="support.html">Support</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">API</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="snntoolbox.html">snntoolbox package</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="snntoolbox.html#subpackages">Subpackages</a></li>
-<li class="toctree-l3"><a class="reference internal" href="snntoolbox.html#submodules">Submodules</a></li>
-<li class="toctree-l3"><a class="reference internal" href="snntoolbox.html#module-snntoolbox.config">snntoolbox.config module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="snntoolbox.html#module-snntoolbox.run">snntoolbox.run module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="snntoolbox.html#module-snntoolbox">Module contents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/snntoolbox.html">snntoolbox package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/snntoolbox.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/snntoolbox.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/snntoolbox.html#module-snntoolbox.config">snntoolbox.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/snntoolbox.html#module-snntoolbox.run">snntoolbox.run module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/snntoolbox.html#module-snntoolbox">Module contents</a></li>
 </ul>
 </li>
 </ul>
-</li>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
 </ul>
 </div>
 </div>
@@ -228,7 +274,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="intro.html" class="btn btn-neutral float-right" title="Introduction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="user/intro.html" class="btn btn-neutral float-right" title="Spiking neural network conversion toolbox" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>
@@ -239,7 +285,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2017, Bodo Rueckauer.
-      Last updated on May 27, 2017.
+      Last updated on Jun 22, 2017.
 
     </p>
   </div>
@@ -261,7 +307,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1',
+            VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

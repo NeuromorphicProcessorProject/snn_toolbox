@@ -21,7 +21,6 @@ from future import standard_library
 # noinspection PyUnresolvedReferences
 from six.moves import cPickle
 from snntoolbox.core.util import echo
-from snntoolbox.config import settings, initialize_simulator
 from snntoolbox.io_utils.common import confirm_overwrite
 from typing import Optional
 

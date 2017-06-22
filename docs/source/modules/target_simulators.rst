@@ -60,6 +60,14 @@ snntoolbox\.target\_simulators\.common module
     :undoc-members:
     :show-inheritance:
 
+snntoolbox\.target\_simulators\.megasim module
+----------------------------------------------
+
+.. automodule:: snntoolbox.target_simulators.megasim
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 snntoolbox\.target\_simulators\.nest\_target\_sim module
 --------------------------------------------------------
 

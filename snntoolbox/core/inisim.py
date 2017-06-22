@@ -821,7 +821,7 @@ def spike_pool_2d(inputs, ws, ignore_border=None, stride=None, pad=(0, 0),
         pad_w is the size of the left and right margins.
     mode : {'max', 'sum', 'average_inc_pad', 'average_exc_pad'}
         Operation executed on each window. `max` and `sum` always exclude
-        the padding in the computation. `average` gives you the choice to
+        the padding in the computation. ``'average'`` gives you the choice to
         include or exclude it.
 
     """

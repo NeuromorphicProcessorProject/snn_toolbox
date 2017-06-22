@@ -8,7 +8,6 @@ import os
 import sys
 import h5py
 import numpy as np
-from snntoolbox.config import settings, initialize_simulator
 
 if sys.version_info[0] < 3:
     # noinspection PyCompatibility

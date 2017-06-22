@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>snntoolbox.io_utils.plotting &mdash; SNN toolbox 0.1 documentation</title>
+  <title>snntoolbox.io_utils.plotting &mdash; SNN toolbox 0.1.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="SNN toolbox 0.1 documentation" href="../../../index.html"/>
+    <link rel="top" title="SNN toolbox 0.1.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -90,15 +90,22 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../intro.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../running.html">Getting started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../configuration.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../extending.html">Extending the toolbox</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../citation.html">Citation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../support.html">Support</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/intro.html">Spiking neural network conversion toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/running.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/extending.html">Extending the toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/support.html">Support</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/core.html"><code class="docutils literal"><span class="pre">snntoolbox.core</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/model_libs.html">snntoolbox.model_libs package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/target_simulators.html">snntoolbox.target_simulators package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/io_utils.html">snntoolbox.io_utils package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/gui.html">snntoolbox.gui package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/snntoolbox.html">snntoolbox package</a></li>
 </ul>
 
             
@@ -178,18 +185,14 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 
 <span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">future</span> <span class="k">import</span> <span class="n">standard_library</span>
-<span class="kn">from</span> <span class="nn">snntoolbox.config</span> <span class="k">import</span> <span class="n">settings</span>
-<span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="k">import</span> <span class="n">extract_label</span>
 
 <span class="n">standard_library</span><span class="o">.</span><span class="n">install_aliases</span><span class="p">()</span>
 
-<span class="n">use_simple_labels</span> <span class="o">=</span> <span class="kc">False</span>
 
-
-<div class="viewcode-block" id="output_graphs"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.output_graphs">[docs]</a><span class="k">def</span> <span class="nf">output_graphs</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="output_graphs"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.output_graphs">[docs]</a><span class="k">def</span> <span class="nf">output_graphs</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Wrapper function to display / save a number of plots.</span>
 
 <span class="sd">    Parameters</span>
@@ -215,9 +218,13 @@
 <span class="sd">        - spikecounts_n_b_l: list[tuple[np.array, str]]</span>
 <span class="sd">            Spikecounts of the SNN. Used to compute spikerates.</span>
 
+<span class="sd">    config: configparser.ConfigParser</span>
+<span class="sd">        Settings.</span>
+
 <span class="sd">    path: Optional[str]</span>
 <span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
 <span class="sd">        display plots without saving.</span>
+
 <span class="sd">    idx: int</span>
 <span class="sd">        The index of the sample to display. Defaults to 0.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -228,32 +235,35 @@
     <span class="k">if</span> <span class="n">plot_vars</span> <span class="o">==</span> <span class="p">{}:</span>
         <span class="k">return</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Saving plots of one sample to </span><span class="si">{}</span><span class="s2">...</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Saving plots of one sample to </span><span class="si">{}</span><span class="s2">...</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+
+    <span class="n">plot_keys</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;output&#39;</span><span class="p">][</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">])</span>
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getint</span><span class="p">(</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;duration&#39;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="s1">&#39;activations_n_b_l&#39;</span> <span class="ow">in</span> <span class="n">plot_vars</span><span class="p">:</span>
-        <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;activations_n_l&#39;</span><span class="p">]</span> <span class="o">=</span> \
-            <span class="n">get_sample_activity_from_batch</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;activations_n_b_l&#39;</span><span class="p">],</span> <span class="n">idx</span><span class="p">)</span>
+        <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;activations_n_l&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_sample_activity_from_batch</span><span class="p">(</span>
+            <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;activations_n_b_l&#39;</span><span class="p">],</span> <span class="n">idx</span><span class="p">)</span>
     <span class="k">if</span> <span class="s1">&#39;spiketrains_n_b_l_t&#39;</span> <span class="ow">in</span> <span class="n">plot_vars</span><span class="p">:</span>
-        <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spiketrains_n_l_t&#39;</span><span class="p">]</span> <span class="o">=</span> \
-            <span class="n">get_sample_activity_from_batch</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spiketrains_n_b_l_t&#39;</span><span class="p">],</span>
-                                           <span class="n">idx</span><span class="p">)</span>
+        <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spiketrains_n_l_t&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_sample_activity_from_batch</span><span class="p">(</span>
+            <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spiketrains_n_b_l_t&#39;</span><span class="p">],</span> <span class="n">idx</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">any</span><span class="p">({</span><span class="s1">&#39;spikerates&#39;</span><span class="p">,</span> <span class="s1">&#39;correlation&#39;</span><span class="p">,</span> <span class="s1">&#39;hist_spikerates_activations&#39;</span><span class="p">}</span>
-               <span class="o">&amp;</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]):</span>
-            <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_b_l&#39;</span><span class="p">]</span> <span class="o">=</span> \
-                <span class="n">spiketrains_to_rates</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spiketrains_n_b_l_t&#39;</span><span class="p">])</span>
-            <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_l&#39;</span><span class="p">]</span> <span class="o">=</span> \
-                <span class="n">get_sample_activity_from_batch</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_b_l&#39;</span><span class="p">],</span>
-                                               <span class="n">idx</span><span class="p">)</span>
+               <span class="o">&amp;</span> <span class="n">plot_keys</span><span class="p">):</span>
+            <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_b_l&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">spiketrains_to_rates</span><span class="p">(</span>
+                <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spiketrains_n_b_l_t&#39;</span><span class="p">],</span> <span class="n">duration</span><span class="p">)</span>
+            <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_l&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_sample_activity_from_batch</span><span class="p">(</span>
+                <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_b_l&#39;</span><span class="p">],</span> <span class="n">idx</span><span class="p">)</span>
 
-    <span class="n">plot_layer_summaries</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="n">plot_layer_summaries</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting batch run statistics...&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="s1">&#39;spikecounts&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]:</span>
-        <span class="n">plot_spikecount_vs_time</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spiketrains_n_b_l_t&#39;</span><span class="p">],</span> <span class="n">path</span><span class="p">)</span>
-    <span class="k">if</span> <span class="s1">&#39;correlation&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="s1">&#39;spikecounts&#39;</span> <span class="ow">in</span> <span class="n">plot_keys</span><span class="p">:</span>
+        <span class="n">plot_spikecount_vs_time</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spiketrains_n_b_l_t&#39;</span><span class="p">],</span> <span class="n">duration</span><span class="p">,</span>
+                                <span class="n">config</span><span class="o">.</span><span class="n">getfloat</span><span class="p">(</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;dt&#39;</span><span class="p">),</span> <span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;correlation&#39;</span> <span class="ow">in</span> <span class="n">plot_keys</span><span class="p">:</span>
         <span class="n">plot_pearson_coefficients</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_b_l&#39;</span><span class="p">],</span>
-                                  <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;activations_n_b_l&#39;</span><span class="p">],</span> <span class="n">path</span><span class="p">)</span>
-    <span class="k">if</span> <span class="s1">&#39;hist_spikerates_activations&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]:</span>
+                                  <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;activations_n_b_l&#39;</span><span class="p">],</span> <span class="n">config</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;hist_spikerates_activations&#39;</span> <span class="ow">in</span> <span class="n">plot_keys</span><span class="p">:</span>
         <span class="n">s</span> <span class="o">=</span> <span class="n">a</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">ss</span><span class="p">,</span> <span class="n">aa</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_b_l&#39;</span><span class="p">],</span>
                           <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;activations_n_b_l&#39;</span><span class="p">]):</span>
@@ -263,7 +273,7 @@
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="plot_layer_summaries"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_layer_summaries">[docs]</a><span class="k">def</span> <span class="nf">plot_layer_summaries</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_layer_summaries"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_layer_summaries">[docs]</a><span class="k">def</span> <span class="nf">plot_layer_summaries</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Display or save a number of plots for a specific layer.</span>
 
 <span class="sd">    Parameters</span>
@@ -300,48 +310,54 @@
 <span class="sd">            ``label`` is a string specifying both the layer type and the index,</span>
 <span class="sd">            e.g. ``&#39;03Dense&#39;``.</span>
 
+<span class="sd">    config: configparser.ConfigParser</span>
+<span class="sd">        Settings.</span>
+
 <span class="sd">    path: Optional[str]</span>
 <span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
 <span class="sd">        display plots without saving.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">plot_vars</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="k">import</span> <span class="n">extract_label</span>
+
+    <span class="n">plot_keys</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;output&#39;</span><span class="p">][</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">plot_vars</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span>
 
-    <span class="n">num_layers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+    <span class="n">num_layers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">plot_vars</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="c1"># Loop over layers</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_layers</span><span class="p">):</span>
-        <span class="n">label</span> <span class="o">=</span> <span class="n">plot_vars</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="n">extract_label</span><span class="p">(</span><span class="n">label</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">use_simple_labels</span> <span class="k">else</span> <span class="n">label</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">plot_vars</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">extract_label</span><span class="p">(</span><span class="n">label</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> \
+            <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">,</span> <span class="s1">&#39;use_simple_labels&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">label</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting layer </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">label</span><span class="p">))</span>
         <span class="n">newpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">newpath</span><span class="p">):</span>
             <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">newpath</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s1">&#39;spiketrains&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="s1">&#39;spiketrains&#39;</span> <span class="ow">in</span> <span class="n">plot_keys</span><span class="p">:</span>
             <span class="n">plot_spiketrains</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spiketrains_n_l_t&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">newpath</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s1">&#39;spikerates&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]:</span>
-            <span class="n">plot_layer_activity</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_l&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;Spikerates&#39;</span><span class="p">,</span>
-                                <span class="n">newpath</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;spikerates&#39;</span> <span class="ow">in</span> <span class="n">plot_keys</span><span class="p">:</span>
+            <span class="n">plot_layer_activity</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_l&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                <span class="nb">str</span><span class="p">(</span><span class="s1">&#39;Spikerates&#39;</span><span class="p">),</span> <span class="n">newpath</span><span class="p">)</span>
             <span class="n">plot_hist</span><span class="p">(</span>
                 <span class="p">{</span><span class="s1">&#39;Spikerates&#39;</span><span class="p">:</span> <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_l&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()},</span>
                 <span class="s1">&#39;Spikerates&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s1">&#39;activations&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="s1">&#39;activations&#39;</span> <span class="ow">in</span> <span class="n">plot_keys</span><span class="p">:</span>
             <span class="n">plot_layer_activity</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;activations_n_l&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
-                                <span class="s1">&#39;Activations&#39;</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span>
+                                <span class="nb">str</span><span class="p">(</span><span class="s1">&#39;Activations&#39;</span><span class="p">),</span> <span class="n">newpath</span><span class="p">)</span>
         <span class="k">if</span> <span class="s1">&#39;spikerates_n_l&#39;</span> <span class="ow">in</span> <span class="n">plot_vars</span> <span class="ow">and</span> <span class="s1">&#39;activations_n_l&#39;</span> <span class="ow">in</span> <span class="n">plot_vars</span><span class="p">:</span>
             <span class="n">plot_activations_minus_rates</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_l&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
                                          <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;activations_n_l&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
                                          <span class="n">name</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s1">&#39;correlation&#39;</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;plot_vars&#39;</span><span class="p">]:</span>
-            <span class="n">plot_layer_correlation</span><span class="p">(</span>
-                <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_l&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-                <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;activations_n_l&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-                <span class="s1">&#39;ANN-SNN correlations</span><span class="se">\n</span><span class="s1"> of layer &#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="s1">&#39;correlation&#39;</span> <span class="ow">in</span> <span class="n">plot_keys</span><span class="p">:</span>
+            <span class="n">plot_layer_correlation</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;spikerates_n_l&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                                   <span class="n">plot_vars</span><span class="p">[</span><span class="s1">&#39;activations_n_l&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                                   <span class="nb">str</span><span class="p">(</span><span class="s1">&#39;ANN-SNN correlations</span><span class="se">\n</span><span class="s1"> of layer &#39;</span><span class="o">+</span><span class="n">name</span><span class="p">),</span>
+                                   <span class="n">config</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="plot_layer_activity"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_layer_activity">[docs]</a><span class="k">def</span> <span class="nf">plot_layer_activity</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_layer_activity"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_layer_activity">[docs]</a><span class="k">def</span> <span class="nf">plot_layer_activity</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Visualize a layer by arranging the neurons in a line or on a 2D grid.</span>
 
 <span class="sd">    Can be used to show average firing rates of individual neurons in an SNN,</span>
@@ -447,15 +463,20 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_activations"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_activations">[docs]</a><span class="k">def</span> <span class="nf">plot_activations</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x_test</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_activations"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_activations">[docs]</a><span class="k">def</span> <span class="nf">plot_activations</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x_test</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot activations of a network.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    model: keras.models.Sequential</span>
+
+<span class="sd">    model: keras.models.Model</span>
 <span class="sd">        Keras model.</span>
+
 <span class="sd">    x_test: ndarray</span>
 <span class="sd">        The samples.</span>
+
+<span class="sd">    path: str</span>
+<span class="sd">        Where to save plot.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="k">import</span> <span class="n">get_activations_batch</span>
@@ -465,15 +486,13 @@
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">activations</span><span class="p">)):</span>
         <span class="n">label</span> <span class="o">=</span> <span class="n">activations</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting layer </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">label</span><span class="p">))</span>
-        <span class="n">newpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;log_dir_of_current_run&#39;</span><span class="p">],</span>
-                               <span class="n">model</span><span class="o">.</span><span class="n">name</span><span class="o">+</span><span class="s1">&#39;_activations&#39;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">newpath</span><span class="p">):</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">newpath</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="n">j</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">9</span> <span class="k">else</span> <span class="s1">&#39;0&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-        <span class="n">plot_layer_activity</span><span class="p">(</span><span class="n">activations</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">j</span><span class="o">+</span><span class="n">label</span><span class="p">,</span> <span class="n">newpath</span><span class="p">)</span></div>
+        <span class="n">plot_layer_activity</span><span class="p">(</span><span class="n">activations</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">j</span><span class="o">+</span><span class="n">label</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="plot_activations_minus_rates"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_activations_minus_rates">[docs]</a><span class="k">def</span> <span class="nf">plot_activations_minus_rates</span><span class="p">(</span><span class="n">activations</span><span class="p">,</span> <span class="n">rates</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_activations_minus_rates"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_activations_minus_rates">[docs]</a><span class="k">def</span> <span class="nf">plot_activations_minus_rates</span><span class="p">(</span><span class="n">activations</span><span class="p">,</span> <span class="n">rates</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot spikerates minus activations for a specific layer.</span>
 
 <span class="sd">    Spikerates and activations are each normalized before subtraction.</span>
@@ -500,11 +519,12 @@
 
     <span class="n">activations_norm</span> <span class="o">=</span> <span class="n">activations</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">activations</span><span class="p">)</span>
     <span class="n">rates_norm</span> <span class="o">=</span> <span class="n">rates</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">rates</span>
-    <span class="n">plot_layer_activity</span><span class="p">((</span><span class="n">activations_norm</span> <span class="o">-</span> <span class="n">rates_norm</span><span class="p">,</span> <span class="n">label</span><span class="p">),</span>
-                        <span class="s1">&#39;Activations_minus_Spikerates&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span></div>
+    <span class="n">plot_layer_activity</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">activations_norm</span> <span class="o">-</span> <span class="n">rates_norm</span><span class="p">,</span> <span class="n">label</span><span class="p">),</span>
+        <span class="nb">str</span><span class="p">(</span><span class="s1">&#39;Activations_minus_Spikerates&#39;</span><span class="p">),</span> <span class="n">path</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span></div>
 
 
-<div class="viewcode-block" id="plot_layer_correlation"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_layer_correlation">[docs]</a><span class="k">def</span> <span class="nf">plot_layer_correlation</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="n">activations</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_layer_correlation"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_layer_correlation">[docs]</a><span class="k">def</span> <span class="nf">plot_layer_correlation</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="n">activations</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plot correlation between spikerates and activations of a specific layer,</span>
 <span class="sd">    as 2D-dot-plot.</span>
@@ -518,14 +538,17 @@
 <span class="sd">        The activations of a layer, flattened to 1D.</span>
 <span class="sd">    title: str</span>
 <span class="sd">        Plot title.</span>
+<span class="sd">    config: configparser.ConfigParser</span>
+<span class="sd">        Settings.</span>
 <span class="sd">    path: Optional[str]</span>
 <span class="sd">        If not ``None``, specifies where to save the resulting image. Else,</span>
 <span class="sd">        display plots without saving.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># Determine percentage of saturated neurons. Need to subtract one time step</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">greater_equal</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">-</span>
-                                 <span class="mi">1000</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]))</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getfloat</span><span class="p">(</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;dt&#39;</span><span class="p">)</span>
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getint</span><span class="p">(</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;duration&#39;</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">greater_equal</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">dt</span> <span class="o">-</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">duration</span> <span class="o">/</span> <span class="n">dt</span><span class="p">))</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">activations</span><span class="p">,</span> <span class="n">rates</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">)</span>
@@ -547,7 +570,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_correlations"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_correlations">[docs]</a><span class="k">def</span> <span class="nf">plot_correlations</span><span class="p">(</span><span class="n">spikerates</span><span class="p">,</span> <span class="n">layer_activations</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_correlations"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_correlations">[docs]</a><span class="k">def</span> <span class="nf">plot_correlations</span><span class="p">(</span><span class="n">spikerates</span><span class="p">,</span> <span class="n">layer_activations</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot the correlation between SNN spiketrains and ANN activations.</span>
 
 <span class="sd">    For each layer, the method draws a scatter plot, showing the correlation</span>
@@ -600,7 +623,7 @@
            <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="get_pearson_coefficients"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.get_pearson_coefficients">[docs]</a><span class="k">def</span> <span class="nf">get_pearson_coefficients</span><span class="p">(</span><span class="n">spikerates_batch</span><span class="p">,</span> <span class="n">activations_batch</span><span class="p">):</span>
+<div class="viewcode-block" id="get_pearson_coefficients"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.get_pearson_coefficients">[docs]</a><span class="k">def</span> <span class="nf">get_pearson_coefficients</span><span class="p">(</span><span class="n">spikerates_batch</span><span class="p">,</span> <span class="n">activations_batch</span><span class="p">,</span> <span class="n">max_rate</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute Pearson coefficients.</span>
 
@@ -608,7 +631,9 @@
 <span class="sd">    ----------</span>
 
 <span class="sd">    spikerates_batch : </span>
-<span class="sd">    activations_batch : </span>
+<span class="sd">    activations_batch :</span>
+<span class="sd">    max_rate: float</span>
+<span class="sd">        Highest spike rate.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -630,7 +655,7 @@
                 <span class="n">ss</span> <span class="o">=</span> <span class="p">[]</span>
                 <span class="n">aa</span> <span class="o">=</span> <span class="p">[]</span>
                 <span class="k">for</span> <span class="n">sss</span><span class="p">,</span> <span class="n">aaa</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="p">(</span><span class="n">sss</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">aaa</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="n">aaa</span> <span class="o">&lt;</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">sss</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">aaa</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="n">aaa</span> <span class="o">&lt;</span> <span class="n">max_rate</span><span class="p">:</span>
                         <span class="n">ss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sss</span><span class="p">)</span>
                         <span class="n">aa</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">aaa</span><span class="p">)</span>
                 <span class="n">s</span> <span class="o">=</span> <span class="n">ss</span>
@@ -641,7 +666,8 @@
     <span class="k">return</span> <span class="n">co</span></div>
 
 
-<div class="viewcode-block" id="plot_pearson_coefficients"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_pearson_coefficients">[docs]</a><span class="k">def</span> <span class="nf">plot_pearson_coefficients</span><span class="p">(</span><span class="n">spikerates_batch</span><span class="p">,</span> <span class="n">activations_batch</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_pearson_coefficients"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_pearson_coefficients">[docs]</a><span class="k">def</span> <span class="nf">plot_pearson_coefficients</span><span class="p">(</span><span class="n">spikerates_batch</span><span class="p">,</span> <span class="n">activations_batch</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span>
+                              <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plot the Pearson correlation coefficients for each layer, averaged over one</span>
 <span class="sd">    mini batch.</span>
@@ -664,18 +690,25 @@
 <span class="sd">    activations_batch: list[tuple[np.array, str]]</span>
 <span class="sd">        Contains the activations of a net. Same structure as</span>
 <span class="sd">        ``spikerates_batch``.</span>
+
+<span class="sd">    config: configparser.ConfigParser</span>
+<span class="sd">        Settings.</span>
+
 <span class="sd">    path: Optional[str]</span>
 <span class="sd">        Where to save the output.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">co</span> <span class="o">=</span> <span class="n">get_pearson_coefficients</span><span class="p">(</span><span class="n">spikerates_batch</span><span class="p">,</span> <span class="n">activations_batch</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">snntoolbox.core.util</span> <span class="k">import</span> <span class="n">extract_label</span>
+
+    <span class="n">max_rate</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">config</span><span class="o">.</span><span class="n">getfloat</span><span class="p">(</span><span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;dt&#39;</span><span class="p">)</span>
+    <span class="n">co</span> <span class="o">=</span> <span class="n">get_pearson_coefficients</span><span class="p">(</span><span class="n">spikerates_batch</span><span class="p">,</span> <span class="n">activations_batch</span><span class="p">,</span> <span class="n">max_rate</span><span class="p">)</span>
 
     <span class="c1"># Average over batch</span>
     <span class="n">corr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">co</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">co</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">sp</span> <span class="ow">in</span> <span class="n">spikerates_batch</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">use_simple_labels</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">,</span> <span class="s1">&#39;use_simple_labels&#39;</span><span class="p">):</span>
         <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">extract_label</span><span class="p">(</span><span class="n">label</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">]</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
@@ -696,7 +729,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_hist"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_hist">[docs]</a><span class="k">def</span> <span class="nf">plot_hist</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">layer_label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale_fac</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_hist"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_hist">[docs]</a><span class="k">def</span> <span class="nf">plot_hist</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">layer_label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale_fac</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot a histogram over two datasets.</span>
 
 <span class="sd">    Parameters</span>
@@ -745,7 +778,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_activ_hist"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_activ_hist">[docs]</a><span class="k">def</span> <span class="nf">plot_activ_hist</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">layer_label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale_fac</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_activ_hist"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_activ_hist">[docs]</a><span class="k">def</span> <span class="nf">plot_activ_hist</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">layer_label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale_fac</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot a histogram over all activities of a network.</span>
 
 <span class="sd">    Parameters</span>
@@ -792,7 +825,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_max_activ_hist"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_max_activ_hist">[docs]</a><span class="k">def</span> <span class="nf">plot_max_activ_hist</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">layer_label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="plot_max_activ_hist"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_max_activ_hist">[docs]</a><span class="k">def</span> <span class="nf">plot_max_activ_hist</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">layer_label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                         <span class="n">scale_fac</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot a histogram over the maximum activations.</span>
 
@@ -839,7 +872,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_hist_combined"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_hist_combined">[docs]</a><span class="k">def</span> <span class="nf">plot_hist_combined</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_hist_combined"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_hist_combined">[docs]</a><span class="k">def</span> <span class="nf">plot_hist_combined</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot a histogram over several datasets.</span>
 
 <span class="sd">    Parameters</span>
@@ -890,7 +923,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_param_sweep"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_param_sweep">[docs]</a><span class="k">def</span> <span class="nf">plot_param_sweep</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_logscale</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_param_sweep"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_param_sweep">[docs]</a><span class="k">def</span> <span class="nf">plot_param_sweep</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_logscale</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot accuracy versus parameter.</span>
 
 <span class="sd">    Parameters</span>
@@ -927,7 +960,7 @@
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="plot_spiketrains"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_spiketrains">[docs]</a><span class="k">def</span> <span class="nf">plot_spiketrains</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_spiketrains"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_spiketrains">[docs]</a><span class="k">def</span> <span class="nf">plot_spiketrains</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot which neuron fired at what time during the simulation.</span>
 
 <span class="sd">    Parameters</span>
@@ -978,7 +1011,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_potential"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_potential">[docs]</a><span class="k">def</span> <span class="nf">plot_potential</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">layer</span><span class="p">,</span> <span class="n">show_legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_potential"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_potential">[docs]</a><span class="k">def</span> <span class="nf">plot_potential</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">layer</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">show_legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot the membrane potential of a layer.</span>
 
 <span class="sd">    Parameters</span>
@@ -997,6 +1030,9 @@
 <span class="sd">        ``label`` is a string specifying both the layer type and the index,</span>
 <span class="sd">        e.g. ``&#39;3Dense&#39;``.</span>
 
+<span class="sd">    config: configparser.ConfigParser</span>
+<span class="sd">        Settings.</span>
+
 <span class="sd">    show_legend: bool</span>
 <span class="sd">        If ``True``, shows the legend indicating the neuron indices and lines</span>
 <span class="sd">        like ``v_thresh``, ``v_rest``, ``v_reset``. Recommended only for layers</span>
@@ -1007,15 +1043,17 @@
 <span class="sd">        display plots without saving.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="n">v_thresh</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getfloat</span><span class="p">(</span><span class="s1">&#39;cell&#39;</span><span class="p">,</span> <span class="s1">&#39;v_thresh&#39;</span><span class="p">)</span>
+    <span class="n">v_reset</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getfloat</span><span class="p">(</span><span class="s1">&#39;cell&#39;</span><span class="p">,</span> <span class="s1">&#39;v_reset&#39;</span><span class="p">)</span>
+
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
     <span class="c1"># Transpose layer array to get slices of vmem values for each neuron.</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">neuron</span><span class="p">,</span> <span class="n">vmem</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">layer</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+    <span class="n">layer_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">layer</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">layer</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">neuron</span><span class="p">,</span> <span class="n">vmem</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">layer_flat</span><span class="p">):</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">vmem</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">*</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;v_thresh&#39;</span><span class="p">],</span> <span class="s1">&#39;r--&#39;</span><span class="p">,</span>
-             <span class="n">label</span><span class="o">=</span><span class="s1">&#39;V_thresh&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">*</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;v_reset&#39;</span><span class="p">],</span> <span class="s1">&#39;b-.&#39;</span><span class="p">,</span>
-             <span class="n">label</span><span class="o">=</span><span class="s1">&#39;V_reset&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;v_reset&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;v_thresh&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">*</span> <span class="n">v_thresh</span><span class="p">,</span> <span class="s1">&#39;r--&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;V_thresh&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">*</span> <span class="n">v_reset</span><span class="p">,</span> <span class="s1">&#39;b-.&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;V_reset&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="n">v_reset</span> <span class="o">-</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">v_thresh</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">])</span>
     <span class="k">if</span> <span class="n">show_legend</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper left&#39;</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="mi">15</span><span class="p">})</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Time [ms]&#39;</span><span class="p">)</span>
@@ -1029,14 +1067,14 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_confusion_matrix"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_confusion_matrix">[docs]</a><span class="k">def</span> <span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">class_labels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_confusion_matrix"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_confusion_matrix">[docs]</a><span class="k">def</span> <span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">class_labels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 
-<span class="sd">    y_test: ndarray</span>
-<span class="sd">    y_pred: ndarray</span>
+<span class="sd">    y_test: list</span>
+<span class="sd">    y_pred: list</span>
 <span class="sd">    path: Optional[str]</span>
 <span class="sd">        Where to save the output.</span>
 <span class="sd">    class_labels: Optional[list]</span>
@@ -1047,7 +1085,7 @@
         <span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="k">import</span> <span class="n">confusion_matrix</span>
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ERROR: Failed to plot confusion matrix: sklearn package not &quot;</span>
-              <span class="s2">&quot;installed. Do &#39;pip install sklearn&#39; to install.&quot;</span><span class="p">)</span>
+              <span class="s2">&quot;installed. Do &#39;pip install sklearn&#39; to install.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">confusion_matrix</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">if</span> <span class="n">confusion_matrix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1073,7 +1111,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_error_vs_time"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_error_vs_time">[docs]</a><span class="k">def</span> <span class="nf">plot_error_vs_time</span><span class="p">(</span><span class="n">top1err_d_t</span><span class="p">,</span> <span class="n">top5err_d_t</span><span class="p">,</span>
+<div class="viewcode-block" id="plot_error_vs_time"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_error_vs_time">[docs]</a><span class="k">def</span> <span class="nf">plot_error_vs_time</span><span class="p">(</span><span class="n">top1err_d_t</span><span class="p">,</span> <span class="n">top5err_d_t</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span>
                        <span class="n">top1err_ann</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">top5err_ann</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot classification error over time.</span>
 
@@ -1086,6 +1124,10 @@
 <span class="sd">    top5err_d_t: np.array</span>
 <span class="sd">        Batch of top-5 errors over time. Shape: (num_samples, duration).</span>
 <span class="sd">        Data type: boolean (correct / incorrect classification).</span>
+<span class="sd">    duration: int</span>
+<span class="sd">        Simulation duration.</span>
+<span class="sd">    dt: float</span>
+<span class="sd">        Simulation time resolution.</span>
 <span class="sd">    top1err_ann: Optional[float]</span>
 <span class="sd">        The top-1 error of the ANN.</span>
 <span class="sd">    top5err_ann: Optional[float]</span>
@@ -1101,7 +1143,7 @@
 
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
 <span class="c1">#    plt.title(&#39;Error vs simulation time&#39;)</span>
-    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">],</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">top1err_t</span><span class="p">,</span> <span class="s1">&#39;.g&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;SNN top-1&#39;</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">top5err_t</span><span class="p">,</span> <span class="s1">&#39;xb&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;SNN top-5&#39;</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">top1err_t</span><span class="o">-</span><span class="n">top1std_t</span><span class="p">,</span> <span class="n">top1err_t</span><span class="o">+</span><span class="n">top1std_t</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
@@ -1117,7 +1159,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Error [%]&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Simulation time [ms] in steps of </span><span class="si">{}</span><span class="s1"> ms.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Simulation time [ms] in steps of </span><span class="si">{}</span><span class="s1"> ms.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;Error_vs_time&#39;</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
@@ -1126,7 +1168,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_ops_vs_time"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_ops_vs_time">[docs]</a><span class="k">def</span> <span class="nf">plot_ops_vs_time</span><span class="p">(</span><span class="n">operations_b_t</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_ops_vs_time"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_ops_vs_time">[docs]</a><span class="k">def</span> <span class="nf">plot_ops_vs_time</span><span class="p">(</span><span class="n">operations_b_t</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot total number of operations over time.</span>
 
 <span class="sd">    Parameters</span>
@@ -1134,13 +1176,17 @@
 
 <span class="sd">    operations_b_t : ndarray</span>
 <span class="sd">        Number of operations. Shape: (batch_size, num_timesteps)</span>
+<span class="sd">    duration: int</span>
+<span class="sd">        Simulation duration.</span>
+<span class="sd">    dt: float</span>
+<span class="sd">        Simulation time resolution.</span>
 <span class="sd">    path: Optional[str]</span>
 <span class="sd">        Where to save the output.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;SNN operations&#39;</span><span class="p">)</span>
-    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">],</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
     <span class="n">mean_ops_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">operations_b_t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
     <span class="n">std_ops_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">operations_b_t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">mean_ops_t</span><span class="p">,</span> <span class="s1">&#39;.b&#39;</span><span class="p">)</span>
@@ -1148,7 +1194,7 @@
                      <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;MOps&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Simulation time [ms] in steps of </span><span class="si">{}</span><span class="s1"> ms.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Simulation time [ms] in steps of </span><span class="si">{}</span><span class="s1"> ms.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;operations_t&#39;</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
@@ -1157,13 +1203,17 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_spikecount_vs_time"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_spikecount_vs_time">[docs]</a><span class="k">def</span> <span class="nf">plot_spikecount_vs_time</span><span class="p">(</span><span class="n">spiketrains_n_b_l_t</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_spikecount_vs_time"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_spikecount_vs_time">[docs]</a><span class="k">def</span> <span class="nf">plot_spikecount_vs_time</span><span class="p">(</span><span class="n">spiketrains_n_b_l_t</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot total spikenumber over time.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 
 <span class="sd">    spiketrains_n_b_l_t:</span>
+<span class="sd">    duration: int</span>
+<span class="sd">        Simulation duration.</span>
+<span class="sd">    dt: float</span>
+<span class="sd">        Simulation time resolution.</span>
 <span class="sd">    path: Optional[str]</span>
 <span class="sd">        Where to save the output.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1180,7 +1230,7 @@
 
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;SNN spike count&#39;</span><span class="p">)</span>
-    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">],</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">])</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
     <span class="n">cum_spikecounts_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">cum_spikecounts_b_t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
     <span class="n">std_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">cum_spikecounts_b_t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">cum_spikecounts_t</span><span class="p">,</span> <span class="s1">&#39;.b&#39;</span><span class="p">)</span>
@@ -1189,7 +1239,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">ticklabel_format</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">&#39;sci&#39;</span><span class="p">,</span> <span class="n">scilimits</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;# spikes&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Simulation time [ms] in steps of </span><span class="si">{}</span><span class="s1"> ms.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Simulation time [ms] in steps of </span><span class="si">{}</span><span class="s1"> ms.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;Total_spike_count&#39;</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
@@ -1198,12 +1248,12 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_input_image"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_input_image">[docs]</a><span class="k">def</span> <span class="nf">plot_input_image</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_input_image"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_input_image">[docs]</a><span class="k">def</span> <span class="nf">plot_input_image</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Show an input image.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    x: np.array</span>
+<span class="sd">    x: ndarray</span>
 <span class="sd">        The sample to plot.</span>
 <span class="sd">    label: int</span>
 <span class="sd">        Class label (index) of sample.</span>
@@ -1213,7 +1263,12 @@
 
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Input image (class: </span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">label</span><span class="p">))</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span> <span class="k">else</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))),</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+            <span class="k">return</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span> <span class="k">else</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;input_image&#39;</span>
@@ -1223,7 +1278,7 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_history"><a class="viewcode-back" href="../../../snntoolbox.io_utils.html#snntoolbox.io_utils.plotting.plot_history">[docs]</a><span class="k">def</span> <span class="nf">plot_history</span><span class="p">(</span><span class="n">h</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_history"><a class="viewcode-back" href="../../../modules/io_utils.html#snntoolbox.io_utils.plotting.plot_history">[docs]</a><span class="k">def</span> <span class="nf">plot_history</span><span class="p">(</span><span class="n">h</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot the training and validation loss and accuracy at each epoch.</span>
 
 <span class="sd">    Parameters</span>
@@ -1269,7 +1324,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2017, Bodo Rueckauer.
-      Last updated on May 27, 2017.
+      Last updated on Jun 22, 2017.
 
     </p>
   </div>
@@ -1291,7 +1346,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1',
+            VERSION:'0.1.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

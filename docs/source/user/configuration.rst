@@ -66,9 +66,9 @@ model_lib: string
 dataset_format: string, optional
     The following input formats are supported:
 
-    - ``npz``: Compressed numpy format.
-    - ``jpg``: Images in directories corresponding to their class.
-    - ``aedat``: Sequence of address-events recorded from a Dynamic Vision Sensor.
+    A) ``npz``: Compressed numpy format.
+    B) ``jpg``: Images in directories corresponding to their class.
+    C) ``aedat``: Sequence of address-events recorded from a Dynamic Vision Sensor.
 
     A) Default. Provide at least two compressed numpy files called ``x_test.npz``
     and ``y_test.npz`` containing the test set and ground truth. In
@@ -82,32 +82,31 @@ dataset_format: string, optional
 
     B) The images are stored in subdirectories of the selected
     ``dataset_path``, where the names of the subdirectories represent
-    their class label. The toolbox will then use Keras ``ImageDataGenerator``
-    to load and process the files batchwise.
+    their class label. The toolbox will then use
+    ``keras.preprocessing.image.ImageDataGenerator`` to load and process the
+    files batchwise.
 
     C) Beta stage.
 
 datagen_kwargs: string, optional
     Specify keyword arguments for the data generator that will be used to load
     image files from subdirectories in the ``dataset_path``. Need to be given
-    in form of a python dictionary.
-    See ``keras.preprocessing.image.ImageDataGenerator`` for possible values.
+    in form of a python dictionary. See
+    ``keras.preprocessing.image.ImageDataGenerator`` for possible values.
 
 dataflow_kwargs: string, optional
     Specify keyword arguments for the data flow that will get the samples from
-    the ``ImageDataGenerator``. Need to be given in form of a python
-    dictionary.
-    See ``keras.preprocessing.image.ImageDataGenerator.flow_from_directory``
-    for possible values.
+    the ``ImageDataGenerator``. Need to be given in form of a python dictionary.
+    See ``keras.preprocessing.image.ImageDataGenerator.flow_from_directory`` for
+    possible values.
 
 poisson_input: float, optional
     If enabled, the input samples will be converted to Poisson spiketrains. The
     probability for a input neuron to fire is proportional to the analog value
-    of the corresponding pixel, and limited by the parameter 'input_rate'
-    below. For instance, with an 'input_rate' of 200, a fully-on pixel will
-    elicit a Poisson spiketrain of 200 Hz. Turn off for a less noisy
-    simulation. Currently, turning off Poisson input is only possible in INI
-    simulator.
+    of the corresponding pixel, and limited by the parameter 'input_rate' below.
+    For instance, with an ``input_rate`` of 200, a fully-on pixel will elicit a
+    Poisson spiketrain of 200 Hz. Turn off for a less noisy simulation.
+    Currently, turning off Poisson input is only possible in INI simulator.
 
 input_rate: float, optional
     Poisson spike rate in Hz for a fully-on pixel of the input image. Note that
@@ -140,10 +139,14 @@ target_size: tuple, optional
 -------
 
 evaluateANN: boolean, optional
-    If enabled, the ANN is tested at three stages:
+    If enabled, the ANN is tested at two stages:
+
         1. At the very beginning, using the input model as provided by the user.
-        2. After parsing the input model to our internal Keras representation.
-        3. After normalizing the network parameters, if ``normalize`` is enabled.
+        2. After parsing the input model to our internal Keras representation,
+           and applying any optional modifications like replacing Softmax
+           activation by ReLU, replacing MaxPooling by AveragePooling, and
+           normalizing the network parameters.
+
     This ensures all operations on the ANN preserve the accuracy.
 
 normalize: boolean, optional
@@ -152,10 +155,10 @@ normalize: boolean, optional
     ``percentile`` below).
 
 convert: boolean, optional
-    If enabled, load an ANN from ``<path_wd>`` and convert it to spiking.
+    If enabled, load an ANN from ``path_wd`` and convert it to spiking.
 
 simulate: boolean, optional
-    If enabled, load SNN from ``<path_wd>`` and test it on the specified
+    If enabled, load SNN from ``path_wd`` and test it on the specified
     simulator (see parameter ``simulator``).
 
 [normalization]
@@ -334,7 +337,8 @@ verbose: int, optional
 
 overwrite: boolean, optional
     If ``False``, the save methods will ask for permission to overwrite files
-    before writing parameters, activations, models etc. to disk. Default: ``True``.
+    before writing parameters, activations, models etc. to disk. Default:
+    ``True``.
 
 plotproperties: dict, optional
     Options that modify matplotlib plot properties.
@@ -346,3 +350,4 @@ SNN toolbox default settings
 ----------------------------
 
 .. include:: ../../snntoolbox/config_defaults
+   :literal:

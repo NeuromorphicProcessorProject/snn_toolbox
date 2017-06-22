@@ -1,14 +1,14 @@
 # Target simulators
 
-The modules in ``target_simulators`` package allow building, testing and
+The modules in `target_simulators` package allow building, testing and
 exporting a spiking network.
 
 Each of the files below offers functionality for a specific simulator. Adding
-another simulator requires creating a new file ``<custom>_target_sim.py`` which 
-implements the class ``SNN_compiled`` with its methods tailored to the specific
+another simulator requires creating a new file `<custom>_target_sim.py` which 
+implements the class `common.AbstractSNN` with its methods tailored to the specific
 simulator.
 
-### Integrated simulators:
+## Integrated simulators:
 
 * Brian - see pyNN
 * Brian2 - Restriction: No saving / loading functions implemented. Model needs to be converted
