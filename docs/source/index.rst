@@ -16,14 +16,7 @@ the toolbox. Examples are included.
 .. toctree::
    :maxdepth: 1
 
-   user/intro
-   user/installation
-   user/running
-   user/configuration
-   user/extending
-   user/examples
-   user/citation
-   user/support
+   documentation_links
 
 API Reference
 -------------
@@ -33,7 +26,7 @@ Here you find detailed descriptions of specific functions and classes.
 .. toctree::
    :maxdepth: 2
 
-   include_readmes
+   api_links
 
 
 Indices and tables

@@ -1,7 +1,11 @@
-# coding=utf-8
+.. toctree::
+   :maxdepth: 1
 
-SNN toolbox
-===========
-
-This is a toolbox for converting analog to spiking neural networks (ANN to SNN),
-and running them in a spiking neuron simulator.
+   user/intro
+   user/installation
+   user/running
+   user/configuration
+   user/extending
+   user/examples
+   user/citation
+   user/support

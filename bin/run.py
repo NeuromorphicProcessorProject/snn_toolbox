@@ -1,13 +1,30 @@
 # -*- coding: utf-8 -*-
 
-"""Script to run SNN toolbox either from console or as GUI."""
+"""
+The purpose of this module is to provide an executable for running the SNN
+conversion toolbox, either from terminal or using a GUI.
+
+During installation of the toolbox, python creates an entry point to the `main`
+function of this module. See :doc:`user/running` for how call this executable.
+
+@author: rbodo
+"""
 
 import argparse
 import os
 
 
 def main():
-    """Entry point for running the toolbox either from terminal or as GUI."""
+    """Entry point for running the toolbox.
+
+    Note
+    ----
+
+    There is no need to call this function directly, because python sets up an
+    executable during installation that can be called from terminal.
+
+    """
+
     parser = argparse.ArgumentParser(
         description='Run SNN toolbox to convert an analog neural network into '
                     'a spiking neural network, and optionally simulate it.')

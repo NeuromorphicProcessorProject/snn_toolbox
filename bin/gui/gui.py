@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Graphical user interface for SNN toolbox.
+Graphical User interface for the SNN conversion toolbox.
 
 Features
 --------
@@ -12,7 +12,12 @@ Features
     - Automatically recognizes result plots and allows displaying them in a
       separate window.
 
-Created on Mon Apr 11 10:25:53 2016
+Note
+----
+
+    Due to rapid extensions in the main toolbox, we have not always been able to
+    update the GUI to cover all functionality of the toolbox. We are currently
+    not maintaining the GUI and recommend using the terminal to run experiments.
 
 @author: rbodo
 """
@@ -56,10 +61,8 @@ else:
 
 # noinspection PyAttributeOutsideInit
 class SNNToolboxGUI:
-    """Main Class of SNN Toolbox."""
 
     def __init__(self, root, config):
-        """Init method of SNNToolboxGUI."""
         self.initialized = False
         self.root = root
         self.config = config
@@ -1503,7 +1506,6 @@ class SNNToolboxGUI:
 
 
 def main():
-    """Main function of the GUI."""
 
     from bin.utils import load_config
     config = load_config(os.path.abspath(os.path.join(os.path.dirname(__file__),

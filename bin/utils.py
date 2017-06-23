@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Wrapper script that combines all tools of SNN Toolbox.
+This module bundles all the tools of the SNN conversion toolbox.
+
+Important functions:
+
+.. autosummary::
+    :nosignatures
+
+    test_full
+    update_setup
 
 @author: rbodo
 """
@@ -225,7 +233,7 @@ def load_config(filepath):
 
 
 def update_setup(config_filepath):
-    """Update parameters.
+    """Update default settings with user settings and check they are valid.
 
     Load settings from configuration file at ``config_filepath``, and check that
     parameter choices are valid. Non-specified settings are filled in with
