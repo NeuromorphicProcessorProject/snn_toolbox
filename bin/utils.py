@@ -5,7 +5,7 @@ This module bundles all the tools of the SNN conversion toolbox.
 Important functions:
 
 .. autosummary::
-    :nosignatures
+    :nosignatures:
 
     test_full
     update_setup

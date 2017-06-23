@@ -1,3 +1,8 @@
+"""General utility functions on project-level.
+
+@author: rbodo
+"""
+
 import os
 
 import keras
@@ -109,7 +114,7 @@ def import_helpers(filepath, config):
     filepath: str
         Filename or relative or absolute path of module to import. If only
         the filename is given, module is assumed to be in current working
-        directory (``config['paths']['path_wd']). Non-absolute paths are taken
+        directory (``config['paths']['path_wd']``). Non-absolute paths are taken
         relative to working dir.
     config: configparser.ConfigParser
         Settings.
@@ -136,7 +141,7 @@ def get_abs_path(filepath, config):
     filepath: str
         Filename or relative or absolute path. If only the filename is given,
         file is assumed to be in current working directory
-        (``config['paths']['path_wd']). Non-absolute paths are interpreted
+        (``config['paths']['path_wd']``). Non-absolute paths are interpreted
         relative to working dir.
     config: configparser.ConfigParser
         Settings.

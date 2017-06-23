@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 """INI spiking neuron simulator.
 
-A collection of helper functions, including spiking layer classes derived from
-Keras layers, which were used to implement our own IF spiking simulator.
-
-Not needed when converting and running the SNN in other simulators (pyNN,
-MegaSim, ...)
-
-Created on Tue Dec  8 10:41:10 2015
+This module defines the layer objects used to create a spiking neural network
+for our built-in INI simulator
+:py:mod:`~snntoolbox.simulation.target_simulators.INI_target_sim`.
 
 @author: rbodo
 """

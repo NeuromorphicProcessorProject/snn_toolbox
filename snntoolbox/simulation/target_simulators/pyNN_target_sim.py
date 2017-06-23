@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Building SNNs using pyNN simulator.
-
-The modules in ``target_simulators`` package allow building a spiking network
-and exporting it for use in a spiking simulator.
-
-This particular module offers functionality for pyNN simulators Brian, Nest,
-Neuron. Adding another simulator requires implementing the class
-``AbstractSNN`` with its methods tailored to the specific simulator.
+"""
+Building and simulating spiking neural networks using
+`pyNN <http://neuralensemble.org/docs/PyNN/>`_.
 
 @author: rbodo
 """
@@ -44,46 +39,30 @@ def connect(f):
 
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
-                self.sim.FromListConnector(self._conns,
-                                           ['weight', 'delay'])))
+                self.sim.FromListConnector(self._conns, ['weight', 'delay'])))
         return wrapper
 
 
 class SNN(AbstractSNN):
     """Class to hold the compiled spiking neural network.
 
-    Class to hold the compiled spiking neural network, ready for testing in a
+    Represents the compiled spiking neural network, ready for testing in a
     spiking simulator.
 
     Attributes
     ----------
 
-    layers: list
+    layers: list[pyNN.Population]
         Each entry represents a layer, i.e. a population of neurons, in form of
         pyNN ``Population`` objects.
 
-    connections: list
+    connections: list[pyNN.Projection]
         pyNN ``Projection`` objects representing the connections between
         individual layers.
 
     cellparams: dict
         Neuron cell parameters determining properties of the spiking neurons in
         pyNN simulators.
-
-    Methods
-    -------
-
-    build:
-        Convert an ANN to a spiking neural network, using layers derived from
-        Keras base classes.
-    run:
-        Simulate a spiking network.
-    save:
-        Write model architecture and parameters to disk.
-    load:
-        Load model architecture and parameters from disk.
-    end_sim:
-        Clean up after simulation.
     """
 
     def __init__(self, config, queue=None):
@@ -225,9 +204,25 @@ class SNN(AbstractSNN):
         self.layers[-1].record(vars_to_record)
 
     def set_biases(self):
+        """Set biases.
+
+        Notes
+        -----
+
+        This has not been tested yet.
+        """
+
         self.layers[-1].set(i_offset=self._biases)
 
     def get_vars_to_record(self):
+        """Get variables to record during simulation.
+
+        Returns
+        -------
+
+        vars_to_record: list[str]
+            The names of variables to record during simulation.
+        """
 
         vars_to_record = []
 
@@ -274,7 +269,7 @@ class SNN(AbstractSNN):
 
         The size, structure, labels of all the population of an assembly are
         stored in a dictionary such that one can load them again using the
-        ``load_assembly`` function.
+        `load_assembly` function.
 
         The term "assembly" refers to pyNN internal nomenclature, where
         ``Assembly`` is a collection of layers (``Populations``), which in turn
@@ -283,10 +278,10 @@ class SNN(AbstractSNN):
         Parameters
         ----------
 
-        path: string
+        path: str
             Path to directory where to save layers.
 
-        filename: string, optional
+        filename: str
             Name of file to write layers to.
         """
 
@@ -327,11 +322,12 @@ class SNN(AbstractSNN):
         Parameters
         ----------
 
-        path: string
+        path: str
             Path to directory where connections are saved.
 
         Return
         ------
+
             Text files containing the layer connections. Each file is named
             after the layer it connects to, e.g. ``layer2.txt`` if connecting
             layer1 to layer2.
@@ -350,7 +346,7 @@ class SNN(AbstractSNN):
         """Load the populations in an assembly.
 
         Loads the populations in an assembly that was saved with the
-        ``save_assembly`` function.
+        `save_assembly` function.
 
         The term "assembly" refers to pyNN internal nomenclature, where
         ``Assembly`` is a collection of layers (``Populations``), which in turn

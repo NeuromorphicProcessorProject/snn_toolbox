@@ -5,7 +5,7 @@ The purpose of this module is to provide an executable for running the SNN
 conversion toolbox, either from terminal or using a GUI.
 
 During installation of the toolbox, python creates an entry point to the `main`
-function of this module. See :doc:`user/running` for how call this executable.
+function of this module. See :ref:`running` for how call this executable.
 
 @author: rbodo
 """
@@ -21,7 +21,7 @@ def main():
     ----
 
     There is no need to call this function directly, because python sets up an
-    executable during installation that can be called from terminal.
+    executable during :ref:`installation` that can be called from terminal.
 
     """
 

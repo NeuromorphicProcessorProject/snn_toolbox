@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """Caffe model parser.
 
-Created on Thu Jun  9 08:11:09 2016
-
 @author: rbodo
 """
 
@@ -16,12 +14,12 @@ class ModelParser(AbstractModelParser):
     def __init__(self, input_model, config):
         AbstractModelParser.__init__(self, input_model, config)
         self._layer_dict = {'InnerProduct': 'Dense',
-                           'Convolution': 'Conv2D',
-                           'MaxPooling2D': 'MaxPooling2D',
-                           'AveragePooling2D': 'AveragePooling2D',
-                           'ReLU': 'Activation',
-                           'Softmax': 'Activation',
-                           'Concat': 'Concatenate'}
+                            'Convolution': 'Conv2D',
+                            'MaxPooling2D': 'MaxPooling2D',
+                            'AveragePooling2D': 'AveragePooling2D',
+                            'ReLU': 'Activation',
+                            'Softmax': 'Activation',
+                            'Concat': 'Concatenate'}
         self.activation_dict = {'ReLU': 'relu',
                                 'Softmax': 'softmax',
                                 'Sigmoid': 'sigmoid'}

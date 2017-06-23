@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """Lasagne model parser.
 
-Created on Thu Jun  9 08:11:09 2016
-
 @author: rbodo
 """
 
@@ -154,7 +152,7 @@ def load(path, filename):
     """
 
     import os
-    from snntoolbox.datasets.utils import import_script
+    from snntoolbox.utils.utils import import_script
 
     filepath = os.path.join(path, filename)
 
@@ -167,7 +165,7 @@ def load(path, filename):
                              encoding='latin1')['param values']
     else:
         print("Loading parameters from .h5 file.")
-        from snntoolbox.datasets.utils import load_parameters
+        from snntoolbox.parsing.utils import load_parameters
         params = load_parameters(filepath + '.h5')
     lasagne.layers.set_all_param_values(model['model'], params)
 

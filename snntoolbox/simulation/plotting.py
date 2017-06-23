@@ -3,12 +3,9 @@
 Various functions to visualize connectivity, activity and accuracy of the
 network.
 
-Created on Wed Nov 18 13:57:37 2015
-
 @author: rbodo
 """
 
-# For compatibility with python2
 from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 

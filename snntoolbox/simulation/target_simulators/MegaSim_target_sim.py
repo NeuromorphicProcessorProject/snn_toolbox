@@ -1,12 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-
-The modules in ``target_simulators`` package allow building a spiking network
-and exporting it for use in a spiking simulator.
-
-This particular module offers functionality for MegaSim simulator.
-
-Created on Thu May 19 15:00:02 2016
+"""Building and simulating spiking neural networks using MegaSim.
 
 @author: Evangelos Stromatias
 """
@@ -1082,73 +1075,39 @@ rectify %d
 
 class SNN(AbstractSNN):
     """
-    Class to hold the compiled spiking neural network, ready for testing in a
+    Represents the compiled spiking neural network, ready for testing in a
     spiking simulator.
 
     Attributes
     ----------
 
     layers: list
-        Each entry represents a layer
+        Each entry represents a layer.
 
-    cellparams: dict
-        Neuron cell parameters determining properties of the spiking neurons in
-        pyNN simulators.
+    connections: list
+        The connections between layers.
 
-    megaschematic: string
+    megasim_path: str
+        The path to megasim installation directory.
+
+    megaschematic: str
         String that holds megasim main schmatic file that is needed to run a
         simulation
 
-    megadirname: string
+    megadirname: str
         String that holds the full path where the generated files for a megasim
-        simulation are stored.
-        These files include the stimulus, parameter, state and schematic files.
-        The event files will be generated in the same folder.
+        simulation are stored. These files include the stimulus, parameter,
+        state and schematic files. The event files will be generated in the same
+        folder.
 
-    Methods
-    -------
+    input_stimulus_file: str
+        Filename of input stimulus.
 
-    add_input_layer:
+    cellparams: dict
+        Neuron cell parameters determining properties of the spiking neurons.
 
-    check_megasim_output:
-        A method that checks the prints of MegaSim for errors
-
-    poisson_spike_generator_megasim_flatten:
-        Method that converts an mnist digit to spike trains and stores it in the
-        megadirname folder as a MegaSim stimulus file.
-
-    build_schematic_updated:
-        This method builds the main schematic file for running a megasim
-        simulation
-
-    clean_megasim_sim_data:
-        Method that cleans the data generated from and for a megasim simulation.
-        eg stimulus files and event files
-
-    get_spikes:
-        Method that opens all generated event files from a megasim simulation
-
-    spike_count_histogram: Numpy array, pop_size
-        Method that receives a a numpy array of events from a megasim module and
-        the size of that population,
-        creates a histogram of spike counts and returns the argmax. Returns -1
-        if no spikes were generated.
-
-    build:
-        Convert an ANN to a spiking neural network, using layers derived from
-        Keras base classes.
-    run:
-        Simulate a spiking network.
-    save:
-        Write model architecture and parameters to disk.
-    load:
-        Load model architecture and parameters from disk.
-    end_sim:
-        Clean up after simulation.
-
-    collect_plot_results: layers, output_shapes, ann, x_batch, idx
-
-
+    use_biases: bool
+        Whether or not to use biases.
     """
 
     def __init__(self, config, queue=None):
@@ -1263,7 +1222,7 @@ class SNN(AbstractSNN):
         os.chdir(current_dir)
 
         # Check megasim output for errors
-        self.check_megasim_output(run_megasim)
+        self.check_megasim_output(str(run_megasim))
 
         output_b_l_t = self.get_recorded_vars(self.layers)
 
@@ -1377,12 +1336,12 @@ class SNN(AbstractSNN):
     def get_spikes(self):
         """
         Method that fetches all the events from all layers after a simulation
-        is over
+        is over.
 
         Returns
         -------
 
-        A list of all the events from all the layers
+        A list of all the events from all the layers.
 
         """
 
@@ -1394,13 +1353,12 @@ class SNN(AbstractSNN):
         return events
 
     def get_output_spikes_batch(self):
-        """
-        Method that fetches the events from the output layer
+        """Method that fetches the events from the output layer.
 
         Returns
         -------
 
-        A numpy array of the output events
+        A numpy array of the output events.
 
         """
 
@@ -1426,14 +1384,14 @@ class SNN(AbstractSNN):
     def spike_count_histogram(events, pop_size=10):
         """
         This method first creates a histogram based on the size of the layer
-        and then
-        returns the argmax of the neuron that fired the most spikes for that
-        particular stimulus.
+        and then returns the argmax of the neuron that fired the most spikes for
+        that particular stimulus.
 
-        If there are no spikes it will return -1
+        If there are no spikes it will return -1.
 
         Parameters
         ----------
+
         events: list
             List of megasim events of a particular layer
 
@@ -1442,6 +1400,8 @@ class SNN(AbstractSNN):
 
         Returns
         -------
+
+        pop_spike_hist
 
         """
 
@@ -1463,12 +1423,9 @@ class SNN(AbstractSNN):
 
         Parameters
         ----------
-        megalog: String
+
+        megalog: str
             String returned from executing megasim.
-
-        Returns
-        -------
-
         """
 
         megalog = str(megalog)
@@ -1484,13 +1441,15 @@ class SNN(AbstractSNN):
 
         Parameters
         ----------
-        mnist_digit: numpy array
-            A 1d or 2d numpy array of an mnist digit (normalised 0-1)
+
+        mnist_digit: ndarray
+            A 1d or 2d numpy array of an mnist digit (normalised 0-1).
 
         Returns
         -------
+
         It will store the generated spike trains to a stimulus file in the
-        megasim sim folder
+        megasim sim folder.
         """
 
         spikes = []
@@ -1528,13 +1487,15 @@ class SNN(AbstractSNN):
 
         Parameters
         ----------
-        mnist_digits: numpy array
-            A 1d or 2d numpy array of an mnist digit (normalised 0-1)
+
+        mnist_digits: ndarray
+            A 1d or 2d numpy array of an mnist digit (normalised 0-1).
 
         Returns
         -------
+
         It will store the generated spike trains to a stimulus file in the
-        megasim sim folder
+        megasim sim folder.
         """
 
         spikes = []
@@ -1602,18 +1563,19 @@ class SNN(AbstractSNN):
     def generate_bias_clk(self, timestamp_batches):
         """
         An external periodic (per timestep) event is used to trigger the
-        biases, since megasim simulator is not a
-        time-stepped simulator.
+        biases, since megasim simulator is not a time-stepped simulator.
 
         Parameters
         ----------
-        timestamp_batches: List of lists
-            list that includes the first and last timestamps of the input
-            source. Eg [ [start0, stop0], [start1, stop1]]
+
+        timestamp_batches: List[list]
+            List that includes the first and last timestamps of the input
+            source, e.g. [[start0, stop0], [start1, stop1]].
 
         Returns
         -------
-        Generates a megasim stimulus file in the experiment folder
+
+        Generates a megasim stimulus file in the experiment folder.
         """
 
         bias_clk = []
@@ -1810,12 +1772,7 @@ class SNN(AbstractSNN):
     def clean_megasim_sim_data(self):
         """
         A method that removes the previous stimulus file and generated event
-        files before
-        testing a new digit
-
-        Returns
-        -------
-
+        files before testing a new sample.
         """
 
         files = os.listdir(self.megadirname)
@@ -1829,4 +1786,6 @@ class SNN(AbstractSNN):
             os.remove(self.megadirname + stim)
 
     def set_spiketrain_stats_input(self):
+        # Added this here because PyCharm complains about not all abstract
+        # methods being implemented (even though this is not abstract).
         AbstractSNN.set_spiketrain_stats_input(self)

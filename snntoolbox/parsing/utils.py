@@ -1,33 +1,33 @@
 # -*- coding: utf-8 -*-
 """Functions common to input model parsers.
 
-AbstractModelParser extracts an input model written in some neural
-network library and prepares it for further processing in the SNN toolbox.
-
-The idea is to make all further steps in the conversion/simulation pipeline
-independent of the original model format.
-
-The core of this module is an abstract base class for parsing neural network
-models:
+The core of this module is an abstract base class extracts an input model
+written in some neural network library and prepares it for further processing in
+the SNN toolbox.
 
 .. autosummary::
     :nosignatures:
 
     AbstractModelParser
 
-Helper functions used for modifying the network parameters during parsing:
+The idea is to make all further steps in the conversion/simulation pipeline
+independent of the original model format.
+
+Other functions help navigate through the network in order to explore network
+connectivity and layer attributes:
 
 .. autosummary::
     :nosignatures:
 
-    absorb_bn_parameters
-    binary_tanh
-    binary_sigmoid
-    binarize
-    binarize_var
-    padding_string
-
-Created on Thu May 19 08:26:49 2016
+    get_type
+    has_weights
+    get_fanin
+    get_fanout
+    get_inbound_layers
+    get_inbound_layers_with_params
+    get_inbound_layers_without_params
+    get_outbound_layers
+    get_outbound_activation
 
 @author: rbodo
 """
@@ -47,7 +47,7 @@ class AbstractModelParser:
     Parameters
     ----------
 
-    input_model: dict
+    input_model
         The input network object.
     config: configparser.Configparser
         Contains the toolbox configuration for a particular experiment.
@@ -212,7 +212,7 @@ class AbstractModelParser:
 
     @abstractmethod
     def get_layer_iterable(self):
-        """
+        """Get an iterable over the layers of the network.
 
         Returns
         -------
@@ -237,7 +237,7 @@ class AbstractModelParser:
 
     @abstractmethod
     def get_batchnorm_parameters(self, layer):
-        """
+        """Get the parameters of a batch-normalization layer.
 
         Returns
         -------
@@ -283,6 +283,20 @@ class AbstractModelParser:
     def get_inbound_names(self, layer, name_map):
         """Get names of inbound layers.
 
+        Parameters
+        ----------
+
+        layer:
+            Layer
+        name_map: dict
+            Maps the name of a layer to the `id` of the layer object.
+
+        Returns
+        -------
+
+        : list
+            The names of inbound layers.
+
         """
 
         if len(self._layer_list) == 0:
@@ -300,7 +314,7 @@ class AbstractModelParser:
 
     @abstractmethod
     def get_inbound_layers(self, layer):
-        """
+        """Get inbound layers of ``layer``.
 
         Returns
         -------
@@ -313,6 +327,8 @@ class AbstractModelParser:
     @property
     def layers_to_skip(self):
         """
+        Return a list of layer names that should be skipped during conversion
+        to a spiking network.
 
         Returns
         -------
@@ -324,21 +340,74 @@ class AbstractModelParser:
 
     @abstractmethod
     def has_weights(self, layer):
+        """Return ``True`` if ``layer`` has weights."""
+
         pass
 
     def initialize_attributes(self, layer=None):
+        """
+        Return a dictionary that will be used to collect all attributes of a
+        layer. This dictionary can then be used to instantiate a new parsed
+        layer.
+        """
+
         return {}
 
     @abstractmethod
     def get_input_shape(self):
+        """Get the input shape of a network, not including batch size.
+
+        Returns
+        -------
+
+        input_shape: tuple
+            Input shape.
+        """
+
         pass
 
     def get_batch_input_shape(self):
+        """Get the input shape of a network, including batch size.
+
+        Returns
+        -------
+
+        batch_input_shape: tuple
+            Batch input shape.
+        """
+
         input_shape = tuple(self.get_input_shape())
         batch_size = self.config.getint('simulation', 'batch_size')
         return (batch_size,) + input_shape
 
     def get_name(self, layer, idx, layer_type=None):
+        """Create a name for a ``layer``.
+
+        The format is <layer_num><layer_type>_<layer_shape>.
+
+        >>> # Name of first convolution layer with 32 feature maps and dimension
+        >>> # 64x64:
+        "00Conv2D_32x64x64"
+        >>> # Name of final dense layer with 100 units:
+        "06Dense_100"
+
+        Parameters
+        ----------
+
+        layer:
+            Layer.
+        idx: int
+            Layer index.
+        layer_type: Optional[str]
+            Type of layer.
+
+        Returns
+        -------
+
+        name: str
+            Layer name.
+        """
+
         if layer_type is None:
             layer_type = self.get_type(layer)
 
@@ -356,13 +425,19 @@ class AbstractModelParser:
 
     @abstractmethod
     def get_output_shape(self, layer):
-        """Get output shape of layer.
+        """Get output shape of a ``layer``.
+
+        Parameters
+        ----------
+
+        layer
+            Layer.
 
         Returns
         -------
 
         output_shape: Sized
-            Output shape of layer.
+            Output shape of ``layer``.
         """
 
         pass
@@ -388,26 +463,72 @@ class AbstractModelParser:
 
     @abstractmethod
     def parse_dense(self, layer, attributes):
+        """Parse a fully-connected layer.
+
+        Parameters
+        ----------
+
+        layer:
+            Layer.
+        attributes: dict
+            The layer attributes as key-value pairs in a dict.
+        """
+
         pass
 
     @abstractmethod
     def parse_convolution(self, layer, attributes):
+        """Parse a convolutional layer.
+
+        Parameters
+        ----------
+
+        layer:
+            Layer.
+        attributes: dict
+            The layer attributes as key-value pairs in a dict.
+        """
+
         pass
 
     @abstractmethod
     def parse_pooling(self, layer, attributes):
+        """Parse a pooling layer.
+
+        Parameters
+        ----------
+
+        layer:
+            Layer.
+        attributes: dict
+            The layer attributes as key-value pairs in a dict.
+        """
+
         pass
 
     def absorb_activation(self, layer, attributes):
+        """Detect what activation is used by the layer.
+
+        Sometimes the Dense or Conv layer specifies its activation directly,
+        sometimes it is followed by a dedicated Activation layer (possibly
+        with BatchNormalization in between). Here we try to find such an
+        activation layer, and add this information to the Dense/Conv layer
+        itself. The separate Activation layer can then be removed.
+
+        Parameters
+        ----------
+
+        layer:
+            Layer.
+        attributes: dict
+            The layer attributes as key-value pairs in a dict.
+        """
+
         activation = self.get_activation(layer)
 
-        # Sometimes the Conv/Dense layer specifies its activation directly,
-        # sometimes it is followed by a dedicated activation layer (possibly
-        # with BatchNormalization in between). Here we try to find such a
-        # activation layer.
         outbound = layer
         for _ in range(3):
-            outbound = self.get_outbound_layers(outbound)
+            outbound = list(self.get_outbound_layers(outbound))
             if len(outbound) != 1:
                 break
             else:
@@ -431,16 +552,39 @@ class AbstractModelParser:
 
     @abstractmethod
     def get_activation(self, layer):
-        pass
+        """Get the activation string of an activation ``layer``.
 
-    @abstractmethod
-    def get_outbound_layers(self, layer):
-        """
+        Parameters
+        ----------
+
+        layer
+            Layer
 
         Returns
         -------
 
-        outbound: List
+        activation: str
+            String indicating the activation of the ``layer``.
+
+        """
+
+        pass
+
+    @abstractmethod
+    def get_outbound_layers(self, layer):
+        """Get outbound layers of ``layer``.
+
+        Parameters
+        ----------
+
+        layer:
+            Layer.
+
+        Returns
+        -------
+
+        outbound: list
+            Outbound layers of ``layer``.
 
         """
 
@@ -448,26 +592,32 @@ class AbstractModelParser:
 
     @abstractmethod
     def parse_concatenate(self, layer, attributes):
+        """Parse a concatenation layer.
+
+        Parameters
+        ----------
+
+        layer:
+            Layer.
+        attributes: dict
+            The layer attributes as key-value pairs in a dict.
+        """
+
         pass
 
     def build_parsed_model(self):
         """Create a Keras model suitable for conversion to SNN.
 
-        This method uses a list of layer specifications to build a Keras model
-        from it. The resulting model contains all essential information about
-        the original network, independently of the model library in which the
-        original network was built (e.g. Caffe). This makes the SNN toolbox
-        stable against changes in input formats. Another advantage is
-        extensibility: In order to add a new input language to the toolbox (e.g.
-        Lasagne), a developer only needs to add a single module to
-        ``model_libs`` package, implementing a number of methods (see the
-        respective functions in 'keras_input_lib.py' for more details.)
+        This method uses the specifications in `_layer_list` to build a
+        Keras model. The resulting model contains all essential information
+        about the original network, independently of the model library in which
+        the original network was built (e.g. Caffe).
 
         Returns
         -------
 
         parsed_model: keras.models.Model
-            A Keras model, functionally equivalent to ``input_model``.
+            A Keras model, functionally equivalent to `input_model`.
         """
 
         img_input = keras.layers.Input(batch_shape=self.get_batch_input_shape(),
@@ -503,7 +653,7 @@ class AbstractModelParser:
 
         Can use either numpy arrays ``x_test, y_test`` containing the test
         samples, or generate them with a dataflow
-        (``Keras.ImageDataGenerator.flow_from_directory`` object).
+        (``keras.ImageDataGenerator.flow_from_directory`` object).
 
         Parameters
         ----------
@@ -571,6 +721,7 @@ def padding_string(pad, pool_size):
 
     Parameters
     ----------
+
     pad: tuple[int]
         Zero-padding in x- and y-direction.
     pool_size: list[int]

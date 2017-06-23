@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Helper functions to handle parameters and variables of interest during
-conversion and simulation of an SNN.
 
-Created on Wed Mar  9 16:18:33 2016
+This module performs modifications on the network parameters during conversion
+from analog to spiking.
+
+.. autosummary::
+    :nosignatures:
+
+    normalize_parameters
 
 @author: rbodo
 """
 
-# For compatibility with python2
 from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
@@ -19,23 +22,6 @@ import numpy as np
 from future import standard_library
 
 standard_library.install_aliases()
-
-
-def try_reload_activations(layer, model, x_norm, batch_size, activ_dir):
-    try:
-        activations = np.load(os.path.join(activ_dir,
-                                           layer.name + '.npz'))['arr_0']
-    except FileNotFoundError:
-        if x_norm is None:
-            return
-
-        print("Calculating activations of layer {} ...".format(layer.name))
-        activations = get_activations_layer(model.input, layer.output, x_norm,
-                                            batch_size)
-        print("Writing activations to disk...")
-        np.savez_compressed(os.path.join(activ_dir, layer.name), activations)
-
-    return activations
 
 
 def normalize_parameters(model, config, **kwargs):
@@ -381,3 +367,20 @@ def get_activations_batch(ann, x_batch):
                                          layer.output).predict_on_batch(x_batch)
         activations_batch.append((activations, layer.name))
     return activations_batch
+
+
+def try_reload_activations(layer, model, x_norm, batch_size, activ_dir):
+    try:
+        activations = np.load(os.path.join(activ_dir,
+                                           layer.name + '.npz'))['arr_0']
+    except FileNotFoundError:
+        if x_norm is None:
+            return
+
+        print("Calculating activations of layer {} ...".format(layer.name))
+        activations = get_activations_layer(model.input, layer.output, x_norm,
+                                            batch_size)
+        print("Writing activations to disk...")
+        np.savez_compressed(os.path.join(activ_dir, layer.name), activations)
+
+    return activations

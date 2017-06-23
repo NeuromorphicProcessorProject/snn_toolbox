@@ -1,12 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Building SNNs using INI simulator.
-
-The modules in ``target_simulators`` package allow building a spiking network
-and exporting it for use in a spiking simulator.
-
-This particular module offers functionality for the INI simulator. Adding
-another simulator requires implementing the class ``SNN`` with its
-methods tailored to the specific simulator.
+"""Building and simulating spiking neural networks using INIsim.
 
 @author: rbodo
 """
@@ -31,7 +24,7 @@ remove_classifier = False
 class SNN(AbstractSNN):
     """
     The compiled spiking neural network, using layers derived from
-    Keras base classes.
+    Keras base classes (see `snntoolbox.simulation.backends.inisim.inisim`).
 
     Aims at simulating the network on a self-implemented Integrate-and-Fire
     simulator using a timestepped approach.
@@ -43,26 +36,9 @@ class SNN(AbstractSNN):
         Keras model. This is the output format of the compiled spiking model
         because INI simulator runs networks of layers that are derived from
         Keras layer base classes.
-
-    Methods
-    -------
-
-    build:
-        Convert an ANN to a spiking neural network, using layers derived from
-        Keras base classes.
-    run:
-        Simulate a spiking network.
-    save:
-        Write model architecture and parameters to disk.
-    load:
-        Load model architecture and parameters from disk.
-    end_sim:
-        Clean up after simulation. Not needed in this simulator, so do a
-        ``pass``.
     """
 
     def __init__(self, config, queue=None):
-        """Init function."""
 
         AbstractSNN.__init__(self, config, queue)
 
@@ -223,6 +199,22 @@ class SNN(AbstractSNN):
             # there's really no need.
 
     def get_poisson_frame_batch(self, x_b_l):
+        """Get a batch of Poisson input spikes.
+
+        Parameters
+        ----------
+
+        x_b_l: ndarray
+            The input frame. Shape: (`batch_size`, ``layer_shape``).
+
+        Returns
+        -------
+
+        input_b_l: ndarray
+            Array of Poisson input spikes, with same shape as ``x_b_l``.
+
+        """
+
         if self._input_spikecount < self._num_poisson_events_per_sample \
                 or self._num_poisson_events_per_sample < 0:
             spike_snapshot = np.random.random_sample(x_b_l.shape) \
@@ -256,7 +248,11 @@ class SNN(AbstractSNN):
                 self.sim.set_time(layer, np.float32(t))
 
     def set_spiketrain_stats_input(self):
+        # Added this here because PyCharm complains about not all abstract
+        # methods being implemented (even though this is not abstract).
         AbstractSNN.set_spiketrain_stats_input(self)
 
     def get_spiketrains_input(self):
+        # Added this here because PyCharm complains about not all abstract
+        # methods being implemented (even though this is not abstract).
         AbstractSNN.get_spiketrains_input(self)

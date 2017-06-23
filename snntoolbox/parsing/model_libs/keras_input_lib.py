@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """Keras model parser.
 
-Created on Thu May 19 08:21:05 2016
-
 @author: rbodo
 """
 
@@ -17,7 +15,7 @@ class ModelParser(AbstractModelParser):
         return self.input_model.layers
 
     def get_type(self, layer):
-        from snntoolbox.conversion.utils import get_type
+        from snntoolbox.parsing.utils import get_type
         return get_type(layer)
 
     def get_batchnorm_parameters(self, layer):
@@ -33,7 +31,7 @@ class ModelParser(AbstractModelParser):
         return [mean, var_eps_sqrt_inv, gamma, beta, axis]
 
     def get_inbound_layers(self, layer):
-        from snntoolbox.conversion.utils import get_inbound_layers
+        from snntoolbox.parsing.utils import get_inbound_layers
         return get_inbound_layers(layer)
 
     @property
@@ -42,7 +40,7 @@ class ModelParser(AbstractModelParser):
         return AbstractModelParser.layers_to_skip.fget(self)
 
     def has_weights(self, layer):
-        from snntoolbox.conversion.utils import has_weights
+        from snntoolbox.parsing.utils import has_weights
         return has_weights(layer)
 
     def initialize_attributes(self, layer=None):
@@ -77,7 +75,7 @@ class ModelParser(AbstractModelParser):
 
     def get_outbound_layers(self, layer):
 
-        from snntoolbox.conversion.utils import get_outbound_layers
+        from snntoolbox.parsing.utils import get_outbound_layers
 
         return get_outbound_layers(layer)
 

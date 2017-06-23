@@ -1,6 +1,13 @@
 # coding=utf-8
 
-"""Common functions for spiking simulators."""
+"""Common functions for spiking simulators.
+
+Most notably, this module defines the abstract base class `AbstractSNN` used to
+create spiking neural networks. This class has to be inherited from when another
+simulator is added to the toolbox (see :ref:`extending`).
+
+@author: rbodo
+"""
 
 import os
 from abc import abstractmethod
@@ -13,37 +20,106 @@ from snntoolbox.utils.utils import echo
 
 
 class AbstractSNN:
-    """
-    The compiled spiking neural network, using layers derived from
-    Keras base classes.
+    """Abstract base class for creating spiking neural networks.
 
-    Aims at simulating the network on a self-implemented Integrate-and-Fire
-    simulator using a timestepped approach.
+    This class provides the basic structure to compile and simulate a spiking
+    neural network. It has to be instantiated as in
+    `target_simulators.pyNN_target_sim` with concrete methods tailored to the
+    target simulator.
+
+    Core methods that usually do not have to be overwritten include:
+
+    .. autosummary::
+        :nosignatures:
+
+        build
+        run
+        get_recorded_vars
+
+    Relevant methods that in most cases will have to be overwritten include:
+
+    .. autosummary::
+        :nosignatures:
+
+        add_input_layer
+        add_layer
+        build_dense
+        build_convolution
+        build_pooling
+        build_flatten
+        compile
+        simulate
+
+    Notes
+    -----
+
+    In the attribute definitions below, we use suffixes to denote variable
+    shape. In `spiketrains_n_b_l_t` for instance, ``n`` represents a dimension
+    across the network (i.e. indexing the layers); ``b`` is an index for a
+    batch of samples; ``l`` stands for the layer dimensions; ``t``
+    indicates the time axis.
 
     Attributes
     ----------
 
+    config: configparser.ConfigParser
+        Settings.
+    queue: Queue.Queue
+        Used to detect stop signals from user to abort simulation.
+    parsed_model: keras.models.Model
+        The parsed model.
+    is_built: bool
+        Whether or not the SNN has been built.
+    batch_size: int
+        The batch size for parallel testing of multiple samples.
+    spiketrains_n_b_l_t: list[tuple[np.array, str]]
+        Spike trains of a batch of samples of all neurons in the network over
+        the whole simulation time. Each entry in ``spiketrains_batch`` contains
+        a tuple ``(spiketimes, label)`` for each layer of the network.
+        ``spiketimes`` is an array where the last index contains the spike times
+        of the specific neuron, and the first indices run over the number of
+        neurons in the layer: (batch_size, n_chnls, n_rows, n_cols, duration).
+        ``label`` is a string specifying both the layer type and the index,
+        e.g. ``'03Conv2D_32x64x64'``.
+    activations_n_b_l: list[tuple[np.array, str]]
+        Activations of the ANN.
+    mem_n_b_l_t: list[tuple[np.array, str]]
+        Membrane potentials of the SNN.
+    input_b_l_t: ndarray
+        Input to the SNN over time.
+    top1err_b_t: ndarray
+        Top-1 error of SNN over time. Shape: (`batch_size`, ``_num_timesteps``).
+    top5err_b_t: ndarray
+        Top-5 error of SNN over time. Shape: (`batch_size`, ``_num_timesteps``).
+    operations_b_t: ndarray
+        Number of operations of SNN over time. Shape:
+        (`batch_size`, ``_num_timesteps``)
+    operations_ann: float
+        Number of operations of ANN.
+    top1err_ann: float
+        Top-1 error of ANN.
+    top5err_ann: float
+        Top-5 error of ANN.
+    num_neurons: List[int]
+        Number of neurons in the network (one entry per layer).
+    num_neurons_with_bias:
+        Number of neurons with bias in the network (one entry per layer).
+    fanin: List[int]
+        Number of synapses targeting a neuron (one entry per layer).
+    fanout: List[int]
+        Number of outgoing synapses (one entry per layer).
+    rescale_fac: float
+        Scales spike probability when using Poisson input.
+    num_classes: int
+        Number of classes of the data set.
+    top_k: int
+        By default, the toolbox records the top-1 and top-k classification
+        errors.
     sim: Simulator
         Module containing utility functions of spiking simulator. Result of
-        calling ``bin.utils.initialize_simulator()``. For instance, if
-        using Brian simulator, this initialization would be equivalent to
+        calling `bin.utils.initialize_simulator`. For instance, if using Brian
+        simulator, this initialization would be equivalent to
         ``import pyNN.brian as sim``.
-
-    Methods
-    -------
-
-    build:
-        Convert an ANN to a spiking neural network, using layers derived from
-        Keras base classes.
-    run:
-        Simulate a spiking network.
-    save:
-        Write model architecture and parameters to disk.
-    load:
-        Load model architecture and parameters from disk.
-    end_sim:
-        Clean up after simulation. Not needed in this simulator, so do a
-        ``pass``.
     """
 
     def __init__(self, config, queue=None):
@@ -67,8 +143,6 @@ class AbstractSNN:
         self._dt = self.config.getfloat('simulation', 'dt')
         self._duration = self.config.getint('simulation', 'duration')
         self._num_timesteps = int(self._duration / self._dt)
-        # ``rescale_fac`` globally scales spike probability when using Poisson
-        # input.
         self.rescale_fac = 1000 / (self.config.getint('input', 'input_rate') *
                                    self._dt)
         self.num_classes = None
@@ -90,59 +164,135 @@ class AbstractSNN:
     @property
     @abstractmethod
     def is_parallelizable(self):
+        """
+        Whether or not the simulator is able to test multiple samples in
+        parallel.
+        """
+
         pass
 
     @abstractmethod
     def add_input_layer(self, input_shape):
+        """Add input layer.
+
+        Parameters
+        ----------
+
+        input_shape: tuple
+            Input shape to the network, including the batch size as first
+            dimension.
+        """
+
         pass
 
     @abstractmethod
     def add_layer(self, layer):
+        """Do anything that concerns adding any layer independently of its type.
+
+        Parameters
+        ----------
+
+        layer: keras.layers.Layer
+            Layer
+        """
+
         pass
 
     @abstractmethod
     def build_dense(self, layer):
+        """Build spiking fully-connected layer.
+
+        Parameters
+        ----------
+
+        layer: keras.layers.Layer
+            Layer
+        """
+
         pass
 
     @abstractmethod
     def build_convolution(self, layer):
+        """Build spiking convolutional layer.
+
+        Parameters
+        ----------
+
+        layer: keras.layers.Layer
+            Layer
+        """
+
         pass
 
     @abstractmethod
     def build_pooling(self, layer):
+        """Build spiking pooling layer.
+
+        Parameters
+        ----------
+
+        layer: keras.layers.Layer
+            Layer
+        """
+
         pass
 
     def build_flatten(self, layer):
+        """Build flatten layer.
+
+        May not be needed depending on the simulator.
+
+        Parameters
+        ----------
+
+        layer: keras.layers.Layer
+            Layer
+        """
+
         pass
 
     @abstractmethod
     def compile(self):
+        """Compile the spiking network."""
+
         pass
 
     @abstractmethod
     def simulate(self, **kwargs):
         """
+        Simulate a spiking network for a certain duration, and record any
+        variables of interest (spike trains, membrane potentials, ...)
 
         Returns
         -------
 
         output_b_l_t: ndarray
-            Array of shape (batch_size, num_classes, num_timesteps), containing
-            the number of output spikes of the neurons in the final layer, for
-            each sample and for each time step during the simulation.
+            Array of shape (`batch_size`, `num_classes`, ``num_timesteps``),
+            containing the number of output spikes of the neurons in the final
+            layer, for each sample and for each time step during the simulation.
         """
 
         pass
 
     @abstractmethod
     def reset(self, sample_idx):
-        """Reset network variables."""
+        """Reset network variables.
+
+        Parameters
+        ----------
+
+        sample_idx: int
+            Index of sample that has just been simulated. In certain
+            applications (video data), we may want to turn off reset between
+            samples.
+        """
 
         pass
 
     @abstractmethod
     def end_sim(self):
         """Clean up after simulation."""
+
         pass
 
     @abstractmethod
@@ -177,46 +327,58 @@ class AbstractSNN:
 
         pass
 
-    def build(self, parsed_model):
+    def init_cells(self):
         """
-        Compile a spiking neural network to prepare for simulation.
+        Set cellparameters of neurons in each layer and initialize membrane
+        potential.
+        """
 
-        Written in pyNN (http://neuralensemble.org/docs/PyNN/).
-        pyNN is a simulator-independent language for building neural
-        network
-        models. It allows running the converted net in a Spiking
-        Simulator like
-        Brian, NEURON, or NEST.
+        pass
 
-        During compilation, two lists are created and stored to disk:
-        ``layers`` and ``connections``. Each entry in ``layers``
-        represents a
-        population of neurons, given by a pyNN ``Population`` object. The
-        neurons in these layers are connected by pyNN ``Projection`` s,
-        stored
-        in ``connections`` list.
+    def get_spiketrains(self, **kwargs):
+        """Get spike trains of a layer.
 
-        This compilation method performs the connection process between
-        layers.
-        This means, if the session was started with a call to
-        ``sim.setup()``,
-        the converted network can be tested right away, using the simulator
-        ``sim``.
+        Returns
+        -------
 
-        However, when starting a new session (calling ``sim.setup()`` after
-        conversion), the ``layers`` have to be reloaded from disk using
-        ``load_assembly``, and the connections reestablished manually.
-        This is
-        implemented in ``run`` method, go there for details.
-        See ``bin.utils.test_full`` about how to simulate
-        after
-        converting.
+        spiketrains_b_l_t : ndarray
+            Spike trains.
+        """
+
+        pass
+
+    def get_spiketrains_input(self):
+        """Get spike trains of input layer.
+
+        Returns
+        -------
+
+        spiketrains_b_l_t : ndarray
+            Spike trains of input.
+        """
+
+        pass
+
+    def get_vmem(self, **kwargs):
+        """Get membrane potentials of a layer.
+
+        Returns
+        -------
+
+        mem_b_l_t : ndarray
+            Membrane potentials of layer.
+        """
+
+        pass
+
+    def build(self, parsed_model):
+        """Assemble a spiking neural network to prepare for simulation.
 
         Parameters
         ----------
 
-        parsed_model: Keras model
-         Parsed input model.
+        parsed_model: keras.models.Model
+            Parsed input model.
         """
 
         print("Building spiking model...")
@@ -259,8 +421,15 @@ class AbstractSNN:
         self.is_built = True
 
     def run(self, x_test=None, y_test=None, dataflow=None, **kwargs):
-        """
-        Simulate a spiking network.
+        """ Simulate a spiking network.
+
+        This methods takes care of preparing the dataset for batch-wise
+        processing, and allocates variables for quantities measured during the
+        simulation. The `simulate` method (overwritten by a concrete target
+        simulator) is responsible for actually simulating the network over a
+        given duration, and reporting the measured quantities. The `run` method
+        then deals with evaluating this data to print statistics, plot figures,
+        etc.
 
         Parameters
         ----------
@@ -278,6 +447,8 @@ class AbstractSNN:
             Loads images from disk and processes them on the fly.
 
         kwargs: Optional[dict]
+            Optional keyword arguments, for instance
+
             - path: Optional[str]
                 Where to store the output plots. If no path given, this value is
                 taken from the settings dictionary.
@@ -513,15 +684,14 @@ class AbstractSNN:
 
         return top1acc_total
 
-    def init_cells(self):
-        """
-        Set cellparameters of neurons in each layer and initialize membrane
-        potential.
-        """
-
-        pass
-
     def adjust_batchsize(self):
+        """Reduce batch size to single sample if necessary.
+
+        Not every simulator is able to simulate multiple samples in parallel.
+        If this is the case (indicated by `is_parallelizable`), set `batch_size`
+        to 1.
+        """
+
         self._batch_size = self.config.getint('simulation', 'batch_size')
         if self._batch_size > 1 and not self.is_parallelizable:
             self.config.set('simulation', 'batch_size', '1')
@@ -531,6 +701,12 @@ class AbstractSNN:
         return self._batch_size
 
     def restore_snn(self):
+        """Restore both the spiking and the parsed network from disk.
+
+        This method works for spiking Keras models
+        `target_simulators.INI_target_sim`.
+        """
+
         import keras
         print("Restoring spiking network...\n")
         self.load(self.config['paths']['path_wd'],
@@ -540,7 +716,7 @@ class AbstractSNN:
             self.config['paths']['filename_parsed_model'] + '.h5'))
 
     def init_log_vars(self):
-        """Initialize debug variables."""
+        """Initialize variables to record during simulation."""
 
         if 'input_b_l_t' in self._log_keys:
             self.input_b_l_t = np.empty(list(self.parsed_model.input_shape) +
@@ -579,8 +755,8 @@ class AbstractSNN:
     def set_connectivity(self):
         """
         Set connectivity statistics needed to compute the number of operations
-        in the network, e.g. fanin, fanout, number_of_neurons,
-        number_of_neurons_with_bias.
+        in the network. This includes e.g. the members `fanin`, `fanout`,
+        `num_neurons`, `num_neurons_with_bias`.
         """
 
         from snntoolbox.parsing.utils import get_fanin, get_fanout
@@ -609,7 +785,27 @@ class AbstractSNN:
         return self.num_neurons, self.num_neurons_with_bias, self.fanin
 
     def get_recorded_vars(self, layers):
-        """Retrieve neuron variables recorded during simulation."""
+        """Retrieve neuron variables recorded during simulation.
+
+        If recorded, spike trains and membrane potentials will be inserted into
+        the respective class members `spiketrains_n_b_l_t` and `mem_n_b_l_t`.
+        In any case, this function must return an array containing the output
+        spikes for each sample and time step.
+
+        Parameters
+        ----------
+
+        layers
+            List of SNN layers.
+
+        Returns
+        -------
+
+        output_b_l_t: ndarray
+            The output spikes.
+            Shape: (`batch_size`, ``layer_shape``, ``num_timesteps``)
+
+        """
 
         self.set_spiketrain_stats_input()
 
@@ -646,34 +842,8 @@ class AbstractSNN:
         self._mem_container_counter = 0
         self._spiketrains_container_counter = 0
 
-    def get_spiketrains(self, **kwargs):
-        """Get spike trains of a layer.
-
-        Returns
-        -------
-
-        spiketrains_b_l_t : ndarray
-            Spike trains.
-        """
-
-        pass
-
-    def get_spiketrains_input(self):
-        """Get spike trains of input layer.
-
-        Returns
-        -------
-
-        spiketrains_b_l_t : ndarray
-            Spike trains of input.
-        """
-
-        pass
-
-    def get_vmem(self, layer, i):
-        pass
-
     def set_mem_stats(self, mem):
+        """Write recorded membrane potential out and plot it."""
 
         from snntoolbox.simulation.plotting import plot_potential
 
@@ -691,6 +861,10 @@ class AbstractSNN:
         self._mem_container_counter += 1
 
     def set_spiketrain_stats_input(self):
+        """
+        Count number of operations based on the input spike activity during
+        simulation.
+        """
 
         if self._poisson_input or self._dataset_format == 'aedat':
             spiketrains_b_l_t = self.get_spiketrains_input()
@@ -710,6 +884,18 @@ class AbstractSNN:
                     self.operations_b_t[:, t] += input_ops
 
     def set_spiketrain_stats(self, spiketrains_b_l_t):
+        """
+        Count number of operations based on the spike activity during
+        simulation.
+
+        Parameters
+        ----------
+
+        spiketrains_b_l_t: ndarray
+            A batch of spikes for a layer over the simulation time.
+            Shape: (`batch_size`, ``layer_shape``, ``num_timesteps``)
+
+        """
 
         # Add spike trains to log variables.
         if self.spiketrains_n_b_l_t is not None:
@@ -729,7 +915,22 @@ class AbstractSNN:
         """
         Convert list of spike times into array where nonzero entries (indicating
         spike times) are properly spread out across array. Then reshape the flat
-        array into original layer shape.
+        array into original layer ``shape``.
+
+        Parameters
+        ----------
+
+        spiketrains: list
+            List of spike times.
+        shape
+            Layer shape.
+
+        Returns
+        -------
+
+        spiketrains_b_l_t: ndarray
+            A batch of spikes for a layer over the simulation time.
+            Shape: (`batch_size`, ``shape``, ``num_timesteps``)
         """
 
         spiketrains_flat = np.zeros((np.prod(shape[:-1]), shape[-1]))
@@ -745,8 +946,8 @@ class AbstractSNN:
 def get_samples_from_list(x_test, y_test, dataflow, config):
     """
     If user specified a list of samples to test with
-    ``settings['sample_idxs_to_test']``, this function extract them from the
-    test set.
+    ``config['input']['sample_idxs_to_test']``, this function extracts them from
+    the test set.
     """
 
     batch_size = config.getint('simulation', 'batch_size')
@@ -776,7 +977,26 @@ def get_samples_from_list(x_test, y_test, dataflow, config):
 
 
 def build_convolution(layer, delay):
-    """Build convolution layer."""
+    """Build convolution layer.
+
+    Parameters
+    ----------
+
+    layer: keras.layers.Conv2D
+        Parsed model layer.
+    delay: float
+        Synaptic delay.
+
+    Returns
+    -------
+
+    connections: List[tuple]
+        A list where each entry is a tuple containing the source neuron index,
+        the target neuron index, the connection strength (weight), and the
+        synaptic ``delay``.
+    i_offset: ndarray
+        Flattened array containing the biases of all neurons in the ``layer``.
+    """
 
     weights, biases = layer.get_weights()
 
@@ -834,7 +1054,25 @@ def build_convolution(layer, delay):
 
 
 def build_pooling(layer, delay):
-    """Build pooling layer."""
+    """Build average pooling layer.
+
+    Parameters
+    ----------
+
+    layer: keras.layers.Pool2D
+        Parsed model layer.
+    delay: float
+        Synaptic delay.
+
+    Returns
+    -------
+
+    connections: List[tuple]
+        A list where each entry is a tuple containing the source neuron index,
+        the target neuron index, the connection strength (weight), and the
+        synaptic ``delay``. The weight is given by :math:`\\frac{1}{k_x k_y}`,
+        where :math:`k_x, k_y` are the dimensions of the pooling kernel.
+    """
 
     if layer.__class__.__name__ == 'MaxPooling2D':
         import warnings
@@ -1000,6 +1238,12 @@ def get_layer_ops(spiketrains_b_l, fanout, num_neurons_with_bias=0):
         Number of outgoing connections per neuron.
     num_neurons_with_bias: int
         Number of neurons with bias.
+
+    Returns
+    -------
+
+    layer_ops: int
+        The total number of operations in the layer for a batch of samples.
     """
 
     return np.array([np.count_nonzero(s) for s in spiketrains_b_l]) * fanout + \
@@ -1047,7 +1291,7 @@ def is_spiking(layer, config):
     Returns
     -------
 
-    : boolean
+    : bool
         ``True`` if converted layer will have spiking neurons.
     """
 

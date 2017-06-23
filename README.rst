@@ -1,11 +1,7 @@
-.. toctree::
-   :maxdepth: 1
+Spiking neural network conversion toolbox
+=========================================
 
-   user/intro
-   user/installation
-   user/running
-   user/configuration
-   user/extending
-   user/examples
-   user/citation
-   user/support
+The SNN conversion toolbox contains functions to transform rate-based artificial
+neural networks into spiking neural networks, and to simulate them. Please
+refer to the `Documentation <http://snntoolbox.readthedocs.io>`_ for a complete
+user guide and API reference.

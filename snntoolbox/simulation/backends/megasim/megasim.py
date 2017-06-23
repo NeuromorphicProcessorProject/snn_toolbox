@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-MegaSim spiking neuron simulator
+""" MegaSim spiking neuron simulator.
 
 A collection of helper functions used to get MegaSim's path and executable.
 
@@ -9,19 +8,17 @@ $HOME/.snntoolbox/preferences/megasim_config.json
 
 Assumes that have write access to the home folder.
 
-Created on Tue Dec  8 10:41:10 2015
-
 @author: evan
 """
 
-# For compatibility with python2
 from __future__ import print_function, unicode_literals
 from __future__ import division, absolute_import
 from future import standard_library
 
-import sys
 import os
+import sys
 import json
+
 standard_library.install_aliases()
 
 

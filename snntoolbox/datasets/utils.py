@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Functions to load various properties of interest in analog and spiking neural
-networks from disk.
+The main purpose of this module is to load a dataset from disk and feed it to
+the toolbox in one of the formats it can handle.
 
-Created on Wed Nov 18 13:38:46 2015
+For details see
+
+.. autosummary::
+    :nosignatures:
+
+    get_dataset
 
 @author: rbodo
 """
 
-# For compatibility with python2
 from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 

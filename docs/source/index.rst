@@ -16,7 +16,14 @@ the toolbox. Examples are included.
 .. toctree::
    :maxdepth: 1
 
-   documentation_links
+   guide/intro
+   guide/installation
+   guide/running
+   guide/configuration
+   guide/extending
+   guide/examples
+   guide/citation
+   guide/support
 
 API Reference
 -------------
@@ -26,8 +33,12 @@ Here you find detailed descriptions of specific functions and classes.
 .. toctree::
    :maxdepth: 2
 
-   api_links
-
+   api/bin
+   api/parsing
+   api/conversion
+   api/simulation
+   api/datasets
+   api/utils
 
 Indices and tables
 ------------------

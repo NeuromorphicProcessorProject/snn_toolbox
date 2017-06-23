@@ -1,14 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Building SNNs using Brian2.
-
-The modules in ``target_simulators`` package allow building a spiking network
-and exporting it for use in a spiking simulator.
-
-This particular module offers functionality for Brian2 simulator. Adding
-another simulator requires implementing the class ``AbstractSNN`` with its
-methods tailored to the specific simulator.
-
-Created on Thu May 19 15:00:02 2016
+"""Building and simulating spiking neural networks using Brian2.
 
 @author: rbodo
 """
@@ -28,50 +19,38 @@ standard_library.install_aliases()
 
 class SNN(AbstractSNN):
     """
-    Class to hold the compiled spiking neural network, ready for testing in a
+    Represents the compiled spiking neural network, ready for testing in a
     spiking simulator.
 
     Attributes
     ----------
 
-    layers: list
+    layers: list[brian2.NeuronGroup]
         Each entry represents a layer, i.e. a population of neurons, in form of
         Brian2 ``NeuronGroup`` objects.
 
-    connections: list
+    connections: list[brian2.Synapses]
         Brian2 ``Synapses`` objects representing the connections between
         individual layers.
 
-    threshold: string
+    threshold: str
         Defines spiking threshold.
 
-    v_reset: string
+    v_reset: str
         Defines reset potential.
 
-    eqs: string
+    eqs: str
         Differential equation for membrane potential.
 
-    spikemonitors: list
+    spikemonitors: list[brian2.SpikeMonitor]
         Brian2 ``SpikeMonitor`` s for each layer that records spikes.
 
-    statemonitors: list
+    statemonitors: list[brian2.StateMonitor]
         Brian2 ``StateMonitor`` s for each layer that records membrane
         potential.
 
-    Methods
-    -------
-
-    build:
-        Convert an ANN to a spiking neural network, using layers derived from
-        Keras base classes.
-    run:
-        Simulate a spiking network.
-    save:
-        Write model architecture and parameters to disk.
-    load:
-        Load model architecture and parameters from disk.
-    end_sim:
-        Clean up after simulation.
+    snn: brian2.Network
+        The spiking network.
     """
 
     def __init__(self, config, queue=None):
@@ -267,6 +246,14 @@ class SNN(AbstractSNN):
             return None
 
     def set_biases(self):
+        """Set biases.
+
+        Notes
+        -----
+
+        This has not been tested yet.
+        """
+
         if any(self._biases):  # TODO: Implement biases.
             warnings.warn("Biases not implemented.", RuntimeWarning)
 
