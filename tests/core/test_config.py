@@ -3,7 +3,10 @@
 """Test configuration of toolbox."""
 
 import os
+
 import pytest
+
+from tests.conftest import sm
 
 
 def get_modules_to_import(root_dir):
@@ -34,7 +37,7 @@ _in_and_out = [
 
 @pytest.mark.parametrize('params, expect_pass', _in_and_out)
 def test_updating_settings(params, expect_pass, _path_wd):
-    from snntoolbox.config import update_setup
+    from bin.utils import update_setup
     try:
         import configparser
     except ImportError:
@@ -50,21 +53,10 @@ def test_updating_settings(params, expect_pass, _path_wd):
         pytest.raises(AssertionError, update_setup, configpath)
 
 
-# Specify which simulators are installed:
-_simulators = [
-    ('INI', {}, True),
-    ('brian2', {}, False),
-    ('MegaSim', {}, True),
-    ('brian', {'dt': 1}, False),
-    ('nest', {'dt': 1}, False),
-    ('Neuron', {'dt': 1}, False)]
-
-
-@pytest.mark.parametrize('simulator, kwargs, installed', _simulators)
-def test_initialize_simulator(simulator, kwargs, installed):
-    from snntoolbox.config import initialize_simulator
-    if installed:
-        assert initialize_simulator(simulator, **kwargs)
+@pytest.mark.parametrize('config', sm)
+def test_initialize_simulator(config):
+    from bin.utils import initialize_simulator
+    if config.getboolean('restrictions', 'is_installed'):
+        assert initialize_simulator(config)
     else:
-        pytest.raises(ImportError, initialize_simulator,
-                      simulator=simulator, **kwargs)
+        pytest.raises(ImportError, initialize_simulator, config=config)

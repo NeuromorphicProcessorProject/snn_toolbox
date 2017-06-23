@@ -2,7 +2,7 @@
 
 
 import numpy as np
-from snntoolbox.io_utils.common import get_dataset
+from snntoolbox.datasets.utils import get_dataset
 
 
 class TestGetDataset:
@@ -28,6 +28,7 @@ class TestGetDataset:
                        'dataflow_kwargs': "{'target_size': (11, 12)}",
                        'datagen_kwargs': "{'rescale': 0.003922,"
                                          " 'featurewise_center': True,"
-                                         " 'featurewise_std_normalization': True}"}})
+                                         " 'featurewise_std_normalization':"
+                                         " True}"}})
         normset, testset = get_dataset(_config)
         assert all([normset, testset])

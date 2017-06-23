@@ -17,10 +17,11 @@ snntoolbox.egg-info/
 .tox/
 
 # OSX index file
-.DS_Store
 
 # Models #
 ##########
 /examples/models/vgg16/64.27_85.59.h5
 /examples/models/**/*_INI*
 /examples/models/**/*_parsed*
+
+/scripts/scotopic

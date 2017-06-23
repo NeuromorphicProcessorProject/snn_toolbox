@@ -16,7 +16,8 @@ https://github.com/MatthieuCourbariaux/BinaryNet
 from __future__ import print_function
 
 import lasagne
-from ann_architectures.BinaryConnect import binary_net
+
+from scripts.ann_architectures.BinaryConnect import binary_net
 
 
 def build_network():
@@ -287,7 +288,7 @@ if __name__ == "__main__":
 
     from pylearn2.datasets.cifar10 import CIFAR10
     import numpy as np
-    from snntoolbox.io_utils.common import save_parameters
+    from snntoolbox.datasets.utils import save_parameters
     np.random.seed(1234)  # for reproducibility?
 
     # Training parameters

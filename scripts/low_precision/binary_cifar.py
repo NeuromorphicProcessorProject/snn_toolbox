@@ -8,8 +8,8 @@ Created on Tue Oct 25 09:36:27 2016
 import h5py
 import numpy as np
 from importlib import import_module
-from snntoolbox.io_utils.common import load_npz
-from snntoolbox.core.util import parse, evaluate_keras
+from snntoolbox.datasets.utils import load_npz
+from snntoolbox.conversion.utils import parse, evaluate_keras
 
 # Load Cifar10 dataset
 path_to_dataset = '/home/rbodo/.snntoolbox/Datasets/cifar10/binarynet'

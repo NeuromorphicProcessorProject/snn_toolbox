@@ -32,7 +32,7 @@ in Keras, one in Lasagne, and one in Caffe.
 Keras
 .....
 
-.. include:: ../../examples/models/lenet5/keras/config
+.. include:: ../../../examples/models/lenet5/keras/config
     :literal:
 
 The most important part to specify in the ``config`` file is the
@@ -62,7 +62,7 @@ You need to have Caffe installed to run this example.
 Here we need to change the ``model_lib`` option from default ``keras`` to
 ``caffe``. The ``filename_ann`` also changes, the rest can stay the same.
 
-.. include:: ../../examples/models/lenet5/caffe/config
+.. include:: ../../../examples/models/lenet5/caffe/config
     :literal:
 
 Lasagne
@@ -72,7 +72,7 @@ You need to have Lasagne installed to run this example.
 
 We can also use Poisson input as shown below:
 
-.. include:: ../../examples/models/lenet5/lasagne/config
+.. include:: ../../../examples/models/lenet5/lasagne/config
     :literal:
 
 
@@ -87,7 +87,7 @@ The network has been trained with binary weights and can be tested using either
 full-precision or binary weights. Set the ``binarize_weights`` option
 accordingly.
 
-.. include:: ../../examples/models/binaryconnect/config
+.. include:: ../../../examples/models/binaryconnect/config
     :literal:
 
 .. _ExampleC:
@@ -103,7 +103,7 @@ binary activations.
 Note how we turn off ``normalize`` in ``tools``. Parameter normalization is not
 required here because activations never exceed threshold anyways.
 
-.. include:: ../../examples/models/binarynet/config
+.. include:: ../../../examples/models/binarynet/config
     :literal:
 
 .. _ExampleD:
@@ -123,7 +123,7 @@ option.
 For memory reasons we do not include the model file here, but the example should
 work when instantiating VGG-16 from the Keras model zoo.
 
-.. include:: ../../examples/models/vgg16/config
+.. include:: ../../../examples/models/vgg16/config
     :literal:
 
 .. _ExampleE:
@@ -137,5 +137,5 @@ the data, we need to pass a ``preprocessing_function`` to the
 module containing the preprocessing function. The toolbox will import and use
 the function from there.
 
-.. include:: ../../examples/models/inceptionV3/config
+.. include:: ../../../examples/models/inceptionV3/config
     :literal:

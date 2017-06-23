@@ -28,7 +28,7 @@ class TestInputModel:
 
     def test_normalizing(self, _input_model_and_lib, _normset, _testset,
                          _config):
-        from snntoolbox.core.util import normalize_parameters
+        from snntoolbox.conversion.utils import normalize_parameters
 
         # Need to test only once because normalization is independent of
         # input library.
@@ -70,16 +70,16 @@ class TestOutputModel:
         """
 
         from importlib import import_module
-        from snntoolbox.config import initialize_simulator
+        from bin.utils import initialize_simulator
 
+        _config.read_dict({'simulator': 'brian2', 'num_to_test': 2})
         try:
-            initialize_simulator('brian2')
+            initialize_simulator(_config)
         except ImportError:
             return
 
         target_sim = import_module(
-            'snntoolbox.target_simulators.brian2_target_sim')
-        _config.read_dict({'simulator': 'brian2', 'num_to_test': 2})
+            'snntoolbox.simulation.target_simulators.brian2_target_sim')
         spiking_model = target_sim.SNN(_config)
         spiking_model.build(_parsed_model)
         score = spiking_model.run(**_testset)
@@ -90,8 +90,7 @@ class TestPipeline:
     """Test complete pipeline for a number of examples."""
 
     def test_examples(self, _example_filepath):
-        from snntoolbox.config import update_setup
-        from snntoolbox.core.pipeline import test_full
+        from bin.utils import update_setup, test_full
 
         config = update_setup(_example_filepath)
         assert test_full(config)[0] >= 0.5

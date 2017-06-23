@@ -35,7 +35,7 @@ This toolbox automates the conversion of pre-trained analog to spiking neural
 networks (ANN to SNN), and provides tools for testing the SNNs in a spiking
 neuron simulator.
 
-.. figure:: images/workflow.png
+.. figure:: ../images/workflow.png
    :scale: 50 %
    :alt: Workflow diagram of the SNN toolbox.
 
@@ -60,7 +60,7 @@ Torch.
 
 The following table lists the input files expected by the toolbox.
 
-.. figure:: images/input_specs.png
+.. figure:: ../images/input_specs.png
    :scale: 50 %
    :alt: Input format specifications.
 
@@ -96,7 +96,7 @@ spiking neuron chips. Currently, the following output formats are supported (see
 The second column in the table below compares these different simulators with
 respect to the network features that can be implemented on them.
 
-.. figure:: images/features.png
+.. figure:: ../images/features.png
    :scale: 100 %
    :alt: Supported features in input and output model.
 
@@ -121,7 +121,7 @@ include:
 GUI (beta)
 ----------
 
-.. figure:: images/gui_parameters.png
+.. figure:: ../images/gui_parameters.png
    :scale: 50 %
    :alt: Snapshot of the SNN toolbox GUI.
 
@@ -131,7 +131,7 @@ GUI (beta)
    and allows saving and loading preferences manually. Tooltips explain all
    functionality.
 
-.. figure:: images/gui_plots.png
+.. figure:: ../images/gui_plots.png
    :scale: 50 %
    :alt: Snapshot of the SNN toolbox GUI plot window.
 

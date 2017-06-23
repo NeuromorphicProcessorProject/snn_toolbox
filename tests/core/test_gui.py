@@ -4,11 +4,8 @@
 
 
 def test_gui():
-    try:
-        from snntoolbox.gui.gui import tk, SNNToolboxGUI
-    except ImportError:
-        return
     import time
+    from bin.gui.gui import tk, SNNToolboxGUI
 
     root = tk.Tk()
     app = SNNToolboxGUI(root)
@@ -16,3 +13,5 @@ def test_gui():
     root.update()
     time.sleep(0.1)
     app.quit_toolbox()
+
+    assert True

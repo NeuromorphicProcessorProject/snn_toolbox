@@ -24,9 +24,10 @@ The final test error should be around 8.27%.
 
 from __future__ import print_function
 
-import theano
 import lasagne
-from ann_architectures.BinaryConnect import binary_connect
+import theano
+
+from scripts.ann_architectures.BinaryConnect import binary_connect
 
 
 def build_network():

@@ -7,7 +7,8 @@ Email : duguyue100@gmail.com
 import numpy as np
 import theano
 import theano.tensor as T
-from snntoolbox.core.inisim import pool_same_size
+
+from snntoolbox.simulation.backends.inisim_backend import pool_same_size
 
 x = T.tensor4("x")
 y = pool_same_size(x, (2, 2), True, (1, 1))

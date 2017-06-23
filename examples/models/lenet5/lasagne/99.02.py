@@ -162,7 +162,7 @@ if __name__ == "__main__":
     from keras.datasets import mnist as dataset
     from keras.utils.np_utils import to_categorical
     import theano.sandbox.cuda
-    from snntoolbox.io_utils.common import save_parameters
+    from snntoolbox.datasets.utils import save_parameters
 
     model, train_func, test_func = build_network()
 

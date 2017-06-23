@@ -92,3 +92,27 @@ plotproperties = {
     'legend.fontsize': 'xx-large',
     'figure.figsize': (7, 6),
     'savefig.format': 'png'}
+
+# Use the following section to specify sets of possible values that certain
+# config settings may accept. Will be used in `bin.utils.update_setup` to test
+# validity of config.
+
+[restrictions]
+model_libs = {'keras', 'lasagne', 'caffe'}
+dataset_formats = {'npz', 'jpg', 'aedat}'
+maxpool_types = {'fir_max', 'exp_max', 'avg_max'}
+simulators_pyNN = {'nest', 'brian', 'Neuron'}
+simulators_other = {'INI', 'brian2', 'MegaSim'}
+simulators = %(simulators_pyNN)s | %(simulators_other)s
+# Layers that can be spiking:
+spiking_layers = {'Dense', 'Conv2D', 'MaxPooling2D', 'AveragePooling2D'}
+# Layers that can be implemented by our spiking neuron simulators:
+snn_layers = %(spiking_layers)s | {'Flatten', 'Concatenate'}
+pyNN_keys = {'v_reset', 'v_rest', 'e_rev_E', 'e_rev_I', 'i_offset', 'cm',
+             'tau_m', 'tau_syn_E', 'tau_syn_I', 'delay'}
+log_vars = {'activations_n_b_l', 'spiketrains_n_b_l_t', 'input_b_l_t',
+            'mem_n_b_l_t', 'operations_b_t', 'all'}
+plot_vars = {'activations', 'spiketrains', 'spikecounts', 'spikerates',
+             'input_image', 'error_t', 'confusion_matrix', 'correlation',
+             'hist_spikerates_activations', 'normalization_activations',
+             'operations', 'v_mem', 'all'}

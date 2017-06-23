@@ -123,7 +123,7 @@ class ExpResults:
         self.set_spikestats()
 
     def set_spikestats(self):
-        from snntoolbox.core.util import wilson_score
+        from snntoolbox.utils.utils import wilson_score
 
         num_batches = len(os.listdir(self.dirname))
         if num_batches == 0:

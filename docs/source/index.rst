@@ -33,12 +33,8 @@ Here you find detailed descriptions of specific functions and classes.
 .. toctree::
    :maxdepth: 2
 
-   modules/core
-   modules/model_libs
-   modules/target_simulators
-   modules/io_utils
-   modules/gui
-   modules/snntoolbox
+   include_readmes
+
 
 Indices and tables
 ------------------

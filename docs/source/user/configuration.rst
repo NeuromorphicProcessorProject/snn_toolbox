@@ -349,5 +349,5 @@ plotproperties: dict, optional
 SNN toolbox default settings
 ----------------------------
 
-.. include:: ../../snntoolbox/config_defaults
+.. include:: ../../../snntoolbox/config_defaults
    :literal:

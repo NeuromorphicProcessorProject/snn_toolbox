@@ -122,9 +122,7 @@ setup(
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
-        'console_scripts':
-            ['snntoolbox_example=examples.example:main',
-             'snntoolbox=snntoolbox.run:main'],
-        'gui_scripts': ['snntoolbox_gui=snntoolbox.gui.gui:main']
+        'console_scripts': ['snntoolbox=bin.run:main'],
+        'gui_scripts': ['snntoolbox_gui=bin.gui.gui:main']
     },
 )

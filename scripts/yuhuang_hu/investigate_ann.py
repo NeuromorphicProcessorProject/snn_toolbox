@@ -4,15 +4,17 @@ Author: Yuhuang Hu
 Email : duguyue100@gmail.com
 """
 
-from keras.models import model_from_json
-from keras import backend as K
 import os
 from os.path import join
+
 import matplotlib.pyplot as plt
 import numpy as np
+from keras import backend as K
+from keras.models import model_from_json
+from snntoolbox.simulation.backends.inisim_backend import custom_layers
 
-from snntoolbox.io_utils.plotting import plot_layer_activity
-from snntoolbox.core.inisim import custom_layers
+from snntoolbox.simulation.plotting import plot_layer_activity
+
 np.set_printoptions(threshold=np.inf)
 
 cifar10_label = {
