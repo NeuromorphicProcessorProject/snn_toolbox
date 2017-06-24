@@ -9,12 +9,10 @@ import pytest
 from tests.conftest import sm
 
 
-def get_modules_to_import(root_dir):
-    requs = list(open(os.path.join(root_dir, 'requirements.txt')))
-    return [d.strip('\n') for d in requs if '#' not in d and d != '\n']
+def get_modules_to_import():
+    return ['future', 'h5py', 'keras', 'matplotlib']
 
-_imps = get_modules_to_import(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+_imps = get_modules_to_import()
 
 
 @pytest.mark.parametrize('required_module', _imps)

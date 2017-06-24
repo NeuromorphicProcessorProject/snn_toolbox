@@ -1,7 +1,0 @@
-# Requirements for SNN toolbox #
-################################
-
-future
-h5py
-keras
-matplotlib
