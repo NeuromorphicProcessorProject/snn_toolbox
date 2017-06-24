@@ -53,8 +53,8 @@ def _testset(_dataset):
 
 def get_input_libs():
     ml = []
-    path_wd = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                           '..', '..', 'examples', 'models'))
+    path_wd = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+                                           'examples', 'models'))
     if is_module_installed('keras'):
         ml.append({'input': {'model_lib': 'keras'},
                    'paths': {'filename_ann': '98.96', 'path_wd':
@@ -90,7 +90,7 @@ def _parsed_model(_config, _normset):
 @pytest.fixture(scope='module')
 def _input_model_and_lib_single(_config, p):
     _config.read_dict(p)
-    model_lib = import_module('snntoolbox.model_libs.' +
+    model_lib = import_module('snntoolbox.parsing.model_libs.' +
                               _config['input']['model_lib'] + '_input_lib')
     input_model = model_lib.load(_config['paths']['path_wd'],
                                  _config['paths']['filename_ann'])
@@ -112,14 +112,17 @@ def get_parameters_for_simtests():
     config_ini = {'simulation': {'simulator': 'INI', 'target_acc': 99.00,
                                  'num_to_test': 200}}
     config_nest = {'simulation': {'simulator': 'nest', 'target_acc': 99.00,
-                                  'num_to_test': 2, 'poisson_input': True}}
+                                  'num_to_test': 2},
+                   'input': {'poisson_input': True}}
     config_brian = {'simulation': {'simulator': 'brian', 'target_acc': 99.00,
-                                   'num_to_test': 2, 'poisson_input': True}}
+                                   'num_to_test': 2},
+                    'input': {'poisson_input': True}}
     config_neuron = {'simulation': {'simulator': 'Neuron', 'target_acc': 99.00,
-                                    'num_to_test': 2, 'poisson_input': True}}
-    config_megasim = {'simulation': {'simulator': 'MegaSim',
-                                     'target_acc': 99.00, 'num_to_test': 2,
-                                     'poisson_input': True, 'batch_size': 1}}
+                                    'num_to_test': 2},
+                     'input': {'poisson_input': True}}
+    config_megasim = {'simulation': {'simulator': 'MegaSim', 'batch_size': 1,
+                                     'target_acc': 99.00, 'num_to_test': 2},
+                      'input': {'poisson_input': True}}
     configs_to_test = [config_ini, config_nest, config_brian, config_neuron,
                        config_megasim]
     _sm = []
@@ -127,9 +130,9 @@ def get_parameters_for_simtests():
         config_defaults.read_dict(config_to_test)
         try:
             initialize_simulator(config_defaults)
-        except ImportError:
+        except (ImportError, KeyError, ValueError):
             continue
-        config_defaults['restrictions']['is_installed'] = True
+        config_defaults['restrictions']['is_installed'] = 'True'
         _sm.append(config_defaults)
     return _sm
 
@@ -140,7 +143,7 @@ sm = get_parameters_for_simtests()
 def _spiking_model_and_sim(_config, _path_wd, request):
     _config.read_dict(request.param)
     _config.set('paths', 'path_wd', str(_path_wd))
-    target_sim = import_module('snntoolbox.target_simulators.' +
+    target_sim = import_module('snntoolbox.simulation.target_simulators.' +
                                _config['simulation']['simulator'] +
                                '_target_sim')
     spiking_model = target_sim.SNN(_config)
@@ -150,8 +153,8 @@ def _spiking_model_and_sim(_config, _path_wd, request):
 
 def get_examples():
     example_filepaths = []
-    path_wd = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                           '..', '..', 'examples', 'models'))
+    path_wd = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+                                           'examples', 'models'))
     if is_module_installed('keras'):
         example_filepaths.append(os.path.join(path_wd, 'inceptionV3', 'config'))
     if is_module_installed('lasagne'):

@@ -3,12 +3,12 @@
 """Test snntoolbox GUI."""
 
 
-def test_gui():
+def test_gui(_config):
     import time
     from bin.gui.gui import tk, SNNToolboxGUI
 
     root = tk.Tk()
-    app = SNNToolboxGUI(root)
+    app = SNNToolboxGUI(root, _config)
     root.update_idletasks()
     root.update()
     time.sleep(0.1)

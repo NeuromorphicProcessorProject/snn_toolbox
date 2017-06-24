@@ -135,11 +135,11 @@ class SNN(AbstractSNN):
             # Record neuron variables.
             i = j = 0
             for layer in self.snn.layers:
-                if hasattr(layer, 'spiketrain'):
+                if hasattr(layer, 'spiketrain') \
+                        and layer.spiketrain is not None:
                     spiketrains_b_l = layer.spiketrain.get_value()
-                    if self.spiketrains_n_b_l_t is not None:
-                        self.spiketrains_n_b_l_t[i][0][
-                            Ellipsis, sim_step_int] = spiketrains_b_l
+                    self.spiketrains_n_b_l_t[i][0][Ellipsis, sim_step_int] = \
+                        spiketrains_b_l
                     if self.operations_b_t is not None:
                         self.operations_b_t[:, sim_step_int] += get_layer_ops(
                             spiketrains_b_l, self.fanout[i + 1],

@@ -8,22 +8,10 @@ import sys
 from codecs import open
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
-# from sphinx.setup_command import BuildDoc
 
 
-# try:
-#     here = os.environ['PYTHONPATH'].split(os.pathsep)[-1]
-# except KeyError:
-#     here = os.path.abspath(os.path.dirname(__file__))
-
-
-# Get the long description from the README file
-# try:
-#     with open(os.path.join(here, 'docs', 'source', 'index.rst'),
-#               encoding='utf-8') as f:
-#         long_description = f.read()
-# except FileNotFoundError:
-#     long_description = ''  # Tox can't find the file...
+with open('README.rst') as file:
+    long_description = file.read()
 
 
 # Tell setuptools to run 'tox' when calling 'python setup.py test'.
@@ -52,8 +40,8 @@ class Tox(TestCommand):
 setup(
     name='snntoolbox',
     version='0.1.0',  # see https://www.python.org/dev/peps/pep-0440/
-    description='Spiking Neural Net Conversion',
-    # long_description=long_description,
+    description='Spiking neural network conversion toolbox',
+    long_description=long_description,
     author='Bodo Rueckauer',
     author_email='bodo.rueckauer@gmail.com',
     url='https://github.com/NeuromorphicProcessorProject/snn_toolbox',
@@ -106,8 +94,7 @@ setup(
     #     'test': ['bar']
     # },
 
-    packages=find_packages(exclude=['ann_architectures', 'deprecated',
-                                    'snntoolbox.scotopic', 'scripts']),
+    packages=find_packages(exclude=['scripts']),
 
     package_data={
         'snntoolbox': ['config_defaults']

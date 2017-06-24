@@ -72,7 +72,9 @@ class TestOutputModel:
         from importlib import import_module
         from bin.utils import initialize_simulator
 
-        _config.read_dict({'simulator': 'brian2', 'num_to_test': 2})
+        _config.read_dict({'simulation': {'simulator': 'brian2',
+                                          'num_to_test': 2},
+                           'input': {'poisson_input': True}})
         try:
             initialize_simulator(_config)
         except ImportError:

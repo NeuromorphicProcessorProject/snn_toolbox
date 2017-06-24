@@ -59,7 +59,7 @@ def test_full(config, queue=None):
     num_to_test = config.getint('simulation', 'num_to_test')
 
     # Instantiate an empty spiking network
-    target_sim = import_module('snntoolbox.target_simulators.' +
+    target_sim = import_module('snntoolbox.simulation.target_simulators.' +
                                config['simulation']['simulator'] +
                                '_target_sim')
     spiking_model = target_sim.SNN(config, queue)
@@ -72,7 +72,7 @@ def test_full(config, queue=None):
 
         # ___________________________ LOAD MODEL _____________________________ #
 
-        model_lib = import_module('snntoolbox.model_libs.' +
+        model_lib = import_module('snntoolbox.parsing.model_libs.' +
                                   config['input']['model_lib'] + '_input_lib')
         input_model = model_lib.load(config['paths']['path_wd'],
                                      config['paths']['filename_ann'])
