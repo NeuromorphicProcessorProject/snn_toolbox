@@ -56,20 +56,19 @@ setup(
         'Development Status :: 3 - Alpha',
 
         # Indicate who this project is intended for
-        'Intended Audience :: Researchers',
+        # 'Intended Audience :: Researchers',
         # 'Topic :: Software Development :: Build Tools',
 
         # License
         'License :: OSI Approved :: MIT License',
 
         # Supported Python versions
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
 
     keywords='neural networks, deep learning, spiking',
