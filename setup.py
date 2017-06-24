@@ -45,7 +45,7 @@ setup(
     author='Bodo Rueckauer',
     author_email='bodo.rueckauer@gmail.com',
     url='https://github.com/NeuromorphicProcessorProject/snn_toolbox',
-    download_url='git@github.com:NeuromorphicProcessorProject/snn_toolbox.git',
+    download_url='https://github.com/NeuromorphicProcessorProject/snn_toolbox.git',
     license='MIT',
 
     classifiers=[
