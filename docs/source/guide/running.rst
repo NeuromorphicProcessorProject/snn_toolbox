@@ -9,10 +9,11 @@ In a terminal window, type ``snntoolbox -h`` to get all command-line options.
 
 The basic use is::
 
-   snntoolbox settings.txt -t
+   snntoolbox <config-file> -t
 
-The positional argument ``settings.txt`` specifies the path to a text file
-containing the settings to be used (in form of a python dictionary).
+The positional argument ``<config-file>`` specifies the path to a plain text
+file containing the settings to be used. Refer to :doc:`configuration` for
+details on what this file looks like.
 
 With ``-t``, we tell the program to stay in the terminal. Omitting this flag
 opens the GUI (beta).
