@@ -8,11 +8,11 @@ evaluate_ann = False
 [simulation]
 simulator = INI
 duration = 30
-num_to_test = 100
-batch_size = 10
+num_to_test = 10
+batch_size = 1
 
 [input]
-poisson_input = True
+poisson_input = False
 
 [output]
 log_vars = {'all'}

@@ -107,7 +107,7 @@ class SNN(AbstractSNN):
         input_b_l = kwargs['x_b_l'] * self._dt
 
         output_b_l_t = np.zeros((self.batch_size, self.num_classes,
-                                self._num_timesteps), 'int32')
+                                 self._num_timesteps), 'int32')
 
         # Loop through simulation time.
         self._input_spikecount = 0
@@ -127,10 +127,10 @@ class SNN(AbstractSNN):
 
             # Add current spikes to previous spikes.
             if remove_classifier:  # Need to flatten output.
-                output_b_l_t[:, :, sim_step_int] += np.argmax(np.reshape(
+                output_b_l_t[:, :, sim_step_int] = np.argmax(np.reshape(
                     out_spikes.astype('int32'), (out_spikes.shape[0], -1)), 1)
             else:
-                output_b_l_t[:, :, sim_step_int] += out_spikes.astype('int32')
+                output_b_l_t[:, :, sim_step_int] = out_spikes.astype('int32')
 
             # Record neuron variables.
             i = j = 0
@@ -162,10 +162,10 @@ class SNN(AbstractSNN):
 
             if self.config.getint('output', 'verbose') > 0 \
                     and sim_step % 1 == 0:
-                guesses_b = np.argmax(output_b_l_t[:, :, sim_step_int], 1)
+                guesses_b = np.argmax(np.sum(output_b_l_t, 2), 1)
                 echo('{:.2%}_'.format(np.mean(kwargs['truth_b'] == guesses_b)))
 
-        return output_b_l_t
+        return np.cumsum(np.asarray(output_b_l_t, bool), 2)
 
     def reset(self, sample_idx):
 
@@ -244,8 +244,8 @@ class SNN(AbstractSNN):
         """
 
         for layer in self.snn.layers[1:]:
-            if self.sim.get_time(layer) is not None:  # Has time attribute
-                self.sim.set_time(layer, np.float32(t))
+            if layer.get_time() is not None:  # Has time attribute
+                layer.set_time(np.float32(t))
 
     def set_spiketrain_stats_input(self):
         # Added this here because PyCharm complains about not all abstract

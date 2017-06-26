@@ -557,7 +557,7 @@ class AbstractSNN:
             # Get classification result by comparing the guessed class (i.e. the
             # index of the neuron in the last layer which spiked most) to the
             # ground truth.
-            guesses_b_t = np.argmax(output_b_l_t, axis=1)
+            guesses_b_t = np.argmax(output_b_l_t, 1)
             # Find sample indices for which there was no output spike yet.
             undecided_b_t = np.nonzero(np.sum(output_b_l_t, 1) == 0)
             # Assign negative value such that undecided samples count as
@@ -835,7 +835,7 @@ class AbstractSNN:
             for l in range(shape[1]):
                 for t in range(shape[2]):
                     output_b_l_t[b, l, t] = np.count_nonzero(
-                        spiketrains_b_l_t[b, l, :t])
+                        spiketrains_b_l_t[b, l, :t+1])
         return output_b_l_t
 
     def reset_container_counters(self):
