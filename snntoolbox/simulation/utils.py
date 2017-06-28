@@ -14,7 +14,7 @@ from abc import abstractmethod
 
 import numpy as np
 
-from bin.utils import get_log_keys, get_plot_keys
+from snntoolbox.bin.utils import get_log_keys, get_plot_keys
 from snntoolbox.parsing.utils import get_type
 from snntoolbox.utils.utils import echo
 
@@ -117,13 +117,13 @@ class AbstractSNN:
         errors.
     sim: Simulator
         Module containing utility functions of spiking simulator. Result of
-        calling `bin.utils.initialize_simulator`. For instance, if using Brian
-        simulator, this initialization would be equivalent to
-        ``import pyNN.brian as sim``.
+        calling :py:func:`snntoolbox.bin.utils.initialize_simulator`. For
+        instance, if using Brian simulator, this initialization would be
+        equivalent to ``import pyNN.brian as sim``.
     """
 
     def __init__(self, config, queue=None):
-        from bin.utils import initialize_simulator
+        from snntoolbox.bin.utils import initialize_simulator
 
         self.config = config
         self.queue = queue
@@ -138,7 +138,7 @@ class AbstractSNN:
         self.top1err_b_t = self.top5err_b_t = None
         self.operations_b_t = self.operations_ann = None
         self.top1err_ann = self.top5err_ann = None
-        self.num_neurons = self.num_neurons_with_bias = None
+        self.num_neurons = self.num_neurons_with_bias = self.num_synapses = None
         self.fanin = self.fanout = None
         self._dt = self.config.getfloat('simulation', 'dt')
         self._duration = self.config.getint('simulation', 'duration')
@@ -411,12 +411,14 @@ class AbstractSNN:
         self.compile()
 
         # Compute number of operations of ANN.
-        if self.fanin is None:
-            num_neurons, num_neurons_with_bias, fanin = self.set_connectivity()
-            self.operations_ann = get_ann_ops(num_neurons,
-                                              num_neurons_with_bias, fanin)
-            print("Number of operations of ANN: {}\n".format(
-                self.operations_ann))
+        if self.fanout is None:
+            self.set_connectivity()
+            self.operations_ann = get_ann_ops(self.num_neurons,
+                                              self.num_neurons_with_bias,
+                                              self.fanin)
+            print("Number of operations of ANN: {}".format(self.operations_ann))
+            print("Number of neurons: {}".format(sum(self.num_neurons[1:])))
+            print("Number of synapses: {}\n".format(self.num_synapses))
 
         self.is_built = True
 
@@ -510,13 +512,13 @@ class AbstractSNN:
         # If DVS events are used as input, instantiate a DVSIterator.
         if dataset_format == 'aedat':
             from snntoolbox.datasets.aedat.DVSIterator import DVSIterator
-            batch_shape = self.parsed_model.get_batch_input_shape()
+            batch_shape = list(self.parsed_model.layers[0].batch_input_shape)
             batch_shape[0] = self.batch_size
             dvs_gen = DVSIterator(
                 self.config['paths']['dataset_path'], batch_shape,
                 self.config.getint('input', 'eventframe_width'),
                 self.config.getint('input', 'num_dvs_events_per_sample'),
-                batch_shape[2:], eval(self.config['input']['target_size']),
+                eval(self.config['input']['chip_size']), batch_shape[2:],
                 eval(self.config['input']['label_dict']))
             data_batch_kwargs['dvs_gen'] = dvs_gen
 
@@ -524,6 +526,7 @@ class AbstractSNN:
         for batch_idx in range(num_batches):
 
             # Get a batch of samples
+            x_b_l = None
             if x_test is not None:
                 batch_idxs = range(self.batch_size * batch_idx,
                                    self.batch_size * (batch_idx + 1))
@@ -540,10 +543,7 @@ class AbstractSNN:
                     break
 
                 # Generate frames so we can compare with ANN.
-                if any({'activations', 'correlation', 'input_image',
-                        'hist_spikerates_activations'} & self._plot_keys) or \
-                        'activations_n_b_l' in self._log_keys:
-                    x_b_l = data_batch_kwargs['dvs_gen'].get_frames_batch()
+                x_b_l = data_batch_kwargs['dvs_gen'].get_frames_batch()
 
             truth_b = np.argmax(y_b, axis=1)
             data_batch_kwargs['truth_b'] = truth_b
@@ -781,6 +781,8 @@ class AbstractSNN:
                     self.num_neurons_with_bias.append(self.num_neurons[-1])
                 else:
                     self.num_neurons_with_bias.append(0)
+
+        self.num_synapses = np.dot(self.num_neurons, self.fanout)
 
         return self.num_neurons, self.num_neurons_with_bias, self.fanin
 

@@ -58,7 +58,7 @@ class SNN(AbstractSNN):
 
     def add_layer(self, layer):
         from snntoolbox.parsing.utils import get_type
-        spike_layer = getattr(self.sim, 'Spike' + get_type(layer))
+        spike_layer_name = getattr(self.sim, 'Spike' + get_type(layer))
         inbound = [self._spiking_layers[inb.name] for inb in
                    layer.inbound_nodes[0].inbound_layers]
         if len(inbound) == 1:
@@ -66,21 +66,32 @@ class SNN(AbstractSNN):
         layer_kwargs = layer.get_config()
         layer_kwargs['config'] = self.config
 
+        # Check if layer uses binary activations. In that case, we will want to
+        # tell the following to MaxPool layer because then we can use a
+        # cheaper operation.
+        if 'Conv' in layer.name and 'binary' in layer.activation.__name__:
+            self._binary_activation = layer.activation.__name__
+
         if 'MaxPool' in layer.name and self._binary_activation is not None:
             layer_kwargs['activation'] = self._binary_activation
             self._binary_activation = None
 
-        self._spiking_layers[layer.name] = spike_layer(**layer_kwargs)(inbound)
+        # Replace activation from kwargs by 'linear' before initializing
+        # superclass, because the relu activation is applied by the spike-
+        # generation mechanism automatically. In some cases (binary activation),
+        # we need to apply the activation manually. This information is taken
+        # from the 'activation' key during conversion.
+        activation_str = str(layer_kwargs.pop(str('activation'), None))
+
+        spike_layer = spike_layer_name(**layer_kwargs)
+        spike_layer.activation_str = activation_str
+        self._spiking_layers[layer.name] = spike_layer(inbound)
 
     def build_dense(self, layer):
         pass
 
     def build_convolution(self, layer):
-        # Check if layer uses binary activations. In that case, we will want to
-        # tell the following to MaxPool layer because then we can use a
-        # cheaper operation.
-        if 'binary' in layer.activation.__name__:
-            self._binary_activation = layer.activation.__name__
+        pass
 
     def build_pooling(self, layer):
         pass
@@ -138,8 +149,9 @@ class SNN(AbstractSNN):
                 if hasattr(layer, 'spiketrain') \
                         and layer.spiketrain is not None:
                     spiketrains_b_l = layer.spiketrain.get_value()
-                    self.spiketrains_n_b_l_t[i][0][Ellipsis, sim_step_int] = \
-                        spiketrains_b_l
+                    if self.spiketrains_n_b_l_t is not None:
+                        self.spiketrains_n_b_l_t[i][0][
+                            Ellipsis, sim_step_int] = spiketrains_b_l
                     if self.operations_b_t is not None:
                         self.operations_b_t[:, sim_step_int] += get_layer_ops(
                             spiketrains_b_l, self.fanout[i + 1],

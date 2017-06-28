@@ -35,7 +35,7 @@ _in_and_out = [
 
 @pytest.mark.parametrize('params, expect_pass', _in_and_out)
 def test_updating_settings(params, expect_pass, _path_wd):
-    from bin.utils import update_setup
+    from snntoolbox.bin.utils import update_setup
     try:
         import configparser
     except ImportError:
@@ -53,7 +53,7 @@ def test_updating_settings(params, expect_pass, _path_wd):
 
 @pytest.mark.parametrize('config', sm)
 def test_initialize_simulator(config):
-    from bin.utils import initialize_simulator
+    from snntoolbox.bin.utils import initialize_simulator
     if config.getboolean('restrictions', 'is_installed'):
         assert initialize_simulator(config)
     else:

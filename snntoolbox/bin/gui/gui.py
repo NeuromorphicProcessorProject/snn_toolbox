@@ -34,11 +34,11 @@ from textwrap import dedent
 import matplotlib.gridspec as gridspec
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+from bin.gui.tooltip import ToolTip
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg
 
-from bin.gui.tooltip import ToolTip
-from bin.utils import test_full
+from snntoolbox.bin.utils import test_full
 
 if sys.version_info[0] < 3:
     # noinspection PyPep8Naming,PyUnresolvedReferences,PyPackageRequirements
@@ -1507,7 +1507,7 @@ class SNNToolboxGUI:
 
 def main():
 
-    from bin.utils import load_config
+    from snntoolbox.bin.utils import load_config
     config = load_config(os.path.abspath(os.path.join(os.path.dirname(__file__),
                                                       '..', '..', 'snntoolbox',
                                                       'config_defaults')))

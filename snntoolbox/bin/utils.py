@@ -245,7 +245,7 @@ def update_setup(config_filepath):
 
     # Load defaults.
     config = load_config(os.path.abspath(os.path.join(
-        os.path.dirname(__file__), '..', 'snntoolbox', 'config_defaults')))
+        os.path.dirname(__file__), '..', 'config_defaults')))
 
     # Overwrite with user settings.
     config.read(config_filepath)

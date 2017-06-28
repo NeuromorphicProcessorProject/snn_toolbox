@@ -20,7 +20,7 @@ def is_module_installed(mod):
 
 @pytest.fixture(scope='module')
 def _config():
-    from bin.utils import update_setup
+    from snntoolbox.bin.utils import update_setup
     return update_setup(os.path.join(os.path.dirname(__file__),
                                      'configurations', 'config0'))
 
@@ -104,7 +104,7 @@ def _input_model_and_lib(_config, request):
 
 
 def get_parameters_for_simtests():
-    from bin.utils import load_config, initialize_simulator
+    from snntoolbox.bin.utils import load_config, initialize_simulator
 
     config_defaults = load_config(os.path.abspath(os.path.join(
         os.path.dirname(__file__), '..', 'snntoolbox', 'config_defaults')))

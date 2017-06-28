@@ -100,7 +100,7 @@
 <li class="toctree-l1"><a class="reference internal" href="guide/support.html">Support</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api/bin.html"><code class="docutils literal"><span class="pre">bin</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/bin.html"><code class="docutils literal"><span class="pre">snntoolbox.bin</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="api/parsing.html"><code class="docutils literal"><span class="pre">snntoolbox.parsing</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="api/conversion.html"><code class="docutils literal"><span class="pre">snntoolbox.conversion</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="api/simulation.html"><code class="docutils literal"><span class="pre">snntoolbox.simulation</span></code></a></li>
@@ -212,7 +212,7 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.about">about() (bin.gui.gui.SNNToolboxGUI static method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.about">about() (snntoolbox.bin.gui.gui.SNNToolboxGUI static method)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.absorb_activation">absorb_activation() (snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
@@ -252,8 +252,6 @@
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.add_payloads">add_payloads() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.add_updates">add_updates() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
-</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.adjust_batchsize">adjust_batchsize() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       <li><a href="api/conversion.html#snntoolbox.conversion.utils.apply_normalization_schedule">apply_normalization_schedule() (in module snntoolbox.conversion.utils)</a>
@@ -266,23 +264,17 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.batch_size">batch_size (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
-      <li><a href="api/bin.html#module-bin.gui.gui">bin.gui.gui (module)</a>
-</li>
-      <li><a href="api/bin.html#module-bin.run">bin.run (module)</a>
-</li>
-      <li><a href="api/bin.html#module-bin.utils">bin.utils (module)</a>
-</li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.binarize">binarize() (in module snntoolbox.utils.utils)</a>
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.binarize_var">binarize_var() (in module snntoolbox.utils.utils)</a>
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.binary_sigmoid">binary_sigmoid() (in module snntoolbox.utils.utils)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.binary_sigmoid_activation">binary_sigmoid_activation() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.binary_sigmoid_activation">binary_sigmoid_activation() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.binary_tanh">binary_tanh() (in module snntoolbox.utils.utils)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.binary_tanh_activation">binary_tanh_activation() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.binary_tanh_activation">binary_tanh_activation() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeAveragePooling2D.build">build() (snntoolbox.simulation.backends.inisim.inisim.SpikeAveragePooling2D method)</a>
 
@@ -310,8 +302,6 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.build_convolution">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.build_dense">build_dense (snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN attribute)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.build_dense">build_dense() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
@@ -324,6 +314,8 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.build_dense">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.build_flatten">build_flatten() (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 
       <ul>
@@ -388,19 +380,19 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.cellparams">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.cellparams_widgets">cellparams_widgets() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.cellparams_widgets">cellparams_widgets() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.check_dataset_path">check_dataset_path() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.check_dataset_path">check_dataset_path() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.check_file">check_file() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.check_file">check_file() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.check_megasim_output">check_megasim_output() (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN static method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.check_path">check_path() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.check_path">check_path() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.check_runlabel">check_runlabel() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.check_runlabel">check_runlabel() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.check_sample">check_sample() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.check_sample">check_sample() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeConcatenate.class_name">class_name (snntoolbox.simulation.backends.inisim.inisim.SpikeConcatenate attribute)</a>
 
@@ -416,7 +408,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.clean_megasim_sim_data">clean_megasim_sim_data() (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.close_window">close_window() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.close_window">close_window() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.compile">compile() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
@@ -462,9 +454,9 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.declare_parameter_vars">declare_parameter_vars() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.declare_parameter_vars">declare_parameter_vars() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.define_style">define_style() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.define_style">define_style() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.delay_to_ack">delay_to_ack (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.delay_to_ack">[1]</a>
 </li>
@@ -474,11 +466,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.delay_to_repeat">delay_to_repeat (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.delay_to_repeat">[1]</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.display_graphs">display_graphs() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.display_graphs">display_graphs() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.documentation">documentation() (bin.gui.gui.SNNToolboxGUI static method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.documentation">documentation() (snntoolbox.bin.gui.gui.SNNToolboxGUI static method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.draw_canvas">draw_canvas() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.draw_canvas">draw_canvas() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -486,11 +478,11 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.edit_dataset_settings">edit_dataset_settings() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.edit_dataset_settings">edit_dataset_settings() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.edit_experimental_settings">edit_experimental_settings() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.edit_experimental_settings">edit_experimental_settings() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.edit_normalization_settings">edit_normalization_settings() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.edit_normalization_settings">edit_normalization_settings() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.end_sim">end_sim() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
@@ -582,7 +574,7 @@
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.get_batchnorm_parameters">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.get_clamp_idx">get_clamp_idx() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.get_clamp_idx">get_clamp_idx() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
       <li><a href="api/datasets.html#snntoolbox.datasets.utils.get_dataset">get_dataset() (in module snntoolbox.datasets.utils)</a>
 </li>
@@ -620,7 +612,9 @@
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.get_input_shape">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.get_layer_idx">get_layer_idx() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.get_isi_from_impulse">get_isi_from_impulse() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+</li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.get_layer_idx">get_layer_idx() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.caffe_input_lib.ModelParser.get_layer_iterable">get_layer_iterable() (snntoolbox.parsing.model_libs.caffe_input_lib.ModelParser method)</a>
 
@@ -634,18 +628,16 @@
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.get_layer_ops">get_layer_ops() (in module snntoolbox.simulation.utils)</a>
 </li>
-      <li><a href="api/bin.html#bin.utils.get_log_keys">get_log_keys() (in module bin.utils)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.utils.get_log_keys">get_log_keys() (in module snntoolbox.bin.utils)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.get_name">get_name() (snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.get_new_mem">get_new_mem() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.get_new_mem">get_new_mem() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.get_new_thresh">get_new_thresh() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.get_new_thresh">get_new_thresh() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_outbound_activation">get_outbound_activation() (in module snntoolbox.parsing.utils)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_outbound_layers">get_outbound_layers() (in module snntoolbox.parsing.utils)</a>
 
       <ul>
@@ -658,6 +650,8 @@
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.get_outbound_layers">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.caffe_input_lib.ModelParser.get_output_shape">get_output_shape() (snntoolbox.parsing.model_libs.caffe_input_lib.ModelParser method)</a>
 
       <ul>
@@ -674,7 +668,7 @@
 </li>
       <li><a href="api/conversion.html#snntoolbox.conversion.utils.get_percentile">get_percentile() (in module snntoolbox.conversion.utils)</a>
 </li>
-      <li><a href="api/bin.html#bin.utils.get_plot_keys">get_plot_keys() (in module bin.utils)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.utils.get_plot_keys">get_plot_keys() (in module snntoolbox.bin.utils)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.get_poisson_frame_batch">get_poisson_frame_batch() (snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
 </li>
@@ -715,7 +709,15 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.get_spiking_outbound_layers">get_spiking_outbound_layers() (in module snntoolbox.simulation.utils)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.get_time">get_time() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeConcatenate.get_time">(snntoolbox.simulation.backends.inisim.inisim.SpikeConcatenate method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeFlatten.get_time">(snntoolbox.simulation.backends.inisim.inisim.SpikeFlatten method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.get_time">(snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+</li>
+      </ul></li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_type">get_type() (in module snntoolbox.parsing.utils)</a>
 
       <ul>
@@ -740,9 +742,9 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.get_vmem">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.globalparams_widgets">globalparams_widgets() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.globalparams_widgets">globalparams_widgets() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.graph_widgets">graph_widgets() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.graph_widgets">graph_widgets() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -786,9 +788,9 @@
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.init_log_vars">init_log_vars() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.init_membrane_potential">init_membrane_potential() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.init_membrane_potential">init_membrane_potential() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.init_neurons">init_neurons() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.init_neurons">init_neurons() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.keras_input_lib.ModelParser.initialize_attributes">initialize_attributes() (snntoolbox.parsing.model_libs.keras_input_lib.ModelParser method)</a>
 
@@ -796,11 +798,11 @@
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.initialize_attributes">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
       </ul></li>
-      <li><a href="api/bin.html#bin.utils.initialize_simulator">initialize_simulator() (in module bin.utils)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.utils.initialize_simulator">initialize_simulator() (in module snntoolbox.bin.utils)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.initialize_thread">initialize_thread() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.initialize_thread">initialize_thread() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.input_b_l_t">input_b_l_t (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
@@ -828,7 +830,7 @@
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.is_spiking">is_spiking() (in module snntoolbox.simulation.utils)</a>
 </li>
-      <li><a href="api/bin.html#bin.utils.is_stop">is_stop() (in module bin.utils)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.utils.is_stop">is_stop() (in module snntoolbox.bin.utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -852,7 +854,7 @@
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.layers_to_skip">(snntoolbox.parsing.utils.AbstractModelParser attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.linear_activation">linear_activation() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.linear_activation">linear_activation() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.caffe_input_lib.load">load() (in module snntoolbox.parsing.model_libs.caffe_input_lib)</a>
 
@@ -876,13 +878,13 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.load_assembly">load_assembly() (snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
-      <li><a href="api/bin.html#bin.utils.load_config">load_config() (in module bin.utils)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.utils.load_config">load_config() (in module snntoolbox.bin.utils)</a>
 </li>
       <li><a href="api/datasets.html#snntoolbox.datasets.utils.load_npz">load_npz() (in module snntoolbox.datasets.utils)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.load_parameters">load_parameters() (in module snntoolbox.parsing.utils)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.load_settings">load_settings() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.load_settings">load_settings() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -890,10 +892,10 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/bin.html#bin.gui.gui.main">main() (in module bin.gui.gui)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.main">main() (in module snntoolbox.bin.gui.gui)</a>
 
       <ul>
-        <li><a href="api/bin.html#bin.run.main">(in module bin.run)</a>
+        <li><a href="api/bin.html#snntoolbox.bin.run.main">(in module snntoolbox.bin.run)</a>
 </li>
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikePool.make_node">make_node() (snntoolbox.simulation.backends.inisim.inisim.SpikePool method)</a>
@@ -1122,7 +1124,7 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.quit_toolbox">quit_toolbox() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.quit_toolbox">quit_toolbox() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1160,19 +1162,19 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.reset_container_counters">reset_container_counters() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.reset_spikevars">reset_spikevars() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.reset_spikevars">reset_spikevars() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.Reset_to_reminder">Reset_to_reminder (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.Reset_to_reminder">[1]</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.reshape_flattened_spiketrains">reshape_flattened_spiketrains() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.restore_default_params">restore_default_params() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.restore_default_params">restore_default_params() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.restore_snn">restore_snn() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.run">run() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
-      <li><a href="api/bin.html#bin.utils.run_parameter_sweep">run_parameter_sweep() (in module bin.utils)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.utils.run_parameter_sweep">run_parameter_sweep() (in module snntoolbox.bin.utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1198,13 +1200,13 @@
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.save_parameters">save_parameters() (in module snntoolbox.parsing.utils)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.save_settings">save_settings() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.save_settings">save_settings() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.scaling_factor">scaling_factor (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.scaling_factor">[1]</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.select_layer_rb">select_layer_rb() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.select_layer_rb">select_layer_rb() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.select_plots_dir_rb">select_plots_dir_rb() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.select_plots_dir_rb">select_plots_dir_rb() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.set_biases">set_biases() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
@@ -1214,15 +1216,15 @@
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.set_connectivity">set_connectivity() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.set_cwd">set_cwd() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.set_cwd">set_cwd() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.set_dataset_path">set_dataset_path() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.set_dataset_path">set_dataset_path() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.set_mem_stats">set_mem_stats() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.set_preferences">set_preferences() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.set_preferences">set_preferences() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.set_reset_mem">set_reset_mem() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.set_reset_mem">set_reset_mem() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.set_spiketrain_stats">set_spiketrain_stats() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
@@ -1238,7 +1240,7 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.set_spiketrain_stats_input">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.set_time">set_time() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.set_time">set_time() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 
       <ul>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.set_time">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
@@ -1246,7 +1248,7 @@
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.sim">sim (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.simparams_widgets">simparams_widgets() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.simparams_widgets">simparams_widgets() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.simulate">simulate() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
@@ -1270,14 +1272,20 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN">(class in snntoolbox.simulation.target_simulators.pyNN_target_sim)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.snn">snn (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN attribute)</a>
 
       <ul>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.snn">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/bin.html#module-snntoolbox.bin.gui.gui">snntoolbox.bin.gui.gui (module)</a>
+</li>
+      <li><a href="api/bin.html#module-snntoolbox.bin.run">snntoolbox.bin.run (module)</a>
+</li>
+      <li><a href="api/bin.html#module-snntoolbox.bin.utils">snntoolbox.bin.utils (module)</a>
+</li>
       <li><a href="api/conversion.html#module-snntoolbox.conversion.utils">snntoolbox.conversion.utils (module)</a>
 </li>
       <li><a href="api/datasets.html#module-snntoolbox.datasets.utils">snntoolbox.datasets.utils (module)</a>
@@ -1308,9 +1316,9 @@
 </li>
       <li><a href="api/utils.html#module-snntoolbox.utils.utils">snntoolbox.utils.utils (module)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI">SNNToolboxGUI (class in bin.gui.gui)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI">SNNToolboxGUI (class in snntoolbox.bin.gui.gui)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.softmax_activation">softmax_activation() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.softmax_activation">softmax_activation() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.spike_call">spike_call() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
 </li>
@@ -1344,11 +1352,11 @@
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.spiketrains_to_rates">spiketrains_to_rates() (in module snntoolbox.simulation.utils)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.start_processing">start_processing() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.start_processing">start_processing() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.statemonitors">statemonitors (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN attribute)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.stop_processing">stop_processing() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.stop_processing">stop_processing() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1358,7 +1366,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.T_Refract">T_Refract (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.T_Refract">[1]</a>
 </li>
-      <li><a href="api/bin.html#bin.utils.test_full">test_full() (in module bin.utils)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.utils.test_full">test_full() (in module snntoolbox.bin.utils)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.THminus">THminus (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.THminus">[1]</a>
 </li>
@@ -1384,19 +1392,19 @@
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.to_list">to_list() (in module snntoolbox.utils.utils)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.toggle_num_to_test_state">toggle_num_to_test_state() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.toggle_num_to_test_state">toggle_num_to_test_state() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.toggle_poisson_input_state">toggle_poisson_input_state() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.toggle_poisson_input_state">toggle_poisson_input_state() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.toggle_start_state">toggle_start_state() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.toggle_start_state">toggle_start_state() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.toggle_state_pynn">toggle_state_pynn() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.toggle_state_pynn">toggle_state_pynn() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.toggle_stop_state">toggle_stop_state() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.toggle_stop_state">toggle_stop_state() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.tools_widgets">tools_widgets() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.tools_widgets">tools_widgets() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.top1err_ann">top1err_ann (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
@@ -1410,7 +1418,7 @@
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.top_k_categorical_accuracy">top_k_categorical_accuracy() (in module snntoolbox.utils.utils)</a>
 </li>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.top_level_menu">top_level_menu() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.top_level_menu">top_level_menu() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/datasets.html#snntoolbox.datasets.utils.try_get_normset_from_scalefacs">try_get_normset_from_scalefacs() (in module snntoolbox.datasets.utils)</a>
 </li>
@@ -1424,19 +1432,19 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/bin.html#bin.gui.gui.SNNToolboxGUI.update">update() (bin.gui.gui.SNNToolboxGUI method)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.update">update() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.update_avg_variance">update_avg_variance() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.update_avg_variance">update_avg_variance() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.update_b">update_b() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.update_b">update_b() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.update_neurons">update_neurons() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.update_neurons">update_neurons() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.update_payload">update_payload() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.update_payload">update_payload() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
 </li>
-      <li><a href="api/bin.html#bin.utils.update_setup">update_setup() (in module bin.utils)</a>
+      <li><a href="api/bin.html#snntoolbox.bin.utils.update_setup">update_setup() (in module snntoolbox.bin.utils)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.use_biases">use_biases (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN attribute)</a>
 </li>
@@ -1514,7 +1522,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2017, Bodo Rueckauer.
-      Last updated on Jun 24, 2017.
+      Last updated on Jun 28, 2017.
 
     </p>
   </div>

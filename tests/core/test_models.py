@@ -70,7 +70,7 @@ class TestOutputModel:
         """
 
         from importlib import import_module
-        from bin.utils import initialize_simulator
+        from snntoolbox.bin.utils import initialize_simulator
 
         _config.read_dict({'simulation': {'simulator': 'brian2',
                                           'num_to_test': 2},
@@ -92,7 +92,7 @@ class TestPipeline:
     """Test complete pipeline for a number of examples."""
 
     def test_examples(self, _example_filepath):
-        from bin.utils import update_setup, test_full
+        from snntoolbox.bin.utils import update_setup, test_full
 
         config = update_setup(_example_filepath)
         assert test_full(config)[0] >= 0.5

@@ -36,18 +36,21 @@ def main():
     args = parser.parse_args()
 
     filepath = os.path.abspath(args.config_filepath)
-
+    #filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/lenet5/keras/config'
+    #filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/binarynet/config'
+    #filepath = '/home/rbodo/.snntoolbox/data/roshambo/log/gui/test/config'
+    #args.terminal = True
     if filepath is not None:
         assert os.path.isfile(filepath), \
             "Configuration file not found at {}.".format(filepath)
-        from bin.utils import update_setup
+        from snntoolbox.bin.utils import update_setup
         config = update_setup(filepath)
 
         if args.terminal:
-            from bin.utils import test_full
+            from snntoolbox.bin.utils import test_full
             test_full(config)
         else:
-            from bin.gui import gui
+            from snntoolbox.bin.gui import gui
             gui.main()
     else:
         if args.terminal:
@@ -55,7 +58,7 @@ def main():
                          "config_filepath argument must be provided.")
             return
         else:
-            from bin.gui import gui
+            from snntoolbox.bin.gui import gui
             gui.main()
 
 if __name__ == '__main__':

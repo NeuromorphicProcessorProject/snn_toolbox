@@ -5,7 +5,7 @@
 
 def test_gui(_config):
     import time
-    from bin.gui.gui import tk, SNNToolboxGUI
+    from snntoolbox.bin.gui.gui import tk, SNNToolboxGUI
 
     root = tk.Tk()
     app = SNNToolboxGUI(root, _config)

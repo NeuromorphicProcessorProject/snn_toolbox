@@ -17,8 +17,8 @@ import numpy as np
 import theano
 from future import standard_library
 from keras import backend as k
-from keras.layers import Layer, Concatenate
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
+from keras.layers import Layer, Concatenate
 
 from snntoolbox.parsing.utils import get_inbound_layers
 
@@ -64,12 +64,7 @@ class SpikeLayer(Layer):
         self.payloads_sum = None
         self.online_normalization = self.config.getboolean(
             'normalization', 'online_normalization')
-        # Replace activation from kwargs by 'linear' before initializing
-        # superclass, because the relu activation is applied by the spike-
-        # generation mechanism automatically. In some cases (binary activation),
-        # we need to apply the activation manually. This information is taken
-        # from the 'activation' key during conversion.
-        self.activation_str = str(kwargs.pop(str('activation'), None))
+
         allowed_kwargs = {'input_shape',
                           'batch_input_shape',
                           'batch_size',
@@ -150,10 +145,20 @@ class SpikeLayer(Layer):
         new_mem = self.get_new_mem()
 
         # Store spiking
-        output_spikes = k.T.mul(k.greater_equal(new_mem, self.v_thresh),
-                                self.v_thresh)
-
-        self.set_reset_mem(new_mem, output_spikes)
+        if self.config.getboolean('conversion', 'use_isi_code'):
+            output_spikes = k.T.mul(k.greater_equal(self.time, new_mem),
+                                    self.v_thresh)
+            new = k.T.set_subtensor(new_mem[k.T.nonzero(output_spikes)], -1.)
+            self.add_update([(self.mem, new)])
+            # With our ISI-code, set refractory period to some nonzero value;
+            # then the neuron will never spike again.
+            new_refractory = k.T.set_subtensor(
+                self.refrac_until[output_spikes.nonzero()], -1.)
+            self.add_update([(self.refrac_until, new_refractory)])
+        else:
+            output_spikes = k.T.mul(k.greater_equal(new_mem, self.v_thresh),
+                                    self.v_thresh)
+            self.set_reset_mem(new_mem, output_spikes)
 
         if self.payloads:
             spike_idxs = output_spikes.nonzero()
@@ -220,9 +225,13 @@ class SpikeLayer(Layer):
             new_mem = k.ifelse.ifelse(k.less(self.time, self.clamp_idx),
                                       self.mem, self.mem + masked_impulse)
         elif v_clip:
-            # Clip membrane potential to [-2, 2] to prevent too strong
-            # accumulation.
+            # Clip membrane potential to prevent too strong accumulation.
             new_mem = k.clip(self.mem + masked_impulse, -3, 3)
+        elif self.config.getboolean('conversion', 'use_isi_code'):
+            masked_impulse = k.T.set_subtensor(self.impulse[k.T.nonzero(
+                self.refrac_until)], -1.)
+            new_mem = get_isi_from_impulse(masked_impulse, self.config.getfloat(
+                'conversion', 'isi_epsilon'))
         else:
             new_mem = self.mem + masked_impulse
 
@@ -353,7 +362,7 @@ class SpikeLayer(Layer):
     def init_neurons(self, input_shape, tau_refrac=0.):
         """Init layer neurons."""
 
-        from bin.utils import get_log_keys, get_plot_keys
+        from snntoolbox.bin.utils import get_log_keys, get_plot_keys
 
         output_shape = self.compute_output_shape(input_shape)
         self.v_thresh = k.variable(self.v_thresh)
@@ -489,7 +498,7 @@ def spike_call(call):
 
 def get_isi_from_impulse(impulse, epsilon):
     return k.T.where(impulse < epsilon, k.zeros_like(impulse),
-                     k.T.true_div(1, impulse))
+                     k.T.true_div(1., impulse))
 
 
 class SpikeConcatenate(Concatenate):
@@ -630,6 +639,7 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
     def __init__(self, **kwargs):
         MaxPooling2D.__init__(self, **kwargs)
         self.spikerate_pre = self.previous_x = None
+        self.activation_str = None
 
     def build(self, input_shape):
         """Creates the layer neurons and connections..

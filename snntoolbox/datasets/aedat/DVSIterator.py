@@ -307,6 +307,7 @@ def get_binary_frame(xaddr, yaddr, timestamps, shape, frame_width):
     yaddr: collections.deque
     timestamps: collections.deque
     shape: tuple
+        Include channel dimension even for gray-scale images, e.g. (1, 64, 64).
     frame_width: int
 
     Returns
@@ -331,8 +332,8 @@ def get_binary_frame(xaddr, yaddr, timestamps, shape, frame_width):
     # Put events from event sequence buffer into frame, if pixel location is not
     # occupied yet.
     for x, y, ts in zip(xaddr_sample, yaddr_sample, ts_sample):
-        if binary_frame[y, x] == 0:
-            binary_frame[y, x] = 1
+        if binary_frame[0:, y, x] == 0:
+            binary_frame[0:, y, x] = 1
             # Can't use .popleft()
             xaddr.remove(x)
             yaddr.remove(y)

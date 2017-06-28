@@ -1,20 +1,20 @@
-``bin``
-=======
+``snntoolbox.bin``
+==================
 
-:mod:`bin.run`
---------------
+:mod:`snntoolbox.bin.run`
+-------------------------
 
-.. automodule:: bin.run
+.. automodule:: snntoolbox.bin.run
 
-:mod:`bin.utils`
-----------------
+:mod:`snntoolbox.bin.utils`
+---------------------------
 
-.. automodule:: bin.utils
+.. automodule:: snntoolbox.bin.utils
 
-``bin.gui``
------------
+``snntoolbox.bin.gui``
+----------------------
 
-:mod:`bin.gui.gui`
-..................
+:mod:`snntoolbox.bin.gui.gui`
+.............................
 
-.. automodule:: bin.gui.gui
+.. automodule:: snntoolbox.bin.gui.gui

@@ -20,7 +20,7 @@ num_poisson_events_per_sample = -1
 num_dvs_events_per_sample = 2000
 eventframe_width = 10
 label_dict = {}
-target_size = None
+chip_size = None
 
 [tools]
 evaluate_ann = True
@@ -40,6 +40,7 @@ timestep_fraction = 10
 softmax_to_relu = False
 max2avg_pool = False
 maxpool_type = fir_max
+use_isi_code = False
 
 [simulation]
 simulator = INI

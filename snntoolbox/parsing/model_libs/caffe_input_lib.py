@@ -57,9 +57,10 @@ class ModelParser(AbstractModelParser):
         layers = self.get_layer_iterable()
         inbound = []
         for inb in layer.bottom:  # Contains only labels
-            for layer in layers:
-                if inb == layer.name:
-                    inbound.append(layer)
+            for l in layers:
+                name = 'data' if l.name == 'input' else l.name
+                if inb == name:
+                    inbound.append(l)
                     break
         return inbound
 
@@ -68,8 +69,9 @@ class ModelParser(AbstractModelParser):
 
     def get_output_shape(self, layer):
         try:
-            return tuple(self.input_model[0].blobs[layer.name].shape)
-        except KeyError:
+            name = 'data' if layer.name == 'input' else layer.name
+            return tuple(self.input_model[0].blobs[name].shape)
+        except (KeyError, TypeError):
             print("Can't get output_shape because layer has no blobs.")
 
     def has_weights(self, layer):
