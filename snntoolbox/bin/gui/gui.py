@@ -34,11 +34,11 @@ from textwrap import dedent
 import matplotlib.gridspec as gridspec
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-from bin.gui.tooltip import ToolTip
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg
 
 from snntoolbox.bin.utils import test_full
+from snntoolbox.bin.gui.tooltip import ToolTip
 
 if sys.version_info[0] < 3:
     # noinspection PyPep8Naming,PyUnresolvedReferences,PyPackageRequirements

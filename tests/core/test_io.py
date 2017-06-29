@@ -18,7 +18,11 @@ class TestGetDataset:
         assert all([normset, testset])
 
     def test_get_dataset_from_jpg(self, _datapath, _config):
-        import matplotlib.pyplot as plt
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            plt = None
+            return plt
         classpath = _datapath.mkdir('class_0')
         data = np.random.random_sample((10, 10, 3))
         plt.imsave(str(classpath.join('image_0.jpg')), data)

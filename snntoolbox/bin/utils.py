@@ -177,8 +177,6 @@ def run_parameter_sweep(config, queue):
         @wraps(run_single)
         def wrapper(snn, **testset):
 
-            from snntoolbox.simulation.plotting import plot_param_sweep
-
             results = []
             param_values = eval(config['parameter_sweep']['param_values'])
             param_name = config['parameter_sweep']['param_name']
@@ -204,9 +202,15 @@ def run_parameter_sweep(config, queue):
                 results.append(run_single(snn, **testset))
 
             # Plot and return results of parameter sweep.
-            plot_param_sweep(
-                results, config.getint('simulation', 'num_to_test'),
-                param_values, param_name, param_logscale)
+            try:
+                from snntoolbox.simulation.plotting import plot_param_sweep
+            except ImportError:
+                plot_param_sweep = None
+            if plot_param_sweep is not None:
+                plot_param_sweep(
+                    results, config.getint('simulation', 'num_to_test'),
+                    param_values, param_name, param_logscale)
+
             return results
         return wrapper
     return decorator
@@ -222,6 +226,7 @@ def load_config(filepath):
     except ImportError:
         # noinspection PyPep8Naming
         import ConfigParser as configparser
+        configparser = configparser
 
     assert os.path.isfile(filepath), \
         "Configuration file not found at {}.".format(filepath)
@@ -240,7 +245,6 @@ def update_setup(config_filepath):
     defaults.
     """
 
-    import matplotlib as mpl
     from textwrap import dedent
 
     # Load defaults.
@@ -415,7 +419,18 @@ def update_setup(config_filepath):
         config.set('output', 'log_vars', str(log_vars_all))
 
     # Change matplotlib plot properties, e.g. label font size
-    mpl.rcParams.update(eval(config.get('output', 'plotproperties')))
+    try:
+        import matplotlib
+    except ImportError:
+        matplotlib = None
+        if len(plot_vars) > 0:
+            import warnings
+            warnings.warn("Package 'matplotlib' not installed; disabling "
+                          "plotting. Run 'pip install matplotlib' to enable "
+                          "plotting.", ImportWarning)
+            config.set('output', 'plot_vars', str({}))
+    if matplotlib is not None:
+        matplotlib.rcParams.update(eval(config.get('output', 'plotproperties')))
 
     # Check settings for parameter sweep
     param_name = config['parameter_sweep']['param_name']

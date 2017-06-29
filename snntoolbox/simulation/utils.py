@@ -465,7 +465,8 @@ class AbstractSNN:
 
         from snntoolbox.conversion.utils import get_activations_batch
         from snntoolbox.utils.utils import in_top_k
-        import snntoolbox.simulation.plotting as snn_plt
+        if len(self._plot_keys) > 0:
+            import snntoolbox.simulation.plotting as snn_plt
 
         # Get directory where logging quantities will be stored.
         log_dir = kwargs[str('path')] if 'path' in kwargs \
@@ -650,7 +651,8 @@ class AbstractSNN:
             if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
                     'hist_spikerates_activations'} & self._plot_keys):
                 plot_vars['spiketrains_n_b_l_t'] = self.spiketrains_n_b_l_t
-            snn_plt.output_graphs(plot_vars, self.config, log_dir, 0)
+            if len(self._plot_keys) > 0:
+                snn_plt.output_graphs(plot_vars, self.config, log_dir, 0)
 
             # Reset network variables.
             self.reset(batch_idx)
@@ -847,20 +849,21 @@ class AbstractSNN:
     def set_mem_stats(self, mem):
         """Write recorded membrane potential out and plot it."""
 
-        from snntoolbox.simulation.plotting import plot_potential
-
         # Reshape flat array to original layer shape.
         i = self._mem_container_counter
         self.mem_n_b_l_t[i] = (np.reshape(mem, self.mem_n_b_l_t[i][0].shape),
                                self.mem_n_b_l_t[i][1])
 
+        self._mem_container_counter += 1
+
         # Plot membrane potentials of layer.
+        if 'v_mem' not in self._plot_keys:
+            return
+        from snntoolbox.simulation.plotting import plot_potential
         times = self._dt * np.arange(self._num_timesteps)
         show_legend = True if i >= len(self.mem_n_b_l_t) - 2 else False
         plot_potential(times, self.mem_n_b_l_t[i], self.config, show_legend,
                        self.config['paths']['log_dir_of_current_run'])
-
-        self._mem_container_counter += 1
 
     def set_spiketrain_stats_input(self):
         """

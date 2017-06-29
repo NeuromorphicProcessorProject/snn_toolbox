@@ -144,10 +144,11 @@ class SpikeLayer(Layer):
 
         new_mem = self.get_new_mem()
 
+        output_spikes = k.T.mul(k.greater_equal(new_mem, self.v_thresh),
+                                self.v_thresh)
+
         # Store spiking
         if self.config.getboolean('conversion', 'use_isi_code'):
-            output_spikes = k.T.mul(k.greater_equal(self.time, new_mem),
-                                    self.v_thresh)
             new = k.T.set_subtensor(new_mem[k.T.nonzero(output_spikes)], -1.)
             self.add_update([(self.mem, new)])
             # With our ISI-code, set refractory period to some nonzero value;
@@ -156,8 +157,6 @@ class SpikeLayer(Layer):
                 self.refrac_until[output_spikes.nonzero()], -1.)
             self.add_update([(self.refrac_until, new_refractory)])
         else:
-            output_spikes = k.T.mul(k.greater_equal(new_mem, self.v_thresh),
-                                    self.v_thresh)
             self.set_reset_mem(new_mem, output_spikes)
 
         if self.payloads:
@@ -228,6 +227,7 @@ class SpikeLayer(Layer):
             # Clip membrane potential to prevent too strong accumulation.
             new_mem = k.clip(self.mem + masked_impulse, -3, 3)
         elif self.config.getboolean('conversion', 'use_isi_code'):
+            new_mem = self.mem + masked_impulse
             masked_impulse = k.T.set_subtensor(self.impulse[k.T.nonzero(
                 self.refrac_until)], -1.)
             new_mem = get_isi_from_impulse(masked_impulse, self.config.getfloat(

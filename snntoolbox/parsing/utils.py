@@ -34,7 +34,6 @@ connectivity and layer attributes:
 
 from abc import abstractmethod
 
-import h5py
 import keras
 import numpy as np
 
@@ -750,6 +749,8 @@ def padding_string(pad, pool_size):
 def load_parameters(filepath):
     """Load all layer parameters from an HDF5 file."""
 
+    import h5py
+
     f = h5py.File(filepath, 'r')
 
     params = []
@@ -768,6 +769,7 @@ def save_parameters(params, filepath, fileformat='h5'):
         import pickle
         pickle.dump(params, open(filepath + '.pkl', str('wb')))
     else:
+        import h5py
         with h5py.File(filepath, mode='w') as f:
             for i, p in enumerate(params):
                 if i < 10:

@@ -10,7 +10,7 @@ from tests.conftest import sm
 
 
 def get_modules_to_import():
-    return ['future', 'h5py', 'keras', 'matplotlib']
+    return ['future', 'keras']
 
 _imps = get_modules_to_import()
 
