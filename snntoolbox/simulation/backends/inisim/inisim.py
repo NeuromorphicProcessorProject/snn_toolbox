@@ -47,6 +47,8 @@ class SpikeLayer(Layer):
             self.b0 = None
         if clamp_var:
             self.spikerate = self.var = None
+        if self.config.getboolean('conversion', 'use_isi_code'):
+            self.last_spiketimes = None
 
         import os
         from snntoolbox.utils.utils import get_abs_path
@@ -94,17 +96,24 @@ class SpikeLayer(Layer):
     def update_neurons(self):
         """Update neurons according to activation function."""
 
+        new_mem = self.get_new_mem()
+
         if hasattr(self, 'activation_str'):
             if self.activation_str == 'softmax':
-                output_spikes = self.softmax_activation()
+                output_spikes = self.softmax_activation(new_mem)
             elif self.activation_str == 'binary_sigmoid':
-                output_spikes = self.binary_sigmoid_activation()
+                output_spikes = self.binary_sigmoid_activation(new_mem)
             elif self.activation_str == 'binary_tanh':
-                output_spikes = self.binary_tanh_activation()
+                output_spikes = self.binary_tanh_activation(new_mem)
             else:
-                output_spikes = self.linear_activation()
+                output_spikes = self.linear_activation(new_mem)
         else:
-            output_spikes = self.linear_activation()
+            output_spikes = self.linear_activation(new_mem)
+
+        psp = self.get_psp(output_spikes)
+
+        # Store spiking
+        self.set_reset_mem(new_mem, output_spikes)
 
         # Store refractory
         if self.tau_refrac > 0:
@@ -112,6 +121,13 @@ class SpikeLayer(Layer):
                 self.refrac_until[output_spikes.nonzero()],
                 self.time + self.tau_refrac)
             self.add_update([(self.refrac_until, new_refractory)])
+
+        if self.payloads:
+            spike_idxs = output_spikes.nonzero()
+            residuals = k.T.inc_subtensor(new_mem[spike_idxs], -self.v_thresh)
+            payloads, payloads_sum = self.update_payload(residuals, spike_idxs)
+            self.add_update([(self.payloads, payloads),
+                             (self.payloads_sum, payloads_sum)])
 
         if self.online_normalization:
             self.add_update([
@@ -124,7 +140,7 @@ class SpikeLayer(Layer):
             self.add_update([(self.spiketrain,
                               self.time * k.not_equal(output_spikes, 0))])
 
-        return k.cast(output_spikes, k.floatx())
+        return k.cast(psp, k.floatx())
 
     def update_payload(self, residuals, idxs):
         """Update payloads.
@@ -139,69 +155,29 @@ class SpikeLayer(Layer):
             self.payloads_sum[idxs] + self.payloads[idxs])
         return payloads, payloads_sum
 
-    def linear_activation(self):
+    def linear_activation(self, mem):
         """Linear activation."""
 
-        new_mem = self.get_new_mem()
+        return k.T.mul(k.greater_equal(mem, self.v_thresh), self.v_thresh)
 
-        output_spikes = k.T.mul(k.greater_equal(new_mem, self.v_thresh),
-                                self.v_thresh)
-
-        # Store spiking
-        if self.config.getboolean('conversion', 'use_isi_code'):
-            new = k.T.set_subtensor(new_mem[k.T.nonzero(output_spikes)], -1.)
-            self.add_update([(self.mem, new)])
-            # With our ISI-code, set refractory period to some nonzero value;
-            # then the neuron will never spike again.
-            new_refractory = k.T.set_subtensor(
-                self.refrac_until[output_spikes.nonzero()], -1.)
-            self.add_update([(self.refrac_until, new_refractory)])
-        else:
-            self.set_reset_mem(new_mem, output_spikes)
-
-        if self.payloads:
-            spike_idxs = output_spikes.nonzero()
-            residuals = k.T.inc_subtensor(new_mem[spike_idxs], -self.v_thresh)
-            payloads, payloads_sum = self.update_payload(residuals, spike_idxs)
-            self.add_update([(self.payloads, payloads),
-                             (self.payloads_sum, payloads_sum)])
-
-        return output_spikes
-
-    def binary_sigmoid_activation(self):
+    def binary_sigmoid_activation(self, mem):
         """Binary sigmoid activation."""
 
-        new_mem = self.get_new_mem()
+        return k.T.mul(k.greater(mem, 0), self.v_thresh)
 
-        output_spikes = k.T.mul(k.greater(new_mem, 0), self.v_thresh)
-
-        self.set_reset_mem(new_mem, output_spikes)
-
-        return output_spikes
-
-    def binary_tanh_activation(self):
+    def binary_tanh_activation(self, mem):
         """Binary tanh activation."""
 
-        new_mem = self.get_new_mem()
-
-        output_spikes = k.T.mul(k.greater(new_mem, 0), self.v_thresh)
-        output_spikes += k.T.mul(k.less(new_mem, 0), -self.v_thresh)
-
-        self.set_reset_mem(new_mem, output_spikes)
+        output_spikes = k.T.mul(k.greater(mem, 0), self.v_thresh)
+        output_spikes += k.T.mul(k.less(mem, 0), -self.v_thresh)
 
         return output_spikes
 
-    def softmax_activation(self):
+    def softmax_activation(self, mem):
         """Softmax activation."""
 
-        new_mem = self.get_new_mem()
-
-        output_spikes = k.T.mul(k.less_equal(k.random_uniform(new_mem.shape),
-                                             k.softmax(new_mem)), self.v_thresh)
-
-        self.set_reset_mem(new_mem, output_spikes)
-
-        return output_spikes
+        return k.T.mul(k.less_equal(k.random_uniform(mem.shape),
+                                    k.softmax(mem)), self.v_thresh)
 
     def get_new_mem(self):
         """Add input to membrane potential."""
@@ -226,12 +202,6 @@ class SpikeLayer(Layer):
         elif v_clip:
             # Clip membrane potential to prevent too strong accumulation.
             new_mem = k.clip(self.mem + masked_impulse, -3, 3)
-        elif self.config.getboolean('conversion', 'use_isi_code'):
-            new_mem = self.mem + masked_impulse
-            masked_impulse = k.T.set_subtensor(self.impulse[k.T.nonzero(
-                self.refrac_until)], -1.)
-            new_mem = get_isi_from_impulse(masked_impulse, self.config.getfloat(
-                'conversion', 'isi_epsilon'))
         else:
             new_mem = self.mem + masked_impulse
 
@@ -274,8 +244,27 @@ class SpikeLayer(Layer):
         #          settings['diff_to_max_rate'] / 1000),
         #     self.max_spikerate, self.v_thresh)
 
+    def get_psp(self, output_spikes):
+        if self.config.getboolean('conversion', 'use_isi_code'):
+            new_spiketimes = k.T.set_subtensor(self.last_spiketimes[
+                k.T.nonzero(output_spikes)], self.get_time())
+            self.add_update([(self.last_spiketimes, new_spiketimes)])
+            return k.maximum(0, k.T.true_div(self.v_thresh * self.dt,
+                                             self.last_spiketimes))
+        else:
+            return output_spikes
+
     def get_time(self):
-        return get_time(self)
+        """Get simulation time variable.
+
+            Returns
+            -------
+
+            time: float
+                Current simulation time.
+            """
+
+        return self.time.get_value()
 
     def set_time(self, time):
         """Set simulation time variable.
@@ -358,15 +347,17 @@ class SpikeLayer(Layer):
         if clamp_var and do_reset:
             self.spikerate.set_value(np.zeros(self.input_shape, k.floatx()))
             self.var.set_value(np.zeros(self.input_shape, k.floatx()))
+        if self.config.getboolean('conversion', 'use_isi_code'):
+            self.last_spiketimes.set_value(-np.ones(self.output_shape,
+                                                    k.floatx()))
 
-    def init_neurons(self, input_shape, tau_refrac=0.):
+    def init_neurons(self, input_shape):
         """Init layer neurons."""
 
         from snntoolbox.bin.utils import get_log_keys, get_plot_keys
 
         output_shape = self.compute_output_shape(input_shape)
         self.v_thresh = k.variable(self.v_thresh)
-        self.tau_refrac = tau_refrac
         self.mem = k.variable(self.init_membrane_potential(output_shape))
         self.time = k.variable(self.dt)
         # To save memory and computations, allocate only where needed:
@@ -388,6 +379,8 @@ class SpikeLayer(Layer):
             self.var = k.zeros(input_shape)
         if hasattr(self, 'clamp_idx'):
             self.clamp_idx = self.get_clamp_idx()
+        if self.config.getboolean('conversion', 'use_isi_code'):
+            self.last_spiketimes = k.variable(-np.ones(output_shape))
 
     def get_layer_idx(self):
         """Get index of layer."""
@@ -446,26 +439,6 @@ class SpikeLayer(Layer):
             0, 1 - (1 - 2 * self.time / self.duration) * i / 50), 1)
 
 
-def get_time(layer):
-    """Get simulation time variable.
-
-    Parameters
-    ----------
-
-    layer: SpikeLayer
-        Layer.
-
-    Returns
-    -------
-
-    : Union[None, float]
-        If layer has ``time`` attribute, return current simulation time,
-        else ``None``.
-    """
-
-    return layer.time.get_value() if hasattr(layer, 'time') else None
-
-
 def add_payloads(prev_layer, input_spikes):
     """Get payloads from previous layer."""
 
@@ -511,8 +484,9 @@ class SpikeConcatenate(Concatenate):
     def _merge_function(self, inputs):
         return self._merge_function(inputs)
 
-    def get_time(self):
-        return get_time(self)
+    @staticmethod
+    def get_time():
+        return None
 
     @staticmethod
     def reset(sample_idx):
@@ -538,8 +512,9 @@ class SpikeFlatten(Flatten):
 
         return k.cast(super(SpikeFlatten, self).call(x), k.floatx())
 
-    def get_time(self):
-        return get_time(self)
+    @staticmethod
+    def get_time():
+        return None
 
     @staticmethod
     def reset(sample_idx):
@@ -662,7 +637,8 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
         """Layer functionality."""
 
         maxpool_type = self.config['conversion']['maxpool_type']
-        if 'binary' in self.activation_str:
+        if 'binary' in self.activation_str or \
+                self.config.getboolean('conversion', 'use_isi_code'):
             return k.pool2d(x, self.pool_size, self.strides, self.padding,
                             pool_mode='max')
         elif maxpool_type == 'avg_max':

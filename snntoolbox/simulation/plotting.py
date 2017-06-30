@@ -161,7 +161,8 @@ def plot_layer_summaries(plot_vars, config, path=None):
         if not os.path.exists(newpath):
             os.makedirs(newpath)
         if 'spiketrains' in plot_keys:
-            plot_spiketrains(plot_vars['spiketrains_n_l_t'][i], newpath)
+            plot_spiketrains(plot_vars['spiketrains_n_l_t'][i],
+                             config.getfloat('simulation', 'dt'), newpath)
         if 'spikerates' in plot_keys:
             plot_layer_activity(plot_vars['spikerates_n_l'][i],
                                 str('Spikerates'), newpath)
@@ -786,7 +787,7 @@ def plot_param_sweep(results, n, params, param_name, param_logscale):
     ax.set_ylim(0, 1)
 
 
-def plot_spiketrains(layer, path=None):
+def plot_spiketrains(layer, dt, path=None):
     """Plot which neuron fired at what time during the simulation.
 
     Parameters
@@ -801,6 +802,9 @@ def plot_spiketrains(layer, path=None):
 
         ``label`` is a string specifying both the layer type and the index,
         e.g. ``'3Dense'``.
+
+    dt: float
+        Time resolution of simulation.
 
     path: Optional[str]
         If not ``None``, specifies where to save the resulting image. Else,
@@ -828,7 +832,7 @@ def plot_spiketrains(layer, path=None):
     plt.title('Spiketrains \n of layer {}'.format(layer[1]))
     plt.xlabel('time [ms]')
     plt.ylabel('neuron index')
-    plt.xlim(1, shape[-1]+1)
+    plt.xlim(dt, (shape[-1] + 1) * dt)
     if path is not None:
         filename = '7Spiketrains'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')

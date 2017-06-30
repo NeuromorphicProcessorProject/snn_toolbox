@@ -103,12 +103,11 @@ class SNN(AbstractSNN):
         self.snn.compile('sgd', 'categorical_crossentropy', ['accuracy'])
         self.snn.set_weights(self.parsed_model.get_weights())
         for layer in self.snn.layers:
-            if hasattr(layer, 'b'):
+            if hasattr(layer, 'bias'):
                 # Adjust biases to time resolution of simulator.
-                layer.b.set_value(layer.b.get_value() *
-                                  self.config['simulation']['dt'])
+                layer.bias.set_value(layer.bias.get_value() * self._dt)
                 if bias_relaxation:  # Experimental
-                    layer.b0.set_value(layer.b.get_value())
+                    layer.b0.set_value(layer.bias.get_value())
 
     def simulate(self, **kwargs):
 
@@ -122,7 +121,7 @@ class SNN(AbstractSNN):
 
         # Loop through simulation time.
         self._input_spikecount = 0
-        for sim_step_int in range(self._duration):
+        for sim_step_int in range(self._num_timesteps):
             sim_step = (sim_step_int + 1) * self._dt
             self.set_time(sim_step)
 
@@ -173,8 +172,14 @@ class SNN(AbstractSNN):
                 self.operations_b_t[:, sim_step_int] += input_ops
 
             if self.config.getint('output', 'verbose') > 0 \
-                    and sim_step % 1 == 0:
-                guesses_b = np.argmax(np.sum(output_b_l_t, 2), 1)
+                    and True:#sim_step % 1 == 0:
+                if self.config.getboolean('conversion', 'use_isi_code'):
+                    first_spiketimes_b_l = np.argmax(output_b_l_t, 2)
+                    first_spiketimes_b_l[np.nonzero(np.sum(
+                        output_b_l_t, 2) == 0)] = self._num_timesteps
+                    guesses_b = np.argmin(first_spiketimes_b_l, 1)
+                else:
+                    guesses_b = np.argmax(np.sum(output_b_l_t, 2), 1)
                 echo('{:.2%}_'.format(np.mean(kwargs['truth_b'] == guesses_b)))
 
         return np.cumsum(np.asarray(output_b_l_t, bool), 2)
