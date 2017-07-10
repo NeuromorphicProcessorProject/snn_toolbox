@@ -19,10 +19,14 @@ class ModelParser(AbstractModelParser):
                             'AveragePooling2D': 'AveragePooling2D',
                             'ReLU': 'Activation',
                             'Softmax': 'Activation',
-                            'Concat': 'Concatenate'}
+                            'Concat': 'Concatenate',
+                            'LPInnerProduct': 'Dense',
+                            'LPConvolution': 'Conv2D',
+                            'LPAct': 'Activation'}
         self.activation_dict = {'ReLU': 'relu',
                                 'Softmax': 'softmax',
-                                'Sigmoid': 'sigmoid'}
+                                'Sigmoid': 'sigmoid',
+                                'LPAct': 'relu'}
 
     def get_layer_iterable(self):
         return self.input_model[1].layer
@@ -78,16 +82,34 @@ class ModelParser(AbstractModelParser):
         return len(self.input_model[0].params[layer.name])
 
     def parse_dense(self, layer, attributes):
+        idx_offset = 0  # Normally: params = [w, b]
+        # With the low-precision version of caffe (ADAPTIoN), there is a second
+        # copy of quantized parameters available.
+        if hasattr(layer, 'lpfp_param'):
+            attributes['Qm.f'] = (layer.lpfp_param.bd,
+                                  layer.lpfp_param.ad)
+            attributes['quantize_bias'] = layer.lpfp_param.round_bias
+            if attributes['Qm.f'] != (0, 0):
+                idx_offset = 1  # params = [w, w_lp, b, b_lp]
         weights = np.transpose(self.input_model[0].params[layer.name][0].data)
-        bias = self.input_model[0].params[layer.name][1].data
+        bias = self.input_model[0].params[layer.name][1 + idx_offset].data
         if bias is None:
             bias = np.zeros(layer.num_output)
         attributes['parameters'] = [weights, bias]
         attributes['units'] = layer.inner_product_param.num_output
 
     def parse_convolution(self, layer, attributes):
+        idx_offset = 0  # Normally: params = [w, b]
+        # With the low-precision version of caffe (ADAPTIoN), there is a second
+        # copy of quantized parameters available.
+        if hasattr(layer, 'lpfp_param'):
+            attributes['Qm.f'] = (layer.lpfp_param.bd,
+                                  layer.lpfp_param.ad)
+            attributes['quantize_bias'] = layer.lpfp_param.round_bias
+            if attributes['Qm.f'] != (0, 0):
+                idx_offset = 1  # params = [w, w_lp, b, b_lp]
         weights = self.input_model[0].params[layer.name][0].data
-        bias = self.input_model[0].params[layer.name][1].data
+        bias = self.input_model[0].params[layer.name][1 + idx_offset].data
         weights = weights[:, :, ::-1, ::-1]
         weights = np.transpose(weights, (2, 3, 1, 0))
         print("Flipped kernels.")
@@ -97,12 +119,14 @@ class ModelParser(AbstractModelParser):
         # (e.g. kernel_h == 0 even though kernel_size == [3])
         filter_size = [max(p.kernel_w, p.kernel_size[0]),
                        max(p.kernel_h, p.kernel_size[-1])]
-        pad = (p.pad_w, p.pad_h)
+        pad = p.pad[0] if len(p.pad) > 0 else 0
+        pad = (max(p.pad_w, pad), max(p.pad_h, pad))
         padding = padding_string(pad, filter_size)
+        strides = [max(p.stride_w, p.stride[0]), max(p.stride_h, p.stride[0])]
         attributes.update({'filters': p.num_output,
                            'kernel_size': filter_size,
                            'padding': padding,
-                           'strides': (p.stride[0], p.stride[0])})
+                           'strides': strides})
 
     def parse_pooling(self, layer, attributes):
         p = layer.pooling_param
@@ -114,11 +138,15 @@ class ModelParser(AbstractModelParser):
         padding = padding_string(pad, pool_size)
         strides = [max(p.stride_w, p.stride), max(p.stride_h, p.stride)]
         attributes.update({'pool_size': pool_size,
-                           'strides': strides,
-                           'padding': padding})
+                           'padding': padding,
+                           'strides': strides})
 
     def get_activation(self, layer):
-        return self.activation_dict.get(layer.type, 'linear')
+        activation = self.activation_dict.get(layer.type, 'linear')
+        if layer.type == 'LPAct':
+            activation += '_Q' + str(layer.lpfp_param.bd) + \
+                          '.' + str(layer.lpfp_param.ad)
+        return activation
 
     def get_outbound_layers(self, layer):
         layers = self.get_layer_iterable()
@@ -159,11 +187,14 @@ def load(path=None, filename=None):
     import os
     from google.protobuf import text_format
     import caffe
-    caffe.set_mode_gpu()
 
     prototxt = os.path.join(path, filename + '.prototxt')
     caffemodel = os.path.join(path, filename + '.caffemodel')
-    model = caffe.Net(prototxt, 1, weights=caffemodel)
+    try:
+        model = caffe.Net(prototxt, 1, weights=caffemodel)
+    except RuntimeError:
+        caffemodel += '.h5'
+        model = caffe.Net(prototxt, 1, weights=caffemodel)
     model_protobuf = caffe.proto.caffe_pb2.NetParameter()
     text_format.Merge(open(prototxt).read(), model_protobuf)
 

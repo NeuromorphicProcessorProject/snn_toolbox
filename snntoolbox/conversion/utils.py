@@ -41,7 +41,8 @@ def normalize_parameters(model, config, **kwargs):
 
     print("Normalizing parameters...")
     norm_dir = kwargs[str('path')] if 'path' in kwargs else \
-        os.path.join(config['paths']['log_dir_of_current_run'], 'normalization')
+        os.path.join(config.get('paths', 'log_dir_of_current_run'),
+                     'normalization')
     activ_dir = os.path.join(norm_dir, 'activations')
     if not os.path.exists(activ_dir):
         os.makedirs(activ_dir)
@@ -73,16 +74,16 @@ def normalize_parameters(model, config, **kwargs):
               "May have to reduce size of data set used for normalization.")
         scale_facs = OrderedDict({model.layers[0].name: 1})
     else:
-        print("ERROR: No scale factors or normalization data set could not be "
-              "loaded. Proceeding without normalization.")
+        import warnings
+        warnings.warn("Scale factors or normalization data set could not be "
+                      "loaded. Proceeding without normalization.",
+                      RuntimeWarning)
         return
 
     batch_size = config.getint('simulation', 'batch_size')
 
     # If scale factors have not been computed in a previous run, do so now.
     if len(scale_facs) == 1:
-        from snntoolbox.utils.utils import confirm_overwrite
-
         i = 0
         for layer in model.layers:
             # Skip if layer has no parameters
@@ -112,9 +113,10 @@ def normalize_parameters(model, config, **kwargs):
             #         settings['softmax_to_relu'] = False
             i += 1
         # Write scale factors to disk
-        filepath = os.path.join(norm_dir, config['normalization']['percentile']
-                                + '.json')
-        if config['output']['overwrite'] or confirm_overwrite(filepath):
+        filepath = os.path.join(norm_dir, config.get('normalization',
+                                                     'percentile') + '.json')
+        from snntoolbox.utils.utils import confirm_overwrite
+        if config.get('output', 'overwrite') or confirm_overwrite(filepath):
             with open(filepath, str('w')) as f:
                 json.dump(scale_facs, f)
 
@@ -166,7 +168,7 @@ def normalize_parameters(model, config, **kwargs):
         layer.set_weights(parameters_norm)
 
     # Plot distributions of weights and activations before and after norm.
-    if 'normalization_activations' in eval(config['output']['plot_vars']):
+    if 'normalization_activations' in eval(config.get('output', 'plot_vars')):
         from snntoolbox.simulation.plotting import plot_hist, plot_activ_hist
         from snntoolbox.simulation.plotting import plot_max_activ_hist
 
@@ -373,7 +375,7 @@ def try_reload_activations(layer, model, x_norm, batch_size, activ_dir):
     try:
         activations = np.load(os.path.join(activ_dir,
                                            layer.name + '.npz'))['arr_0']
-    except FileNotFoundError:
+    except IOError:
         if x_norm is None:
             return
 

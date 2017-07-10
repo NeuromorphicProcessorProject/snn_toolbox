@@ -21,6 +21,7 @@ from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
 from keras.layers import Layer, Concatenate
 
 from snntoolbox.parsing.utils import get_inbound_layers
+from snntoolbox.utils.utils import reduce_precision_var
 
 standard_library.install_aliases()
 
@@ -39,7 +40,8 @@ class SpikeLayer(Layer):
         self.dt = self.config.getfloat('simulation', 'dt')
         self.duration = self.config.getint('simulation', 'duration')
         self.tau_refrac = self.config.getfloat('cell', 'tau_refrac')
-        self.v_thresh = self.config.getfloat('cell', 'v_thresh')
+        self._v_thresh = self.config.getfloat('cell', 'v_thresh')
+        self.v_thresh = None
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.refrac_until = self.max_spikerate = None
@@ -49,11 +51,14 @@ class SpikeLayer(Layer):
             self.spikerate = self.var = None
         if self.config.getboolean('conversion', 'use_isi_code'):
             self.last_spiketimes = None
+            self.thresh_b_l = None
+            self.sum_of_abs_weights = None
+            self.prev_impulse = None
 
         import os
         from snntoolbox.utils.utils import get_abs_path
         path, filename = \
-            get_abs_path(self.config['paths']['filename_clamp_indices'],
+            get_abs_path(self.config.get('paths', 'filename_clamp_indices'),
                          self.config)
         if filename != '':
             filepath = os.path.join(path, filename)
@@ -105,6 +110,10 @@ class SpikeLayer(Layer):
                 output_spikes = self.binary_sigmoid_activation(new_mem)
             elif self.activation_str == 'binary_tanh':
                 output_spikes = self.binary_tanh_activation(new_mem)
+            elif '_Q' in self.activation_str:
+                m, f = map(int, self.activation_str[
+                           self.activation_str.index('_Q') + 2:].split('.'))
+                output_spikes = self.quantized_activation(new_mem, m, f)
             else:
                 output_spikes = self.linear_activation(new_mem)
         else:
@@ -124,7 +133,7 @@ class SpikeLayer(Layer):
 
         if self.payloads:
             spike_idxs = output_spikes.nonzero()
-            residuals = k.T.inc_subtensor(new_mem[spike_idxs], -self.v_thresh)
+            residuals = k.T.inc_subtensor(new_mem[spike_idxs], -self._v_thresh)
             payloads, payloads_sum = self.update_payload(residuals, spike_idxs)
             self.add_update([(self.payloads, payloads),
                              (self.payloads_sum, payloads_sum)])
@@ -135,6 +144,11 @@ class SpikeLayer(Layer):
                  k.T.add(self.spikecounts, k.not_equal(output_spikes, 0))),
                 (self.max_spikerate,
                  k.max(self.spikecounts) * self.dt / self.time)])
+
+        # if self.config.getboolean('conversion', 'use_isi_code'):
+        #     self.add_update([(self.v_thresh, self.v_thresh - k.T.true_div(
+        #         k.abs(self.prev_impulse - self.impulse), self.dt)),
+        #                      (self.prev_impulse, self.impulse)])
 
         if self.spiketrain is not None:
             self.add_update([(self.spiketrain,
@@ -179,6 +193,12 @@ class SpikeLayer(Layer):
         return k.T.mul(k.less_equal(k.random_uniform(mem.shape),
                                     k.softmax(mem)), self.v_thresh)
 
+    def quantized_activation(self, mem, m, f):
+        """Activation with precision reduced to fixed point format Qm.f."""
+        #return k.T.mul(k.greater_equal(mem, self.v_thresh), self.v_thresh)
+        return k.T.mul(k.greater_equal(reduce_precision_var(mem, m, f),
+                                       self.v_thresh), self.v_thresh)
+
     def get_new_mem(self):
         """Add input to membrane potential."""
 
@@ -214,18 +234,18 @@ class SpikeLayer(Layer):
         """
 
         spike_idxs = k.T.nonzero(spikes)
-        if self.config['cell']['reset'] == 'Reset by subtraction':
+        if self.config.get('cell', 'reset') == 'Reset by subtraction':
             if self.payloads and False:  # Experimental, turn off by default
                 new = k.T.set_subtensor(mem[spike_idxs], 0.)
             else:
                 pos_spike_idxs = k.T.nonzero(k.greater(spikes, 0))
                 neg_spike_idxs = k.T.nonzero(k.less(spikes, 0))
-                new = k.T.inc_subtensor(mem[pos_spike_idxs], -self.v_thresh)
-                new = k.T.inc_subtensor(new[neg_spike_idxs], self.v_thresh)
-        elif self.config['cell']['reset'] == 'Reset by modulo':
+                new = k.T.inc_subtensor(mem[pos_spike_idxs], -self._v_thresh)
+                new = k.T.inc_subtensor(new[neg_spike_idxs], self._v_thresh)
+        elif self.config.get('cell', 'reset') == 'Reset by modulo':
             new = k.T.set_subtensor(mem[spike_idxs],
-                                    mem[spike_idxs] % self.v_thresh)
-        else:  # self.config['cell']['reset'] == 'Reset to zero':
+                                    mem[spike_idxs] % self._v_thresh)
+        else:  # self.config.get('cell', 'reset') == 'Reset to zero':
             new = k.T.set_subtensor(mem[spike_idxs], 0.)
         self.add_update([(self.mem, new)])
 
@@ -249,8 +269,10 @@ class SpikeLayer(Layer):
             new_spiketimes = k.T.set_subtensor(self.last_spiketimes[
                 k.T.nonzero(output_spikes)], self.get_time())
             self.add_update([(self.last_spiketimes, new_spiketimes)])
-            return k.maximum(0, k.T.true_div(self.v_thresh * self.dt,
-                                             self.last_spiketimes))
+            # psp = k.maximum(0, k.T.true_div(self.dt, self.last_spiketimes))
+            psp = k.T.set_subtensor(output_spikes[k.T.nonzero(
+                self.last_spiketimes > 0)], self.dt)
+            return psp
         else:
             return output_spikes
 
@@ -310,7 +332,7 @@ class SpikeLayer(Layer):
 
         if mode == 'uniform':
             init_mem = k.random_uniform(output_shape,
-                                        -self.v_thresh, self.v_thresh)
+                                        -self._v_thresh, self._v_thresh)
         elif mode == 'bias':
             init_mem = np.zeros(output_shape, k.floatx())
             if hasattr(self, 'b'):
@@ -343,13 +365,17 @@ class SpikeLayer(Layer):
         if self.online_normalization and do_reset:
             self.spikecounts.set_value(np.zeros(self.output_shape, k.floatx()))
             self.max_spikerate.set_value(np.float32(0.))
-            self.v_thresh.set_value(np.float32(self.v_thresh))
+            self.v_thresh.set_value(np.float32(self._v_thresh))
         if clamp_var and do_reset:
             self.spikerate.set_value(np.zeros(self.input_shape, k.floatx()))
             self.var.set_value(np.zeros(self.input_shape, k.floatx()))
         if self.config.getboolean('conversion', 'use_isi_code'):
             self.last_spiketimes.set_value(-np.ones(self.output_shape,
                                                     k.floatx()))
+            # self.v_thresh.set_value(self._v_thresh * np.ones(
+            #     self.output_shape, k.floatx()) + self.sum_of_abs_weights)
+            # self.prev_impulse.set_value(np.zeros(self.output_shape,
+            #                                      k.floatx()))
 
     def init_neurons(self, input_shape):
         """Init layer neurons."""
@@ -357,7 +383,7 @@ class SpikeLayer(Layer):
         from snntoolbox.bin.utils import get_log_keys, get_plot_keys
 
         output_shape = self.compute_output_shape(input_shape)
-        self.v_thresh = k.variable(self.v_thresh)
+        self.v_thresh = k.variable(self._v_thresh)
         self.mem = k.variable(self.init_membrane_potential(output_shape))
         self.time = k.variable(self.dt)
         # To save memory and computations, allocate only where needed:
@@ -381,6 +407,12 @@ class SpikeLayer(Layer):
             self.clamp_idx = self.get_clamp_idx()
         if self.config.getboolean('conversion', 'use_isi_code'):
             self.last_spiketimes = k.variable(-np.ones(output_shape))
+            # self.sum_of_abs_weights = 0 if len(self.weights) == 0 else \
+            #     np.sum(np.abs(self.get_weights()[0]))
+            # self.v_thresh = k.variable(
+            #     self._v_thresh * np.ones(output_shape) +
+            #     self.sum_of_abs_weights)
+            # self.prev_impulse = k.zeros(output_shape)
 
     def get_layer_idx(self):
         """Get index of layer."""
@@ -636,7 +668,7 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
     def call(self, x, mask=None):
         """Layer functionality."""
 
-        maxpool_type = self.config['conversion']['maxpool_type']
+        maxpool_type = self.config.get('conversion', 'maxpool_type')
         if 'binary' in self.activation_str or \
                 self.config.getboolean('conversion', 'use_isi_code'):
             return k.pool2d(x, self.pool_size, self.strides, self.padding,

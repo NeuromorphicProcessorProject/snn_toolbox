@@ -78,9 +78,9 @@ class SNN(AbstractSNN):
 
         # Replace activation from kwargs by 'linear' before initializing
         # superclass, because the relu activation is applied by the spike-
-        # generation mechanism automatically. In some cases (binary activation),
-        # we need to apply the activation manually. This information is taken
-        # from the 'activation' key during conversion.
+        # generation mechanism automatically. In some cases (quantized
+        # activation), we need to apply the activation manually. This
+        # information is taken from the 'activation' key during conversion.
         activation_str = str(layer_kwargs.pop(str('activation'), None))
 
         spike_layer = spike_layer_name(**layer_kwargs)
@@ -114,7 +114,7 @@ class SNN(AbstractSNN):
         from snntoolbox.utils.utils import echo
         from snntoolbox.simulation.utils import get_layer_ops
 
-        input_b_l = kwargs['x_b_l'] * self._dt
+        input_b_l = kwargs[str('x_b_l')] * self._dt
 
         output_b_l_t = np.zeros((self.batch_size, self.num_classes,
                                  self._num_timesteps), 'int32')
@@ -127,9 +127,9 @@ class SNN(AbstractSNN):
 
             # Generate new input in case it changes with each simulation step.
             if self._poisson_input:
-                input_b_l = self.get_poisson_frame_batch(kwargs['x_b_l'])
+                input_b_l = self.get_poisson_frame_batch(kwargs[str('x_b_l')])
             elif self._dataset_format == 'aedat':
-                input_b_l = kwargs['dvs_gen'].next_eventframe_batch()
+                input_b_l = kwargs[str('dvs_gen')].next_eventframe_batch()
 
             # Main step: Propagate input through network and record output
             # spikes.
@@ -164,15 +164,15 @@ class SNN(AbstractSNN):
                 self.input_b_l_t[Ellipsis, sim_step_int] = input_b_l
             if self.operations_b_t is not None:
                 if self._poisson_input or self._dataset_format == 'aedat':
-                    input_ops = get_layer_ops(input_b_l, self.fanout[0])
-                else:
-                    input_ops = np.ones(self.batch_size) * self.num_neurons[1]
-                    if sim_step_int == 0:
-                        input_ops *= 2 * self.fanin[1]  # MACs for convol.
-                self.operations_b_t[:, sim_step_int] += input_ops
+                    self.operations_b_t[:, sim_step_int] += \
+                        get_layer_ops(input_b_l, self.fanout[0])
+                elif sim_step_int == 0:
+                    self.operations_b_t[:, 0] += 2 * self.num_neurons[1] * \
+                                                 self.fanin[1] * \
+                                                 np.ones(self.batch_size)
 
             if self.config.getint('output', 'verbose') > 0 \
-                    and True:#sim_step % 1 == 0:
+                    and sim_step % 1 == 0:
                 if self.config.getboolean('conversion', 'use_isi_code'):
                     first_spiketimes_b_l = np.argmax(output_b_l_t, 2)
                     first_spiketimes_b_l[np.nonzero(np.sum(
@@ -180,7 +180,22 @@ class SNN(AbstractSNN):
                     guesses_b = np.argmin(first_spiketimes_b_l, 1)
                 else:
                     guesses_b = np.argmax(np.sum(output_b_l_t, 2), 1)
-                echo('{:.2%}_'.format(np.mean(kwargs['truth_b'] == guesses_b)))
+                echo('{:.2%}_'.format(np.mean(kwargs[str('truth_b')] ==
+                                              guesses_b)))
+
+            if self.config.getboolean('conversion', 'use_isi_code') and \
+                    all(np.count_nonzero(output_b_l_t, (1, 2)) >= self.top_k):
+                print("Finished early.")
+                break
+
+        if self.config.getboolean('conversion', 'use_isi_code'):
+            for b in range(self.batch_size):
+                for l in range(self.num_classes):
+                    spike = 0
+                    for t in range(self._num_timesteps):
+                        if output_b_l_t[b, l, t] != 0:
+                            spike = 1
+                        output_b_l_t[b, l, t] = spike
 
         return np.cumsum(np.asarray(output_b_l_t, bool), 2)
 

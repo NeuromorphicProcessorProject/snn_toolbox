@@ -1120,7 +1120,7 @@ class SNN(AbstractSNN):
         self.megadirname = ''
         self.megaschematic = 'megasim.sch'
         self.input_stimulus_file = "input_events.stim"
-        self.cellparams = {'reset': config['cell']['reset'],
+        self.cellparams = {'reset': config.get('cell', 'reset'),
                            'tau_refrac': config.getfloat('cell', 'tau_refrac'),
                            'v_reset': config.getfloat('cell', 'v_reset'),
                            'v_thresh': config.getfloat('cell', 'v_thresh')}
@@ -1144,8 +1144,8 @@ class SNN(AbstractSNN):
                                                  pop_size=input_shape[1:]))
 
         # Create megasim dir where it will store the SNN params and schematic
-        self.megadirname = self.config['paths']['path_wd'] + "/MegaSim_" + \
-            self.config['paths']['filename_ann'] + '/'
+        self.megadirname = self.config.get('paths', 'path_wd') + "/MegaSim_" + \
+            self.config.get('paths', 'filename_ann') + '/'
         # clear the folder first from evs and log files
         # TODO: add a method to clean everything in that folder
         if not os.path.exists(self.megadirname):

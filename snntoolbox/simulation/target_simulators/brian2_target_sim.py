@@ -204,11 +204,10 @@ class SNN(AbstractSNN):
                                   "not yet implemented.")
 
     def init_cells(self):
-        cell_conf = self.config['cell']
         self._cell_params = {
-            'v_thresh': cell_conf.getfloat('v_thresh'),
-            'v_reset': cell_conf.getfloat('v_reset'),
-            'tau_m': cell_conf.getfloat('tau_m') * self.sim.ms}
+            'v_thresh': self.config.getfloat('cell', 'v_thresh'),
+            'v_reset': self.config.getfloat('cell', 'v_reset'),
+            'tau_m': self.config.getfloat('cell', 'tau_m') * self.sim.ms}
 
     def get_spiketrains(self, **kwargs):
         j = self._spiketrains_container_counter

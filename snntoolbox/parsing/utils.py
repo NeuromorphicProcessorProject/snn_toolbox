@@ -37,8 +37,6 @@ from abc import abstractmethod
 import keras
 import numpy as np
 
-from snntoolbox.utils.utils import binary_sigmoid, binary_tanh, binarize
-
 
 class AbstractModelParser:
     """Abstract base class for neural network model parsers.
@@ -107,7 +105,7 @@ class AbstractModelParser:
         """
 
         layers = self.get_layer_iterable()
-        snn_layers = eval(self.config['restrictions']['snn_layers'])
+        snn_layers = eval(self.config.get('restrictions', 'snn_layers'))
 
         name_map = {}
         idx = 0
@@ -187,11 +185,28 @@ class AbstractModelParser:
                 self.parse_convolution(layer, attributes)
 
             if layer_type in {'Dense', 'Conv2D'}:
+                weights, bias = attributes['parameters']
                 if self.config.getboolean('cell', 'binarize_weights'):
+                    from snntoolbox.utils.utils import binarize
                     print("Binarizing weights.")
-                    attributes['parameters'] = \
-                        (binarize(attributes['parameters'][0]),
-                         attributes['parameters'][1])
+                    weights = binarize(weights)
+                elif self.config.getboolean('cell', 'quantize_weights'):
+                    assert 'Qm.f' in attributes, \
+                        "In the [cell] section of the configuration file, "\
+                        "'quantize_weights' was set to True. For this to " \
+                        "work, the layer needs to specify the fixed point " \
+                        "number format 'Qm.f'."
+                    from snntoolbox.utils.utils import reduce_precision
+                    m, f = attributes.get('Qm.f')
+                    print("Quantizing weights to Q{}.{}.".format(m, f))
+                    weights = reduce_precision(weights, m, f)
+                    if attributes.get('quantize_bias', False):
+                        bias = reduce_precision(bias, m, f)
+                attributes['parameters'] = (weights, bias)
+                # These attributes are not needed any longer and would not be
+                # understood by Keras when building the parsed model.
+                attributes.pop('quantize_bias', None)
+                attributes.pop('Qm.f', None)
 
                 self.absorb_activation(layer, attributes)
 
@@ -523,7 +538,7 @@ class AbstractModelParser:
             The layer attributes as key-value pairs in a dict.
         """
 
-        activation = self.get_activation(layer)
+        activation_str = self.get_activation(layer)
 
         outbound = layer
         for _ in range(3):
@@ -533,20 +548,27 @@ class AbstractModelParser:
             else:
                 outbound = outbound[0]
                 if self.get_type(outbound) == 'Activation':
-                    activation = self.get_activation(outbound)
+                    activation_str = self.get_activation(outbound)
                     break
 
         # Maybe change activation to custom type.
-        if activation == 'binary_sigmoid':
+        if activation_str == 'binary_sigmoid':
+            from snntoolbox.utils.utils import binary_sigmoid
             activation = binary_sigmoid
-        elif activation == 'binary_tanh':
+        elif activation_str == 'binary_tanh':
+            from snntoolbox.utils.utils import binary_tanh
             activation = binary_tanh
-        elif activation == 'softmax' and \
+        elif '_Q' in activation_str:
+            activation = get_quantized_activation_function_from_string(
+                activation_str)
+        elif activation_str == 'softmax' and \
                 self.config.getboolean('conversion', 'softmax_to_relu'):
             activation = 'relu'
             print("Replaced softmax by relu activation function.")
+        else:
+            activation = activation_str
 
-        print("Using activation {}.".format(activation))
+        print("Using activation {}.".format(activation_str))
         attributes['activation'] = activation
 
     @abstractmethod
@@ -1005,3 +1027,44 @@ def get_type(layer):
     """
 
     return layer.__class__.__name__
+
+
+def get_quantized_activation_function_from_string(activation_str):
+    """
+    Parse a string describing the activation of a layer, and return the
+    corresponding activation function.
+
+    Parameters
+    ----------
+
+    activation_str : str
+        Describes activation.
+
+    Returns
+    -------
+
+    activation : functools.partial
+        Activation function.
+
+    Examples
+    --------
+
+    >>> f = get_quantized_activation_function_from_string('relu_Q1.15')
+    >>> f
+    functools.partial(<function reduce_precision at 0x7f919af92b70>,
+                      f='15', m='1')
+    >>> print(f.__name__)
+    relu_Q1.15
+    """
+
+    # TODO: We implicitly assume relu activation function here. Change this to
+    # allow for general activation functions with reduced precision.
+
+    from functools import partial
+    from snntoolbox.utils.utils import quantized_relu
+
+    m, f = map(int, activation_str[activation_str.index('_Q') + 2:].split('.'))
+    activation = partial(quantized_relu, m=m, f=f)
+    activation.__name__ = activation_str
+
+    return activation

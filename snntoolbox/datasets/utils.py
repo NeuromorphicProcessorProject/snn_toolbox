@@ -51,14 +51,14 @@ def get_dataset(config):
 
     testset = None
     normset = try_get_normset_from_scalefacs(config)
-    dataset_path = config['paths']['dataset_path']
+    dataset_path = config.get('paths', 'dataset_path')
     is_testset_needed = config.getboolean('tools', 'evaluate_ann') or \
         config.getboolean('tools', 'simulate')
     is_normset_needed = config.getboolean('tools', 'normalize') and \
         normset is None
 
     # ________________________________ npz ____________________________________#
-    if config['input']['dataset_format'] == 'npz':
+    if config.get('input', 'dataset_format') == 'npz':
         print("Loading data set from '.npz' files in {}.\n".format(
             dataset_path))
         if is_testset_needed:
@@ -66,22 +66,24 @@ def get_dataset(config):
             testset = {
                 'x_test': load_npz(dataset_path, 'x_test.npz')[:num_to_test],
                 'y_test': load_npz(dataset_path, 'y_test.npz')[:num_to_test]}
+            if config.getboolean('conversion', 'use_isi_code'):
+                testset['x_test'] = np.expm1(testset['x_test'])
             assert testset, "Test set empty."
         if is_normset_needed:
             normset = {'x_norm': load_npz(dataset_path, 'x_norm.npz')}
             assert normset, "Normalization set empty."
 
     # ________________________________ jpg ____________________________________#
-    elif config['input']['dataset_format'] == 'jpg':
+    elif config.get('input', 'dataset_format') == 'jpg':
         from keras.preprocessing.image import ImageDataGenerator
         print("Loading data set from ImageDataGenerator, using images in "
               "{}.\n".format(dataset_path))
         # Transform str to dict
-        datagen_kwargs = eval(config['input']['datagen_kwargs'])
-        dataflow_kwargs = eval(config['input']['dataflow_kwargs'])
+        datagen_kwargs = eval(config.get('input', 'datagen_kwargs'))
+        dataflow_kwargs = eval(config.get('input', 'dataflow_kwargs'))
 
         # Get class labels
-        class_idx_path = config['paths']['class_idx_path']
+        class_idx_path = config.get('paths', 'class_idx_path')
         if class_idx_path != '':
             class_idx = json.load(open(os.path.abspath(class_idx_path)))
             dataflow_kwargs['classes'] = \
@@ -119,7 +121,7 @@ def get_dataset(config):
             assert testset, "Test set empty."
 
     # _______________________________ aedat ___________________________________#
-    elif config['input']['dataset_format'] == 'aedat':
+    elif config.get('input', 'dataset_format') == 'aedat':
         if is_normset_needed:
             normset = {'x_norm': load_npz(dataset_path, 'x_norm.npz')}
             assert normset, "Normalization set empty."
@@ -148,12 +150,12 @@ def try_get_normset_from_scalefacs(config):
         Returns ``None`` if no scale factors were found.
     """
 
-    newpath = os.path.join(config['paths']['log_dir_of_current_run'],
+    newpath = os.path.join(config.get('paths', 'log_dir_of_current_run'),
                            'normalization')
     if not os.path.exists(newpath):
         os.makedirs(newpath)
         return
-    filepath = os.path.join(newpath, config['normalization']['percentile'] +
+    filepath = os.path.join(newpath, config.get('normalization', 'percentile') +
                             '.json')
     if os.path.isfile(filepath):
         print("Loading scale factors from disk instead of recalculating.")

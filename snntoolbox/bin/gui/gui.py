@@ -194,7 +194,7 @@ class SNNToolboxGUI:
         ToolTip(format_frame, text=tip, wraplength=750)
 
         # Model library
-        model_libs = eval(self.config['restrictions']['model_libs'])
+        model_libs = eval(self.config.get('restrictions', 'model_libs'))
         model_lib_frame = tk.Frame(self.globalparams_frame, bg='white')
         model_lib_frame.pack(**self.kwargs)
         tip = "The neural network library used to create the input model."
@@ -487,7 +487,7 @@ class SNNToolboxGUI:
         ToolTip(self.simparams_frame, text=tip, wraplength=750, delay=1499)
 
         # Simulator
-        simulators = eval(self.config['restrictions']['simulators'])
+        simulators = eval(self.config.get('restrictions', 'simulators'))
         simulator_frame = tk.Frame(self.simparams_frame, bg='white')
         simulator_frame.pack(**self.kwargs)
         tip = dedent("""\
@@ -590,7 +590,7 @@ class SNNToolboxGUI:
         ToolTip(binarize_weights_cb, text=tip, wraplength=750)
 
         # MaxPool
-        maxpool_types = eval(self.config['restrictions']['maxpool_types'])
+        maxpool_types = eval(self.config.get('restrictions', 'maxpool_types'))
         maxpool_frame = tk.Frame(self.simparams_frame, bg='white')
         maxpool_frame.pack(**self.kwargs)
         tip = dedent("""\
@@ -1457,7 +1457,7 @@ class SNNToolboxGUI:
 
     def toggle_state_pynn(self, val):
         """Toogle state for pyNN."""
-        simulators_pynn = eval(self.config['restrictions']['simulators_pyNN'])
+        simulators_pynn = eval(self.config.get('restrictions', 'simulators_pyNN'))
         if val not in list(simulators_pynn) + ['brian2']:
             self.settings['state_pyNN'].set('disabled')
         else:

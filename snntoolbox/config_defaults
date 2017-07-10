@@ -50,6 +50,7 @@ batch_size = 100
 num_to_test = 1000
 sample_idxs_to_test = []
 reset_between_nth_sample = 1
+top_k = 5
 
 [cell]
 v_thresh = 1
@@ -65,6 +66,7 @@ tau_syn_E = 0.01
 tau_syn_I = 0.01
 delay = 1
 binarize_weights = False
+quantize_weights = False
 scaling_factor = 10000000
 payloads = False
 reset = Reset by subtraction

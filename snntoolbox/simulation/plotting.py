@@ -63,7 +63,7 @@ def output_graphs(plot_vars, config, path=None, idx=0):
     if path is not None:
         print("Saving plots of one sample to {}...\n".format(path))
 
-    plot_keys = eval(config['output']['plot_vars'])
+    plot_keys = eval(config.get('output', 'plot_vars'))
     duration = config.getint('simulation', 'duration')
 
     if 'activations_n_b_l' in plot_vars:
@@ -75,7 +75,8 @@ def output_graphs(plot_vars, config, path=None, idx=0):
         if any({'spikerates', 'correlation', 'hist_spikerates_activations'}
                & plot_keys):
             plot_vars['spikerates_n_b_l'] = spiketrains_to_rates(
-                plot_vars['spiketrains_n_b_l_t'], duration)
+                plot_vars['spiketrains_n_b_l_t'], duration,
+                config.getboolean('conversion', 'use_isi_code'))
             plot_vars['spikerates_n_l'] = get_sample_activity_from_batch(
                 plot_vars['spikerates_n_b_l'], idx)
 
@@ -145,7 +146,7 @@ def plot_layer_summaries(plot_vars, config, path=None):
 
     from snntoolbox.utils.utils import extract_label
 
-    plot_keys = eval(config['output']['plot_vars'])
+    plot_keys = eval(config.get('output', 'plot_vars'))
 
     if len(plot_vars.keys()) == 0:
         return

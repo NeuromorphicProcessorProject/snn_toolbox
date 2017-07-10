@@ -4,6 +4,7 @@
 """
 
 import os
+import sys
 
 import keras
 import numpy as np
@@ -51,8 +52,8 @@ def get_range(start=0.0, stop=1.0, num=5, method='linear'):
 
 def confirm_overwrite(filepath):
     """
-    If config['output']['overwrite']==False and the file exists, ask user if it
-    should be overwritten.
+    If config.get('output', 'overwrite')==False and the file exists, ask user if
+    it should be overwritten.
     """
 
     if os.path.isfile(filepath):
@@ -114,8 +115,8 @@ def import_helpers(filepath, config):
     filepath: str
         Filename or relative or absolute path of module to import. If only
         the filename is given, module is assumed to be in current working
-        directory (``config['paths']['path_wd']``). Non-absolute paths are taken
-        relative to working dir.
+        directory (``config.get('paths', 'path_wd')``). Non-absolute paths are
+        taken relative to working dir.
     config: configparser.ConfigParser
         Settings.
 
@@ -141,7 +142,7 @@ def get_abs_path(filepath, config):
     filepath: str
         Filename or relative or absolute path. If only the filename is given,
         file is assumed to be in current working directory
-        (``config['paths']['path_wd']``). Non-absolute paths are interpreted
+        (``config.get('paths', 'path_wd')``). Non-absolute paths are interpreted
         relative to working dir.
     config: configparser.ConfigParser
         Settings.
@@ -156,9 +157,10 @@ def get_abs_path(filepath, config):
 
     path, filename = os.path.split(filepath)
     if path == '':
-        path = config['paths']['path_wd']
+        path = config.get('paths', 'path_wd')
     elif not os.path.isabs(path):
-        path = os.path.abspath(os.path.join(config['paths']['path_wd'], path))
+        path = os.path.abspath(os.path.join(config.get('paths', 'path_wd'),
+                                            path))
     return path, filename
 
 
@@ -254,7 +256,8 @@ def binarize_var(w, h=1., deterministic=True):
 
     Parameters
     ----------
-    w: np.array
+
+    w: keras.backend.Variable
         Weights.
     h: float
         Values are round to ``+/-h``.
@@ -264,7 +267,7 @@ def binarize_var(w, h=1., deterministic=True):
     Returns
     -------
 
-    : np.array
+    w: keras.backend.variable
         The binarized weights.
     """
 
@@ -286,6 +289,7 @@ def binarize(w, h=1., deterministic=True):
 
     Parameters
     ----------
+
     w: ndarray
         Weights.
     h: float
@@ -296,7 +300,7 @@ def binarize(w, h=1., deterministic=True):
     Returns
     -------
 
-    : np.array
+    : ndarray
         The binarized weights.
     """
 
@@ -311,6 +315,81 @@ def binarize(w, h=1., deterministic=True):
     wb[wb == 0] = -h
 
     return np.asarray(wb, np.float32)
+
+
+def reduce_precision(x, m, f):
+    """Reduces precision of ``x`` to format ``Qm.f``.
+
+    Parameters
+    ----------
+
+    x : ndarray
+        Input data.
+    m : int
+        Number of integer bits.
+    f : int
+        Number of fractional bits.
+
+    Returns
+    -------
+
+    x_lp : ndarray
+        The input data with reduced precision.
+
+    """
+    n = 2 << f - 1
+    maxval = (2 << m - 1) - 1.0 / n
+    return np.clip(np.true_divide(np.round(x * n), n), -maxval, maxval)
+
+
+def reduce_precision_var(x, m, f):
+    """Reduces precision of ``x`` to format ``Qm.f``.
+
+    Parameters
+    ----------
+
+    x : keras.backend.variable
+        Input data.
+    m : int
+        Number of integer bits.
+    f : int
+        Number of fractional bits.
+
+    Returns
+    -------
+
+    x_lp : keras.backend.variable
+        The input data with reduced precision.
+
+    """
+    n = 2 << f - 1
+    maxval = (2 << m - 1) - 1.0 / n
+    return keras.backend.clip(keras.backend.round(x * n) / n, -maxval, maxval)
+
+
+def quantized_relu(x, m, f):
+    """
+    Rectified linear unit activation function with precision of ``x`` reduced to
+    fixed point format ``Qm.f``.
+
+    Parameters
+    ----------
+
+    x : keras.backend.variable
+        Input data.
+    m : int
+        Number of integer bits.
+    f : int
+        Number of fractional bits.
+
+    Returns
+    -------
+
+    x_lp : keras.backend.variable
+        The input data with reduced precision.
+
+    """
+    return keras.backend.relu(reduce_precision_var(x, m, f))
 
 
 def wilson_score(p, n):
@@ -362,7 +441,7 @@ def extract_label(label):
     l = label.split('_')
     layer_num = None
     for i in range(max(4, len(l) - 2)):
-        if l[0][:i].isnumeric():
+        if l[0][:i].isdigit():
             layer_num = int(l[0][:i])
     name = ''.join(s for s in l[0] if not s.isdigit())
     if name[-1] == 'D':
@@ -408,21 +487,12 @@ def top_k_categorical_accuracy(y_true, y_pred, k=5):
 
     return np.mean(in_top_k(y_pred, np.argmax(y_true, axis=-1), k))
 
-# python 2 can not handle the 'flush' keyword argument of python 3 print().
-# Provide 'echo' function as an alias for
-# "print with flush and without newline".
-try:
-    from functools import partial
-    echo = partial(print, end='', flush=True)
-    echo(u'')
-except TypeError:
-    # TypeError: 'flush' is an invalid keyword argument for this function
-    import sys
 
-    def echo(text):
-        """python 2 version of print(end='', flush=True)."""
-        sys.stdout.write(u'{0}'.format(text))
-        sys.stdout.flush()
+def echo(text):
+    """python 2 version of print(end='', flush=True)."""
+
+    sys.stdout.write(u'{}'.format(text))
+    sys.stdout.flush()
 
 
 def to_list(x):

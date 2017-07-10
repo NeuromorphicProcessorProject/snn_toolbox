@@ -9,6 +9,8 @@ simulator is added to the toolbox (see :ref:`extending`).
 @author: rbodo
 """
 
+from __future__ import division
+
 import os
 from abc import abstractmethod
 
@@ -150,7 +152,7 @@ class AbstractSNN:
 
         self.sim = initialize_simulator(config)
 
-        self._dataset_format = self.config['input']['dataset_format']
+        self._dataset_format = self.config.get('input', 'dataset_format')
         self._poisson_input = self.config.getboolean('input', 'poisson_input')
         self._num_poisson_events_per_sample = \
             self.config.getint('input', 'num_poisson_events_per_sample')
@@ -385,7 +387,8 @@ class AbstractSNN:
 
         self.parsed_model = parsed_model
         self.num_classes = int(self.parsed_model.layers[-1].output_shape[-1])
-        self.top_k = min(self.num_classes, 5)
+        self.top_k = min(self.num_classes, self.config.getint('simulation',
+                                                              'top_k'))
 
         # Get batch input shape
         batch_shape = list(parsed_model.layers[0].batch_input_shape)
@@ -470,7 +473,7 @@ class AbstractSNN:
 
         # Get directory where logging quantities will be stored.
         log_dir = kwargs[str('path')] if 'path' in kwargs \
-            else self.config['paths']['log_dir_of_current_run']
+            else self.config.get('paths', 'log_dir_of_current_run')
 
         # Load neuron layers and connections if conversion was done during a
         # previous session.
@@ -483,7 +486,7 @@ class AbstractSNN:
 
         # Divide the test set into batches and run all samples in a batch in
         # parallel.
-        dataset_format = self.config['input']['dataset_format']
+        dataset_format = self.config.get('input', 'dataset_format')
         num_batches = int(1e9) if dataset_format == 'aedat' else \
             int(np.floor(self.config.getint('simulation', 'num_to_test') /
                          self.batch_size))
@@ -516,11 +519,11 @@ class AbstractSNN:
             batch_shape = list(self.parsed_model.layers[0].batch_input_shape)
             batch_shape[0] = self.batch_size
             dvs_gen = DVSIterator(
-                self.config['paths']['dataset_path'], batch_shape,
+                self.config.get('paths', 'dataset_path'), batch_shape,
                 self.config.getint('input', 'eventframe_width'),
                 self.config.getint('input', 'num_dvs_events_per_sample'),
-                eval(self.config['input']['chip_size']), batch_shape[2:],
-                eval(self.config['input']['label_dict']))
+                eval(self.config.get('input', 'chip_size')), batch_shape[2:],
+                eval(self.config.get('input', 'label_dict')))
             data_batch_kwargs['dvs_gen'] = dvs_gen
 
         # Simulate the SNN on a batch of samples in parallel.
@@ -585,8 +588,8 @@ class AbstractSNN:
             if self.config.getint('output', 'verbose') > 0:
                 print("\nBatch {} of {} completed ({:.1%})".format(
                     batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
-                print("Moving accuracy of SNN (top-1, top-5): {:.2%}, {:.2%}."
-                      "".format(top1acc_moving, top5acc_moving))
+                print("Moving accuracy of SNN (top-1, top-{}): {:.2%}, {:.2%}."
+                      "".format(self.top_k, top1acc_moving, top5acc_moving))
             with open(path_acc, str('a')) as f_acc:
                 f_acc.write(str("{} {:.2%} {:.2%}\n".format(
                     num_samples_seen, top1acc_moving, top5acc_moving)))
@@ -597,8 +600,9 @@ class AbstractSNN:
             score5_ann += score[2] * self.batch_size
             self.top1err_ann = 1 - score1_ann / num_samples_seen
             self.top5err_ann = 1 - score5_ann / num_samples_seen
-            print("Moving accuracy of ANN (top-1, top-5): {:.2%}, {:.2%}."
-                  "\n".format(1 - self.top1err_ann, 1 - self.top5err_ann))
+            print("Moving accuracy of ANN (top-1, top-{}): {:.2%}, {:.2%}."
+                  "\n".format(self.top_k, 1 - self.top1err_ann,
+                              1 - self.top5err_ann))
 
             # Plot input image.
             if 'input_image' in self._plot_keys:
@@ -711,18 +715,18 @@ class AbstractSNN:
 
         import keras
         print("Restoring spiking network...\n")
-        self.load(self.config['paths']['path_wd'],
-                  self.config['paths']['filename_snn'])
+        self.load(self.config.get('paths', 'path_wd'),
+                  self.config.get('paths', 'filename_snn'))
         self.parsed_model = keras.models.load_model(os.path.join(
-            self.config['paths']['path_wd'],
-            self.config['paths']['filename_parsed_model'] + '.h5'))
+            self.config.get('paths', 'path_wd'),
+            self.config.get('paths', 'filename_parsed_model') + '.h5'))
 
     def init_log_vars(self):
         """Initialize variables to record during simulation."""
 
         if 'input_b_l_t' in self._log_keys:
             self.input_b_l_t = np.empty(list(self.parsed_model.input_shape) +
-                                        [self._num_timesteps], np.bool)
+                                        [self._num_timesteps])
 
         if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
                 'hist_spikerates_activations'} & self._plot_keys) \
@@ -863,7 +867,7 @@ class AbstractSNN:
         times = self._dt * np.arange(self._num_timesteps)
         show_legend = True if i >= len(self.mem_n_b_l_t) - 2 else False
         plot_potential(times, self.mem_n_b_l_t[i], self.config, show_legend,
-                       self.config['paths']['log_dir_of_current_run'])
+                       self.config.get('paths', 'log_dir_of_current_run'))
 
     def set_spiketrain_stats_input(self):
         """
@@ -951,12 +955,12 @@ class AbstractSNN:
 def get_samples_from_list(x_test, y_test, dataflow, config):
     """
     If user specified a list of samples to test with
-    ``config['input']['sample_idxs_to_test']``, this function extracts them from
-    the test set.
+    ``config.get('input', 'sample_idxs_to_test')``, this function extracts them
+    from the test set.
     """
 
     batch_size = config.getint('simulation', 'batch_size')
-    si = list(eval(config['simulation']['sample_idxs_to_test']))
+    si = list(eval(config.get('simulation', 'sample_idxs_to_test')))
     if not len(si) == 0:
         if dataflow is not None:
             batch_idx = 0
@@ -1135,7 +1139,8 @@ def spikecounts_to_rates(spikecounts_n_b_l_t):
             for (spikecounts_b_l_t, name) in spikecounts_n_b_l_t]
 
 
-def spiketrains_to_rates(spiketrains_n_b_l_t, duration):
+def spiketrains_to_rates(spiketrains_n_b_l_t, duration,
+                         use_temporal_code=False):
     """Convert spiketrains to spikerates.
 
     The output will have the same shape as the input except for the last
@@ -1149,6 +1154,9 @@ def spiketrains_to_rates(spiketrains_n_b_l_t, duration):
 
     duration: int
         Duration of simulation.
+
+    use_temporal_code: bool
+        If true, spike rates are computed using the time to first spike.
 
     Returns
     -------
@@ -1168,21 +1176,31 @@ def spiketrains_to_rates(spiketrains_n_b_l_t, duration):
         if len(shape) == 2:
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
-                    spikerates_n_b_l[i][0][ii, jj] = (
-                        np.count_nonzero(sp[0][ii, jj]) / duration)
-                    spikerates_n_b_l[i][0][ii, jj] *= np.sign(
-                        np.sum(sp[0][ii, jj]))  # For negative spikes
+                    if use_temporal_code:
+                        isi = sp[0][ii, jj][np.nonzero(sp[0][ii, jj])]
+                        rate = 0 if len(isi) == 0 else 1. / isi[0]
+                        spikerates_n_b_l[i][0][ii, jj] = rate
+                    else:
+                        spikerates_n_b_l[i][0][ii, jj] = (
+                            np.count_nonzero(sp[0][ii, jj]) / duration)
+                        spikerates_n_b_l[i][0][ii, jj] *= np.sign(
+                            np.sum(sp[0][ii, jj]))  # For negative spikes
         elif len(shape) == 4:
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
                     for kk in range(len(sp[0][ii, jj])):
                         for ll in range(len(sp[0][ii, jj, kk])):
-                            spikerates_n_b_l[i][0][ii, jj, kk, ll] = (
-                                np.count_nonzero(sp[0][ii, jj, kk, ll]) /
-                                duration)
-                            spikerates_n_b_l[i][0][ii, jj, kk, ll] *= np.sign(
-                                np.sum(sp[0][ii, jj, kk, ll]))
-
+                            if use_temporal_code:
+                                isi = sp[0][ii, jj, kk, ll][np.nonzero(
+                                    sp[0][ii, jj, kk, ll])]
+                                rate = 0 if len(isi) == 0 else 1. / isi[0]
+                                spikerates_n_b_l[i][0][ii, jj, kk, ll] = rate
+                            else:
+                                spikerates_n_b_l[i][0][ii, jj, kk, ll] = (
+                                    np.count_nonzero(sp[0][ii, jj, kk, ll]) /
+                                    duration)
+                                spikerates_n_b_l[i][0][ii, jj, kk, ll] *= \
+                                    np.sign(np.sum(sp[0][ii, jj, kk, ll]))
     return spikerates_n_b_l
 
 
@@ -1300,4 +1318,4 @@ def is_spiking(layer, config):
         ``True`` if converted layer will have spiking neurons.
     """
 
-    return get_type(layer) in eval(config['restrictions']['spiking_layers'])
+    return get_type(layer) in eval(config.get('restrictions', 'spiking_layers'))

@@ -49,7 +49,7 @@ def test_full(config, queue=None):
 
     results: list
         List of the accuracies obtained after simulating with each parameter
-        value in config['parameter_sweep']['param_values'].
+        value in config.get('parameter_sweep', 'param_values').
     """
 
     from snntoolbox.datasets.utils import get_dataset
@@ -60,7 +60,7 @@ def test_full(config, queue=None):
 
     # Instantiate an empty spiking network
     target_sim = import_module('snntoolbox.simulation.target_simulators.' +
-                               config['simulation']['simulator'] +
+                               config.get('simulation', 'simulator') +
                                '_target_sim')
     spiking_model = target_sim.SNN(config, queue)
 
@@ -73,9 +73,10 @@ def test_full(config, queue=None):
         # ___________________________ LOAD MODEL _____________________________ #
 
         model_lib = import_module('snntoolbox.parsing.model_libs.' +
-                                  config['input']['model_lib'] + '_input_lib')
-        input_model = model_lib.load(config['paths']['path_wd'],
-                                     config['paths']['filename_ann'])
+                                  config.get('input', 'model_lib') +
+                                  '_input_lib')
+        input_model = model_lib.load(config.get('paths', 'path_wd'),
+                                     config.get('paths', 'filename_ann'))
 
         # Evaluate input model.
         if config.getboolean('tools', 'evaluate_ann') and not is_stop(queue):
@@ -103,8 +104,8 @@ def test_full(config, queue=None):
 
         # Write parsed model to disk
         parsed_model.save(
-            os.path.join(config['paths']['path_wd'],
-                         config['paths']['filename_parsed_model'] + '.h5'))
+            os.path.join(config.get('paths', 'path_wd'),
+                         config.get('paths', 'filename_parsed_model') + '.h5'))
 
         # ____________________________ CONVERT _______________________________ #
 
@@ -112,8 +113,8 @@ def test_full(config, queue=None):
 
         # Export network in a format specific to the simulator with which it
         # will be tested later.
-        spiking_model.save(config['paths']['path_wd'],
-                           config['paths']['filename_snn'])
+        spiking_model.save(config.get('paths', 'path_wd'),
+                           config.get('paths', 'filename_snn'))
 
     # _______________________________ SIMULATE _______________________________ #
 
@@ -178,8 +179,8 @@ def run_parameter_sweep(config, queue):
         def wrapper(snn, **testset):
 
             results = []
-            param_values = eval(config['parameter_sweep']['param_values'])
-            param_name = config['parameter_sweep']['param_name']
+            param_values = eval(config.get('parameter_sweep', 'param_values'))
+            param_name = config.get('parameter_sweep', 'param_name')
             param_logscale = config.getboolean('parameter_sweep',
                                                'param_logscale')
             if len(param_values) > 1:
@@ -226,6 +227,7 @@ def load_config(filepath):
     except ImportError:
         # noinspection PyPep8Naming
         import ConfigParser as configparser
+        # noinspection PyUnboundLocalVariable
         configparser = configparser
 
     assert os.path.isfile(filepath), \
@@ -255,12 +257,12 @@ def update_setup(config_filepath):
     config.read(config_filepath)
 
     # Name of input file must be given.
-    filename_ann = config['paths']['filename_ann']
+    filename_ann = config.get('paths', 'filename_ann')
     assert filename_ann != '', "Filename of input model not specified."
 
     # Check that simulator choice is valid.
-    simulator = config['simulation']['simulator']
-    simulators = eval(config['restrictions']['simulators'])
+    simulator = config.get('simulation', 'simulator')
+    simulators = eval(config.get('restrictions', 'simulators'))
     assert simulator in simulators, \
         "Simulator '{}' not supported. Choose from {}".format(simulator,
                                                               simulators)
@@ -276,17 +278,17 @@ def update_setup(config_filepath):
         config.set('tools', 'convert', str(True))
 
     # Set default path if user did not specify it.
-    if config['paths']['path_wd'] == '':
+    if config.get('paths', 'path_wd') == '':
         config.set('paths', 'path_wd', os.path.dirname(config_filepath))
 
     # Check specified working directory exists.
-    path_wd = config['paths']['path_wd']
+    path_wd = config.get('paths', 'path_wd')
     assert os.path.exists(path_wd), \
         "Working directory {} does not exist.".format(path_wd)
 
     # Check that choice of input model library is valid.
-    model_lib = config['input']['model_lib']
-    model_libs = eval(config['restrictions']['model_libs'])
+    model_lib = config.get('input', 'model_lib')
+    model_libs = eval(config.get('restrictions', 'model_libs'))
     assert model_lib in model_libs, "ERROR: Input model library '{}' ".format(
         model_lib) + "not supported yet. Possible values: {}".format(model_libs)
 
@@ -295,8 +297,11 @@ def update_setup(config_filepath):
     if model_lib == 'caffe':
         caffemodel_filepath = os.path.join(path_wd,
                                            filename_ann + '.caffemodel')
-        assert os.path.isfile(caffemodel_filepath), \
-            "File {} not found.".format(caffemodel_filepath)
+        caffemodel_h5_filepath = os.path.join(path_wd,
+                                              filename_ann + '.caffemodel.h5')
+        assert os.path.isfile(caffemodel_filepath) or os.path.isfile(
+            caffemodel_h5_filepath), "File {} or {} not found.".format(
+            caffemodel_filepath, caffemodel_h5_filepath)
         prototxt_filepath = os.path.join(path_wd, filename_ann + '.prototxt')
         assert os.path.isfile(prototxt_filepath), \
             "File {} not found.".format(prototxt_filepath)
@@ -332,11 +337,11 @@ def update_setup(config_filepath):
               "the specified working directory!")
 
     # Set default path if user did not specify it.
-    if config['paths']['dataset_path'] == '':
+    if config.get('paths', 'dataset_path') == '':
         config.set('paths', 'dataset_path', os.path.dirname(__file__))
 
     # Check that the data set path is valid.
-    dataset_path = os.path.abspath(config['paths']['dataset_path'])
+    dataset_path = os.path.abspath(config.get('paths', 'dataset_path'))
     config.set('paths', 'dataset_path', dataset_path)
     assert os.path.exists(dataset_path), "Path to data set does not exist: " \
                                          "{}".format(dataset_path)
@@ -344,7 +349,7 @@ def update_setup(config_filepath):
     # Check that data set path contains the data in the specified format.
     assert os.listdir(dataset_path), "Data set directory is empty."
     normalize = config.getboolean('tools', 'normalize')
-    dataset_format = config['input']['dataset_format']
+    dataset_format = config.get('input', 'dataset_format')
     if dataset_format == 'npz' and normalize and not os.path.exists(
             os.path.join(dataset_path, 'x_norm.npz')):
         raise RuntimeWarning(
@@ -357,7 +362,7 @@ def update_setup(config_filepath):
             "Data set file 'x_test.npz' or 'y_test.npz' was not found in "
             "specified data set path {}.".format(dataset_path))
 
-    sample_idxs_to_test = eval(config['simulation']['sample_idxs_to_test'])
+    sample_idxs_to_test = eval(config.get('simulation', 'sample_idxs_to_test'))
     num_to_test = config.getint('simulation', 'num_to_test')
     if not sample_idxs_to_test == []:
         if len(sample_idxs_to_test) != num_to_test:
@@ -368,17 +373,17 @@ def update_setup(config_filepath):
                        str(len(sample_idxs_to_test)))
 
     # Create log directory if it does not exist.
-    if config['paths']['log_dir_of_current_run'] == '':
+    if config.get('paths', 'log_dir_of_current_run') == '':
         config.set('paths', 'log_dir_of_current_run', os.path.join(
-            path_wd, 'log', 'gui', config['paths']['runlabel']))
-    log_dir_of_current_run = config['paths']['log_dir_of_current_run']
+            path_wd, 'log', 'gui', config.get('paths', 'runlabel')))
+    log_dir_of_current_run = config.get('paths', 'log_dir_of_current_run')
     if not os.path.isdir(log_dir_of_current_run):
         os.makedirs(log_dir_of_current_run)
 
     # Specify filenames for models at different stages of the conversion.
-    if config['paths']['filename_parsed_model'] == '':
+    if config.get('paths', 'filename_parsed_model') == '':
         config.set('paths', 'filename_parsed_model', filename_ann + '_parsed')
-    if config['paths']['filename_snn'] == '':
+    if config.get('paths', 'filename_snn') == '':
         config.set('paths', 'filename_snn', '{}_{}'.format(filename_ann,
                                                            simulator))
 
@@ -399,7 +404,7 @@ def update_setup(config_filepath):
         config.set('simulation', 'num_to_test', str(batch_size))
 
     plot_var = get_plot_keys(config)
-    plot_vars = eval(config['restrictions']['plot_vars'])
+    plot_vars = eval(config.get('restrictions', 'plot_vars'))
     assert all([v in plot_vars for v in plot_var]), \
         "Plot variable(s) {} not understood.".format(
             [v for v in plot_var if v not in plot_vars])
@@ -409,7 +414,7 @@ def update_setup(config_filepath):
         config.set('output', 'plot_vars', str(plot_vars_all))
 
     log_var = get_log_keys(config)
-    log_vars = eval(config['restrictions']['log_vars'])
+    log_vars = eval(config.get('restrictions', 'log_vars'))
     assert all([v in log_vars for v in log_var]), \
         "Log variable(s) {} not understood.".format(
             [v for v in log_var if v not in log_vars])
@@ -433,14 +438,17 @@ def update_setup(config_filepath):
         matplotlib.rcParams.update(eval(config.get('output', 'plotproperties')))
 
     # Check settings for parameter sweep
-    param_name = config['parameter_sweep']['param_name']
-    assert param_name in config['cell'], \
-        "Unkown parameter name {} to sweep.".format(param_name)
-    if not eval(config['parameter_sweep']['param_values']):
+    param_name = config.get('parameter_sweep', 'param_name')
+    try:
+        config.get('cell', param_name)
+    except KeyError:
+        print("Unkown parameter name {} to sweep.".format(param_name))
+        raise RuntimeError
+    if not eval(config.get('parameter_sweep', 'param_values')):
         config.set('parameter_sweep', 'param_values',
-                   str([eval(config['cell'][param_name])]))
+                   str([eval(config.get('cell', param_name))]))
 
-    with open(os.path.join(log_dir_of_current_run, '.config'), 'w') as f:
+    with open(os.path.join(log_dir_of_current_run, '.config'), str('w')) as f:
         config.write(f)
 
     return config
@@ -451,8 +459,8 @@ def initialize_simulator(config):
     from importlib import import_module
 
     sim = None
-    simulator = config['simulation']['simulator']
-    if simulator in eval(config['restrictions']['simulators_pyNN']):
+    simulator = config.get('simulation', 'simulator')
+    if simulator in eval(config.get('restrictions', 'simulators_pyNN')):
         if simulator == 'nest':
             # Workaround for missing link bug, see
             # https://github.com/ContinuumIO/anaconda-issues/issues/152
@@ -480,8 +488,8 @@ def initialize_simulator(config):
 
 
 def get_log_keys(config):
-    return set(eval(config['output']['log_vars']))
+    return set(eval(config.get('output', 'log_vars')))
 
 
 def get_plot_keys(config):
-    return set(eval(config['output']['plot_vars']))
+    return set(eval(config.get('output', 'plot_vars')))
