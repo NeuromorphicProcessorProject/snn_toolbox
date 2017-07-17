@@ -892,7 +892,7 @@ def plot_potential(times, layer, config, show_legend=False, path=None):
     plt.title('Membrane potential for neurons \n in layer {}'.format(layer[1]))
     if path is not None:
         filename = 'Potential'
-        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+        plt.savefig(os.path.join(path, layer[1], filename), bbox_inches='tight')
     else:
         plt.show()
     plt.close()

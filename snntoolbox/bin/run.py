@@ -39,8 +39,8 @@ def main():
     #filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/lenet5/keras/config'
     #filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/binarynet/config'
     #filepath = '/home/rbodo/.snntoolbox/data/imagenet/vgg16/caffe/adaption/log/gui/01/config'
-    #filepath = '/home/rbodo/.snntoolbox/data/mnist/cnn/lenet5/keras/clamped_relu/log/gui/02/config'
-    filepath = '/home/rbodo/.snntoolbox/data/cifar10/clamped_relu/log/gui/01/config'
+    filepath = '/home/rbodo/.snntoolbox/data/mnist/cnn/lenet5/keras/32bit/log/gui/nest/config'
+    #filepath = '/home/rbodo/.snntoolbox/data/cifar10/clamped_relu/log/gui/01/config'
     args.terminal = True
     if filepath is not None:
         assert os.path.isfile(filepath), \

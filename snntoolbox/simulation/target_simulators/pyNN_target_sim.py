@@ -25,24 +25,6 @@ cellparams_pyNN = {'v_thresh', 'v_reset', 'v_rest', 'e_rev_E', 'e_rev_I', 'cm',
                    'i_offset', 'tau_refrac', 'tau_m', 'tau_syn_E', 'tau_syn_I'}
 
 
-def connect(f):
-    """Connect layers."""
-
-    from functools import wraps
-
-    @wraps(f)
-    def wrapper(self):
-        f(self)
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            warnings.warn('deprecated', UserWarning)
-
-            self.connections.append(self.sim.Projection(
-                self.layers[-2], self.layers[-1],
-                self.sim.FromListConnector(self._conns, ['weight', 'delay'])))
-        return wrapper
-
-
 class SNN(AbstractSNN):
     """Class to hold the compiled spiking neural network.
 
@@ -96,34 +78,41 @@ class SNN(AbstractSNN):
             np.asscalar(np.prod(layer.output_shape[1:], dtype=np.int)),
             self.sim.IF_cond_exp, self.cellparams, label=layer.name))
 
-    @connect
     def build_dense(self, layer):
 
         if layer.activation == 'softmax':
             raise warnings.warn("Activation 'softmax' not implemented. Using "
                                 "'relu' activation instead.", RuntimeWarning)
 
-        weights, self._biases = layer.get_weights()
+        weights, biases = layer.get_weights()
+        self._biases = np.array(biases, 'float64')
         self.set_biases()
         delay = self.config.getfloat('cell', 'delay')
         for i in range(len(weights)):
             for j in range(len(weights[0])):
                 self._conns.append((i, j, weights[i, j], delay))
+        self.connections.append(self.sim.Projection(
+            self.layers[-2], self.layers[-1],
+            self.sim.FromListConnector(self._conns, ['weight', 'delay'])))
 
-    @connect
     def build_convolution(self, layer):
         from snntoolbox.simulation.utils import build_convolution
 
         delay = self.config.getfloat('cell', 'delay')
         self._conns, self._biases = build_convolution(layer, delay)
         self.set_biases()
+        self.connections.append(self.sim.Projection(
+            self.layers[-2], self.layers[-1],
+            self.sim.FromListConnector(self._conns, ['weight', 'delay'])))
 
-    @connect
     def build_pooling(self, layer):
         from snntoolbox.simulation.utils import build_pooling
 
         delay = self.config.getfloat('cell', 'delay')
         self._conns = build_pooling(layer, delay)
+        self.connections.append(self.sim.Projection(
+            self.layers[-2], self.layers[-1],
+            self.sim.FromListConnector(self._conns, ['weight', 'delay'])))
 
     def compile(self):
 
@@ -146,7 +135,7 @@ class SNN(AbstractSNN):
             except AttributeError:
                 raise NotImplementedError
 
-        self.sim.run(self._duration)
+        self.sim.run(self._duration - self._dt)
 
         output_b_l_t = self.get_recorded_vars(self.layers)
 
@@ -212,7 +201,7 @@ class SNN(AbstractSNN):
         This has not been tested yet.
         """
 
-        self.layers[-1].set(i_offset=self._biases)
+        self.layers[-1].set(i_offset=self._biases * self._dt)
 
     def get_vars_to_record(self):
         """Get variables to record during simulation.
@@ -261,8 +250,9 @@ class SNN(AbstractSNN):
         return spiketrains_b_l_t
 
     def get_vmem(self, **kwargs):
-        vs = kwargs['layer'].get_data().segments[-1].analogsignalarrays
-        return np.array([np.array(v) for v in vs])
+        vs = kwargs['layer'].get_data().segments[-1].analogsignals
+        if len(vs) > 0:
+            return np.array([np.swapaxes(v, 0, 1) for v in vs])
 
     def save_assembly(self, path, filename):
         """Write layers of neural network to disk.
