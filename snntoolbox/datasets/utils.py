@@ -67,7 +67,9 @@ def get_dataset(config):
                 'x_test': load_npz(dataset_path, 'x_test.npz')[:num_to_test],
                 'y_test': load_npz(dataset_path, 'y_test.npz')[:num_to_test]}
             if config.getboolean('conversion', 'use_isi_code'):
-                testset['x_test'] = np.expm1(testset['x_test'])
+                pass
+                #print("Applying exp(x)-1 to data.")
+                #testset['x_test'] = np.expm1(testset['x_test'])
             assert testset, "Test set empty."
         if is_normset_needed:
             normset = {'x_norm': load_npz(dataset_path, 'x_norm.npz')}

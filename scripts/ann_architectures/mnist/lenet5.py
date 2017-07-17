@@ -2,19 +2,25 @@
 
 """LeNet for MNIST"""
 
+import keras
 from keras.datasets import mnist
 from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Flatten
+from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
 from keras.utils import np_utils
-from keras.layers.convolutional import Conv2D, MaxPooling2D
+from keras.callbacks import ModelCheckpoint
+
+from snntoolbox.parsing.utils import \
+    get_quantized_activation_function_from_string
+from snntoolbox.utils.utils import clamped_relu
 
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
-X_train = X_train.reshape(X_train.shape[0], 1, 28, 28).astype('float32') / 255
-X_test = X_test.reshape(X_test.shape[0], 1, 28, 28).astype('float32') / 255
+X_train = X_train.reshape(X_train.shape[0], 1, 28, 28).astype('float32') / 255.
+X_test = X_test.reshape(X_test.shape[0], 1, 28, 28).astype('float32') / 255.
 Y_train = np_utils.to_categorical(y_train, 10)
 Y_test = np_utils.to_categorical(y_test, 10)
 
-nonlinearity = 'relu'
+#nonlinearity = get_quantized_activation_function_from_string('relu_Q1.4')
+nonlinearity = clamped_relu
 
 model = Sequential()
 
@@ -32,7 +38,10 @@ model.add(Dense(84, activation=nonlinearity))
 model.add(Dense(10, activation='softmax'))
 
 model.compile('adam', 'categorical_crossentropy', metrics=['accuracy'])
-model.fit(X_train, Y_train, validation_data=(X_test, Y_test))
+
+checkpoint = ModelCheckpoint('weights.{epoch:02d}-{val_acc:.2f}.h5', 'val_acc')
+model.fit(X_train, Y_train, validation_data=(X_test, Y_test),
+          callbacks=[checkpoint])
 
 score = model.evaluate(X_test, Y_test)
 print('Test score:', score[0])

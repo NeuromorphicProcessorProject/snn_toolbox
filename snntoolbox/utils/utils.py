@@ -392,6 +392,32 @@ def quantized_relu(x, m, f):
     return keras.backend.relu(reduce_precision_var(x, m, f))
 
 
+def clamped_relu(x, threshold=0.1, max_value=None):
+    """
+    Rectified linear unit activation function where values in ``x`` below
+    ``threshold`` are clamped to 0, and values above ``max_value`` are clipped \
+    to ``max_value``.
+
+    Parameters
+    ----------
+
+    x : keras.backend.variable
+        Input data.
+    threshold : Optional[float]
+    max_value : Optional[float]
+
+    Returns
+    -------
+
+    x_clamped : keras.backend.variable
+    """
+
+    x = keras.backend.relu(x, max_value=max_value)
+    x = keras.backend.T.set_subtensor(x[keras.backend.T.nonzero(
+        keras.backend.T.lt(x, threshold))], 0)
+    return x
+
+
 def wilson_score(p, n):
     """Confidence interval of a binomial distribution.
 

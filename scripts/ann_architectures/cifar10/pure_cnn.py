@@ -38,66 +38,67 @@ img_channels = 3
 init = 'he_normal'
 reg = None  # l2(0.001)
 padding = 'same'
+activation = 'relu'
 
 # Data set
-(X_train, y_train), (X_test, y_test) = cifar10.load_data()
-Y_train = np_utils.to_categorical(y_train, nb_classes)
-Y_test = np_utils.to_categorical(y_test, nb_classes)
-print(X_train.shape[0], 'train samples')
-print(X_test.shape[0], 'test samples')
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+y_train = np_utils.to_categorical(y_train, nb_classes)
+y_test = np_utils.to_categorical(y_test, nb_classes)
+print(x_train.shape[0], 'train samples')
+print(x_test.shape[0], 'test samples')
 
 model = Sequential()
 
 model.add(Dropout(0.1, input_shape=(img_channels, img_rows, img_cols)))
-model.add(Conv2D(96, 3, init=init,
-                        W_regularizer=reg, b_regularizer=reg))
+model.add(Conv2D(96, 3, kernel_initializer=init, kernel_regularizer=reg,
+                 bias_regularizer=reg))
 model.add(BatchNormalization(axis=1))
-model.add(Activation('relu'))
-model.add(Conv2D(96, 3, init=init,
-                        W_regularizer=reg, b_regularizer=reg))
+model.add(Activation(activation))
+model.add(Conv2D(96, 3, kernel_initializer=init, kernel_regularizer=reg,
+                 bias_regularizer=reg))
 model.add(BatchNormalization(axis=1))
-model.add(Activation('relu'))
-model.add(Conv2D(96, 3, init=init, strides=(2, 2),
-                        W_regularizer=reg, b_regularizer=reg))
+model.add(Activation(activation))
+model.add(Conv2D(96, 3, kernel_initializer=init, strides=(2, 2),
+                 kernel_regularizer=reg, bias_regularizer=reg))
 model.add(BatchNormalization(axis=1))
-model.add(Activation('relu'))
+model.add(Activation(activation))
 model.add(Dropout(0.1))
 
-model.add(Conv2D(192, 3, padding=padding, init=init,
-                        W_regularizer=reg, b_regularizer=reg))
+model.add(Conv2D(192, 3, padding=padding, kernel_initializer=init,
+                 kernel_regularizer=reg, bias_regularizer=reg))
 model.add(BatchNormalization(axis=1))
-model.add(Activation('relu'))
-model.add(Conv2D(192, 3, padding=padding, init=init,
-                        W_regularizer=reg, b_regularizer=reg))
+model.add(Activation(activation))
+model.add(Conv2D(192, 3, padding=padding, kernel_initializer=init,
+                 kernel_regularizer=reg, bias_regularizer=reg))
 model.add(BatchNormalization(axis=1))
-model.add(Activation('relu'))
-model.add(Conv2D(192, 3, init=init, strides=(2, 2),
-                        W_regularizer=reg, b_regularizer=reg))
+model.add(Activation(activation))
+model.add(Conv2D(192, 3, kernel_initializer=init, strides=(2, 2),
+                 kernel_regularizer=reg, bias_regularizer=reg))
 model.add(BatchNormalization(axis=1))
-model.add(Activation('relu'))
+model.add(Activation(activation))
 model.add(Dropout(0.1))
 
-model.add(Conv2D(192, 3, padding=padding, init=init,
-                        W_regularizer=reg, b_regularizer=reg))
+model.add(Conv2D(192, 3, padding=padding, kernel_initializer=init,
+                 kernel_regularizer=reg, bias_regularizer=reg))
 model.add(BatchNormalization(axis=1))
-model.add(Activation('relu'))
-model.add(Conv2D(192, 1, padding=padding, init=init,
-                        W_regularizer=reg, b_regularizer=reg))
+model.add(Activation(activation))
+model.add(Conv2D(192, 1, padding=padding, kernel_initializer=init,
+                 kernel_regularizer=reg, bias_regularizer=reg))
 model.add(BatchNormalization(axis=1))
-model.add(Activation('relu'))
-model.add(Conv2D(10, 1, padding=padding, init=init,
-                        W_regularizer=reg, b_regularizer=reg))
+model.add(Activation(activation))
+model.add(Conv2D(10, 1, padding=padding, kernel_initializer=init,
+                 kernel_regularizer=reg, bias_regularizer=reg))
 model.add(BatchNormalization(axis=1))
-model.add(Activation('relu'))
-model.add(AveragePooling2D(pool_size=(6, 6), strides=(1, 1)))
+model.add(Activation(activation))
+model.add(AveragePooling2D((6, 6), (1, 1)))
 model.add(Flatten())
 model.add(Activation('softmax'))
 
 model.compile('adam', 'categorical_crossentropy', metrics=['accuracy'])
 
 # Whether to apply global contrast normalization and ZCA whitening
-gcn = True
-zca = True
+gcn = False
+zca = False
 
 traingen = ImageDataGenerator(rescale=1./255, featurewise_center=gcn,
                               featurewise_std_normalization=gcn,
@@ -107,30 +108,30 @@ traingen = ImageDataGenerator(rescale=1./255, featurewise_center=gcn,
 
 # Compute quantities required for featurewise normalization
 # (std, mean, and principal components if ZCA whitening is applied)
-traingen.fit(X_train/255.)
+if zca:
+    traingen.fit(x_train/255.)
 
-trainflow = traingen.flow(X_train, Y_train, batch_size=batch_size)
+trainflow = traingen.flow(x_train, y_train, batch_size)
 
 testgen = ImageDataGenerator(rescale=1./255, featurewise_center=gcn,
                              featurewise_std_normalization=gcn,
                              zca_whitening=zca)
 
-testgen.fit(X_test/255.)
+testgen.fit(x_test/255.)
 
-testflow = testgen.flow(X_test, Y_test, batch_size=batch_size)
+testflow = testgen.flow(x_test, y_test, batch_size)
 
-checkpointer = ModelCheckpoint(filepath='weights.{epoch:02d}-{val_acc:.2f}.h5',
+checkpointer = ModelCheckpoint('weights.{epoch:02d}-{val_acc:.2f}.h5',
                                verbose=1, save_best_only=True)
 
 # Fit the model on the batches generated by datagen.flow()
-history = model.fit_generator(trainflow, nb_epoch=nb_epoch,
-                              samples_per_epoch=X_train.shape[0],
+history = model.fit_generator(trainflow, len(x_train) / batch_size, nb_epoch,
                               validation_data=testflow,
-                              nb_val_samples=len(X_test),
+                              validation_steps=len(x_test) / batch_size,
                               callbacks=[checkpointer])
 plot_history(history)
 
-score = model.evaluate_generator(testflow, val_samples=len(X_test))
+score = model.evaluate_generator(testflow, len(x_test) / batch_size)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 

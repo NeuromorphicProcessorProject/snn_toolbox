@@ -123,7 +123,9 @@ def load(path, filename):
         model.compile('sgd', 'categorical_crossentropy',
                       ['accuracy', metrics.top_k_categorical_accuracy])
     else:
-        model = models.load_model(filepath + '.h5')
+        from snntoolbox.parsing.utils import get_custom_activations_dict
+        model = models.load_model(filepath + '.h5',
+                                  get_custom_activations_dict())
         model.compile(model.optimizer, model.loss,
                       ['accuracy', metrics.top_k_categorical_accuracy])
 

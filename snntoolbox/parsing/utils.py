@@ -551,22 +551,13 @@ class AbstractModelParser:
                     activation_str = self.get_activation(outbound)
                     break
 
-        # Maybe change activation to custom type.
-        if activation_str == 'binary_sigmoid':
-            from snntoolbox.utils.utils import binary_sigmoid
-            activation = binary_sigmoid
-        elif activation_str == 'binary_tanh':
-            from snntoolbox.utils.utils import binary_tanh
-            activation = binary_tanh
-        elif '_Q' in activation_str:
-            activation = get_quantized_activation_function_from_string(
-                activation_str)
-        elif activation_str == 'softmax' and \
+        activation, activation_str = get_custom_activation(activation_str)
+
+        if activation_str == 'softmax' and \
                 self.config.getboolean('conversion', 'softmax_to_relu'):
             activation = 'relu'
+            activation_str = 'relu'
             print("Replaced softmax by relu activation function.")
-        else:
-            activation = activation_str
 
         print("Using activation {}.".format(activation_str))
         attributes['activation'] = activation
@@ -1068,3 +1059,65 @@ def get_quantized_activation_function_from_string(activation_str):
     activation.__name__ = activation_str
 
     return activation
+
+
+def get_custom_activation(activation_str):
+    """
+    If ``activation_str`` describes a custom activation function, import this
+    function from `snntoolbox.utils.utils` and return it. If custom activation
+    function is not found or implemented, return the ``activation_str`` in place
+    of the activation function.
+
+    Parameters
+    ----------
+
+    activation_str : str
+        Describes activation.
+
+    Returns
+    -------
+
+    activation :
+        Activation function.
+    activation_str : str
+        Describes activation.
+    """
+
+    if activation_str == 'binary_sigmoid':
+        from snntoolbox.utils.utils import binary_sigmoid
+        activation = binary_sigmoid
+    elif activation_str == 'binary_tanh':
+        from snntoolbox.utils.utils import binary_tanh
+        activation = binary_tanh
+    elif '_Q' in activation_str:
+        activation = get_quantized_activation_function_from_string(
+            activation_str)
+    elif activation_str == 'clamped_relu':
+        from snntoolbox.utils.utils import clamped_relu
+        clamped_relu.__name__ = 'clamped_relu'
+        activation = clamped_relu
+    else:
+        activation = activation_str
+
+    return activation, activation_str
+
+
+def get_custom_activations_dict():
+    """
+    Import all implemented custom activation functions so they can be used when
+    loading a Keras model.
+    """
+
+    from snntoolbox.utils.utils import binary_sigmoid, binary_tanh, clamped_relu
+
+    clamped_relu.__name__ = 'clamped_relu'
+
+    # Todo: We should be able to load a different activation for each layer.
+    # Need to remove this hack:
+    activation_str = 'relu_Q1.4'
+    activation = get_quantized_activation_function_from_string(activation_str)
+
+    return {'binary_sigmoid': binary_sigmoid,
+            'binary_tanh': binary_tanh,
+            'clamped_relu': clamped_relu,
+            activation_str: activation}

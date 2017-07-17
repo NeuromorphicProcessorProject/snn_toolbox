@@ -86,8 +86,7 @@ class ModelParser(AbstractModelParser):
         # With the low-precision version of caffe (ADAPTIoN), there is a second
         # copy of quantized parameters available.
         if hasattr(layer, 'lpfp_param'):
-            attributes['Qm.f'] = (layer.lpfp_param.bd,
-                                  layer.lpfp_param.ad)
+            attributes['Qm.f'] = (layer.lpfp_param.bd, layer.lpfp_param.ad)
             attributes['quantize_bias'] = layer.lpfp_param.round_bias
             if attributes['Qm.f'] != (0, 0):
                 idx_offset = 1  # params = [w, w_lp, b, b_lp]
@@ -103,8 +102,7 @@ class ModelParser(AbstractModelParser):
         # With the low-precision version of caffe (ADAPTIoN), there is a second
         # copy of quantized parameters available.
         if hasattr(layer, 'lpfp_param'):
-            attributes['Qm.f'] = (layer.lpfp_param.bd,
-                                  layer.lpfp_param.ad)
+            attributes['Qm.f'] = (layer.lpfp_param.bd, layer.lpfp_param.ad)
             attributes['quantize_bias'] = layer.lpfp_param.round_bias
             if attributes['Qm.f'] != (0, 0):
                 idx_offset = 1  # params = [w, w_lp, b, b_lp]

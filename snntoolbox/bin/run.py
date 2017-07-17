@@ -35,12 +35,13 @@ def main():
                              'Omit this flag to open GUI.')
     args = parser.parse_args()
 
-    filepath = os.path.abspath(args.config_filepath)
+    #filepath = os.path.abspath(args.config_filepath)
     #filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/lenet5/keras/config'
     #filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/binarynet/config'
     #filepath = '/home/rbodo/.snntoolbox/data/imagenet/vgg16/caffe/adaption/log/gui/01/config'
-    #filepath = '/home/rbodo/.snntoolbox/data/mnist/cnn/lenet5/caffe/config'
-    #args.terminal = True
+    #filepath = '/home/rbodo/.snntoolbox/data/mnist/cnn/lenet5/keras/clamped_relu/log/gui/02/config'
+    filepath = '/home/rbodo/.snntoolbox/data/cifar10/clamped_relu/log/gui/01/config'
+    args.terminal = True
     if filepath is not None:
         assert os.path.isfile(filepath), \
             "Configuration file not found at {}.".format(filepath)

@@ -20,7 +20,8 @@ n = net_prototxt()
 c = convert_weights()
 
 net_name = 'LeNet5'
-n_bits = 4
+n_bits_activations = 4
+n_bits_weights = 16
 
 caffe_root = '/mnt/2646BAF446BAC3B9/Repositories/caffe_lp/'
 weight_dir = caffe_root + 'examples/low_precision/mnist/lenet5/'
@@ -38,27 +39,26 @@ c.convert_weights(net_name, caffe_root=caffe_root, weight_dir=weight_dir,
 # The naming convention is:
 #   NetworkName_deploy.prototxt (for test/one-time rounding)
 #   NetworkName_train.prototxt (for finetune/re-train)
-bit_w, net = d.weights(net_name=net_name, n_bits=n_bits,
+bit_w, net = d.weights(net_name=net_name, n_bits=n_bits_weights,
                        load_mode='high_precision', threshold=0.0,
                        caffe_root=caffe_root, model_dir=model_dir,
-                       weight_dir=weight_dir, debug=False)
-bit_a, net = d.activation(net_name=net_name, n_bits=n_bits,
+                       weight_dir=weight_dir, debug=True)
+bit_a, net = d.activation(net_name=net_name, n_bits=n_bits_activations,
                           load_mode='high_precision', threshold=0.01,
                           caffe_root=caffe_root, model_dir=model_dir,
-                          weight_dir=weight_dir, debug=False)
+                          weight_dir=weight_dir, debug=True)
 
-# By default the functions try to locate models within the directory in (3)!!!!
 # Make sure the desired prototxt file to extract the net structure from is in
 # the respective directory.
 print("Extracting network structure")
 net_layout = n.extract(net_name=net_name, mode='train', model=net,
                        caffe_root=caffe_root, weight_dir=weight_dir,
-                       debug=False)
-print(net_layout)
+                       debug=True, model_dir=model_dir)
+
 print("Creating new network based on weight/activation distribution")
 n.create(net_name=net_name, net_descriptor=net_layout,
          bit_distribution_weights=bit_w, bit_distribution_act=bit_a, scale=True,
          init_method='xavier', lp=True, deploy=False, visualize=False,
          round_bias='false', rounding_scheme='STOCHASTIC',
          caffe_root=caffe_root, model_dir=model_dir, layer_dir=layer_dir,
-         save_dir=save_dir, debug=False)
+         save_dir=save_dir, debug=True)

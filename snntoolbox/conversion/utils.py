@@ -68,7 +68,7 @@ def normalize_parameters(model, config, **kwargs):
         print("Using {} samples for normalization.".format(len(x_norm)))
         sizes = [
             len(x_norm) * np.array(layer.output_shape[1:]).prod() * 32 /
-            (8*1e9) for layer in model.layers if len(layer.weights) > 0]
+            (8 * 1e9) for layer in model.layers if len(layer.weights) > 0]
         size_str = ['{:.2f}'.format(s) for s in sizes]
         print("INFO: Need {} GB for layer activations.\n".format(size_str) +
               "May have to reduce size of data set used for normalization.")
@@ -169,7 +169,7 @@ def normalize_parameters(model, config, **kwargs):
 
     # Plot distributions of weights and activations before and after norm.
     if 'normalization_activations' in eval(config.get('output', 'plot_vars')):
-        from snntoolbox.simulation.plotting import plot_hist, plot_activ_hist
+        from snntoolbox.simulation.plotting import plot_hist
         from snntoolbox.simulation.plotting import plot_max_activ_hist
 
         print("Plotting distributions of weights and activations before and "
@@ -185,10 +185,9 @@ def normalize_parameters(model, config, **kwargs):
             label = str(idx) + layer.__class__.__name__ if \
                 config.getboolean('output', 'use_simple_labels') else layer.name
             parameters = weights[layer.name]
-            parameters_norm = layer.get_weights()
-            weight_dict = {
-                'weights': parameters[0].flatten(),
-                'weights_norm': parameters_norm[0].flatten()}
+            parameters_norm = layer.get_weights()[0]
+            weight_dict = {'weights': parameters.flatten(),
+                           'weights_norm': parameters_norm.flatten()}
             plot_hist(weight_dict, 'Weight', label, norm_dir)
 
             # Load activations of model before normalization
@@ -202,15 +201,12 @@ def normalize_parameters(model, config, **kwargs):
             nonzero_activations = activations[np.nonzero(activations)]
             activations_norm = get_activations_layer(model.input, layer.output,
                                                      x_norm, batch_size)
-            activation_dict = {
-                'Activations': nonzero_activations, 'Activations_norm':
-                    activations_norm[np.nonzero(activations_norm)]}
+            activation_dict = {'Activations': nonzero_activations,
+                               'Activations_norm':
+                               activations_norm[np.nonzero(activations_norm)]}
             scale_fac = scale_facs[layer.name]
-            plot_hist(activation_dict, 'Activation', label, norm_dir,
-                      scale_fac)
+            plot_hist(activation_dict, 'Activation', label, norm_dir, scale_fac)
             ax = tuple(np.arange(len(layer.output_shape))[1:])
-            plot_activ_hist({'Activations': nonzero_activations},
-                            'Activation', label, norm_dir, scale_fac)
             plot_max_activ_hist(
                 {'Activations_max': np.max(activations, axis=ax)},
                 'Maximum Activation', label, norm_dir, scale_fac)
@@ -327,9 +323,13 @@ def get_activations_layer(layer_in, layer_out, x, batch_size=None):
         ``layer_out``.
     """
 
-    kwargs = {} if batch_size is None else {'batch_size': batch_size}
+    if batch_size is None:
+        batch_size = 10
 
-    return keras.models.Model(layer_in, layer_out).predict(x, **kwargs)
+    if len(x) % batch_size != 0:
+        x = x[: -(len(x) % batch_size)]
+
+    return keras.models.Model(layer_in, layer_out).predict(x, batch_size)
 
 
 def get_activations_batch(ann, x_batch):

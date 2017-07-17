@@ -70,6 +70,7 @@ quantize_weights = False
 scaling_factor = 10000000
 payloads = False
 reset = Reset by subtraction
+leak = False
 
 [parameter_sweep]
 param_values = []

@@ -90,11 +90,11 @@ def output_graphs(plot_vars, config, path=None, idx=0):
         plot_pearson_coefficients(plot_vars['spikerates_n_b_l'],
                                   plot_vars['activations_n_b_l'], config, path)
     if 'hist_spikerates_activations' in plot_keys:
-        s = a = []
-        for ss, aa in zip(plot_vars['spikerates_n_b_l'],
-                          plot_vars['activations_n_b_l']):
-            s += list(np.divide(np.ndarray.flatten(ss[0]), 1000.))
-            a += list(np.ndarray.flatten(aa[0]))
+        s = []
+        a = []
+        for i in range(len(plot_vars['spikerates_n_b_l'])):
+            s += list(plot_vars['spikerates_n_b_l'][i][0].flatten())
+            a += list(plot_vars['activations_n_b_l'][i][0].flatten())
         plot_hist({'Spikerates': s, 'Activations': a}, path=path)
     print("Done.\n")
 
@@ -580,12 +580,12 @@ def plot_hist(h, title=None, layer_label=None, path=None, scale_fac=None):
 
     keys = sorted(h.keys())
     plt.hist([h[key] for key in keys], label=keys, log=True, bottom=1,
-             bins=100, histtype='stepfilled', alpha=0.5)
+             bins=1000, histtype='stepfilled', alpha=0.5, edgecolor='none')
     if scale_fac:
         plt.axvline(scale_fac, color='red', linestyle='dashed', linewidth=2,
                     label='scale factor')
     plt.legend()
-    plt.locator_params(axis='x', nbins=10)
+    plt.locator_params(axis='x', nbins=5)
     if title and layer_label:
         if 'Spikerates' in title:
             filename = '4' + title + '_distribution'
@@ -628,16 +628,16 @@ def plot_activ_hist(h, title=None, layer_label=None, path=None, scale_fac=None):
     """
 
     keys = sorted(h.keys())
-    plt.hist([h[key] for key in keys], label=keys, bins=1000, edgecolor='blue',
+    plt.hist([h[key] for key in keys], label=keys, bins=1000, edgecolor='none',
              histtype='stepfilled', log=True, bottom=1)
-    plt.xlabel('ANN activations')
-    plt.ylabel('Count')
-    plt.xlim(xmin=0)
     if scale_fac:
         plt.axvline(scale_fac, color='red', linestyle='dashed', linewidth=2,
                     label='scale factor')
     plt.legend()
-    plt.locator_params(axis='x', nbins=10)
+    plt.locator_params(axis='x', nbins=5)
+    plt.xlabel('ANN activations')
+    plt.ylabel('Count')
+    plt.xlim(xmin=0)
     if title and layer_label:
         filename = layer_label + '_' + 'activ_distribution'
         facs = "Applied divisor: {:.2f}".format(scale_fac) if scale_fac else ''
@@ -676,7 +676,7 @@ def plot_max_activ_hist(h, title=None, layer_label=None, path=None,
     """
 
     keys = sorted(h.keys())
-    plt.hist([h[key] for key in keys], label=keys, bins=1000, edgecolor='blue',
+    plt.hist([h[key] for key in keys], label=keys, bins=1000, edgecolor='none',
              histtype='stepfilled')
     plt.xlabel('Maximum ANN activations')
     plt.ylabel('Sample count')
@@ -684,7 +684,7 @@ def plot_max_activ_hist(h, title=None, layer_label=None, path=None,
         plt.axvline(scale_fac, color='red', linestyle='dashed', linewidth=2,
                     label='scale factor')
     plt.legend()
-    plt.locator_params(axis='x', nbins=10)
+    plt.locator_params(axis='x', nbins=5)
     if title and layer_label:
         filename = layer_label + '_' + 'maximum_activity_distribution'
         facs = "Applied divisor: {:.2f}".format(scale_fac) if scale_fac else ''

@@ -21,7 +21,6 @@ from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
 from keras.layers import Layer, Concatenate
 
 from snntoolbox.parsing.utils import get_inbound_layers
-from snntoolbox.utils.utils import reduce_precision_var
 
 standard_library.install_aliases()
 
@@ -171,7 +170,6 @@ class SpikeLayer(Layer):
 
     def linear_activation(self, mem):
         """Linear activation."""
-
         return k.T.mul(k.greater_equal(mem, self.v_thresh), self.v_thresh)
 
     def binary_sigmoid_activation(self, mem):
@@ -195,9 +193,8 @@ class SpikeLayer(Layer):
 
     def quantized_activation(self, mem, m, f):
         """Activation with precision reduced to fixed point format Qm.f."""
-        #return k.T.mul(k.greater_equal(mem, self.v_thresh), self.v_thresh)
-        return k.T.mul(k.greater_equal(reduce_precision_var(mem, m, f),
-                                       self.v_thresh), self.v_thresh)
+        # Todo: Needs to be implemented somehow...
+        return k.T.mul(k.greater_equal(mem, self.v_thresh), self.v_thresh)
 
     def get_new_mem(self):
         """Add input to membrane potential."""
@@ -224,6 +221,11 @@ class SpikeLayer(Layer):
             new_mem = k.clip(self.mem + masked_impulse, -3, 3)
         else:
             new_mem = self.mem + masked_impulse
+
+        if self.config.getboolean('cell', 'leak'):
+            # Todo: Implement more flexible version of leak!
+            new_mem = k.T.inc_subtensor(
+                new_mem[k.T.nonzero(k.T.gt(new_mem, 0))], -0.1 * self.dt)
 
         return new_mem
 
