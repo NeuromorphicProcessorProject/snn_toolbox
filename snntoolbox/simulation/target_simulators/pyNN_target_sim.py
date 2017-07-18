@@ -123,7 +123,7 @@ class SNN(AbstractSNN):
         if self._poisson_input:
             rates = kwargs['x_b_l'].flatten()
             for neuron_idx, neuron in enumerate(self.layers[0]):
-                neuron.rate = rates[neuron_idx] / self.rescale_fac
+                neuron.rate = rates[neuron_idx] / self.rescale_fac * 1000
         elif self._dataset_format == 'aedat':
             raise NotImplementedError
         else:
@@ -201,6 +201,8 @@ class SNN(AbstractSNN):
         This has not been tested yet.
         """
 
+        warnings.warn("Biases are implemented but might have no effect. Please "
+                      "check!", RuntimeWarning)
         self.layers[-1].set(i_offset=self._biases * self._dt)
 
     def get_vars_to_record(self):
