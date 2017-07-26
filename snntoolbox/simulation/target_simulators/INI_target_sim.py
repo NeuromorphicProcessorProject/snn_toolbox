@@ -131,6 +131,8 @@ class SNN(AbstractSNN):
             elif self._dataset_format == 'aedat':
                 input_b_l = kwargs[str('dvs_gen')].next_eventframe_batch()
 
+#            self.scale_first_layer_parameters(sim_step_int, input_b_l)
+
             # Main step: Propagate input through network and record output
             # spikes.
             out_spikes = self.snn.predict_on_batch(input_b_l)
@@ -288,3 +290,10 @@ class SNN(AbstractSNN):
         # Added this here because PyCharm complains about not all abstract
         # methods being implemented (even though this is not abstract).
         AbstractSNN.get_spiketrains_input(self)
+
+    def scale_first_layer_parameters(self, t, input_b_l, tau=1):
+        w, b = self.snn.layers[0].get_weights()
+        alpha = (self._duration + tau) / (t + tau)
+        beta = b + tau * (self._duration - t) / (t + tau) * w * input_b_l
+        self.snn.layers[0].kernel.set_value(alpha * w)
+        self.snn.layers[0].bias.set_value(beta)

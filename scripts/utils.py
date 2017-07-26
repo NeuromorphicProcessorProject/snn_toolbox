@@ -1,6 +1,139 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import moviepy.editor as mpy
+from moviepy.video.io.bindings import mplfig_to_npimage
+
+
+def load_data_for_video(path, classification_duration, simulation_duration,
+                        video_duration, num_samples, num_layers, class_idx_dict,
+                        undo_preprocessing=None):
+
+    if undo_preprocessing is None:
+        def undo_preprocessing(x):
+            return x
+
+    input_images = []
+    layer_labels = []
+    top5_labels_t = [[] for _ in range(5)]
+    top5_spikecounts_t = [[] for _ in range(5)]
+    spiketrains_n = [[] for _ in range(num_layers)]
+    true_labels_t = []
+    for sample_idx in range(num_samples):
+        log_vars = np.load(os.path.join(path, 'log_vars', str(sample_idx)
+                                        + '.npz'))
+        input_image_l = log_vars['input_image_b_l'][0]
+        input_images.append(np.swapaxes(undo_preprocessing(input_image_l), 0,
+                                        -1))
+
+        spiketrains_n_b_l_t = log_vars['spiketrains_n_b_l_t']
+        for layer_idx, spiketrains_b_l_t in enumerate(spiketrains_n_b_l_t):
+            layer_labels.append(spiketrains_b_l_t[1])
+            spiketimes = np.reshape(spiketrains_b_l_t[0],
+                                    (-1, simulation_duration))[:100]
+            spiketimes[spiketimes > 0] += sample_idx * simulation_duration
+            spiketrains_n[layer_idx].append(spiketimes)
+
+        spikes_l_t = np.greater(spiketrains_n_b_l_t[-1][0][0], 0)
+        spikecounts_l_t = np.cumsum(spikes_l_t, axis=1)
+        top5_classes_t = np.argsort(spikecounts_l_t, axis=0)[-5:]
+        for i, class_idx_t in enumerate(top5_classes_t):
+            top5_spikecounts_t[i] += [spikecounts_l_t[c, t] for t, c in
+                                      enumerate(class_idx_t)]
+            top5_labels_t[i] += [class_idx_dict[str(c)][1] for c in class_idx_t]
+
+        true_label = class_idx_dict[str(log_vars['true_classes_b'][0])][1]
+        true_labels_t += [true_label for _ in range(classification_duration)]
+
+    input_images_t = np.empty(list(input_images[0].shape) + [video_duration])
+    for i, input_image in enumerate(input_images):
+        input_images_t[:, :, :, i * classification_duration:
+                       (i + 1) * classification_duration] = \
+            np.expand_dims(input_image, -1)
+
+    spiketrains_n = [np.concatenate(s, 1) for s in spiketrains_n]
+
+    return input_images_t, spiketrains_n, np.array(top5_labels_t),\
+        np.array(top5_spikecounts_t), true_labels_t
+
+
+def show_animated_raster_plots(spiketrains_n, classification_duration,
+                               video_duration, path, dt=1e-3):
+
+    num_layers = len(spiketrains_n)
+    fig, ax = plt.subplots(num_layers, figsize=(15, 5))
+
+    spiketrain_l = [[] for _ in range(num_layers)]
+    y_l = [[] for _ in range(num_layers)]
+    for i, s in enumerate(spiketrains_n):
+        for neuron, spiketrain in enumerate(s):
+            spiketrain_l[i].append(spiketrain[spiketrain.nonzero()])
+            y_l[i].append(np.ones_like(spiketrain_l[i][-1]) * neuron)
+        spiketrain_l[i] = np.concatenate(spiketrain_l[i])
+        y_l[i] = np.concatenate(y_l[i])
+        ax[i].scatter(spiketrain_l[i], y_l[i], s=0.1)
+        ax[i].set_axis_off()
+
+    def make_frame(t):
+        for axis in ax:
+            axis.set(xlim=((t - 3 * classification_duration) * 1000, t * 1000))
+        return mplfig_to_npimage(fig)
+
+    animation = mpy.VideoClip(make_frame, duration=video_duration)
+    animation.write_videofile(os.path.join(path, 'raster.mp4'), fps=1/dt)
+
+    return animation
+
+
+def show_input_image(images_t, classification_duration, video_duration, path):
+    def make_frame(t):
+        return images_t[:, :, :, int(t * 1000)]
+
+    animation = mpy.VideoClip(make_frame, duration=video_duration)
+    animation.write_videofile(os.path.join(path, 'images.mp4'),
+                              fps=1/classification_duration)
+
+    return animation
+
+
+def show_labels(top5_labels_t, top5_spikecounts_t, true_labels_t,
+                duration, path, dt=1e-3):
+    fig, ax = plt.subplots(5, figsize=(5, 3))
+    for i in range(len(ax)):
+        ax[i].text(0, 0, '')
+        ax[i].set_axis_off()
+
+    def make_frame(t):
+        t_int = int(t * 1000)
+        for j in range(len(ax)):
+            guessed_label = top5_labels_t[j, t_int]
+            confidence = top5_spikecounts_t[j, t_int]
+            color = 'green' if guessed_label == true_labels_t[t_int] else 'red'
+            fontdict = {'color': color, 'size': min(30, 1 + confidence),
+                        'family': 'sans-serif', 'weight': 'light'}
+            ax[j].clear()
+            ax[j].text(0, 0, guessed_label, fontdict=fontdict)
+            ax[j].set_axis_off()
+        return mplfig_to_npimage(fig)
+
+    animation = mpy.VideoClip(make_frame, duration=duration)
+    animation.write_videofile(os.path.join(path, 'labels.mp4'), fps=1/dt)
+
+    return animation
+
+
+def show_architecture(duration, path):
+    animation = mpy.ImageClip(os.path.join(path, 'architecture.png'),
+                              duration=duration)
+    animation.write_videofile(os.path.join(path, 'architecture.mp4'),
+                              fps=1/duration)
+    return animation
+
+
+def apply_title(clip, title):
+    txt = mpy.TextClip(title, font='Purisa-Bold', fontsize=15).set_position(
+        ('center', 'top')).set_duration(clip.duration)
+    return mpy.CompositeVideoClip([clip, txt])
 
 
 def get_input_voltage(spikes, weights, bias):
@@ -45,50 +178,59 @@ def plot_spiketrains(spiketimes_layers, labels, path):
     f.savefig(os.path.join(path, 'input_spiketrains'), bbox_inches='tight')
 
 
-def get_rates(spiketimes, T, dt, t_clamp=0, idx=0):
+def get_rates(spiketimes, duration, dt, t_clamp=0, idx=0):
     # ``idx`` is the feature index.
-    rates = [0] * t_clamp
+    rates = [0.] * t_clamp
     count = 0
     t_idx = int(np.ceil(t_clamp/dt))
-    for t in np.arange(t_clamp, T, dt):
+    for t in np.arange(t_clamp, duration, dt):
         count += int(spiketimes[idx][t_idx] > 0)
         rates.append(count/(t+dt-t_clamp))
         t_idx += 1
     return rates
 
 
-def plot_spikerates(spiketimes_layers, labels, path, T, dt, target_activations=None, t_clamp=None, idx=0, filename='spikerates'):
+def plot_spikerates(spiketimes_layers, labels, path, duration, dt,
+                    target_activations=None, t_clamp=None, idx=0,
+                    filename='spikerates'):
     plt.xlabel('Simulation time')
     plt.ylabel('Spike-rate')
-    colors = ['blue', 'green', 'red']  # plt.cm.plasma(np.linspace(0, 0.9, len(labels)))
+    # plt.cm.plasma(np.linspace(0, 0.9, len(labels)))
+    colors = ['blue', 'green', 'red']
     if t_clamp is None:
         t_clamp = len(spiketimes_layers) * [0]
     for i, spiketimes in enumerate(spiketimes_layers):
-        plt.plot(np.arange(0, T, dt), get_rates(spiketimes, t_clamp[i], idx), label=labels[i], color=colors[i])
+        plt.plot(np.arange(0, duration, dt),
+                 get_rates(spiketimes, t_clamp[i], idx), label=labels[i],
+                 color=colors[i])
         if target_activations:
-            plt.plot([0, T], [target_activations[i], target_activations[i]], label='{}_target'.format(labels[i]), color=colors[i])
+            plt.plot([0, duration],
+                     [target_activations[i], target_activations[i]],
+                     label='{}_target'.format(labels[i]), color=colors[i])
     plt.legend(loc='center right')
     plt.savefig(os.path.join(path, filename), bbox_inches='tight')
 
 
-def plot_cumsum(input_t, labels, path, T, dt):
+def plot_cumsum(input_t, labels, path, duration, dt):
     plt.xlabel('Simulation time')
     plt.ylabel('Cumulated input to membrane potential')
     for i, inp in enumerate(input_t):
-        plt.plot(np.arange(0, T, dt), np.cumsum(inp), label=labels[i])
+        plt.plot(np.arange(0, duration, dt), np.cumsum(inp), label=labels[i])
     plt.legend()
     plt.savefig(os.path.join(path, 'cum_input'), bbox_inches='tight')
 
 
-def plot_vmem(mem_layers, spikes_layers, labels, path, T, dt, title='V_mem'):
+def plot_vmem(mem_layers, spikes_layers, labels, path, duration, dt,
+              title='V_mem'):
     num_layers = len(mem_layers)
     f, ax = plt.subplots(num_layers, 1, sharex=True, sharey=True)
     f.set_figheight(4 * num_layers)
     f.set_figwidth(10)
     ax[-1].set_xlabel('Simulation time')
     for i in range(num_layers):
-        ax[i].plot(np.arange(0, T, dt), mem_layers[i], label='V_mem')
-        ax[i].plot([s * dt for s in spikes_layers[i]], np.ones_like(spikes_layers[i]), '.', label='spikes')
+        ax[i].plot(np.arange(0, duration, dt), mem_layers[i], label='V_mem')
+        ax[i].plot([s * dt for s in spikes_layers[i]], np.ones_like(
+            spikes_layers[i]), '.', label='spikes')
         ax[i].set_title(labels[i])
         ax[i].set_ylabel('V')
         ax[i].legend()
@@ -229,7 +371,7 @@ def get_err_at_op(err_t, ops_t, ops_ref):
 
 def get_minimal_err_and_op(ops_t, err_t):
     aa = ops_t / max(ops_t)
-    bb = err_t / 100
+    bb = np.true_divide(err_t, 100)
     c = [np.sqrt(a*a + b*b) for a, b in zip(aa, bb)]
     t = np.argmin(c)
     return err_t[t], ops_t[t]

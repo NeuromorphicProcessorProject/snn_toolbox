@@ -242,11 +242,11 @@ class SpikeLayer(Layer):
             else:
                 pos_spike_idxs = k.T.nonzero(k.greater(spikes, 0))
                 neg_spike_idxs = k.T.nonzero(k.less(spikes, 0))
-                new = k.T.inc_subtensor(mem[pos_spike_idxs], -self._v_thresh)
-                new = k.T.inc_subtensor(new[neg_spike_idxs], self._v_thresh)
+                new = k.T.inc_subtensor(mem[pos_spike_idxs], -self.v_thresh)
+                new = k.T.inc_subtensor(new[neg_spike_idxs], self.v_thresh)
         elif self.config.get('cell', 'reset') == 'Reset by modulo':
             new = k.T.set_subtensor(mem[spike_idxs],
-                                    mem[spike_idxs] % self._v_thresh)
+                                    mem[spike_idxs] % self.v_thresh)
         else:  # self.config.get('cell', 'reset') == 'Reset to zero':
             new = k.T.set_subtensor(mem[spike_idxs], 0.)
         self.add_update([(self.mem, new)])
@@ -254,8 +254,8 @@ class SpikeLayer(Layer):
     def get_new_thresh(self):
         """Get new threshhold."""
 
-        thr_min = 0.5
-        thr_max = 1.0
+        thr_min = self._v_thresh / 100
+        thr_max = self._v_thresh
         r_lim = 1 / self.dt
         return thr_min + (thr_max - thr_min) * self.max_spikerate / r_lim
 

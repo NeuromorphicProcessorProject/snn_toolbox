@@ -639,11 +639,14 @@ class AbstractSNN:
 
             # Save log variables to disk.
             log_vars = {key: getattr(self, key) for key in self._log_keys}
+            # log_vars = {'spiketrains_n_b_l_t': np.array([self.spiketrains_n_b_l_t[0], self.spiketrains_n_b_l_t[5], self.spiketrains_n_b_l_t[-1]])}
             log_vars['top1err_b_t'] = self.top1err_b_t
             log_vars['top5err_b_t'] = self.top5err_b_t
             log_vars['top1err_ann'] = self.top1err_ann
             log_vars['top5err_ann'] = self.top5err_ann
             log_vars['operations_ann'] = self.operations_ann / 1e6
+            log_vars['input_image_b_l'] = x_b_l
+            log_vars['true_classes_b'] = truth_b
             np.savez_compressed(os.path.join(path_log_vars, str(batch_idx)),
                                 **log_vars)
 

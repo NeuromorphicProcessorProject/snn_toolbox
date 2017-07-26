@@ -821,15 +821,11 @@ def plot_spiketrains(layer, dt, path=None):
         # Spikes at time 0 are forbidden (and indeed prevented in the
         # simulation), because of this difficulty to distinguish them from a 0
         # entry indicating no spike.
-        if 0 in spiketrain:
-            spikelist = [j for j in spiketrain if j != 0]
-            # Create an array of the same size as the spikelist containing just
-            # the neuron index.
-            y = np.ones_like(spikelist) * neuron
-            plt.plot(spikelist, y, '.')
-        else:
-            y = np.ones_like(spiketrain) * neuron
-            plt.plot(spiketrain, y, '.')
+        spiketrain = spiketrain[spiketrain.nonzero()]
+        # Create an array of the same size as the spikelist containing just
+        # the neuron index.
+        y = np.ones_like(spiketrain) * neuron
+        plt.plot(spiketrain, y, '.')
     plt.title('Spiketrains \n of layer {}'.format(layer[1]))
     plt.xlabel('time [ms]')
     plt.ylabel('neuron index')
