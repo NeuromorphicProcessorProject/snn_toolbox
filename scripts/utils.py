@@ -61,18 +61,25 @@ def show_animated_raster_plots(spiketrains_n, classification_duration,
                                video_duration, path, dt=1e-3):
 
     num_layers = len(spiketrains_n)
-    fig, ax = plt.subplots(num_layers, figsize=(15, 5))
+    fig, ax = plt.subplots(num_layers, figsize=(60, 20))
 
     spiketrain_l = [[] for _ in range(num_layers)]
     y_l = [[] for _ in range(num_layers)]
-    for i, s in enumerate(spiketrains_n):
+    for j, s in enumerate(spiketrains_n):
+        i = num_layers - j - 1
         for neuron, spiketrain in enumerate(s):
             spiketrain_l[i].append(spiketrain[spiketrain.nonzero()])
             y_l[i].append(np.ones_like(spiketrain_l[i][-1]) * neuron)
         spiketrain_l[i] = np.concatenate(spiketrain_l[i])
         y_l[i] = np.concatenate(y_l[i])
-        ax[i].scatter(spiketrain_l[i], y_l[i], s=0.1)
-        ax[i].set_axis_off()
+        ax[i].scatter(spiketrain_l[i], y_l[i], s=20)
+        ax[i].get_xaxis().set_visible(False)
+        ax[i].get_yaxis().set_ticks_position('none')
+        ax[i].get_yaxis().set_ticklabels([])
+        ax[i].set_ylabel('L {}'.format(j), fontsize=50)
+        ax[i].spines["top"].set_visible(False)
+        ax[i].spines["right"].set_visible(False)
+        ax[i].spines["bottom"].set_visible(False)
 
     def make_frame(t):
         for axis in ax:
@@ -98,22 +105,29 @@ def show_input_image(images_t, classification_duration, video_duration, path):
 
 def show_labels(top5_labels_t, top5_spikecounts_t, true_labels_t,
                 duration, path, dt=1e-3):
-    fig, ax = plt.subplots(5, figsize=(5, 3))
+    fig, ax = plt.subplots(5, figsize=(10, 10))
     for i in range(len(ax)):
         ax[i].text(0, 0, '')
         ax[i].set_axis_off()
 
     def make_frame(t):
+        min_font = 30
+        max_font = 100
         t_int = int(t * 1000)
-        for j in range(len(ax)):
+        top_confidence = top5_spikecounts_t[-1, t_int]
+        for k in range(len(ax)):
+            j = len(ax) - k - 1
             guessed_label = top5_labels_t[j, t_int]
             confidence = top5_spikecounts_t[j, t_int]
             color = 'green' if guessed_label == true_labels_t[t_int] else 'red'
-            fontdict = {'color': color, 'size': min(30, 1 + confidence),
-                        'family': 'sans-serif', 'weight': 'light'}
-            ax[j].clear()
-            ax[j].text(0, 0, guessed_label, fontdict=fontdict)
-            ax[j].set_axis_off()
+            size = max(0, min_font + confidence - (top_confidence - max_font)) \
+                if top_confidence >= max_font and j != len(ax) - 1 else \
+                min(max_font, min_font + confidence)
+            fontdict = {'color': color, 'size': size, 'family': 'sans-serif',
+                        'weight': 'light'}
+            ax[k].clear()
+            ax[k].text(0, 0, guessed_label, fontdict=fontdict)
+            ax[k].set_axis_off()
         return mplfig_to_npimage(fig)
 
     animation = mpy.VideoClip(make_frame, duration=duration)
