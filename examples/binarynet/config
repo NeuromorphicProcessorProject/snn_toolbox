@@ -1,0 +1,17 @@
+[paths]
+dataset_path = %(path_wd)s/../../datasets/mnist
+filename_ann = 98.96
+
+[simulation]
+duration = 30
+num_to_test = 100
+batch_size = 10
+
+[output]
+log_vars = {'operations_b_t'}
+plot_vars = {'activations',
+             'spikerates',
+             'input_image',
+             'confusion_matrix',
+             'correlation',
+             'operations'}

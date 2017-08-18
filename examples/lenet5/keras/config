@@ -1,0 +1,26 @@
+[paths]
+path_wd = /home/rbodo/.snntoolbox/data/mnist/cnn/lenet5
+dataset_path = /home/rbodo/.snntoolbox/Datasets/mnist/cnn
+runlabel = 02
+filename_ann = 98.96
+
+[normalization]
+percentile = 99.9
+
+[tools]
+evaluate_ann = False
+
+[conversion]
+softmax_to_relu = False
+max2avg_pool = False
+
+[simulation]
+duration = 30
+num_to_test = 100
+sample_idxs_to_test = []
+batch_size = 10
+reset_between_nth_sample = 1
+
+[cell]
+custom_activation =
+binarize_weights = False
