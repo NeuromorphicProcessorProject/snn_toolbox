@@ -1312,7 +1312,7 @@ class SNN(AbstractSNN):
                                      [self._num_timesteps])
 
         # TODO: This part has not been tested. Input spikes are probably not
-        # counted in self.operations_b_t.
+        # counted in self.synaptic_operations_b_t.
         try:
             for i in range(self.batch_size):
                 t_first = reset_ts[i]

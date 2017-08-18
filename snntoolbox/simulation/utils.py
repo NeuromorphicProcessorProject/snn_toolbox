@@ -93,9 +93,12 @@ class AbstractSNN:
         Top-1 error of SNN over time. Shape: (`batch_size`, ``_num_timesteps``).
     top5err_b_t: ndarray
         Top-5 error of SNN over time. Shape: (`batch_size`, ``_num_timesteps``).
-    operations_b_t: ndarray
-        Number of operations of SNN over time. Shape:
+    synaptic_operations_b_t: ndarray
+        Number of synaptic operations of SNN over time. Shape:
         (`batch_size`, ``_num_timesteps``)
+    neuron_operations_b_t: ndarray
+        Number of updates of state variables of SNN over time, e.g. caused by
+        leak / bias. Shape: (`batch_size`, ``_num_timesteps``)
     operations_ann: float
         Number of operations of ANN.
     top1err_ann: float
@@ -108,8 +111,10 @@ class AbstractSNN:
         Number of neurons with bias in the network (one entry per layer).
     fanin: List[int]
         Number of synapses targeting a neuron (one entry per layer).
-    fanout: List[int]
-        Number of outgoing synapses (one entry per layer).
+    fanout: List[Union[int, ndarray]]
+        Number of outgoing synapses. Usually one entry (integer) per layer. If
+        the post- synaptic layer is a convolution layer with stride > 1, the
+        fanout varies between neurons.
     rescale_fac: float
         Scales spike probability when using Poisson input.
     num_classes: int
@@ -138,7 +143,8 @@ class AbstractSNN:
         self.spiketrains_n_b_l_t = self.activations_n_b_l = None
         self.input_b_l_t = self.mem_n_b_l_t = None
         self.top1err_b_t = self.top5err_b_t = None
-        self.operations_b_t = self.operations_ann = None
+        self.synaptic_operations_b_t = self.operations_ann = None
+        self.neuron_operations_b_t = None
         self.top1err_ann = self.top5err_ann = None
         self.num_neurons = self.num_neurons_with_bias = self.num_synapses = None
         self.fanin = self.fanout = None
@@ -162,6 +168,8 @@ class AbstractSNN:
         self._log_keys = get_log_keys(self.config)
         self._mem_container_counter = None
         self._spiketrains_container_counter = None
+
+        self.data_format = None
 
     @property
     @abstractmethod
@@ -405,6 +413,8 @@ class AbstractSNN:
                 self.build_dense(layer)
             elif layer_type == 'Conv2D':
                 self.build_convolution(layer)
+                if layer.data_format == 'channels_last':
+                    self.data_format = layer.data_format
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
                 self.build_pooling(layer)
             elif layer_type == 'Flatten':
@@ -536,20 +546,21 @@ class AbstractSNN:
                                    self.batch_size * (batch_idx + 1))
                 x_b_l = x_test[batch_idxs, :]
                 if y_test is not None:
-                    y_b = y_test[batch_idxs, :]
+                    y_b_l = y_test[batch_idxs, :]
             elif dataflow is not None:
-                x_b_l, y_b = dataflow.next()
+                x_b_l, y_b_l = dataflow.next()
             elif dataset_format == 'aedat':
                 try:
                     data_batch_kwargs['dvs_gen'].next_sequence_batch()
-                    y_b = data_batch_kwargs['dvs_gen'].y_b
+                    y_b_l = data_batch_kwargs['dvs_gen'].y_b
                 except StopIteration:
                     break
 
                 # Generate frames so we can compare with ANN.
                 x_b_l = data_batch_kwargs['dvs_gen'].get_frames_batch()
 
-            truth_b = np.argmax(y_b, axis=1)
+            truth_b = np.argmax(y_b_l, axis=1)
+
             data_batch_kwargs['truth_b'] = truth_b
             data_batch_kwargs['x_b_l'] = x_b_l
 
@@ -595,7 +606,7 @@ class AbstractSNN:
                     num_samples_seen, top1acc_moving, top5acc_moving)))
 
             # Evaluate ANN on the same batch as SNN for a direct comparison.
-            score = self.parsed_model.test_on_batch(x_b_l, y_b)
+            score = self.parsed_model.test_on_batch(x_b_l, y_b_l)
             score1_ann += score[1] * self.batch_size
             score5_ann += score[2] * self.batch_size
             self.top1err_ann = 1 - score1_ann / num_samples_seen
@@ -606,7 +617,8 @@ class AbstractSNN:
 
             # Plot input image.
             if 'input_image' in self._plot_keys:
-                snn_plt.plot_input_image(x_b_l[0], int(truth_b[0]), log_dir)
+                snn_plt.plot_input_image(x_b_l[0], int(truth_b[0]), log_dir,
+                                         self.data_format)
 
             # Plot error vs time.
             if 'error_t' in self._plot_keys:
@@ -621,14 +633,17 @@ class AbstractSNN:
                                               list(np.arange(self.num_classes)))
 
             # Cumulate operation count over time and scale to MOps.
-            if self.operations_b_t is not None:
-                np.cumsum(np.divide(self.operations_b_t, 1e6), 1,
-                          out=self.operations_b_t)
+            if self.synaptic_operations_b_t is not None:
+                np.cumsum(np.divide(self.synaptic_operations_b_t, 1e6), 1,
+                          out=self.synaptic_operations_b_t)
+            if self.neuron_operations_b_t is not None:
+                np.cumsum(np.divide(self.neuron_operations_b_t, 1e6), 1,
+                          out=self.neuron_operations_b_t)
 
             # Plot operations vs time.
             if 'operations' in self._plot_keys:
-                snn_plt.plot_ops_vs_time(self.operations_b_t, self._duration,
-                                         self._dt, log_dir)
+                snn_plt.plot_ops_vs_time(self.synaptic_operations_b_t,
+                                         self._duration, self._dt, log_dir)
 
             # Calculate ANN activations for plots.
             if any({'activations', 'correlation', 'hist_spikerates_activations'}
@@ -659,10 +674,15 @@ class AbstractSNN:
                     'hist_spikerates_activations'} & self._plot_keys):
                 plot_vars['spiketrains_n_b_l_t'] = self.spiketrains_n_b_l_t
             if len(self._plot_keys) > 0:
-                snn_plt.output_graphs(plot_vars, self.config, log_dir, 0)
+                snn_plt.output_graphs(plot_vars, self.config, log_dir, 0,
+                                      self.data_format)
 
             # Reset network variables.
             self.reset(batch_idx)
+            self.synaptic_operations_b_t = np.zeros_like(
+                self.synaptic_operations_b_t)
+            self.neuron_operations_b_t = np.zeros_like(
+                self.neuron_operations_b_t)
 
         # Plot confusion matrix for whole data set.
         if 'confusion_matrix' in self._plot_keys:
@@ -743,9 +763,12 @@ class AbstractSNN:
                                                  layer.name))
 
         if 'operations' in self._plot_keys or \
-                'operations_b_t' in self._log_keys:
-            self.operations_b_t = np.zeros((self.batch_size,
-                                            self._num_timesteps))
+                'synaptic_operations_b_t' in self._log_keys:
+            self.synaptic_operations_b_t = np.zeros((self.batch_size,
+                                                     self._num_timesteps))
+        if 'neuron_operations_b_t' in self._log_keys:
+            self.neuron_operations_b_t = np.zeros((self.batch_size,
+                                                   self._num_timesteps))
 
         if 'mem_n_b_l_t' in self._log_keys or 'mem' in self._plot_keys:
             self.mem_n_b_l_t = []
@@ -770,13 +793,8 @@ class AbstractSNN:
 
         from snntoolbox.parsing.utils import get_fanin, get_fanout
 
-        first_hidden_layer = self.parsed_model.layers[1]
         self.fanin = [0]
-        if 'Dense' in get_type(first_hidden_layer):
-            self.fanout = [first_hidden_layer.units]
-        else:
-            self.fanout = [int(np.multiply(np.prod(
-                first_hidden_layer.kernel_size), first_hidden_layer.filters))]
+        self.fanout = [get_fanout(self.parsed_model.layers[0], self.config)]
         self.num_neurons = [np.product(self.parsed_model.input_shape[1:])]
         self.num_neurons_with_bias = [0]
 
@@ -785,13 +803,21 @@ class AbstractSNN:
                 self.fanin.append(get_fanin(layer))
                 self.fanout.append(get_fanout(layer, self.config))
                 self.num_neurons.append(np.prod(layer.output_shape[1:]))
-                if hasattr(layer, 'b') and any(layer.b.get_value()):
+                if hasattr(layer, 'bias') and any(layer.bias.get_value()):
                     print("Detected layer with biases: {}".format(layer.name))
                     self.num_neurons_with_bias.append(self.num_neurons[-1])
                 else:
                     self.num_neurons_with_bias.append(0)
 
-        self.num_synapses = np.dot(self.num_neurons, self.fanout)
+        self.num_synapses = 0
+        for i in range(len(self.fanout)):
+            if np.isscalar(self.fanout[i]):
+                self.num_synapses += self.num_neurons[i] * self.fanout[i]
+            else:
+                # For convolution layers with stride > 1, fanout varies
+                # between neurons in a layer.
+                self.num_synapses += np.sum(self.fanout[i])
+        self.num_synapses = int(self.num_synapses)
 
         return self.num_neurons, self.num_neurons_with_bias, self.fanin
 
@@ -882,18 +908,26 @@ class AbstractSNN:
             spiketrains_b_l_t = self.get_spiketrains_input()
             if self.input_b_l_t is not None:
                 self.input_b_l_t = spiketrains_b_l_t
-            if self.operations_b_t is not None:
+            if self.synaptic_operations_b_t is not None:
                 for t in range(self._num_timesteps):
-                    self.operations_b_t[:, t] += get_layer_ops(
-                        spiketrains_b_l_t[Ellipsis, t], self.fanout[0])
+                    self.synaptic_operations_b_t[:, t] += \
+                        get_layer_synaptic_operations(
+                            spiketrains_b_l_t[Ellipsis, t], self.fanout[0])
         else:
             if self.input_b_l_t is not None:
                 raise NotImplementedError
-            if self.operations_b_t is not None:
+            # This constant input does not involve synaptic operations, so we
+            # count it in ``neuron_operations_b_t``.
+            if self.neuron_operations_b_t is not None:
                 input_ops = np.ones(self.batch_size) * self.num_neurons[1]
-                self.operations_b_t[:, 0] += input_ops * self.fanin[1] * 2
-                for t in range(self._num_timesteps):
-                    self.operations_b_t[:, t] += input_ops
+                # We count the convolution operation only once because the
+                # result of the convolution can be stored and reused in
+                # subsequent time steps.
+                self.neuron_operations_b_t[:, 0] += input_ops * \
+                    self.fanin[1] * 2
+                for t in range(1, self._num_timesteps):
+                    self.neuron_operations_b_t[:, t] += input_ops
+                # Bias operations are counted by ``set_spiketrain_stats``.
 
     def set_spiketrain_stats(self, spiketrains_b_l_t):
         """
@@ -909,19 +943,26 @@ class AbstractSNN:
 
         """
 
+        i = self._spiketrains_container_counter
+
         # Add spike trains to log variables.
         if self.spiketrains_n_b_l_t is not None:
-            i = self._spiketrains_container_counter
             self.spiketrains_n_b_l_t[i] = (spiketrains_b_l_t,
                                            self.spiketrains_n_b_l_t[i][1])
             self._spiketrains_container_counter += 1
 
-        # Use spike trains to compute the number of operations.
-        if self.operations_b_t is not None:
+        # Use spike trains to compute the number of synaptic operations.
+        if self.synaptic_operations_b_t is not None:
             for t in range(self._num_timesteps):
-                self.operations_b_t[:, t] += get_layer_ops(
-                    spiketrains_b_l_t[Ellipsis, t], self.fanout[i + 1],
-                    self.num_neurons_with_bias[i + 1])
+                self.synaptic_operations_b_t[:, t] += \
+                    get_layer_synaptic_operations(
+                        spiketrains_b_l_t[Ellipsis, t], self.fanout[i + 1])
+
+        # Count neuron updates.
+        if self.neuron_operations_b_t is not None:
+            for t in range(self._num_timesteps):
+                self.neuron_operations_b_t[:, t] += \
+                    self.num_neurons_with_bias[i + 1]
 
     def reshape_flattened_spiketrains(self, spiketrains, shape):
         """
@@ -1009,6 +1050,12 @@ def build_convolution(layer, delay):
     i_offset: ndarray
         Flattened array containing the biases of all neurons in the ``layer``.
     """
+
+    if (np.isscalar(layer.strides) and layer.strides > 1) \
+            or any([s > 1 for s in layer.strides]):
+        raise NotImplementedError("Convolution layers with stride larger than "
+                                  "unity are not yet implemented for this "
+                                  "simulator.")
 
     weights, biases = layer.get_weights()
 
@@ -1251,19 +1298,20 @@ def get_spiking_outbound_layers(layer, config):
             return result
 
 
-def get_layer_ops(spiketrains_b_l, fanout, num_neurons_with_bias=0):
+def get_layer_synaptic_operations(spiketrains_b_l, fanout):
     """
-    Return total number of operations in the layer for a batch of samples.
+    Return total number of synaptic operations in the layer for a batch of
+    samples.
 
     Parameters
     ----------
 
     spiketrains_b_l: ndarray
         Batch of spiketrains of a layer. Shape: (batch_size, layer_shape)
-    fanout: int
-        Number of outgoing connections per neuron.
-    num_neurons_with_bias: int
-        Number of neurons with bias.
+    fanout: Union[int, ndarray]
+        Number of outgoing connections per neuron. Can be a single integer, or
+        an array of the same shape as the layer, if the fanout varies from
+        neuron to neuron (as is the case in convolution layers with stride > 1).
 
     Returns
     -------
@@ -1272,8 +1320,14 @@ def get_layer_ops(spiketrains_b_l, fanout, num_neurons_with_bias=0):
         The total number of operations in the layer for a batch of samples.
     """
 
-    return np.array([np.count_nonzero(s) for s in spiketrains_b_l]) * fanout + \
-        num_neurons_with_bias
+    if np.isscalar(fanout):
+        return np.array([np.count_nonzero(s) for s in spiketrains_b_l]) * \
+            fanout
+    elif hasattr(fanout, 'shape'):  # For conv layers with stride > 1
+        return np.array([np.sum(fanout[s > 0]) for s in spiketrains_b_l])
+    else:
+        raise TypeError("The 'fanout' parameter should either be integer or "
+                        "ndarray.")
 
 
 def get_ann_ops(num_neurons, num_neurons_with_bias, fanin):

@@ -313,9 +313,6 @@ class AbstractModelParser:
 
         """
 
-        if len(self._layer_list) == 0:
-            return ['input']
-
         inbound = self.get_inbound_layers(layer)
         for ib in range(len(inbound)):
             for _ in range(len(self.layers_to_skip)):
@@ -323,8 +320,12 @@ class AbstractModelParser:
                     inbound[ib] = self.get_inbound_layers(inbound[ib])[0]
                 else:
                     break
-        inb_idxs = [name_map[str(id(inb))] for inb in inbound]
-        return [self._layer_list[i]['name'] for i in inb_idxs]
+        if len(self._layer_list) == 0 or \
+                any([self.get_type(inb) == 'InputLayer' for inb in inbound]):
+            return ['input']
+        else:
+            inb_idxs = [name_map[str(id(inb))] for inb in inbound]
+            return [self._layer_list[i]['name'] for i in inb_idxs]
 
     @abstractmethod
     def get_inbound_layers(self, layer):
@@ -976,26 +977,81 @@ def get_fanout(layer, config):
     Returns
     -------
 
-    fanout: int
-        Fan-out.
-
+    fanout: Union[int, ndarray]
+        Fan-out. The fan-out of a neuron projecting onto a convolution layer
+        varies between neurons in a feature map if the stride of the convolution
+        layer is greater than unity. In this case, return an array of the same
+        shape as the layer.
     """
 
     from snntoolbox.simulation.utils import get_spiking_outbound_layers
 
-    fanout = 0
+    # In branched architectures like GoogLeNet, we have to consider multiple
+    # outbound layers.
     next_layers = get_spiking_outbound_layers(layer, config)
+    fanout = 0
     for next_layer in next_layers:
-        if 'Conv' in layer.name and 'Pool' in next_layer.name:
+        if 'Conv' in next_layer.name and not has_stride_unity(next_layer):
+            fanout = np.zeros(layer.output_shape[1:])
+            break
+
+    for next_layer in next_layers:
+        if 'Dense' in next_layer.name:
+            fanout += next_layer.units
+        elif 'Pool' in next_layer.name:
             fanout += 1
-        elif 'Dense' in layer.name:
-            fanout += next_layer.units
-        elif 'Pool' in layer.name and 'Conv' in next_layer.name:
-            fanout += np.prod(next_layer.kernel_size) * next_layer.filters
-        elif 'Pool' in layer.name and 'Dense' in next_layer.name:
-            fanout += next_layer.units
-        else:
-            fanout += 0
+        elif 'Conv' in next_layer.name:
+            if has_stride_unity(next_layer):
+                fanout += np.prod(next_layer.kernel_size) * next_layer.filters
+            else:
+                fanout += get_fanout_array(layer, next_layer)
+
+    return fanout
+
+
+def has_stride_unity(layer):
+    """Return `True` if the strides in all dimensions of a ``layer`` are 1."""
+
+    return all([s == 1 for s in layer.strides])
+
+
+def get_fanout_array(layer_pre, layer_post):
+    """
+    Return an array of the same shape as ``layer_pre``, where each entry gives
+    the number of outgoing connections of a neuron. In convolution layers where
+    the post-synaptic layer has stride > 1, the fan-out varies between neurons.
+    """
+
+    nx = layer_post.output_shape[3]  # Width of feature map
+    ny = layer_post.output_shape[2]  # Height of feature map
+    kx, ky = layer_post.kernel_size  # Width and height of kernel
+    px = int((kx - 1) / 2) if layer_post.padding == 'valid' else 0
+    py = int((ky - 1) / 2) if layer_post.padding == 'valid' else 0
+    sx = layer_post.strides[1]
+    sy = layer_post.strides[0]
+
+    fanout = np.zeros(layer_pre.output_shape[1:])
+
+    for x_pre in range(fanout.shape[1]):
+        for y_pre in range(fanout.shape[2]):
+            x_post = [int((x_pre + px) / sx)]
+            y_post = [int((y_pre + py) / sy)]
+            wx = [(x_pre + px) % sx]
+            wy = [(y_pre + py) % sy]
+            i = 1
+            while wx[0] + i * sx < kx:
+                x = x_post[0] - i
+                if 0 <= x < nx:
+                    x_post.append(x)
+                i += 1
+            i = 1
+            while wy[0] + i * sy < ky:
+                y = y_post[0] - i
+                if 0 <= y < ny:
+                    y_post.append(y)
+                i += 1
+
+            fanout[:, x_pre, y_pre] = len(x_post) * len(y_post)
 
     return fanout
 

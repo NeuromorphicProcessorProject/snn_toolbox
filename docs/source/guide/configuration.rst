@@ -325,18 +325,18 @@ param_logscale: boolean, optional
 [output]
 --------
 
-log_vars: list, optional
+log_vars: set, optional
     Specify the variables to monitor and save to disk. Possible values:
     'activations_n_b_l', 'spiketrains_n_b_l_t', 'input_b_l_t', 'mem_n_b_l_t',
-    'operations_b_t', 'all'.
-    Default: ``[]``.
+    'synaptic_operations_b_t', 'neuron_operations_b_t', 'all'.
+    Default: ``{}``.
 
-plot_vars: list, optional
+plot_vars: set, optional
     Specify the variables to monitor and plot. Possible values:
     'activations', 'spiketrains', 'spikecounts', 'spikerates', 'input_image',
     'error_t', 'confusion_matrix', 'correlation', 'hist_spikerates_activations',
     'normalization_activations', 'operations', 'all'.
-    Default: ``[]``.
+    Default: ``{}``.
 
 verbose: int, optional
     If nonzero (default), print current error rate at every time step during

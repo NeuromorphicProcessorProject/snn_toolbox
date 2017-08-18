@@ -112,7 +112,7 @@ class SNN(AbstractSNN):
     def simulate(self, **kwargs):
 
         from snntoolbox.utils.utils import echo
-        from snntoolbox.simulation.utils import get_layer_ops
+        from snntoolbox.simulation.utils import get_layer_synaptic_operations
 
         input_b_l = kwargs[str('x_b_l')] * self._dt
 
@@ -147,16 +147,20 @@ class SNN(AbstractSNN):
             # Record neuron variables.
             i = j = 0
             for layer in self.snn.layers:
+                # Excludes Input, Flatten, Concatenate, etc:
                 if hasattr(layer, 'spiketrain') \
                         and layer.spiketrain is not None:
                     spiketrains_b_l = layer.spiketrain.get_value()
                     if self.spiketrains_n_b_l_t is not None:
                         self.spiketrains_n_b_l_t[i][0][
                             Ellipsis, sim_step_int] = spiketrains_b_l
-                    if self.operations_b_t is not None:
-                        self.operations_b_t[:, sim_step_int] += get_layer_ops(
-                            spiketrains_b_l, self.fanout[i + 1],
-                            self.num_neurons_with_bias[i+1])
+                    if self.synaptic_operations_b_t is not None:
+                        self.synaptic_operations_b_t[:, sim_step_int] += \
+                            get_layer_synaptic_operations(spiketrains_b_l,
+                                                          self.fanout[i + 1])
+                    if self.neuron_operations_b_t is not None:
+                        self.neuron_operations_b_t[:, sim_step_int] += \
+                            self.num_neurons_with_bias[i + 1]
                     i += 1
                 if hasattr(layer, 'mem') and self.mem_n_b_l_t is not None:
                     self.mem_n_b_l_t[j][0][Ellipsis, sim_step_int] = \
@@ -164,14 +168,15 @@ class SNN(AbstractSNN):
                     j += 1
             if 'input_b_l_t' in self._log_keys:
                 self.input_b_l_t[Ellipsis, sim_step_int] = input_b_l
-            if self.operations_b_t is not None:
-                if self._poisson_input or self._dataset_format == 'aedat':
-                    self.operations_b_t[:, sim_step_int] += \
-                        get_layer_ops(input_b_l, self.fanout[0])
-                elif sim_step_int == 0:
-                    self.operations_b_t[:, 0] += 2 * self.num_neurons[1] * \
-                                                 self.fanin[1] * \
-                                                 np.ones(self.batch_size)
+            if self._poisson_input or self._dataset_format == 'aedat':
+                if self.synaptic_operations_b_t is not None:
+                    self.synaptic_operations_b_t[:, sim_step_int] += \
+                        get_layer_synaptic_operations(input_b_l, self.fanout[0])
+            else:
+                if self.neuron_operations_b_t is not None:
+                    if sim_step_int == 0:
+                        self.neuron_operations_b_t[:, 0] += self.fanin[1] * \
+                            self.num_neurons[1] * np.ones(self.batch_size) * 2
 
             if self.config.getint('output', 'verbose') > 0 \
                     and sim_step % 1 == 0:
