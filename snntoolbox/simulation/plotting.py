@@ -17,7 +17,7 @@ from future import standard_library
 standard_library.install_aliases()
 
 
-def output_graphs(plot_vars, config, path=None, idx=0):
+def output_graphs(plot_vars, config, path=None, idx=0, data_format=None):
     """Wrapper function to display / save a number of plots.
 
     Parameters
@@ -52,6 +52,9 @@ def output_graphs(plot_vars, config, path=None, idx=0):
 
     idx: int
         The index of the sample to display. Defaults to 0.
+
+    data_format: Optional[str]
+        One of 'channels_first' or 'channels_last'.
     """
 
     from snntoolbox.simulation.utils import spiketrains_to_rates
@@ -80,7 +83,7 @@ def output_graphs(plot_vars, config, path=None, idx=0):
             plot_vars['spikerates_n_l'] = get_sample_activity_from_batch(
                 plot_vars['spikerates_n_b_l'], idx)
 
-    plot_layer_summaries(plot_vars, config, path)
+    plot_layer_summaries(plot_vars, config, path, data_format)
 
     print("Plotting batch run statistics...")
     if 'spikecounts' in plot_keys:
@@ -99,7 +102,7 @@ def output_graphs(plot_vars, config, path=None, idx=0):
     print("Done.\n")
 
 
-def plot_layer_summaries(plot_vars, config, path=None):
+def plot_layer_summaries(plot_vars, config, path=None, data_format=None):
     """Display or save a number of plots for a specific layer.
 
     Parameters
@@ -142,6 +145,9 @@ def plot_layer_summaries(plot_vars, config, path=None):
     path: Optional[str]
         If not ``None``, specifies where to save the resulting image. Else,
         display plots without saving.
+
+    data_format: Optional[str]
+        One of 'channels_first' or 'channels_last'.
     """
 
     from snntoolbox.utils.utils import extract_label
@@ -166,17 +172,19 @@ def plot_layer_summaries(plot_vars, config, path=None):
                              config.getfloat('simulation', 'dt'), newpath)
         if 'spikerates' in plot_keys:
             plot_layer_activity(plot_vars['spikerates_n_l'][i],
-                                str('Spikerates'), newpath)
+                                str('Spikerates'), newpath,
+                                data_format=data_format)
             plot_hist(
                 {'Spikerates': plot_vars['spikerates_n_l'][i][0].flatten()},
                 'Spikerates', name, newpath)
         if 'activations' in plot_keys:
             plot_layer_activity(plot_vars['activations_n_l'][i],
-                                str('Activations'), newpath)
+                                str('Activations'), newpath,
+                                data_format=data_format)
         if 'spikerates_n_l' in plot_vars and 'activations_n_l' in plot_vars:
             plot_activations_minus_rates(plot_vars['spikerates_n_l'][i][0],
                                          plot_vars['activations_n_l'][i][0],
-                                         name, newpath)
+                                         name, newpath, data_format)
         if 'correlation' in plot_keys:
             plot_layer_correlation(plot_vars['spikerates_n_l'][i][0].flatten(),
                                    plot_vars['activations_n_l'][i][0].flatten(),
@@ -184,7 +192,7 @@ def plot_layer_summaries(plot_vars, config, path=None):
                                    config, newpath)
 
 
-def plot_layer_activity(layer, title, path=None, limits=None):
+def plot_layer_activity(layer, title, path=None, limits=None, data_format=None):
     """Visualize a layer by arranging the neurons in a line or on a 2D grid.
 
     Can be used to show average firing rates of individual neurons in an SNN,
@@ -213,19 +221,27 @@ def plot_layer_activity(layer, title, path=None, limits=None):
     limits: Optional[tuple]
         If not ``None``, the colormap of the resulting image is limited by this
         tuple.
+
+    data_format: Optional[str]
+        One of 'channels_first' or 'channels_last'.
     """
+
+    data = layer[0]
+    # Reshape data to our default format.
+    if data_format == 'channels_last' and data.ndim == 3:
+        data = np.moveaxis(data, -1, 0)
 
     # Highest possible spike rate, used to normalize image plots. Need to
     # define these here because we plot only one colorbar for several
     # subplots, each having a possibly different range.
-    vmax = np.max(layer[0])
-    vmin = np.min(layer[0])
+    vmax = np.max(data)
+    vmin = np.min(data)
 
     if limits is None:
         limits = (vmin, vmax)
 
     im = None
-    shape = layer[0].shape
+    shape = data.shape
     num = shape[0]
     fac = 1  # Scales height of colorbar
     # Case: One-dimensional layer (e.g. Dense). If larger than 100 neurons,
@@ -236,11 +252,11 @@ def plot_layer_activity(layer, title, path=None, limits=None):
             while num / n % 1 != 0:
                 n -= 1
             f, ax = plt.subplots(figsize=(7, min(3+n*n*n/num/2, 9)))
-            im = ax.imshow(np.reshape(layer[0], (n, -1)),
+            im = ax.imshow(np.reshape(data, (n, -1)),
                            interpolation='nearest', clim=limits)
         else:
             f, ax = plt.subplots(figsize=(7, 2))
-            im = ax.imshow(np.array(layer[0], ndmin=2),
+            im = ax.imshow(np.array(data, ndmin=2),
                            interpolation='nearest', clim=limits)
         ax.get_yaxis().set_visible(False)
     # Case: Multi-dimensional layer, where first dimension gives the number of
@@ -264,7 +280,7 @@ def plot_layer_activity(layer, title, path=None, limits=None):
                 idx = j + num_cols * i
                 if idx >= num:
                     break
-                im = ax[i, j].imshow(layer[0][idx], interpolation='nearest',
+                im = ax[i, j].imshow(data[idx], interpolation='nearest',
                                      clim=limits)
                 ax[i, j].get_xaxis().set_visible(False)
                 ax[i, j].get_yaxis().set_visible(False)
@@ -290,7 +306,7 @@ def plot_layer_activity(layer, title, path=None, limits=None):
     plt.close()
 
 
-def plot_activations(model, x_test, path):
+def plot_activations(model, x_test, path, data_format=None):
     """Plot activations of a network.
 
     Parameters
@@ -304,6 +320,9 @@ def plot_activations(model, x_test, path):
 
     path: str
         Where to save plot.
+
+    data_format: Optional[str]
+        One of 'channels_first' or 'channels_last'.
     """
 
     from snntoolbox.conversion.utils import get_activations_batch
@@ -317,10 +336,12 @@ def plot_activations(model, x_test, path):
         if not os.path.exists(path):
             os.makedirs(path)
         j = str(i) if i > 9 else '0' + str(i)
-        plot_layer_activity(activations[i], j+label, path)
+        plot_layer_activity(activations[i], j+label, path,
+                            data_format=data_format)
 
 
-def plot_activations_minus_rates(activations, rates, label, path=None):
+def plot_activations_minus_rates(activations, rates, label, path=None,
+                                 data_format=None):
     """Plot spikerates minus activations for a specific layer.
 
     Spikerates and activations are each normalized before subtraction.
@@ -343,13 +364,15 @@ def plot_activations_minus_rates(activations, rates, label, path=None):
     path: Optional[str]
         If not ``None``, specifies where to save the resulting image. Else,
         display plots without saving.
+    data_format: Optional[str]
+        One of 'channels_first' or 'channels_last'.
     """
 
     activations_norm = activations / np.max(activations)
     rates_norm = rates / np.max(rates) if np.max(rates) != 0 else rates
     plot_layer_activity(
         (activations_norm - rates_norm, label),
-        str('Activations_minus_Spikerates'), path, limits=(-1, 1))
+        str('Activations_minus_Spikerates'), path, (-1, 1), data_format)
 
 
 def plot_layer_correlation(rates, activations, title, config, path=None):
@@ -812,10 +835,12 @@ def plot_spiketrains(layer, dt, path=None):
         display plots without saving.
     """
 
+    # Flatten layer.
     shape = [np.prod(layer[0].shape[:-1]), layer[0].shape[-1]]
     spiketrains = np.reshape(layer[0], shape)
+
     plt.figure()
-    # Iterate over neurons in layer
+    # Iterate over neurons in layer.
     for (neuron, spiketrain) in enumerate(spiketrains):
         # Remove zeros from spiketrain which falsely indicate spikes at time 0.
         # Spikes at time 0 are forbidden (and indeed prevented in the
@@ -1075,7 +1100,7 @@ def plot_spikecount_vs_time(spiketrains_n_b_l_t, duration, dt, path=None):
     plt.close()
 
 
-def plot_input_image(x, label, path=None):
+def plot_input_image(x, label, path=None, data_format=None):
     """Show an input image.
 
     Parameters
@@ -1086,16 +1111,27 @@ def plot_input_image(x, label, path=None):
         Class label (index) of sample.
     path: Optional[str]
         Where to save the image.
+    data_format: Optional[str]
+        One of 'channels_first' or 'channels_last'.
     """
 
-    plt.figure()
-    plt.title('Input image (class: {})'.format(label))
+    # In case an image was flattened for use in a fully-connected network, try
+    # to reshape it to 2D:
     if x.ndim == 1:
         try:
             x = np.reshape(x, (1, int(np.sqrt(len(x))), -1))
         except RuntimeError:
             return
-    x = np.transpose(x, (1, 2, 0)) if x.shape[0] == 3 else x[0]
+
+    # Move channel axis to the last dimension.
+    if data_format != 'channels_last':
+        x = np.transpose(x, (1, 2, 0))
+
+    if x.shape[-1] == 1:
+        x = x[:, :, 0]
+
+    plt.figure()
+    plt.title('Input image (class: {})'.format(label))
     plt.imshow(x)
     if path is not None:
         filename = 'input_image'

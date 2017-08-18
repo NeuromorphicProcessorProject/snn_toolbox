@@ -392,7 +392,8 @@ class SpikeLayer(Layer):
         if self.tau_refrac > 0:
             self.refrac_until = k.zeros(output_shape)
         if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
-                'hist_spikerates_activations', 'operations', 'operations_b_t',
+                'hist_spikerates_activations', 'operations',
+                'synaptic_operations_b_t', 'neuron_operations_b_t',
                 'spiketrains_n_b_l_t'} & (get_plot_keys(self.config) |
                get_log_keys(self.config))):
             self.spiketrain = k.zeros(output_shape)
@@ -695,8 +696,7 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
 
     def _pooling_function(self, inputs, pool_size, strides, padding,
                           data_format):
-        return spike_pool2d(inputs, pool_size, strides, padding, data_format,
-                            'max')
+        return spike_pool2d(inputs, pool_size, strides, padding, data_format)
 
     def reset(self, sample_idx):
         """Reset layer variables."""
@@ -715,7 +715,7 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
 
 
 def spike_pool2d(inputs, pool_size, strides=(1, 1), padding='valid',
-                 data_format=None, pool_mode='max'):
+                 data_format=None):
     """MaxPooling with spikes.
 
     Parameters
@@ -726,7 +726,6 @@ def spike_pool2d(inputs, pool_size, strides=(1, 1), padding='valid',
     strides :
     padding :
     data_format :
-    pool_mode :
 
     Returns
     -------
@@ -758,14 +757,9 @@ def spike_pool2d(inputs, pool_size, strides=(1, 1), padding='valid',
         x = x.dimshuffle((0, 3, 1, 2))
         y = y.dimshuffle((0, 3, 1, 2))
 
-    if pool_mode == 'max':
-        pool_out = spike_pool_2d(inputs, pool_size, True, strides, pad,
-                                 str('max'))
-    elif pool_mode == 'avg':
-        pool_out = k.pool.pool_2d(y, ws=pool_size, stride=strides, pad=pad,
-                                  ignore_border=True, mode='average_exc_pad')
-    else:
-        raise Exception('Invalid pooling mode: ' + str(pool_mode))
+    inputs = [x, y]
+
+    pool_out = spike_pool_2d(inputs, pool_size, True, strides, pad)
 
     if padding == 'same':
         expected_width = (x.shape[2] + strides[0] - 1) // strides[0]
@@ -778,8 +772,7 @@ def spike_pool2d(inputs, pool_size, strides=(1, 1), padding='valid',
     return pool_out
 
 
-def spike_pool_2d(inputs, ws, ignore_border=None, stride=None, pad=(0, 0),
-                  mode='max'):
+def spike_pool_2d(inputs, ws, ignore_border=None, stride=None, pad=(0, 0)):
     """Downscale the input by a specified factor
 
     Takes as input a N-D tensor, where N >= 2. It downscales the input image by
@@ -804,11 +797,6 @@ def spike_pool_2d(inputs, ws, ignore_border=None, stride=None, pad=(0, 0),
         (pad_h, pad_w), pad zeros to extend beyond four borders of the
         images, pad_h is the size of the top and bottom margins, and
         pad_w is the size of the left and right margins.
-    mode : {'max', 'sum', 'average_inc_pad', 'average_exc_pad'}
-        Operation executed on each window. `max` and `sum` always exclude
-        the padding in the computation. ``'average'`` gives you the choice to
-        include or exclude it.
-
     """
 
     x = inputs[0]  # Presynaptic spike-rates
@@ -828,7 +816,7 @@ def spike_pool_2d(inputs, ws, ignore_border=None, stride=None, pad=(0, 0),
             " Otherwise, the convolution will be executed on CPU.",
             stacklevel=2)
         ignore_border = False
-    op = SpikePool(ws, ignore_border, stride, pad, mode, 2)
+    op = SpikePool(ws, ignore_border, stride, pad, ndim=2)
     return op(inputs, ws, stride, pad)
 
 
@@ -931,7 +919,6 @@ class SpikePool(theano.Op):
                     raise NotImplementedError(
                         'padding must be smaller than strides')
         ws = k.T.as_tensor_variable(ws)
-
         stride = k.T.as_tensor_variable(stride)
         pad = k.T.as_tensor_variable(pad)
         assert ws.ndim == 1
@@ -948,7 +935,7 @@ class SpikePool(theano.Op):
         # If the input shape are broadcastable we can have 0 in the output shape
         broad = x[0].broadcastable[:-nd] + (False,) * nd
         out = k.T.TensorType(x[0].dtype, broad)
-        return theano.gof.Apply(self, x+[ws, stride, pad], [out()])
+        return theano.gof.Apply(self, x + [ws, stride, pad], [out()])
 
     def perform(self, node, inp, out, **kwargs):
         """Perform pooling operation on spikes.

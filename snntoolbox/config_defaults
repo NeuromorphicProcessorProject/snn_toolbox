@@ -115,7 +115,8 @@ snn_layers = %(spiking_layers)s | {'Flatten', 'Concatenate'}
 pyNN_keys = {'v_reset', 'v_rest', 'e_rev_E', 'e_rev_I', 'i_offset', 'cm',
              'tau_m', 'tau_syn_E', 'tau_syn_I', 'delay'}
 log_vars = {'activations_n_b_l', 'spiketrains_n_b_l_t', 'input_b_l_t',
-            'mem_n_b_l_t', 'operations_b_t', 'all'}
+            'mem_n_b_l_t', 'synaptic_operations_b_t', 'neuron_operations_b_t',
+            'all'}
 plot_vars = {'activations', 'spiketrains', 'spikecounts', 'spikerates',
              'input_image', 'error_t', 'confusion_matrix', 'correlation',
              'hist_spikerates_activations', 'normalization_activations',

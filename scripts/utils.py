@@ -296,7 +296,7 @@ class ExpResults:
         for batch_idx in range(num_batches):
             operations_d_t[batch_idx*batch_size:(batch_idx+1)*batch_size] = \
                 np.load(os.path.join(self.dirname, str(batch_idx) + '.npz'))[
-                    'operations_b_t'] / self.scale
+                    'synaptic_operations_b_t'] / self.scale
         self.mean_computations_t = np.mean(operations_d_t, 0)
         self.std_computations_t = np.std(operations_d_t, 0)
 
