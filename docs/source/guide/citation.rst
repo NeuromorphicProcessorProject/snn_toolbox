@@ -3,11 +3,11 @@
 Citation
 ========
 
-If you use this work in your research, please cite our corresponding Frontiers publication:
+If you use this work in your research, please cite our corresponding publication:
 
 ::
 
-    Rueckauer, B. and Lungu, I.A. and Hu, Y. and Liu, S.C. and Pfeiffer, M.
-    Conversion of deep analog networks to efficient event-driven networks for image classification,
-    Frontiers in Neuroscience, 2017
+    Rueckauer, B. and Lungu, I.A. and Hu, Y. and Pfeiffer, M.
+    Theory and Tools for the Conversion of Analog to Spiking Convolutional Neural Networks,
+    arXiv:1612.04052, 2016
 
