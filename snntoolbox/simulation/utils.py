@@ -564,6 +564,19 @@ class AbstractSNN:
             data_batch_kwargs['truth_b'] = truth_b
             data_batch_kwargs['x_b_l'] = x_b_l
 
+            # Using one batch of activations, estimate the expected number of
+            # synaptic operations of SNN. (ANN activation is a measure for the
+            # expected SNN spike count.)
+            if False:  # batch_idx == 0:
+                activations_n_b_l = get_activations_batch(self.parsed_model,
+                                                          x_b_l)
+                snn_ops_expected = estimate_snn_ops(activations_n_b_l,
+                                                    self.fanout,
+                                                    self._num_timesteps)
+                print("Expected number of operations of SNN after {} time "
+                      "steps: {}.".format(self._num_timesteps,
+                                          snn_ops_expected))
+
             # Main step: Run the network on a batch of samples for the duration
             # of the simulation.
             print("Starting new simulation...\n")
@@ -679,10 +692,12 @@ class AbstractSNN:
 
             # Reset network variables.
             self.reset(batch_idx)
-            self.synaptic_operations_b_t = np.zeros_like(
-                self.synaptic_operations_b_t)
-            self.neuron_operations_b_t = np.zeros_like(
-                self.neuron_operations_b_t)
+            if self.synaptic_operations_b_t is not None:
+                self.synaptic_operations_b_t = np.zeros_like(
+                    self.synaptic_operations_b_t)
+            if self.neuron_operations_b_t is not None:
+                self.neuron_operations_b_t = np.zeros_like(
+                    self.neuron_operations_b_t)
 
         # Plot confusion matrix for whole data set.
         if 'confusion_matrix' in self._plot_keys:
@@ -1355,6 +1370,20 @@ def get_ann_ops(num_neurons, num_neurons_with_bias, fanin):
     """
 
     return 2 * np.dot(num_neurons, fanin) + np.sum(num_neurons_with_bias)
+
+
+def estimate_snn_ops(activations_n_b_l, fanouts_n, num_timesteps):
+    sops_b = np.zeros(len(activations_n_b_l[0][0]), int)
+    for i in range(len(activations_n_b_l)):
+        spikecount_b_l = np.array(activations_n_b_l[i][0] * num_timesteps, int)
+        fanout = fanouts_n[i + 1]
+        if np.isscalar(fanout):
+            sops_b += np.array([np.sum(s) for s in spikecount_b_l],
+                               int) * fanout
+        elif hasattr(fanout, 'shape'):
+            sops_b += np.array([np.sum(s * fanout) for s in spikecount_b_l],
+                               int)
+    return np.mean(sops_b, dtype=int)
 
 
 def is_spiking(layer, config):

@@ -1,8 +1,0 @@
-[paths]
-dataset_path = %(path_wd)s/../../datasets/mnist
-filename_ann = 98.96
-
-[simulation]
-duration = 30
-num_to_test = 100
-batch_size = 10

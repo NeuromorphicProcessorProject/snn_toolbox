@@ -188,6 +188,19 @@ class SpikeLayer(Layer):
     def softmax_activation(self, mem):
         """Softmax activation."""
 
+        # spiking_samples = k.less_equal(k.random_uniform([self.config.getint(
+        #     'simulation', 'batch_size'), 1]), 300 * self.dt / 1000.)
+        # spiking_neurons = k.T.repeat(spiking_samples, 10, axis=1)
+        # activ = k.T.nnet.softmax(mem)
+        # max_activ = k.max(activ, axis=1, keepdims=True)
+        # output_spikes = k.equal(activ, max_activ).astype(k.floatx())
+        # output_spikes = k.T.set_subtensor(output_spikes[k.equal(
+        #     spiking_neurons, 0).nonzero()], 0.)
+        # new_and_reset_mem = k.T.set_subtensor(mem[spiking_neurons.nonzero()],
+        #                                       0.)
+        # self.add_update([(self.mem, new_and_reset_mem)])
+        # return output_spikes
+
         return k.T.mul(k.less_equal(k.random_uniform(mem.shape),
                                     k.softmax(mem)), self.v_thresh)
 
@@ -236,8 +249,10 @@ class SpikeLayer(Layer):
         """
 
         spike_idxs = k.T.nonzero(spikes)
-        if self.config.get('cell', 'reset') == 'Reset by subtraction':
-            if self.payloads and False:  # Experimental, turn off by default
+        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
+            new = k.T.set_subtensor(mem[spike_idxs], 0.)
+        elif self.config.get('cell', 'reset') == 'Reset by subtraction':
+            if self.payloads:  # Experimental.
                 new = k.T.set_subtensor(mem[spike_idxs], 0.)
             else:
                 pos_spike_idxs = k.T.nonzero(k.greater(spikes, 0))
