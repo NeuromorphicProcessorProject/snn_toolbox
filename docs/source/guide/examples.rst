@@ -18,7 +18,7 @@ should also be included in the installation. They contain the network
 architectures, parameters, the configuration files for running the toolbox, as
 well as a subset of the data sets. You can simply run them by typing
 ``snntoolbox -t <path_to_config>`` in the terminal, where ``<path_to_config>``
-refers to the directory that contains the ``config`` file corresponding to that
+is the path (including filename) to the configuration file corresponding to that
 particular experiment.
 
 .. _ExampleA:
