@@ -250,7 +250,10 @@ class SpikeLayer(Layer):
 
         spike_idxs = k.T.nonzero(spikes)
         if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
+            # Turn off reset (uncomment second line) to get a faster and better
+            # top-1 error. The top-5 error is better when resetting:
             new = k.T.set_subtensor(mem[spike_idxs], 0.)
+            # new = mem.copy()
         elif self.config.get('cell', 'reset') == 'Reset by subtraction':
             if self.payloads:  # Experimental.
                 new = k.T.set_subtensor(mem[spike_idxs], 0.)
