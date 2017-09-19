@@ -30,7 +30,8 @@ def get_dataset(config):
 
     Returns Dictionaries with keys ``x_test`` and ``y_test`` if data set was
     loaded in ``.npz`` format, or with ``dataflow`` key if data will be loaded
-    from ``.jpg`` files by a ``keras.ImageDataGenerator``.
+    from ``.jpg``, ``.png``, or ``.bmp`` files by a
+    ``keras.ImageDataGenerator``.
 
     Parameters
     ----------
