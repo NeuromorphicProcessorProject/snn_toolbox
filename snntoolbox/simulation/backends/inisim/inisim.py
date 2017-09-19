@@ -50,9 +50,8 @@ class SpikeLayer(Layer):
             self.spikerate = self.var = None
         if self.config.getboolean('conversion', 'use_isi_code'):
             self.last_spiketimes = None
-            self.thresh_b_l = None
-            self.sum_of_abs_weights = None
-            self.prev_impulse = None
+            self.prospective_spikes = None
+            self.missing_impulse = None
 
         import os
         from snntoolbox.utils.utils import get_abs_path
@@ -100,8 +99,10 @@ class SpikeLayer(Layer):
     def update_neurons(self):
         """Update neurons according to activation function."""
 
+        # Update membrane potentials.
         new_mem = self.get_new_mem()
 
+        # Generate spikes.
         if hasattr(self, 'activation_str'):
             if self.activation_str == 'softmax':
                 output_spikes = self.softmax_activation(new_mem)
@@ -118,12 +119,10 @@ class SpikeLayer(Layer):
         else:
             output_spikes = self.linear_activation(new_mem)
 
-        psp = self.get_psp(output_spikes)
-
-        # Store spiking
+        # Reset membrane potential after spikes.
         self.set_reset_mem(new_mem, output_spikes)
 
-        # Store refractory
+        # Store refractory period after spikes.
         if self.tau_refrac > 0:
             new_refractory = k.T.set_subtensor(
                 self.refrac_until[output_spikes.nonzero()],
@@ -144,14 +143,21 @@ class SpikeLayer(Layer):
                 (self.max_spikerate,
                  k.max(self.spikecounts) * self.dt / self.time)])
 
-        # if self.config.getboolean('conversion', 'use_isi_code'):
-        #     self.add_update([(self.v_thresh, self.v_thresh - k.T.true_div(
-        #         k.abs(self.prev_impulse - self.impulse), self.dt)),
-        #                      (self.prev_impulse, self.impulse)])
+        if self.config.getboolean('conversion', 'use_isi_code'):
+            masked_impulse = k.T.set_subtensor(
+                self.impulse[k.T.nonzero(self.refrac_until > self.time)], 0.)
+            self.add_update([
+                (self.v_thresh, k.cast(self._v_thresh * np.ones_like(
+                    self.mem, k.floatx()) + self.missing_impulse, k.floatx())),
+                (self.prospective_spikes, k.cast(k.greater(masked_impulse, 0),
+                                                 k.floatx()))])
 
         if self.spiketrain is not None:
             self.add_update([(self.spiketrain,
                               self.time * k.not_equal(output_spikes, 0))])
+
+        # Compute post-synaptic potential.
+        psp = self.get_psp(output_spikes)
 
         return k.cast(psp, k.floatx())
 
@@ -375,27 +381,26 @@ class SpikeLayer(Layer):
         if do_reset:
             self.mem.set_value(self.init_membrane_potential())
         self.time.set_value(np.float32(self.dt))
+        zeros_output_shape = np.zeros(self.output_shape, k.floatx())
         if self.tau_refrac > 0:
-            self.refrac_until.set_value(np.zeros(self.output_shape, k.floatx()))
+            self.refrac_until.set_value(zeros_output_shape)
         if self.spiketrain is not None:
-            self.spiketrain.set_value(np.zeros(self.output_shape, k.floatx()))
+            self.spiketrain.set_value(zeros_output_shape)
         if self.payloads:
-            self.payloads.set_value(np.zeros(self.output_shape, k.floatx()))
-            self.payloads_sum.set_value(np.zeros(self.output_shape, k.floatx()))
+            self.payloads.set_value(zeros_output_shape)
+            self.payloads_sum.set_value(zeros_output_shape)
         if self.online_normalization and do_reset:
-            self.spikecounts.set_value(np.zeros(self.output_shape, k.floatx()))
+            self.spikecounts.set_value(zeros_output_shape)
             self.max_spikerate.set_value(np.float32(0.))
             self.v_thresh.set_value(np.float32(self._v_thresh))
         if clamp_var and do_reset:
             self.spikerate.set_value(np.zeros(self.input_shape, k.floatx()))
             self.var.set_value(np.zeros(self.input_shape, k.floatx()))
         if self.config.getboolean('conversion', 'use_isi_code'):
-            self.last_spiketimes.set_value(-np.ones(self.output_shape,
-                                                    k.floatx()))
-            # self.v_thresh.set_value(self._v_thresh * np.ones(
-            #     self.output_shape, k.floatx()) + self.sum_of_abs_weights)
-            # self.prev_impulse.set_value(np.zeros(self.output_shape,
-            #                                      k.floatx()))
+            self.last_spiketimes.set_value(zeros_output_shape - 1)
+            self.v_thresh.set_value(zeros_output_shape + self._v_thresh)
+            self.prospective_spikes.set_value(zeros_output_shape)
+            self.missing_impulse.set_value(zeros_output_shape)
 
     def init_neurons(self, input_shape):
         """Init layer neurons."""
@@ -428,12 +433,9 @@ class SpikeLayer(Layer):
             self.clamp_idx = self.get_clamp_idx()
         if self.config.getboolean('conversion', 'use_isi_code'):
             self.last_spiketimes = k.variable(-np.ones(output_shape))
-            # self.sum_of_abs_weights = 0 if len(self.weights) == 0 else \
-            #     np.sum(np.abs(self.get_weights()[0]))
-            # self.v_thresh = k.variable(
-            #     self._v_thresh * np.ones(output_shape) +
-            #     self.sum_of_abs_weights)
-            # self.prev_impulse = k.zeros(output_shape)
+            self.v_thresh = k.variable(self._v_thresh * np.ones(output_shape))
+            self.prospective_spikes = k.variable(np.zeros(output_shape))
+            self.missing_impulse = k.variable(np.zeros(output_shape))
 
     def get_layer_idx(self):
         """Get index of layer."""
@@ -517,6 +519,14 @@ def spike_call(call):
 
         self.impulse = call(self, x)
 
+        print(self.inbound_nodes)
+        if len(self.weights) > 0 and self.inbound_nodes:  # Not satisfied during build. Ever at run time?
+            weights, bias = self.get_weights()
+            self.set_weights([np.abs(weights), bias])
+            self.add_update([(self.missing_input, call(
+                self, get_inbound_layers(self)[0].prospective_input_spikes))])
+            self.set_weights([weights, bias])
+
         return self.update_neurons()
 
     return decorator
@@ -560,8 +570,18 @@ class SpikeFlatten(Flatten):
     def __init__(self, **kwargs):
         kwargs.pop(str('config'))
         Flatten.__init__(self, **kwargs)
+        self.prospective_spikes = None
+
+    def build(self, input_shape):
+        Flatten.build(self, input_shape)
+        self.prospective_spikes = k.variable(np.zeros(self.compute_output_shape(
+            input_shape)))
 
     def call(self, x, mask=None):
+
+        if self.inbound_nodes:
+            self.prospective_spikes = Flatten.call(
+                self, get_inbound_layers(self)[0].prospective_spikes)
 
         return k.cast(super(SpikeFlatten, self).call(x), k.floatx())
 
@@ -569,11 +589,11 @@ class SpikeFlatten(Flatten):
     def get_time():
         return None
 
-    @staticmethod
-    def reset(sample_idx):
+    def reset(self, sample_idx):
         """Reset layer variables."""
 
-        pass
+        self.prospective_spikes.set_value(np.zeros(self.output_shape,
+                                                   k.floatx()))
 
     @property
     def class_name(self):

@@ -166,6 +166,8 @@ class SNN(AbstractSNN):
                     self.mem_n_b_l_t[j][0][Ellipsis, sim_step_int] = \
                         layer.mem.get_value()
                     j += 1
+                # if hasattr(layer, 'v_thresh') and '00Conv' in layer.name:
+                #     print(layer.v_thresh.get_value())
             if 'input_b_l_t' in self._log_keys:
                 self.input_b_l_t[Ellipsis, sim_step_int] = input_b_l
             if self._poisson_input or self._dataset_format == 'aedat':
