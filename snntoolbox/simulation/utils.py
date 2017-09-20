@@ -369,6 +369,18 @@ class AbstractSNN:
 
         pass
 
+    def get_spiketrains_output(self):
+        """Get spike trains of output layer.
+
+        Returns
+        -------
+
+        spiketrains_b_l_t : ndarray
+            Spike trains of output.
+        """
+
+        pass
+
     def get_vmem(self, **kwargs):
         """Get membrane potentials of a layer.
 
@@ -877,12 +889,7 @@ class AbstractSNN:
         # layer.
         shape = (self.batch_size, self.num_classes, self._num_timesteps)
         output_b_l_t = np.zeros(shape, 'int32')
-        kwargs = {'layer': layers[-1], 'monitor_index': -1}
-        # Need to reduce counter here to be able to access the last monitor.
-        # TODO: Remove this ugly hack!
-        self._spiketrains_container_counter -= 1
-        spiketrains_b_l_t = self.get_spiketrains(**kwargs)
-        self._spiketrains_container_counter += 1
+        spiketrains_b_l_t = self.get_spiketrains_output()
         for b in range(shape[0]):
             for l in range(shape[1]):
                 for t in range(shape[2]):
