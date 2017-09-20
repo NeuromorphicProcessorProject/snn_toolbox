@@ -21,6 +21,11 @@ well as a subset of the data sets. You can simply run them by typing
 is the path (including filename) to the configuration file corresponding to that
 particular experiment.
 
+NB: In order to successfully run the example models here, make sure the `Keras
+configuration file
+<https://keras.io/getting-started/faq/#where-is-the-keras-configuration-file-stored>`_
+contains the option ``"image_data_format": "channels_first"``.
+
 .. _ExampleA:
 
 Example A - LeNet on MNIST

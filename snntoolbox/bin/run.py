@@ -60,5 +60,6 @@ def main():
             from snntoolbox.bin.gui import gui
             gui.main()
 
+
 if __name__ == '__main__':
     main()

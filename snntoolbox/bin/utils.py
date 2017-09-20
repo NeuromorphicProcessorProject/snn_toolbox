@@ -55,7 +55,6 @@ def test_full(config, queue=None):
     from snntoolbox.datasets.utils import get_dataset
     from snntoolbox.conversion.utils import normalize_parameters
 
-    batch_size = config.getint('simulation', 'batch_size')
     num_to_test = config.getint('simulation', 'num_to_test')
 
     # Instantiate an empty spiking network
@@ -81,8 +80,9 @@ def test_full(config, queue=None):
         # Evaluate input model.
         if config.getboolean('tools', 'evaluate_ann') and not is_stop(queue):
             print("Evaluating input model on {} samples...".format(num_to_test))
-            model_lib.evaluate(input_model['val_fn'], batch_size, num_to_test,
-                               **testset)
+            model_lib.evaluate(input_model['val_fn'],
+                               config.getint('simulation', 'batch_size'),
+                               num_to_test, **testset)
 
         # _____________________________ PARSE ________________________________ #
 
@@ -98,9 +98,10 @@ def test_full(config, queue=None):
 
         # Evaluate parsed model.
         if config.getboolean('tools', 'evaluate_ann') and not is_stop(queue):
-            print("Evaluating parsed and normalized model on {} samples..."
-                  "".format(num_to_test))
-            model_parser.evaluate_parsed(batch_size, num_to_test, **testset)
+            print("Evaluating parsed model on {} samples...".format(
+                num_to_test))
+            model_parser.evaluate_parsed(config.getint(
+                'simulation', 'batch_size'), num_to_test, **testset)
 
         # Write parsed model to disk
         parsed_model.save(

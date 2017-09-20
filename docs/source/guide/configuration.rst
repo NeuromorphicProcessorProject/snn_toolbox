@@ -83,10 +83,11 @@ dataset_format: string, optional
     total cell count.
 
     B) The images are stored in subdirectories of the selected
-    ``dataset_path``, where the names of the subdirectories represent
-    their class label. The toolbox will then use
+    ``dataset_path``, where the names of the subdirectories represent their
+    class label. The toolbox will then use
     ``keras.preprocessing.image.ImageDataGenerator`` to load and process the
-    files batchwise.
+    files batchwise. Setting ``jpg`` here works even if the images are actually
+    in ``.png`` or ``.bmp`` format.
 
     C) Beta stage.
 
