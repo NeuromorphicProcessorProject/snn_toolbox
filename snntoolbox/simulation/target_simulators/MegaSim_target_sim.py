@@ -1308,7 +1308,8 @@ class SNN(AbstractSNN):
 
         layer = self.layers[0]
 
-        spiketrains_b_l_t = np.zeros([self.batch_size, 1] + list(layer.pop_size) +
+        spiketrains_b_l_t = np.zeros([self.batch_size, 1] +
+                                     list(layer.pop_size) +
                                      [self._num_timesteps])
 
         # TODO: This part has not been tested. Input spikes are probably not
@@ -1329,6 +1330,32 @@ class SNN(AbstractSNN):
                         spiketrains_b_l_t[i, f, e[4], e[3], t] = t
         except IndexError:
             return spiketrains_b_l_t
+
+        return spiketrains_b_l_t
+
+    def get_spiketrains_output(self):
+        # reset_ts marks the time when a new sample in the batch was simulated.
+        reset_ts = [0] + list(np.array(np.genfromtxt(
+            self.megadirname + "reset_event.stim", 'int', delimiter=" "),
+            ndmin=2)[:, 0])
+
+        layer = self.layers[-1]
+
+        spiketrains_b_l_t = np.zeros([self.batch_size, self.num_classes,
+                                      self._num_timesteps])
+
+        for i in range(self.batch_size):
+            t_first = reset_ts[i]
+            t_last = reset_ts[i + 1]
+            events = np.genfromtxt(self.megadirname + layer.evs_files[0],
+                                   delimiter=" ", dtype="int")
+            # e == [timestamp, ?, ?, target address, polarity]
+            for e in events:
+                t = e[0]
+                if t < t_first or t >= t_last:
+                    continue
+                t -= t_first + i
+                spiketrains_b_l_t[i, e[3], t] = t
 
     def get_vmem(self, **kwargs):
         return None

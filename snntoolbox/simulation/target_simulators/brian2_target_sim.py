@@ -70,10 +70,8 @@ class SNN(AbstractSNN):
         self._input_layer = None
         self._cell_params = None
 
-        # Track the output layer spikes. Add monitor here if it was not already
-        # appended above (because settings['verbose'] < 1)
-        if len(self.spikemonitors) < len(self.layers):
-            self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[-1]))
+        # Track the output layer spikes.
+        self.output_spikemonitor = self.sim.SpikeMonitor(self.layers[-1])
 
     @property
     def is_parallelizable(self):
@@ -150,7 +148,9 @@ class SNN(AbstractSNN):
     def compile(self):
 
         self.snn = self.sim.Network(self.layers, self.connections,
-                                    self.spikemonitors, self.statemonitors)
+                                    self.spikemonitors +
+                                    [self.output_spikemonitor],
+                                    self.statemonitors)
         self.snn.store()
 
         # Set input layer
@@ -162,7 +162,7 @@ class SNN(AbstractSNN):
     def simulate(self, **kwargs):
 
         if self._poisson_input:
-            self._input_layer.rates = kwargs['x_b_l'].flatten() * 1000 / \
+            self._input_layer.rates = kwargs[str('x_b_l')].flatten() * 1000 / \
                                       self.rescale_fac * self.sim.Hz
         elif self._dataset_format == 'aedat':
             # TODO: Implement by using brian2.SpikeGeneratorGroup.
@@ -170,7 +170,7 @@ class SNN(AbstractSNN):
         else:
             try:
                 # TODO: Implement constant input by using brian2.TimedArray.
-                self._input_layer.current = kwargs['x_b_l'].flatten()
+                self._input_layer.current = kwargs[str('x_b_l')].flatten()
             except AttributeError:
                 raise NotImplementedError
 
@@ -219,8 +219,8 @@ class SNN(AbstractSNN):
         # Outer for-loop that calls this function starts with
         # 'monitor_index' = 0, but this is reserved for the input and handled by
         # `get_spiketrains_input()`.
-        i = len(self.spikemonitors) - 1 if kwargs['monitor_index'] == -1 else \
-            kwargs['monitor_index'] + 1
+        i = len(self.spikemonitors) - 1 if kwargs[str('monitor_index')] == -1 \
+            else kwargs[str('monitor_index')] + 1
         spiketrain_dict = self.spikemonitors[i].spike_trains()
         spiketrains_flat = np.array([spiketrain_dict[key] / self.sim.ms for key
                                      in spiketrain_dict.keys()])
@@ -237,10 +237,20 @@ class SNN(AbstractSNN):
                                                                shape)
         return spiketrains_b_l_t
 
+    def get_spiketrains_output(self):
+        shape = [self.batch_size, self.num_classes, self._num_timesteps]
+        spiketrain_dict = self.output_spikemonitor.spike_trains()
+        spiketrains_flat = np.array([spiketrain_dict[key] / self.sim.ms for key
+                                     in spiketrain_dict.keys()])
+        spiketrains_b_l_t = self.reshape_flattened_spiketrains(spiketrains_flat,
+                                                               shape)
+        return spiketrains_b_l_t
+
     def get_vmem(self, **kwargs):
         try:
-            return np.array([np.array(v).transpose() for v in
-                             self.statemonitors[kwargs['monitor_index']].v])
+            return np.array([
+                np.array(v).transpose() for v in
+                self.statemonitors[kwargs[str('monitor_index')]].v])
         except AttributeError:
             return None
 

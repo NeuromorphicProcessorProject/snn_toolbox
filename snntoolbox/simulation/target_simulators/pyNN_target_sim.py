@@ -121,13 +121,13 @@ class SNN(AbstractSNN):
     def simulate(self, **kwargs):
 
         if self._poisson_input:
-            rates = kwargs['x_b_l'].flatten()
+            rates = kwargs[str('x_b_l')].flatten()
             for neuron_idx, neuron in enumerate(self.layers[0]):
                 neuron.rate = rates[neuron_idx] / self.rescale_fac * 1000
         elif self._dataset_format == 'aedat':
             raise NotImplementedError
         else:
-            constant_input_currents = kwargs['x_b_l'].flatten()
+            constant_input_currents = kwargs[str('x_b_l')].flatten()
             try:
                 for neuron_idx, neuron in enumerate(self.layers[0]):
                     # TODO: Implement constant input currents.
@@ -189,8 +189,8 @@ class SNN(AbstractSNN):
         # The spikes of the last layer are recorded by default because they
         # contain the networks output (classification guess).
         if 'spikes' not in vars_to_record:
-            vars_to_record.append('spikes')
-        self.layers[-1].record(vars_to_record)
+            vars_to_record.append(str('spikes'))
+            self.layers[-1].record(vars_to_record)
 
     def set_biases(self):
         """Set biases.
@@ -229,7 +229,8 @@ class SNN(AbstractSNN):
 
     def get_spiketrains(self, **kwargs):
         j = self._spiketrains_container_counter
-        if j >= len(self.spiketrains_n_b_l_t):
+        if self.spiketrains_n_b_l_t is None \
+                or j >= len(self.spiketrains_n_b_l_t):
             return None
 
         shape = self.spiketrains_n_b_l_t[j][0].shape
@@ -237,8 +238,8 @@ class SNN(AbstractSNN):
         # Outer for-loop that calls this function starts with
         # 'monitor_index' = 0, but this is reserved for the input and handled by
         # `get_spiketrains_input()`.
-        i = len(self.layers) - 1 if kwargs['monitor_index'] == -1 else \
-            kwargs['monitor_index'] + 1
+        i = len(self.layers) - 1 if kwargs[str('monitor_index')] == -1 else \
+            kwargs[str('monitor_index')] + 1
         spiketrains_flat = self.layers[i].get_data().segments[-1].spiketrains
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(spiketrains_flat,
                                                                shape)
@@ -251,8 +252,15 @@ class SNN(AbstractSNN):
                                                                shape)
         return spiketrains_b_l_t
 
+    def get_spiketrains_output(self):
+        shape = [self.batch_size, self.num_classes, self._num_timesteps]
+        spiketrains_flat = self.layers[-1].get_data().segments[-1].spiketrains
+        spiketrains_b_l_t = self.reshape_flattened_spiketrains(spiketrains_flat,
+                                                               shape)
+        return spiketrains_b_l_t
+
     def get_vmem(self, **kwargs):
-        vs = kwargs['layer'].get_data().segments[-1].analogsignals
+        vs = kwargs[str('layer')].get_data().segments[-1].analogsignals
         if len(vs) > 0:
             return np.array([np.swapaxes(v, 0, 1) for v in vs])
 
