@@ -85,6 +85,7 @@ def normalize_parameters(model, config, **kwargs):
     # If scale factors have not been computed in a previous run, do so now.
     if len(scale_facs) == 1:
         i = 0
+        sparsity = []
         for layer in model.layers:
             # Skip if layer has no parameters
             if len(layer.weights) == 0:
@@ -93,6 +94,7 @@ def normalize_parameters(model, config, **kwargs):
             activations = try_reload_activations(layer, model, x_norm,
                                                  batch_size, activ_dir)
             nonzero_activations = activations[np.nonzero(activations)]
+            sparsity.append(1 - nonzero_activations.size / activations.size)
             del activations
             perc = get_percentile(config, i)
             scale_facs[layer.name] = get_scale_fac(nonzero_activations, perc)
@@ -119,6 +121,8 @@ def normalize_parameters(model, config, **kwargs):
         if config.get('output', 'overwrite') or confirm_overwrite(filepath):
             with open(filepath, str('w')) as f:
                 json.dump(scale_facs, f)
+        np.savez_compressed(os.path.join(norm_dir,'activations', 'sparsity'),
+                            sparsity=sparsity)
 
     # Apply scale factors to normalize the parameters.
     for layer in model.layers:

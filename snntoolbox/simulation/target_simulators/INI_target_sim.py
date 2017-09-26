@@ -46,6 +46,7 @@ class SNN(AbstractSNN):
         self._spiking_layers = {}
         self._input_images = None
         self._binary_activation = None
+        self.avg_rate = None
 
     @property
     def is_parallelizable(self):
@@ -120,6 +121,7 @@ class SNN(AbstractSNN):
                                  self._num_timesteps), 'int32')
 
         # Loop through simulation time.
+        self.avg_rate = 0
         self._input_spikecount = 0
         for sim_step_int in range(self._num_timesteps):
             sim_step = (sim_step_int + 1) * self._dt
@@ -151,6 +153,7 @@ class SNN(AbstractSNN):
                 if hasattr(layer, 'spiketrain') \
                         and layer.spiketrain is not None:
                     spiketrains_b_l = layer.spiketrain.get_value()
+                    self.avg_rate += np.count_nonzero(spiketrains_b_l)
                     if self.spiketrains_n_b_l_t is not None:
                         self.spiketrains_n_b_l_t[i][0][
                             Ellipsis, sim_step_int] = spiketrains_b_l
@@ -205,6 +208,12 @@ class SNN(AbstractSNN):
                         if output_b_l_t[b, l, t] != 0:
                             spike = 1
                         output_b_l_t[b, l, t] = spike
+
+        self.avg_rate /= self.batch_size * np.sum(self.num_neurons) * \
+            self._num_timesteps
+
+        print("Average spike rate: {} spikes per simulation time step.".format(
+            self.avg_rate))
 
         return np.cumsum(np.asarray(output_b_l_t, bool), 2)
 

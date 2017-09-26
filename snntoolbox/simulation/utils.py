@@ -687,6 +687,10 @@ class AbstractSNN:
             log_vars['operations_ann'] = self.operations_ann / 1e6
             log_vars['input_image_b_l'] = x_b_l
             log_vars['true_classes_b'] = truth_b
+            if self.spiketrains_n_b_l_t is not None:
+                log_vars['avg_rate'] = self.get_avg_rate_from_trains()
+                print("Average spike rate: {} spikes per simulation time step."
+                      "".format(log_vars['avg_rate']))
             np.savez_compressed(os.path.join(path_log_vars, str(batch_idx)),
                                 **log_vars)
 
@@ -1016,6 +1020,25 @@ class AbstractSNN:
         spiketrains_b_l_t = np.reshape(spiketrains_flat, shape)
 
         return spiketrains_b_l_t
+
+    def get_avg_rate_from_trains(self):
+        """
+        Compute spike rate of neurons averaged over batches, the neurons in the
+        network, and the simulation time.
+        """
+
+        if not hasattr(self, 'spiketrains_n_b_l_t') \
+                or self.spiketrains_n_b_l_t is None:
+            return
+
+        avg_rate = 0
+        for i in range(len(self.spiketrains_n_b_l_t)):
+            avg_rate += np.count_nonzero(self.spiketrains_n_b_l_t[i][0])
+
+        avg_rate /= np.sum(self.num_neurons) * self.batch_size * \
+            self._num_timesteps
+
+        return avg_rate
 
 
 def get_samples_from_list(x_test, y_test, dataflow, config):
