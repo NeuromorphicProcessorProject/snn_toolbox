@@ -1026,10 +1026,10 @@ class SpikePool(theano.Op):
         for i in range(nd):
             for j in range(pool_out_shp[i]):
                 start = j * stride[i]
-                end = min(start + ws[i], img_shp[i])
+                end = np.min(start + ws[i], img_shp[i])
                 if not inc_pad:
-                    start = max(start, pad[i])
-                    end = min(end, img_shp[i] - pad[i])
+                    start = np.max(start, pad[i])
+                    end = np.min(end, img_shp[i] - pad[i])
                 region_slices[i].append(slice(start, end))
 
         # TODO: Spike size should equal threshold, which may vary during
