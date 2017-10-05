@@ -105,9 +105,11 @@ class SNN(AbstractSNN):
         for layer in self.snn.layers:
             if hasattr(layer, 'bias'):
                 # Adjust biases to time resolution of simulator.
-                layer.bias.set_value(layer.bias.get_value() * self._dt)
+                keras.backend.set_value(
+                    layer.bias, keras.backend.get_value(layer.bias) * self._dt)
                 if bias_relaxation:  # Experimental
-                    layer.b0.set_value(layer.bias.get_value())
+                    keras.backend.set_value(layer.b0,
+                                            keras.backend.get_value(layer.bias))
 
     def simulate(self, **kwargs):
 
@@ -115,6 +117,14 @@ class SNN(AbstractSNN):
         from snntoolbox.simulation.utils import get_layer_synaptic_operations
 
         input_b_l = kwargs[str('x_b_l')] * self._dt
+        # if self.config.getboolean("conversion", "temporal_pattern_coding"):
+        #     input_b_l = kwargs[str('x_b_l')] * self._dt
+        #     min_activation = np.min(input_b_l[input_b_l > 0])
+        #     input_b_l /= min_activation
+        #     print("Scale factor for input: {}".format(min_activation))
+        #     print("Largest scaled input: {}".format(np.max(input_b_l)))
+        #     import sys
+        #     print("Largest int: {}".format(sys.maxsize))
 
         output_b_l_t = np.zeros((self.batch_size, self.num_classes,
                                  self._num_timesteps), 'int32')
@@ -150,7 +160,7 @@ class SNN(AbstractSNN):
                 # Excludes Input, Flatten, Concatenate, etc:
                 if hasattr(layer, 'spiketrain') \
                         and layer.spiketrain is not None:
-                    spiketrains_b_l = layer.spiketrain.get_value()
+                    spiketrains_b_l = keras.backend.get_value(layer.spiketrain)
                     if self.spiketrains_n_b_l_t is not None:
                         self.spiketrains_n_b_l_t[i][0][
                             Ellipsis, sim_step_int] = spiketrains_b_l
@@ -164,7 +174,7 @@ class SNN(AbstractSNN):
                     i += 1
                 if hasattr(layer, 'mem') and self.mem_n_b_l_t is not None:
                     self.mem_n_b_l_t[j][0][Ellipsis, sim_step_int] = \
-                        layer.mem.get_value()
+                        keras.backend.get_value(layer.mem)
                     j += 1
             if 'input_b_l_t' in self._log_keys:
                 self.input_b_l_t[Ellipsis, sim_step_int] = input_b_l

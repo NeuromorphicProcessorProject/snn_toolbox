@@ -3,13 +3,17 @@ dataset_path = %(path_wd)s/../../../datasets/mnist
 filename_ann = 98.96
 
 [tools]
-evaluate_ann = False
+evaluate_ann = True
+
+[conversion]
+temporal_pattern_coding = False
+max2avg_pool = True
 
 [simulation]
 simulator = INI
-duration = 30
-num_to_test = 10
-batch_size = 1
+duration = 50
+num_to_test = 100
+batch_size = 10
 
 [input]
 poisson_input = False

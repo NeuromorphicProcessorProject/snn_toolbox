@@ -818,6 +818,7 @@ class AbstractSNN:
         `num_neurons`, `num_neurons_with_bias`.
         """
 
+        from keras.backend import get_value
         from snntoolbox.parsing.utils import get_fanin, get_fanout
 
         self.fanin = [0]
@@ -830,7 +831,7 @@ class AbstractSNN:
                 self.fanin.append(get_fanin(layer))
                 self.fanout.append(get_fanout(layer, self.config))
                 self.num_neurons.append(np.prod(layer.output_shape[1:]))
-                if hasattr(layer, 'bias') and any(layer.bias.get_value()):
+                if hasattr(layer, 'bias') and any(get_value(layer.bias)):
                     print("Detected layer with biases: {}".format(layer.name))
                     self.num_neurons_with_bias.append(self.num_neurons[-1])
                 else:
