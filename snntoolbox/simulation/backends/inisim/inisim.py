@@ -221,13 +221,15 @@ class SpikeLayer(Layer):
             # Experimental: Clamp the membrane potential to zero until the
             # presynaptic neurons fire at their steady-state rates. This helps
             # avoid a transient response.
-            new_mem = k.ifelse.ifelse(k.less(k.mean(self.var), 1e-4) +
-                                      k.greater(self.time, self.duration / 2),
-                                      self.mem + masked_impulse, self.mem)
+            new_mem = k.tf.cond(k.less(k.mean(self.var), 1e-4) +
+                                k.greater(self.time, self.duration / 2),
+                                lambda: self.mem + masked_impulse,
+                                lambda: self.mem)
         elif hasattr(self, 'clamp_idx'):
             # Set clamp-duration by a specific delay from layer to layer.
-            new_mem = k.ifelse.ifelse(k.less(self.time, self.clamp_idx),
-                                      self.mem, self.mem + masked_impulse)
+            new_mem = k.tf.cond(k.less(self.time, self.clamp_idx),
+                                lambda: self.mem,
+                                lambda: self.mem + masked_impulse)
         elif v_clip:
             # Clip membrane potential to prevent too strong accumulation.
             new_mem = k.clip(self.mem + masked_impulse, -3, 3)
@@ -272,12 +274,12 @@ class SpikeLayer(Layer):
         r_lim = 1 / self.dt
         return thr_min + (thr_max - thr_min) * self.max_spikerate / r_lim
 
-        # return k.ifelse.ifelse(
+        # return k.tf.cond(
         #     k.equal(self.time / self.dt % settings['timestep_fraction'], 0) *
         #     k.greater(self.max_spikerate, settings['diff_to_min_rate']/1000) *
         #     k.greater(1 / self.dt - self.max_spikerate,
         #          settings['diff_to_max_rate'] / 1000),
-        #     self.max_spikerate, self.v_thresh)
+        #     lambda: self.max_spikerate, lambda: self.v_thresh)
 
     def get_psp(self, output_spikes):
         if self.config.getboolean('conversion', 'use_isi_code'):
@@ -518,104 +520,10 @@ def spike_call(call):
             # Add payload from previous layer
             x = add_payloads(get_inbound_layers(self)[0], x)
 
-        if self.config.getboolean('conversion', 'temporal_pattern_coding'):
-            # Transform x into binary format here. Effective batch_size
-            # increases from 1 to 32.
-            x = to_binary(x)
-
-            # Multiply binary feature map matrix by PSP kernel which decays
-            # exponentially across the 32 temporal steps (batch-dimension).
-            num_bits = len(x)
-            x *= k.reshape([2**-i for i in range(num_bits)],
-                           (num_bits, 1, 1, 1))
-            self.impulse = call(self, x)
-            return k.sum(self.impulse, 0)
-            # Need to apply activation function here.
-            # Get rid of membrane state variables.
-            # May need to increase batch size to 32 already when building the
-            # net, or call "call" 32 times. Though in Pooling layers, need to
-            # sum over first axis before applying call.
-            # For measuring spike trains, store the binary matrix. For rates,
-            # the return value of "call", after summing over first axis and
-            # applying activation. To count operations, Apply fan-out to binary
-            # matrix and count each operation twice (MAC due to convolution of
-            # kernel with non-unity PSPs).
-            # For output, consider activation values instead of spike sums.
-        else:
-            self.impulse = call(self, x)
-            return self.update_neurons()
+        self.impulse = call(self, x)
+        return self.update_neurons()
 
     return decorator
-
-
-def to_binary(x, num_bits=None):
-    """Transform an array of floats into binary representation.
-
-    Parameters
-    ----------
-
-    x: ndarray
-        Input array containing float values. The first dimension has to be of
-        length 1.
-    num_bits: int
-        The fixed point precision to be used when converting to binary. Will be
-        inferred from ``x`` if not specified.
-
-    Returns
-    -------
-
-    binary_array: ndarray
-        Output boolean array. The first dimension of x is expanded to length
-        ``bits``. The binary representation of each value in ``x`` is
-        distributed across the first dimension of ``binary_array``.
-    """
-
-    import itertools
-
-    # assert x.shape[0] == 1, "The first dimension of the input array has to " \
-    #                         "be of length 1, found {}.".format(x.shape[0])
-
-    if num_bits is None:
-        num_bits = np.finfo(x.dtype).bits
-
-    to_binary_str = np.vectorize(lambda z: binary_repr(
-        k.cast(z * 2 ** (num_bits - 1), 'int32'), num_bits))
-    binary_str = to_binary_str(x)
-    binary_array = np.repeat(np.empty_like(x, bool), num_bits, 0)
-    shape = k.get_variable_shape(binary_array)
-    for i, j, l in itertools.product(
-            range(shape[1]), range(shape[2]), range(shape[3])):
-        binary_array[:, i, j, l] = np.array(list(binary_str[0, i, j, l]))  # Todo: Find more efficient way than this for loop
-
-    return k.variable(binary_array)
-
-
-def binary_repr(num, width=None):
-    """
-    Return the binary representation of the input number as a string.
-
-    Parameters
-    ----------
-
-    num : int
-        Only an integer decimal number can be used.
-    width : int, optional
-        The length of the returned string.
-
-    Returns
-    -------
-
-    bin : str
-        Binary representation of `num` or two's complement of `num`.
-    """
-
-    if k.equal(num, 0):
-        return '0' * (width or 1)
-    elif k.greater(num, 0):
-        binary = bin(num)[2:]
-        binwidth = len(binary)
-        outwidth = (binwidth if width is None else max(binwidth, width))
-        return binary.zfill(outwidth)
 
 
 def get_isi_from_impulse(impulse, epsilon):
@@ -631,11 +539,13 @@ class SpikeConcatenate(Concatenate):
         Concatenate.__init__(self, axis, **kwargs)
 
     def _merge_function(self, inputs):
+
         return self._merge_function(inputs)
 
     @staticmethod
     def get_time():
-        return None
+
+        pass
 
     @staticmethod
     def reset(sample_idx):
@@ -663,7 +573,8 @@ class SpikeFlatten(Flatten):
 
     @staticmethod
     def get_time():
-        return None
+
+        pass
 
     @staticmethod
     def reset(sample_idx):
@@ -734,7 +645,7 @@ class SpikeConv2D(Conv2D, SpikeLayer):
 
 
 class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
-    """Average Pooling."""
+    """Spike Average Pooling."""
 
     def build(self, input_shape):
         """Creates the layer weights.
@@ -758,7 +669,7 @@ class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
 
 
 class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
-    """Spiking Max Pooling."""
+    """Spike Max Pooling."""
 
     def __init__(self, **kwargs):
         MaxPooling2D.__init__(self, **kwargs)
@@ -818,15 +729,10 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
         self.reset_spikevars(sample_idx)
         mod = self.config.getint('simulation', 'reset_between_nth_sample')
         mod = mod if mod else sample_idx + 1
-        if sample_idx % mod == 0:
-            k.set_value(self.spikerate_pre,
-                        np.zeros(self.input_shape, k.floatx()))
-
-    @property
-    def class_name(self):
-        """Get class name."""
-
-        return self.__class__.__name__
+        k.set_value(self.spikerate_pre, k.tf.cond(
+            sample_idx % mod == 0,
+            lambda: np.zeros(self.input_shape, k.floatx()),
+            lambda: k.get_value(self.spikerate_pre)))
 
 
 # noinspection PyProtectedMember
@@ -975,6 +881,22 @@ def _spike_max_pool(xr, xs, ksize, strides, padding):
     # TODO: Spike size should equal threshold, which may vary during simulation.
     spike = 1  # kwargs[str('v_thresh')]
 
+    def f(ysn_, r_, rate_patch_):
+        spike_patch = ysn_[[region_slices[i][r_[i]] for i in range(nd)]]
+        # The second condition is not completely equivalent to the first
+        # because the former has a higher chance of admitting spikes.
+        # return k.tf.cond(
+        #     (spike_patch*(rate_patch_ == np.argmax(rate_patch_))).any(),
+        #     lambda: spike, lambda: 0)
+        return k.tf.cond(
+            spike_patch.flatten()[np.argmax(rate_patch_)],
+            lambda: spike, lambda: 0)
+
+    def g():
+        # Need to prevent the layer to output a spike at
+        # index 0 if all rates are equally zero.
+        return 0
+
     # iterate over non-pooling dimensions
     for n in np.ndindex(*xr.shape[:-nd]):
         yrn = yr[n]
@@ -983,16 +905,7 @@ def _spike_max_pool(xr, xs, ksize, strides, padding):
         # iterate over pooling regions
         for r in np.ndindex(*pool_out_shp):
             rate_patch = yrn[[region_slices[i][r[i]] for i in range(nd)]]
-            if not rate_patch.any():
-                # Need to prevent the layer to output a spike at
-                # index 0 if all rates are equally zero.
-                continue
-            spike_patch = ysn[[region_slices[i][r[i]] for i in range(nd)]]
-            # The second condition is not completely equivalent to the first
-            # because the former has a higher chance of admitting spikes.
-            # if (spike_patch*(rate_patch == np.argmax(rate_patch))).any():
-            if spike_patch.flatten()[np.argmax(rate_patch)]:
-                zn[r] = spike
+            zn[r] = k.tf.cond(rate_patch.any(), f(ysn, r, rate_patch), g)
 
     if padding == 'SAME':
         expected_width = (xr.shape[1] + stride[0] - 1) // stride[0]

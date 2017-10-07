@@ -141,6 +141,7 @@ class AbstractSNN:
 
         # Logging variables
         self.spiketrains_n_b_l_t = self.activations_n_b_l = None
+        self.spikerates_n_b_l = None
         self.input_b_l_t = self.mem_n_b_l_t = None
         self.top1err_b_t = self.top5err_b_t = None
         self.synaptic_operations_b_t = self.operations_ann = None
@@ -698,6 +699,8 @@ class AbstractSNN:
             if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
                     'hist_spikerates_activations'} & self._plot_keys):
                 plot_vars['spiketrains_n_b_l_t'] = self.spiketrains_n_b_l_t
+            if self.spikerates_n_b_l is not None:
+                plot_vars['spikerates_n_b_l'] = self.spikerates_n_b_l
             if len(self._plot_keys) > 0:
                 snn_plt.output_graphs(plot_vars, self.config, log_dir, 0,
                                       self.data_format)
@@ -788,6 +791,16 @@ class AbstractSNN:
                 shape = list(layer.output_shape) + [self._num_timesteps]
                 self.spiketrains_n_b_l_t.append((np.zeros(shape, 'float32'),
                                                  layer.name))
+
+        if any({'spikerates', 'correlation', 'hist_spikerates_activations'} &
+               self._plot_keys) and self.config.getboolean(
+                'conversion', 'temporal_pattern_coding'):
+            self.spikerates_n_b_l = []
+            for layer in self.parsed_model.layers:
+                if not is_spiking(layer, self.config):
+                    continue
+                self.spikerates_n_b_l.append((np.zeros(layer.output_shape,
+                                                       'float32'), layer.name))
 
         if 'operations' in self._plot_keys or \
                 'synaptic_operations_b_t' in self._log_keys:

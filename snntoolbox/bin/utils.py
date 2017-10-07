@@ -478,7 +478,11 @@ def initialize_simulator(config):
     elif simulator == 'brian2':
         sim = import_module('brian2')
     elif simulator == 'INI':
-        sim = import_module('snntoolbox.simulation.backends.inisim.inisim')
+        if config.getboolean('conversion', 'temporal_pattern_coding'):
+            sim = import_module(
+                'snntoolbox.simulation.backends.inisim.temporal_pattern_coding')
+        else:
+            sim = import_module('snntoolbox.simulation.backends.inisim.inisim')
     elif simulator == 'MegaSim':
         sim = import_module('snntoolbox.simulation.backends.megasim.megasim')
     elif simulator == 'INIed':

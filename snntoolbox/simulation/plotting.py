@@ -77,9 +77,10 @@ def output_graphs(plot_vars, config, path=None, idx=0, data_format=None):
             plot_vars['spiketrains_n_b_l_t'], idx)
         if any({'spikerates', 'correlation', 'hist_spikerates_activations'}
                & plot_keys):
-            plot_vars['spikerates_n_b_l'] = spiketrains_to_rates(
-                plot_vars['spiketrains_n_b_l_t'], duration,
-                config.getboolean('conversion', 'use_isi_code'))
+            if plot_vars['spikerates_n_b_l'] is None:
+                plot_vars['spikerates_n_b_l'] = spiketrains_to_rates(
+                    plot_vars['spiketrains_n_b_l_t'], duration,
+                    config.getboolean('conversion', 'use_isi_code'))
             plot_vars['spikerates_n_l'] = get_sample_activity_from_batch(
                 plot_vars['spikerates_n_b_l'], idx)
 
@@ -740,10 +741,10 @@ def plot_hist_combined(data, path=None):
     # 3D-structure of a layer in a histogram.
     h = {}
     for (key, val) in data.items():
-        l = []
+        ll = []
         for a in val:
-            l += list(a[0].flatten())
-        h.update({key: l})
+            ll += list(a[0].flatten())
+        h.update({key: ll})
 
     keys = sorted(h.keys())
     fig, ax = plt.subplots()
