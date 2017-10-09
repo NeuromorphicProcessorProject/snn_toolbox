@@ -507,27 +507,31 @@ def add_payloads(prev_layer, input_spikes):
 def spike_call(call):
     def decorator(self, x):
 
+        input_psp = x[0]
+        prospective_input_spikes = x[1]
+
         if clamp_var:
             # Clamp membrane potential if spike rate variance too high
-            self.update_avg_variance(x)
+            self.update_avg_variance(input_psp)
         if self.online_normalization:
             # Modify threshold if firing rate of layer too low
             self.add_update([(self.v_thresh, self.get_new_thresh())])
         if self.payloads:
             # Add payload from previous layer
-            x = add_payloads(get_inbound_layers(self)[0], x)
+            input_psp = add_payloads(get_inbound_layers(self)[0], input_psp)
 
-        self.impulse = call(self, x)
+        self.impulse = call(self, input_psp)
 
-        print(self.inbound_nodes)
-        if len(self.weights) > 0 and self.inbound_nodes:  # Not satisfied during build. Ever at run time?
-            weights, bias = self.get_weights()
-            self.set_weights([np.abs(weights), bias])
-            self.add_update([(self.missing_input, call(
-                self, get_inbound_layers(self)[0].prospective_input_spikes))])
-            self.set_weights([weights, bias])
+        # Should try different ways here: Take absolute weight values, reverse
+        # sign, or do not change them at all. Also, take values of positive
+        # input psps instead of prospective input spikes of unit size.
+        weights, bias = self.get_weights()
+        self.set_weights([np.abs(weights), bias])
+        self.add_update([(self.missing_impulse,
+                          call(self, prospective_input_spikes))])
+        self.set_weights([weights, bias])
 
-        return self.update_neurons()
+        return self.update_neurons(), self.prospective_spikes
 
     return decorator
 
@@ -579,11 +583,14 @@ class SpikeFlatten(Flatten):
 
     def call(self, x, mask=None):
 
-        if self.inbound_nodes:
-            self.prospective_spikes = Flatten.call(
-                self, get_inbound_layers(self)[0].prospective_spikes)
+        input_psp = x[0]
+        prospective_input_spikes = x[1]
 
-        return k.cast(super(SpikeFlatten, self).call(x), k.floatx())
+        self.prospective_spikes = Flatten.call(self, prospective_input_spikes)
+
+        psp = k.cast(super(SpikeFlatten, self).call(input_psp), k.floatx())
+
+        return psp, self.prospective_spikes
 
     @staticmethod
     def get_time():
