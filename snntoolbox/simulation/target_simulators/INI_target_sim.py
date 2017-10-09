@@ -154,7 +154,8 @@ class SNN(AbstractSNN):
                     out_spikes.astype('int32'), (out_spikes.shape[0], -1)), 1)
             elif self.config.getboolean('conversion',
                                         'temporal_pattern_coding'):
-                finfo = np.finfo(out_spikes.dtype)
+                finfo = np.finfo(self.config.get('conversion',
+                                                 'activation_dtype'))
                 num_bits = finfo.bits
                 scale_fac = 1 / min(finfo.epsneg, finfo.eps)
                 x = to_binary(out_spikes, num_bits, scale_fac)

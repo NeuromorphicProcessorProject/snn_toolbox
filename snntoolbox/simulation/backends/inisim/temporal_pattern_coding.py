@@ -94,9 +94,10 @@ def spike_call(call):
         # Multiply binary feature map matrix by PSP kernel which decays
         # exponentially across the 32 temporal steps (batch-dimension).
         shape = [self.num_bits] + [1] * len(x.shape[1:])
-        x *= k.constant([2**(self.num_bits-i-1) for i in range(self.num_bits)], k.floatx(), shape)
+        x *= k.constant([2**(self.num_bits-i-1) for i in range(self.num_bits)],
+                        k.floatx(), shape)
 
-        self.impulse = call(self, x)
+        self.impulse = call(self, k.ones_like(x)*self.scale_fac)
         pre_activ = k.sum(self.impulse, 0, keepdims=True) * self.scale_fac_inv
         activ = softmax(pre_activ) if self.activation_str == 'softmax' \
             else relu(pre_activ)
@@ -110,7 +111,7 @@ def spike_call(call):
         #         y, (1,) + tuple(shape_y[1:]) + (shape_y[0],)))])
 
         if self.spikerates is not None:
-            self.add_update([self.spikerates, activ])
+            self.add_update([self.spikerates, k.ones_like(activ)])
 
         return activ
 
