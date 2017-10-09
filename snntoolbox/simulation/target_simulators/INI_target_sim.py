@@ -158,9 +158,9 @@ class SNN(AbstractSNN):
                 num_bits = finfo.bits
                 scale_fac = 1 / min(finfo.epsneg, finfo.eps)
                 x = to_binary(out_spikes, num_bits, scale_fac)
-                x *= np.reshape([2 ** -i for i in range(num_bits)],
+                x *= np.reshape([2**(num_bits-i-1) for i in range(num_bits)],
                                 (num_bits, 1))
-                output_b_l_t[:, :, :] = np.reshape(x, (1, -1, num_bits))
+                output_b_l_t[:, :, :] = np.expand_dims(x.transpose(), 0)
                 print(out_spikes)
                 print(output_b_l_t)
             else:
@@ -227,7 +227,7 @@ class SNN(AbstractSNN):
                         output_b_l_t[b, l, t] = spike
 
         if self.config.getboolean('conversion', 'temporal_pattern_coding'):
-            return np.cumsum(output_b_l_t, 2)
+            return np.cumsum(output_b_l_t, 2) / scale_fac
         else:
             return np.cumsum(np.asarray(output_b_l_t, bool), 2)
 

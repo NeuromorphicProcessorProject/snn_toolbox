@@ -94,20 +94,20 @@ def spike_call(call):
         # Multiply binary feature map matrix by PSP kernel which decays
         # exponentially across the 32 temporal steps (batch-dimension).
         shape = [self.num_bits] + [1] * len(x.shape[1:])
-        x *= k.reshape([2**-i for i in range(self.num_bits)], shape)
+        x *= k.constant([2**(self.num_bits-i-1) for i in range(self.num_bits)], k.floatx(), shape)
 
         self.impulse = call(self, x)
         pre_activ = k.sum(self.impulse, 0, keepdims=True) * self.scale_fac_inv
         activ = softmax(pre_activ) if self.activation_str == 'softmax' \
             else relu(pre_activ)
 
-        if self.spiketrain is not None:
-            y = to_binary(activ, self.num_bits, self.scale_fac)
-            shape = [self.num_bits] + [1] * len(y.shape[1:])
-            y *= k.reshape(k.arange(self.num_bits, dtype=k.floatx()), shape)
-            shape_y = k.get_variable_shape(y)
-            self.add_update([(self.spiketrain, k.reshape(
-                y, (1,) + tuple(shape_y[1:]) + (shape_y[0],)))])
+        # if self.spiketrain is not None:
+        #     y = to_binary(activ, self.num_bits, self.scale_fac)
+        #     shape = [self.num_bits] + [1] * len(y.shape[1:])
+        #     y *= k.reshape(k.arange(self.num_bits, dtype=k.floatx()), shape)
+        #     shape_y = k.get_variable_shape(y)
+        #     self.add_update([(self.spiketrain, k.reshape(
+        #         y, (1,) + tuple(shape_y[1:]) + (shape_y[0],)))])
 
         if self.spikerates is not None:
             self.add_update([self.spikerates, activ])
