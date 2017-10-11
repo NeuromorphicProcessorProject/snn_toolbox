@@ -107,8 +107,10 @@ class SNN(AbstractSNN):
         for layer in self.snn.layers:
             if hasattr(layer, 'bias'):
                 # Adjust biases to time resolution of simulator.
-                keras.backend.set_value(
-                    layer.bias, keras.backend.get_value(layer.bias) * self._dt)
+                bias = keras.backend.get_value(layer.bias)
+                bias *= 1/self._num_timesteps if self.config.getboolean(
+                    'conversion', 'temporal_pattern_coding') else self._dt
+                keras.backend.set_value(layer.bias, bias)
                 if bias_relaxation:  # Experimental
                     keras.backend.set_value(layer.b0,
                                             keras.backend.get_value(layer.bias))
@@ -154,21 +156,14 @@ class SNN(AbstractSNN):
                     out_spikes.astype('int32'), (out_spikes.shape[0], -1)), 1)
             elif self.config.getboolean('conversion',
                                         'temporal_pattern_coding'):
-                finfo = np.finfo(self.config.get('conversion',
-                                                 'activation_dtype'))
-                num_bits = finfo.bits
-                scale_fac = 1 / min(finfo.epsneg, finfo.eps)
-                x = to_binary(out_spikes, num_bits, scale_fac)
-                x *= np.reshape([2**(num_bits-i-1) for i in range(num_bits)],
-                                (num_bits, 1))
+                num_bits = self.config.getint('conversion', 'num_bits')
+                x = self.sim.to_binary(out_spikes, num_bits)
                 output_b_l_t[:, :, :] = np.expand_dims(x.transpose(), 0)
-                print(out_spikes)
-                print(output_b_l_t)
             else:
                 output_b_l_t[:, :, sim_step_int] = out_spikes.astype('int32')
 
             # Record neuron variables.
-            i = j = 0
+            i = j = k = 0
             for layer in self.snn.layers:
                 # Excludes Input, Flatten, Concatenate, etc:
                 if hasattr(layer, 'spiketrain') \
@@ -179,10 +174,14 @@ class SNN(AbstractSNN):
                     if self.neuron_operations_b_t is not None:
                         self.set_neuron_operations(i, sim_step_int)
                     i += 1
-                if hasattr(layer, 'mem') and self.mem_n_b_l_t is not None:
-                    self.mem_n_b_l_t[j][0][Ellipsis, sim_step_int] = \
-                        keras.backend.get_value(layer.mem)
+                if hasattr(layer, 'spikerates') \
+                        and layer.spikerates is not None:
+                    self.set_spikerates(layer, j)
                     j += 1
+                if hasattr(layer, 'mem') and self.mem_n_b_l_t is not None:
+                    self.mem_n_b_l_t[k][0][Ellipsis, sim_step_int] = \
+                        keras.backend.get_value(layer.mem)
+                    k += 1
             if 'input_b_l_t' in self._log_keys:
                 self.input_b_l_t[Ellipsis, sim_step_int] = input_b_l
             if self._poisson_input or self._dataset_format == 'aedat':
@@ -202,9 +201,6 @@ class SNN(AbstractSNN):
                     first_spiketimes_b_l[np.nonzero(np.sum(
                         output_b_l_t, 2) == 0)] = self._num_timesteps
                     guesses_b = np.argmin(first_spiketimes_b_l, 1)
-                elif self.config.getboolean('conversion',
-                                            'temporal_pattern_coding'):
-                    guesses_b = np.argmax(out_spikes, 1)
                 else:
                     guesses_b = np.argmax(np.sum(output_b_l_t, 2), 1)
                 echo('{:.2%}_'.format(np.mean(kwargs[str('truth_b')] ==
@@ -227,10 +223,7 @@ class SNN(AbstractSNN):
                             spike = 1
                         output_b_l_t[b, l, t] = spike
 
-        if self.config.getboolean('conversion', 'temporal_pattern_coding'):
-            return np.cumsum(output_b_l_t, 2) / scale_fac
-        else:
-            return np.cumsum(np.asarray(output_b_l_t, bool), 2)
+        return np.cumsum(np.asarray(output_b_l_t, bool), 2)
 
     def reset(self, sample_idx):
 
@@ -334,15 +327,16 @@ class SNN(AbstractSNN):
             if self.spiketrains_n_b_l_t is not None:
                 self.spiketrains_n_b_l_t[i][0][:] = \
                     keras.backend.get_value(layer.spiketrain)
-            if self.spikerates_n_b_l is not None:
-                self.spikerates_n_b_l[i][0][:] = \
-                    keras.backend.get_value(layer.spikerates)
-            print(np.sum(self.spiketrains_n_b_l_t[i][0]))
-            print(np.sum(self.spikerates_n_b_l[i][0]))
         else:
             if self.spiketrains_n_b_l_t is not None:
                 self.spiketrains_n_b_l_t[i][0][Ellipsis, sim_step_int] = \
                     keras.backend.get_value(layer.spiketrain)
+
+    def set_spikerates(self, layer, i):
+        if self.config.getboolean('conversion', 'temporal_pattern_coding'):
+            if self.spikerates_n_b_l is not None:
+                self.spikerates_n_b_l[i][0][:] = \
+                    keras.backend.get_value(layer.spikerates)
 
     def set_neuron_operations(self, i, sim_step_int):
         if self.config.getboolean('conversion', 'temporal_pattern_coding'):
@@ -363,43 +357,3 @@ class SNN(AbstractSNN):
             self.synaptic_operations_b_t[:, sim_step_int] += \
                 get_layer_synaptic_operations(spiketrains_b_l,
                                               self.fanout[i + 1])
-
-
-def to_binary(x, num_bits, scale_fac):
-    """Transform an array of floats into binary representation.
-
-    Parameters
-    ----------
-
-    x: ndarray
-        Input array containing float values. The first dimension has to be of
-        length 1.
-    num_bits: int
-        The fixed point precision to be used when converting to binary. Will be
-        inferred from ``x`` if not specified.
-    scale_fac: float
-        Factor to scale from float to int. Because activations are normalized,
-        we do not need to check for overflow when scaling the activations ``x``
-        by ``scale_fac``. (Assumes that the inverse floatX.eps is smaller than
-        intX.max.)
-
-    Returns
-    -------
-
-    binary_array: ndarray
-        Output boolean array. The first dimension of x is expanded to length
-        ``bits``. The binary representation of each value in ``x`` is
-        distributed across the first dimension of ``binary_array``.
-    """
-
-    binary_array = np.zeros([num_bits] + list(x.shape[1:]))
-
-    powers = [2**(num_bits - i - 1) for i in range(num_bits)]
-
-    for l in range(x.shape[1]):
-        f = x[0, l] * scale_fac
-        for i in range(num_bits):
-            if f >= powers[i]:
-                binary_array[i, l] = 1
-                f -= powers[i]
-    return binary_array

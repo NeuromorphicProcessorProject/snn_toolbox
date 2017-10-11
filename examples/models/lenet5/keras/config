@@ -7,11 +7,11 @@ evaluate_ann = False
 
 [conversion]
 temporal_pattern_coding = True
-activation_dtype = float16
+num_bits = 4
 
 [simulation]
 simulator = INI
-duration = 16
+duration = 4
 num_to_test = 10
 batch_size = 1
 
