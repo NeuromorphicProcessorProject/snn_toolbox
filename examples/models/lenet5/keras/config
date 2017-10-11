@@ -5,13 +5,9 @@ filename_ann = 98.96
 [tools]
 evaluate_ann = False
 
-[conversion]
-temporal_pattern_coding = True
-num_bits = 4
-
 [simulation]
 simulator = INI
-duration = 4
+duration = 30
 num_to_test = 10
 batch_size = 1
 

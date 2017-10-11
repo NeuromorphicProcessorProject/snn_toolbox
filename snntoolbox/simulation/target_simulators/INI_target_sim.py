@@ -157,7 +157,7 @@ class SNN(AbstractSNN):
             elif self.config.getboolean('conversion',
                                         'temporal_pattern_coding'):
                 num_bits = self.config.getint('conversion', 'num_bits')
-                x = self.sim.to_binary(out_spikes, num_bits)
+                x = self.sim.to_binary_numpy(out_spikes, num_bits)
                 output_b_l_t[:, :, :] = np.expand_dims(x.transpose(), 0)
             else:
                 output_b_l_t[:, :, sim_step_int] = out_spikes.astype('int32')

@@ -67,13 +67,14 @@ class SpikeLayer(Layer):
         from snntoolbox.bin.utils import get_log_keys, get_plot_keys
 
         output_shape = self.compute_output_shape(input_shape)
-        if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
-                'hist_spikerates_activations', 'operations',
+        if any({'spikerates', 'correlation', 'hist_spikerates_activations'} &
+               get_plot_keys(self.config)):
+            self.spikerates = k.zeros(output_shape)
+        if any({'spiketrains', 'spikecounts', 'operations',
                 'synaptic_operations_b_t', 'neuron_operations_b_t',
                 'spiketrains_n_b_l_t'} & (get_plot_keys(self.config) |
                get_log_keys(self.config))):
             self.spiketrain = k.zeros(list(output_shape) + [self.num_bits])
-            self.spikerates = k.zeros(output_shape)
 
     def update_spikevars(self, x):
         updates = []
@@ -104,7 +105,6 @@ def spike_call(call):
         shape = [self.num_bits] + [1] * len(x.shape[1:])
         x_powers = x_binary * k.constant(
             [2**-i for i in range(self.num_bits)], k.floatx(), shape)
-
         x_weighted = call(self, x_powers)
         x_preactiv = k.sum(x_weighted, 0, keepdims=True)
         x_activ = softmax(x_preactiv) if self.activation_str == 'softmax' \

@@ -257,6 +257,12 @@ def update_setup(config_filepath):
     # Overwrite with user settings.
     config.read(config_filepath)
 
+    # Limit GPU usage of tensorflow.
+    import keras.backend as k
+    tf_config = k.tf.ConfigProto()
+    tf_config.gpu_options.allow_growth = True
+    k.tensorflow_backend.set_session(k.tf.Session(config=tf_config))
+
     # Name of input file must be given.
     filename_ann = config.get('paths', 'filename_ann')
     assert filename_ann != '', "Filename of input model not specified."
@@ -317,7 +323,7 @@ def update_setup(config_filepath):
             try:
                 keras.models.load_model(h5_filepath,
                                         get_custom_activations_dict())
-            except:
+            except Exception:
                 raise AssertionError(
                     "Input model could not be loaded. This is likely due to a "
                     "Keras version backwards-incompability. For instance, you "
@@ -448,6 +454,10 @@ def update_setup(config_filepath):
     if not eval(config.get('parameter_sweep', 'param_values')):
         config.set('parameter_sweep', 'param_values',
                    str([eval(config.get('cell', param_name))]))
+
+    if config.getboolean('conversion', 'temporal_pattern_coding'):
+        num_bits = str(config.getint('conversion', 'num_bits'))
+        config.set('simulation', 'duration', num_bits)
 
     with open(os.path.join(log_dir_of_current_run, '.config'), str('w')) as f:
         config.write(f)
