@@ -120,17 +120,9 @@ class SNN(AbstractSNN):
         from snntoolbox.utils.utils import echo
 
         input_b_l = kwargs[str('x_b_l')] * self._dt
-        # if self.config.getboolean("conversion", "temporal_pattern_coding"):
-        #     input_b_l = kwargs[str('x_b_l')] * self._dt
-        #     min_activation = np.min(input_b_l[input_b_l > 0])
-        #     input_b_l /= min_activation
-        #     print("Scale factor for input: {}".format(min_activation))
-        #     print("Largest scaled input: {}".format(np.max(input_b_l)))
-        #     import sys
-        #     print("Largest int: {}".format(sys.maxsize))
 
         output_b_l_t = np.zeros((self.batch_size, self.num_classes,
-                                 self._num_timesteps), 'int32')
+                                 self._num_timesteps))
 
         # Loop through simulation time.
         self._input_spikecount = 0
@@ -158,6 +150,7 @@ class SNN(AbstractSNN):
                                         'temporal_pattern_coding'):
                 num_bits = self.config.getint('conversion', 'num_bits')
                 x = self.sim.to_binary_numpy(out_spikes, num_bits)
+                x *= np.expand_dims([2 ** -i for i in range(num_bits)], -1)
                 output_b_l_t[:, :, :] = np.expand_dims(x.transpose(), 0)
             else:
                 output_b_l_t[:, :, sim_step_int] = out_spikes.astype('int32')
@@ -223,7 +216,7 @@ class SNN(AbstractSNN):
                             spike = 1
                         output_b_l_t[b, l, t] = spike
 
-        return np.cumsum(np.asarray(output_b_l_t, bool), 2)
+        return np.cumsum(output_b_l_t, 2)
 
     def reset(self, sample_idx):
 

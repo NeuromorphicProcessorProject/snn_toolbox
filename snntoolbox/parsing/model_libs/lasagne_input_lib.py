@@ -6,6 +6,7 @@
 
 import lasagne
 import numpy as np
+import keras.backend as k
 
 from snntoolbox.parsing.utils import AbstractModelParser, padding_string
 
@@ -41,10 +42,10 @@ class ModelParser(AbstractModelParser):
         return self._layer_dict.get(class_name, class_name)
 
     def get_batchnorm_parameters(self, layer):
-        mean = layer.mean.get_value()
-        var_eps_sqrt_inv = layer.inv_std.get_value()
-        gamma = layer.gamma.get_value()
-        beta = layer.beta.get_value()
+        mean = k.get_value(layer.mean)
+        var_eps_sqrt_inv = k.get_value(layer.inv_std)
+        gamma = k.get_value(layer.gamma)
+        beta = k.get_value(layer.beta)
         axis = None  # Lasagne: axes = (0, 2, 3). Keras: axis = 1. Transform:
         for axis, a in enumerate(layer.axes):
             if axis != a:
@@ -81,17 +82,17 @@ class ModelParser(AbstractModelParser):
         return len(layer.params)
 
     def parse_dense(self, layer, attributes):
-        weights = layer.W.get_value()
-        bias = layer.b.get_value()
+        weights = k.get_value(layer.W)
+        bias = k.get_value(layer.b)
         if bias is None:
             bias = np.zeros(layer.num_units)
         attributes['parameters'] = [weights, bias]
         attributes['units'] = layer.num_units
 
     def parse_convolution(self, layer, attributes):
-        weights = layer.W.get_value()
+        weights = k.get_value(layer.W)
         weights = np.transpose(weights, (2, 3, 1, 0))
-        bias = layer.b.get_value()
+        bias = k.get_value(layer.b)
         if bias is None:
             bias = np.zeros(layer.num_filters)
         attributes['parameters'] = [weights, bias]

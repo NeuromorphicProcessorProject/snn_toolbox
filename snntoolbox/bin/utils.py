@@ -458,6 +458,7 @@ def update_setup(config_filepath):
     if config.getboolean('conversion', 'temporal_pattern_coding'):
         num_bits = str(config.getint('conversion', 'num_bits'))
         config.set('simulation', 'duration', num_bits)
+        config.set('simulation', 'batch_size', '1')
 
     with open(os.path.join(log_dir_of_current_run, '.config'), str('w')) as f:
         config.write(f)
