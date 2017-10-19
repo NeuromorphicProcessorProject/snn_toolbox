@@ -12,7 +12,7 @@ from snntoolbox.datasets.utils import to_categorical
 
 class DVSIterator(object):
     def __init__(self, dataset_path, batch_shape, frame_width,
-                 num_events_per_sample, chip_size, target_size=None,
+                 num_events_per_frame, chip_size, target_size=None,
                  label_dict=None):
         self.dataset_path = dataset_path
         self.batch_shape = batch_shape
@@ -23,10 +23,11 @@ class DVSIterator(object):
         self.target_size = target_size
         self.num_events_of_sample = 0
         self.dvs_sample_idx = -1
-        self.num_events_per_sample = num_events_per_sample
-        self.num_events_per_batch = self.batch_size * num_events_per_sample
+        self.num_events_per_frame = num_events_per_frame
+        self.num_events_per_batch = self.batch_size * num_events_per_frame
         self.x_b_xaddr = self.x_b_yaddr = self.x_b_ts = self.y_b = None
         self.frames_from_sequence = None
+        self.event_sequence = None
 
         # Count the number of samples and classes
         classes = [subdir for subdir in sorted(os.listdir(dataset_path))
@@ -93,10 +94,9 @@ class DVSIterator(object):
         """
 
         # Load new sequence if all events of current sequence have been used.
-        event_sequence = None
         if self.num_events_of_sample <= \
                 self.num_events_per_batch * (self.batch_idx + 1):
-            event_sequence = self.next_sequence()
+            self.event_sequence = self.next_sequence()
 
             # Get class label, which is the same for all events in a sequence.
             self.y_b = np.broadcast_to(to_categorical(
@@ -105,15 +105,19 @@ class DVSIterator(object):
 
             # Generate frames from events.
             self.frames_from_sequence = get_frames_from_sequence(
-                event_sequence['x'], event_sequence['y'],
-                self.num_events_per_sample, self.chip_size, self.target_size)
+                self.event_sequence['x'], self.event_sequence['y'],
+                self.num_events_per_frame, self.chip_size, self.target_size)
+            # Discard last frames that do not fill a complete batch.
+            num_frames = self.batch_size * int(self.num_events_of_sample /
+                                               self.num_events_per_batch)
+            self.frames_from_sequence = self.frames_from_sequence[:num_frames]
 
         # From the current event sequence, extract the next bunch of events and
         # stack them as a batch of small sequences.
         self.x_b_xaddr, self.x_b_yaddr, self.x_b_ts = extract_batch(
-            event_sequence['x'], event_sequence['y'], event_sequence['ts'],
-            self.batch_size, self.batch_idx, self.num_events_per_sample,
-            self.chip_size, self.target_size)
+            self.event_sequence['x'], self.event_sequence['y'],
+            self.event_sequence['ts'], self.batch_size, self.batch_idx,
+            self.num_events_per_frame, self.chip_size, self.target_size)
 
         self.batch_idx += 1
 
@@ -125,13 +129,13 @@ class DVSIterator(object):
             self.frame_width)
 
     def get_frame_batch(self):
-        event_idxs = range(self.num_events_per_batch * self.batch_idx,
-                           self.num_events_per_batch * (self.batch_idx + 1))
+        event_idxs = range(self.batch_size * (self.batch_idx - 1),
+                           self.batch_size * self.batch_idx)
         return self.frames_from_sequence[event_idxs]
 
 
 def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx,
-                  num_events_per_sample, chip_size, target_size=None):
+                  num_events_per_frame, chip_size, target_size=None):
     """Transform a one-dimensional sequence of AER-events into a batch.
 
     Parameters
@@ -142,7 +146,7 @@ def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx,
     timestamps: ndarray
     batch_size: int
     batch_idx: int
-    num_events_per_sample: int
+    num_events_per_frame: int
     chip_size: tuple[int]
     target_size: Optional[tuple[int]]
 
@@ -168,12 +172,12 @@ def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx,
     x_b_ts = [deque() for _ in range(batch_size)]
 
     print("Extracting batch of samples à {} events from DVS sequence..."
-          "".format(num_events_per_sample))
+          "".format(num_events_per_frame))
 
     for sample_idx in range(batch_size):
-        start_event = num_events_per_sample * batch_size * batch_idx + \
-                      num_events_per_sample * sample_idx
-        event_idxs = range(start_event, start_event + num_events_per_sample)
+        start_event = num_events_per_frame * batch_size * batch_idx + \
+                      num_events_per_frame * sample_idx
+        event_idxs = range(start_event, start_event + num_events_per_frame)
         event_sums = np.zeros(target_size, 'int32')
         xaddr_sub = []
         yaddr_sub = []
@@ -195,7 +199,7 @@ def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx,
         np.clip(event_sums, 0, 3 * sigma, event_sums)
 
         print("Discarded {} events during 3-sigma standardization.".format(
-            num_events_per_sample - np.sum(event_sums)))
+            num_events_per_frame - np.sum(event_sums)))
 
         for x, y, ts in zip(xaddr_sub, yaddr_sub, timestamps[event_idxs]):
             if event_sums[y, x] > 0:
@@ -422,4 +426,4 @@ def get_frames_from_sequence(xaddr, yaddr, num_events_per_frame, chip_size,
         # Clip number of events per pixel to three-sigma
         frames[sample_idx] = np.clip(sample, 0, 3 * sigma)
 
-    return frames / 255.
+    return frames[:, np.newaxis, :, :] / 255.

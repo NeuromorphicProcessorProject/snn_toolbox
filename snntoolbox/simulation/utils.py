@@ -569,7 +569,7 @@ class AbstractSNN:
                     break
 
                 # Generate frames so we can compare with ANN.
-                x_b_l = data_batch_kwargs['dvs_gen'].get_frames_batch()
+                x_b_l = data_batch_kwargs['dvs_gen'].get_frame_batch()
 
             truth_b = np.argmax(y_b_l, axis=1)
 
