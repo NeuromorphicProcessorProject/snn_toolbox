@@ -117,7 +117,7 @@ class SNN(AbstractSNN):
         input_b_l = kwargs[str('x_b_l')] * self._dt
 
         output_b_l_t = np.zeros((self.batch_size, self.num_classes,
-                                 self._num_timesteps), 'int32')
+                                 self._num_timesteps), 'bool')
 
         # Loop through simulation time.
         self._input_spikecount = 0
@@ -140,9 +140,9 @@ class SNN(AbstractSNN):
             # Add current spikes to previous spikes.
             if remove_classifier:  # Need to flatten output.
                 output_b_l_t[:, :, sim_step_int] = np.argmax(np.reshape(
-                    out_spikes.astype('int32'), (out_spikes.shape[0], -1)), 1)
+                    out_spikes > 0, (out_spikes.shape[0], -1)), 1)
             else:
-                output_b_l_t[:, :, sim_step_int] = out_spikes.astype('int32')
+                output_b_l_t[:, :, sim_step_int] = out_spikes > 0
 
             # Record neuron variables.
             i = j = 0
@@ -182,13 +182,18 @@ class SNN(AbstractSNN):
                     and sim_step % 1 == 0:
                 if self.config.getboolean('conversion', 'use_isi_code'):
                     first_spiketimes_b_l = np.argmax(output_b_l_t, 2)
+                    undecided_b = np.sum(first_spiketimes_b_l, 1) == 0
                     first_spiketimes_b_l[np.nonzero(np.sum(
                         output_b_l_t, 2) == 0)] = self._num_timesteps
                     guesses_b = np.argmin(first_spiketimes_b_l, 1)
                 else:
-                    guesses_b = np.argmax(np.sum(output_b_l_t, 2), 1)
+                    spike_sums_b_l = np.sum(output_b_l_t, 2)
+                    undecided_b = np.sum(spike_sums_b_l, 1) == 0
+                    guesses_b = np.argmax(spike_sums_b_l, 1)
+                none_class_b = -1 * np.ones(self.batch_size)
+                clean_guesses_b = np.where(undecided_b, none_class_b, guesses_b)
                 echo('{:.2%}_'.format(np.mean(kwargs[str('truth_b')] ==
-                                              guesses_b)))
+                                              clean_guesses_b)))
 
             if self.config.getboolean('conversion', 'use_isi_code') and \
                     all(np.count_nonzero(output_b_l_t, (1, 2)) >= self.top_k):
@@ -200,11 +205,11 @@ class SNN(AbstractSNN):
                 for l in range(self.num_classes):
                     spike = 0
                     for t in range(self._num_timesteps):
-                        if output_b_l_t[b, l, t] != 0:
-                            spike = 1
+                        if output_b_l_t[b, l, t]:
+                            spike = True
                         output_b_l_t[b, l, t] = spike
 
-        return np.cumsum(np.asarray(output_b_l_t, bool), 2)
+        return np.cumsum(output_b_l_t, 2)
 
     def reset(self, sample_idx):
 

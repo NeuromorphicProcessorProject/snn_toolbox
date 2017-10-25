@@ -313,7 +313,15 @@ def update_setup(config_filepath):
         json_file = filename_ann + '.json'
         if not os.path.isfile(os.path.join(path_wd, json_file)):
             import keras
+            import h5py
             from snntoolbox.parsing.utils import get_custom_activations_dict
+            # Remove optimizer_weights here, because they may cause the
+            # load_model method to fail if the network was trained on a
+            # different platform or keras version
+            # (see https://github.com/fchollet/keras/issues/4044).
+            with h5py.File(h5_filepath, 'a') as f:
+                if 'optimizer_weights' in f.keys():
+                    del f['optimizer_weights']
             try:
                 keras.models.load_model(h5_filepath,
                                         get_custom_activations_dict())

@@ -101,7 +101,7 @@ class DVSIterator(object):
             # Get class label, which is the same for all events in a sequence.
             self.y_b = np.broadcast_to(to_categorical(
                 [self.labels[self.dvs_sample_idx]], self.num_classes),
-                (self.batch_size, self.num_classes))
+                (self.batch_size, self.num_classes)).astype('float32')
 
             # Generate frames from events.
             self.frames_from_sequence = get_frames_from_sequence(

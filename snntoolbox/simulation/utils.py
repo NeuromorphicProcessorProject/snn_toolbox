@@ -509,7 +509,7 @@ class AbstractSNN:
         # Divide the test set into batches and run all samples in a batch in
         # parallel.
         dataset_format = self.config.get('input', 'dataset_format')
-        num_batches = int(1e9) if dataset_format == 'aedat' else \
+        num_batches = int(1e6) if dataset_format == 'aedat' else \
             int(np.floor(self.config.getint('simulation', 'num_to_test') /
                          self.batch_size))
 
@@ -538,7 +538,8 @@ class AbstractSNN:
         # If DVS events are used as input, instantiate a DVSIterator.
         if dataset_format == 'aedat':
             from snntoolbox.datasets.aedat.DVSIterator import DVSIterator
-            batch_shape = list(self.parsed_model.layers[0].batch_input_shape)
+            batch_shape = list(np.array(
+                self.parsed_model.layers[0].batch_input_shape, int))
             batch_shape[0] = self.batch_size
             dvs_gen = DVSIterator(
                 self.config.get('paths', 'dataset_path'), batch_shape,
