@@ -11,8 +11,8 @@ from snntoolbox.datasets.utils import to_categorical
 
 
 class DVSIterator(object):
-    def __init__(self, dataset_path, batch_shape, frame_width,
-                 num_events_per_frame, chip_size, target_size=None,
+    def __init__(self, dataset_path, batch_shape, data_format, frame_width,
+                 num_events_per_frame, chip_size, target_shape=None,
                  label_dict=None):
         self.dataset_path = dataset_path
         self.batch_shape = batch_shape
@@ -20,7 +20,7 @@ class DVSIterator(object):
         self.frame_width = frame_width
         self.batch_idx = 0
         self.chip_size = chip_size
-        self.target_size = target_size
+        self.target_shape = target_shape
         self.num_events_of_sample = 0
         self.dvs_sample_idx = -1
         self.num_events_per_frame = num_events_per_frame
@@ -28,6 +28,7 @@ class DVSIterator(object):
         self.x_b_xaddr = self.x_b_yaddr = self.x_b_ts = self.y_b = None
         self.frames_from_sequence = None
         self.event_sequence = None
+        self.data_format = data_format
 
         # Count the number of samples and classes
         classes = [subdir for subdir in sorted(os.listdir(dataset_path))
@@ -72,7 +73,7 @@ class DVSIterator(object):
         # Load new sequence.
         filepath = os.path.join(self.dataset_path,
                                 self.filenames[self.dvs_sample_idx])
-        event_sequence = load_event_sequence(filepath, (239, 179))
+        event_sequence = load_event_sequence(filepath, self.chip_size)
 
         # Update statistics of current sequence.
         self.num_events_of_sample = len(event_sequence['x'])
@@ -106,7 +107,8 @@ class DVSIterator(object):
             # Generate frames from events.
             self.frames_from_sequence = get_frames_from_sequence(
                 self.event_sequence['x'], self.event_sequence['y'],
-                self.num_events_per_frame, self.chip_size, self.target_size)
+                self.num_events_per_frame, self.data_format, self.chip_size,
+                self.target_shape)
             # Discard last frames that do not fill a complete batch.
             num_frames = self.batch_size * int(self.num_events_of_sample /
                                                self.num_events_per_batch)
@@ -117,7 +119,7 @@ class DVSIterator(object):
         self.x_b_xaddr, self.x_b_yaddr, self.x_b_ts = extract_batch(
             self.event_sequence['x'], self.event_sequence['y'],
             self.event_sequence['ts'], self.batch_size, self.batch_idx,
-            self.num_events_per_frame, self.chip_size, self.target_size)
+            self.num_events_per_frame, self.chip_size, self.target_shape)
 
         self.batch_idx += 1
 
@@ -126,7 +128,7 @@ class DVSIterator(object):
     def next_eventframe_batch(self):
         return next_eventframe_batch(
             self.x_b_xaddr, self.x_b_yaddr, self.x_b_ts, self.batch_shape,
-            self.frame_width)
+            self.data_format, self.frame_width)
 
     def get_frame_batch(self):
         event_idxs = range(self.batch_size * (self.batch_idx - 1),
@@ -135,7 +137,7 @@ class DVSIterator(object):
 
 
 def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx,
-                  num_events_per_frame, chip_size, target_size=None):
+                  num_events_per_frame, chip_size, target_shape=None):
     """Transform a one-dimensional sequence of AER-events into a batch.
 
     Parameters
@@ -148,7 +150,7 @@ def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx,
     batch_idx: int
     num_events_per_frame: int
     chip_size: tuple[int]
-    target_size: Optional[tuple[int]]
+    target_shape: Optional[tuple[int]]
 
     Returns
     -------
@@ -160,11 +162,11 @@ def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx,
 
     from collections import deque
 
-    if target_size is None:
-        target_size = chip_size
+    if target_shape is None:
+        target_shape = chip_size
         scale = None
     else:
-        scale = [np.true_divide((t - 1), (c - 1)) for t, c in zip(target_size,
+        scale = [np.true_divide((t - 1), (c - 1)) for t, c in zip(target_shape,
                                                                   chip_size)]
 
     x_b_xaddr = [deque() for _ in range(batch_size)]
@@ -178,7 +180,7 @@ def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx,
         start_event = num_events_per_frame * batch_size * batch_idx + \
                       num_events_per_frame * sample_idx
         event_idxs = range(start_event, start_event + num_events_per_frame)
-        event_sums = np.zeros(target_size, 'int32')
+        event_sums = np.zeros(target_shape, 'int32')
         xaddr_sub = []
         yaddr_sub = []
         for x, y in zip(xaddr[event_idxs], yaddr[event_idxs]):
@@ -211,7 +213,7 @@ def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx,
     return x_b_xaddr, x_b_yaddr, x_b_ts
 
 
-def remove_outliers(timestamps, xaddr, yaddr, pol, x_max=239, y_max=179):
+def remove_outliers(timestamps, xaddr, yaddr, pol, x_max=240, y_max=180):
     """Remove outliers from DVS data.
 
     Parameters
@@ -234,8 +236,8 @@ def remove_outliers(timestamps, xaddr, yaddr, pol, x_max=239, y_max=179):
     """
 
     len_orig = len(timestamps)
-    xaddr_valid = np.where(np.array(xaddr) <= x_max)
-    yaddr_valid = np.where(np.array(yaddr) <= y_max)
+    xaddr_valid = np.where(np.array(xaddr) < x_max)
+    yaddr_valid = np.where(np.array(yaddr) < y_max)
     xy_valid = np.intersect1d(xaddr_valid[0], yaddr_valid[0], True)
     xaddr = np.array(xaddr)[xy_valid]
     yaddr = np.array(yaddr)[xy_valid]
@@ -259,7 +261,7 @@ def load_event_sequence(filename, xyrange=None):
     filename: str
         Name of ``.aedat`` file to load.
     xyrange: tuple[int]
-        Chip dimensions - 1, i.e. largest indices with zero-convention. 
+        Chip dimensions, i.e. 1 + largest indices with zero-convention.
 
     Returns
     -------
@@ -291,13 +293,13 @@ def load_event_sequence(filename, xyrange=None):
         timestamps, xaddr, yaddr, pol = remove_outliers(
             timestamps, xaddr, yaddr, pol, xyrange[0], xyrange[1])
 
-    xaddr = xyrange[0] - xaddr
-    yaddr = xyrange[1] - yaddr
+    xaddr = xyrange[0] - xaddr - 1
+    yaddr = xyrange[1] - yaddr - 1
 
     return {'x': xaddr, 'y': yaddr, 'ts': timestamps}
 
 
-def get_binary_frame(xaddr, yaddr, timestamps, shape, frame_width):
+def get_binary_frame(xaddr, yaddr, timestamps, shape, data_format, frame_width):
     """
     Put events from event sequence into a shallow frame of at most one event per
     pixel. Stop if the time between the current and the oldest event exceeds
@@ -311,7 +313,10 @@ def get_binary_frame(xaddr, yaddr, timestamps, shape, frame_width):
     yaddr: collections.deque
     timestamps: collections.deque
     shape: tuple
-        Include channel dimension even for gray-scale images, e.g. (1, 64, 64).
+        Include channel dimension even for gray-scale images, e.g. (1, 64, 64)
+        if ``data_format='channels_first'``.
+    data_format: str
+        Either 'channels_first' or 'channels_last'.
     frame_width: int
 
     Returns
@@ -321,7 +326,8 @@ def get_binary_frame(xaddr, yaddr, timestamps, shape, frame_width):
     """
 
     # Allocate output array.
-    binary_frame = np.zeros(shape)
+    channel_axis = 0 if data_format == 'channels_first' else -1
+    binary_frame = np.squeeze(np.zeros(shape), channel_axis)
 
     # Buffer event sequence because we will be removing elements from original
     # list:
@@ -336,8 +342,8 @@ def get_binary_frame(xaddr, yaddr, timestamps, shape, frame_width):
     # Put events from event sequence buffer into frame, if pixel location is not
     # occupied yet.
     for x, y, ts in zip(xaddr_sample, yaddr_sample, ts_sample):
-        if binary_frame[0:, y, x] == 0:
-            binary_frame[0:, y, x] = 1
+        if binary_frame[y, x] == 0:
+            binary_frame[y, x] = 1
             # Can't use .popleft()
             xaddr.remove(x)
             yaddr.remove(y)
@@ -346,10 +352,11 @@ def get_binary_frame(xaddr, yaddr, timestamps, shape, frame_width):
         if ts - first_ts_of_frame > frame_width:
             break
 
-    return binary_frame
+    return np.expand_dims(binary_frame, channel_axis)
 
 
-def get_eventframe_sequence(xaddr, yaddr, timestamps, shape, frame_width):
+def get_eventframe_sequence(xaddr, yaddr, timestamps, shape, data_format,
+                            frame_width):
     """
     Given a single sequence of x-y-ts events, generate a sequence of binary
     event frames.
@@ -359,12 +366,13 @@ def get_eventframe_sequence(xaddr, yaddr, timestamps, shape, frame_width):
 
     while len(xaddr) > 0:
         inp.append(get_binary_frame(xaddr, yaddr, timestamps, shape,
-                                    frame_width))
+                                    data_format, frame_width))
 
     return np.stack(inp, -1)
 
 
-def next_eventframe_batch(x_b_xaddr, x_b_yaddr, x_b_ts, shape, frame_width):
+def next_eventframe_batch(x_b_xaddr, x_b_yaddr, x_b_ts, shape, data_format,
+                          frame_width):
     """
     Given a batch of x-y-ts event sequences, generate a batch of binary event
     frames that can be used in a time-stepped simulator.
@@ -377,30 +385,30 @@ def next_eventframe_batch(x_b_xaddr, x_b_yaddr, x_b_ts, shape, frame_width):
     for sample_idx in range(shape[0]):
         input_b_l[sample_idx] = get_binary_frame(
             x_b_xaddr[sample_idx], x_b_yaddr[sample_idx], x_b_ts[sample_idx],
-            shape[1:], frame_width)
+            shape[1:], data_format, frame_width)
 
     return input_b_l
 
 
-def get_frames_from_sequence(xaddr, yaddr, num_events_per_frame, chip_size,
-                             target_size=None):
+def get_frames_from_sequence(xaddr, yaddr, num_events_per_frame, data_format,
+                             chip_size, target_shape=None):
     """
     Extract ``num_events_per_frame`` events from a one-dimensional sequence of
-    AER-events. The events are spatially subsampled to ``target_size``, and
+    AER-events. The events are spatially subsampled to ``target_shape``, and
     standardized to [0, 1] using 3-sigma normalization. The resulting events
     are binned into a frame. The function operates on the events in
     ``xaddr`` etc sequentially until all are processed into frames.
     """
 
-    if target_size is None:
-        target_size = chip_size
+    if target_shape is None:
+        target_shape = chip_size
         scale = None
     else:
-        scale = [np.true_divide((t - 1), (c - 1)) for t, c in zip(target_size,
+        scale = [np.true_divide((t - 1), (c - 1)) for t, c in zip(target_shape,
                                                                   chip_size)]
 
     num_frames = int(len(xaddr) / num_events_per_frame)
-    frames = np.zeros([num_frames] + list(target_size), 'float32')
+    frames = np.zeros([num_frames] + list(target_shape), 'float32')
 
     print("Extracting {} frames from DVS event sequence.".format(num_frames))
 
@@ -426,4 +434,6 @@ def get_frames_from_sequence(xaddr, yaddr, num_events_per_frame, chip_size,
         # Clip number of events per pixel to three-sigma
         frames[sample_idx] = np.clip(sample, 0, 3 * sigma)
 
-    return frames[:, np.newaxis, :, :] / 255.
+    channel_axis = 1 if data_format == 'channels_first' else -1
+
+    return np.expand_dims(frames, channel_axis) / 255.

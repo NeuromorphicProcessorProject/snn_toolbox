@@ -541,11 +541,15 @@ class AbstractSNN:
             batch_shape = list(np.array(
                 self.parsed_model.layers[0].batch_input_shape, int))
             batch_shape[0] = self.batch_size
+            # Get shape of input image, in case we need to subsample.
+            image_shape = batch_shape[1:3] \
+                if self.data_format == 'channels_last' else batch_shape[2:]
             dvs_gen = DVSIterator(
                 self.config.get('paths', 'dataset_path'), batch_shape,
+                self.data_format,
                 self.config.getint('input', 'eventframe_width'),
                 self.config.getint('input', 'num_dvs_events_per_sample'),
-                eval(self.config.get('input', 'chip_size')), batch_shape[2:],
+                eval(self.config.get('input', 'chip_size')), image_shape,
                 eval(self.config.get('input', 'label_dict')))
             data_batch_kwargs['dvs_gen'] = dvs_gen
 
