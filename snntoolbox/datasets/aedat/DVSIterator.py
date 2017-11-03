@@ -11,7 +11,8 @@ from snntoolbox.datasets.utils import to_categorical
 
 
 class DVSIterator(object):
-    def __init__(self, dataset_path, batch_shape, data_format, frame_width,
+    def __init__(self, dataset_path, batch_shape, data_format, frame_gen_method,
+                 is_x_first, is_x_flipped, is_y_flipped, frame_width,
                  num_events_per_frame, chip_size, target_shape=None,
                  label_dict=None):
         self.dataset_path = dataset_path
@@ -25,10 +26,15 @@ class DVSIterator(object):
         self.dvs_sample_idx = -1
         self.num_events_per_frame = num_events_per_frame
         self.num_events_per_batch = self.batch_size * num_events_per_frame
-        self.x_b_xaddr = self.x_b_yaddr = self.x_b_ts = self.y_b = None
+        self.x_b_xaddr = self.x_b_yaddr = self.x_b_ts = self.x_b_pol = None
+        self.y_b = None
         self.frames_from_sequence = None
         self.event_sequence = None
         self.data_format = data_format
+        self.frame_gen_method = frame_gen_method
+        self.is_x_first = is_x_first
+        self.is_x_flipped = is_x_flipped
+        self.is_y_flipped = is_y_flipped
 
         # Count the number of samples and classes
         classes = [subdir for subdir in sorted(os.listdir(dataset_path))
@@ -107,7 +113,9 @@ class DVSIterator(object):
             # Generate frames from events.
             self.frames_from_sequence = get_frames_from_sequence(
                 self.event_sequence['x'], self.event_sequence['y'],
-                self.num_events_per_frame, self.data_format, self.chip_size,
+                self.event_sequence['pol'], self.num_events_per_frame,
+                self.data_format, self.frame_gen_method, self.is_x_first,
+                self.is_x_flipped, self.is_y_flipped, self.chip_size,
                 self.target_shape)
             # Discard last frames that do not fill a complete batch.
             num_frames = self.batch_size * int(self.num_events_of_sample /
@@ -116,19 +124,23 @@ class DVSIterator(object):
 
         # From the current event sequence, extract the next bunch of events and
         # stack them as a batch of small sequences.
-        self.x_b_xaddr, self.x_b_yaddr, self.x_b_ts = extract_batch(
-            self.event_sequence['x'], self.event_sequence['y'],
-            self.event_sequence['ts'], self.batch_size, self.batch_idx,
-            self.num_events_per_frame, self.chip_size, self.target_shape)
+        self.x_b_xaddr, self.x_b_yaddr, self.x_b_ts, self.x_b_pol = \
+            extract_batch(self.event_sequence['x'], self.event_sequence['y'],
+                          self.event_sequence['ts'], self.event_sequence['pol'],
+                          self.frame_gen_method, self.batch_size,
+                          self.batch_idx, self.num_events_per_frame,
+                          self.chip_size, self.target_shape)
 
         self.batch_idx += 1
 
-        return self.x_b_xaddr, self.x_b_yaddr, self.x_b_ts, self.y_b
+        return self.x_b_xaddr, self.x_b_yaddr, self.x_b_ts, self.x_b_pol, \
+            self.y_b
 
     def next_eventframe_batch(self):
         return next_eventframe_batch(
-            self.x_b_xaddr, self.x_b_yaddr, self.x_b_ts, self.batch_shape,
-            self.data_format, self.frame_width)
+            self.x_b_xaddr, self.x_b_yaddr, self.x_b_ts, self.x_b_pol,
+            self.is_x_first, self.is_x_flipped, self.is_y_flipped,
+            self.batch_shape, self.data_format, self.frame_width)
 
     def get_frame_batch(self):
         event_idxs = range(self.batch_size * (self.batch_idx - 1),
@@ -136,16 +148,19 @@ class DVSIterator(object):
         return self.frames_from_sequence[event_idxs]
 
 
-def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx,
-                  num_events_per_frame, chip_size, target_shape=None):
+def extract_batch(xaddr, yaddr, timestamps, pol, frame_gen_method, batch_size,
+                  batch_idx, num_events_per_frame, chip_size,
+                  target_shape=None):
     """Transform a one-dimensional sequence of AER-events into a batch.
 
     Parameters
     ----------
 
+    frame_gen_method :
     xaddr: ndarray
     yaddr: ndarray
     timestamps: ndarray
+    pol: ndarray
     batch_size: int
     batch_idx: int
     num_events_per_frame: int
@@ -172,6 +187,7 @@ def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx,
     x_b_xaddr = [deque() for _ in range(batch_size)]
     x_b_yaddr = [deque() for _ in range(batch_size)]
     x_b_ts = [deque() for _ in range(batch_size)]
+    x_b_pol = [deque() for _ in range(batch_size)]
 
     print("Extracting batch of samples à {} events from DVS sequence..."
           "".format(num_events_per_frame))
@@ -183,34 +199,35 @@ def extract_batch(xaddr, yaddr, timestamps, batch_size, batch_idx,
         event_sums = np.zeros(target_shape, 'int32')
         xaddr_sub = []
         yaddr_sub = []
-        for x, y in zip(xaddr[event_idxs], yaddr[event_idxs]):
+        for x, y, p in zip(xaddr[event_idxs], yaddr[event_idxs],
+                           pol[event_idxs]):
             if scale is not None:
                 # Subsample from 240x180 to e.g. 64x64
                 x = int(x * scale[0])
                 y = int(y * scale[1])
-            # Count event at subsampled location (x and y axes are swapped)
-            event_sums[y, x] += 1
+            # Count event at subsampled location. No need to worry about
+            # flipping dimensions because the actual frames will be generated
+            # someplace else. Here we output only 1d lists.
+            add_event_to_frame(event_sums, x, y, p, frame_gen_method)
+
             xaddr_sub.append(x)
             yaddr_sub.append(y)
 
-        # Compute standard deviation of event-sum distribution after removing
-        # zeros
-        sigma = np.std(event_sums[np.nonzero(event_sums)])
-
-        # Clip number of events per pixel to three-sigma
-        np.clip(event_sums, 0, 3 * sigma, event_sums)
+        clip_three_sigma(event_sums, frame_gen_method)
 
         print("Discarded {} events during 3-sigma standardization.".format(
-            num_events_per_frame - np.sum(event_sums)))
+            num_events_per_frame - np.sum(np.abs(event_sums))))
 
-        for x, y, ts in zip(xaddr_sub, yaddr_sub, timestamps[event_idxs]):
-            if event_sums[y, x] > 0:
+        for x, y, ts, p in zip(xaddr_sub, yaddr_sub, timestamps[event_idxs],
+                               pol[event_idxs]):
+            if event_sums[x, y] != 0:
                 x_b_xaddr[sample_idx].append(x)
                 x_b_yaddr[sample_idx].append(y)
                 x_b_ts[sample_idx].append(ts)
-                event_sums[y, x] -= 1
+                x_b_pol[sample_idx].append(p)
+                event_sums[x, y] -= np.sign(event_sums[x, y])
 
-    return x_b_xaddr, x_b_yaddr, x_b_ts
+    return x_b_xaddr, x_b_yaddr, x_b_ts, x_b_pol
 
 
 def remove_outliers(timestamps, xaddr, yaddr, pol, x_max=240, y_max=180):
@@ -293,13 +310,11 @@ def load_event_sequence(filename, xyrange=None):
         timestamps, xaddr, yaddr, pol = remove_outliers(
             timestamps, xaddr, yaddr, pol, xyrange[0], xyrange[1])
 
-    xaddr = xyrange[0] - xaddr - 1
-    yaddr = xyrange[1] - yaddr - 1
-
-    return {'x': xaddr, 'y': yaddr, 'ts': timestamps}
+    return {'x': xaddr, 'y': yaddr, 'ts': timestamps, 'pol': pol}
 
 
-def get_binary_frame(xaddr, yaddr, timestamps, shape, data_format, frame_width):
+def get_binary_frame(xaddr, yaddr, timestamps, pol, is_x_first, is_x_flipped,
+                     is_y_flipped, shape, data_format, frame_width):
     """
     Put events from event sequence into a shallow frame of at most one event per
     pixel. Stop if the time between the current and the oldest event exceeds
@@ -312,6 +327,10 @@ def get_binary_frame(xaddr, yaddr, timestamps, shape, data_format, frame_width):
     xaddr: collections.deque
     yaddr: collections.deque
     timestamps: collections.deque
+    pol: collections.deque
+    is_x_first :
+    is_x_flipped :
+    is_y_flipped :
     shape: tuple
         Include channel dimension even for gray-scale images, e.g. (1, 64, 64)
         if ``data_format='channels_first'``.
@@ -334,6 +353,7 @@ def get_binary_frame(xaddr, yaddr, timestamps, shape, data_format, frame_width):
     xaddr_sample = list(xaddr)
     yaddr_sample = list(yaddr)
     ts_sample = list(timestamps)
+    pol_sample = list(pol)
 
     # Need first timestamp of current event sequence to determine when to stop
     # adding events.
@@ -341,21 +361,27 @@ def get_binary_frame(xaddr, yaddr, timestamps, shape, data_format, frame_width):
 
     # Put events from event sequence buffer into frame, if pixel location is not
     # occupied yet.
-    for x, y, ts in zip(xaddr_sample, yaddr_sample, ts_sample):
+    for x, y, ts, p in zip(xaddr_sample, yaddr_sample, ts_sample, pol_sample):
         if binary_frame[y, x] == 0:
-            binary_frame[y, x] = 1
+            # When adding the event here, we do not care about polarity, because
+            # xaddr and yaddr contain only "unit events" that remain after the
+            # events are filtered by ``extract_batch``.
+            add_event_to_frame(binary_frame, x, y, p, 'rectified_sum',
+                               is_x_first, is_x_flipped, is_y_flipped)
             # Can't use .popleft()
             xaddr.remove(x)
             yaddr.remove(y)
             timestamps.remove(ts)
-        # Start next frame if width of frame exceeds time limit.
+            pol.remove(p)
         if ts - first_ts_of_frame > frame_width:
+            # Start next frame if width of frame exceeds time limit.
             break
 
     return np.expand_dims(binary_frame, channel_axis)
 
 
-def get_eventframe_sequence(xaddr, yaddr, timestamps, shape, data_format,
+def get_eventframe_sequence(xaddr, yaddr, timestamps, pol, is_x_first,
+                            is_x_flipped, is_y_flipped, shape, data_format,
                             frame_width):
     """
     Given a single sequence of x-y-ts events, generate a sequence of binary
@@ -365,13 +391,15 @@ def get_eventframe_sequence(xaddr, yaddr, timestamps, shape, data_format,
     inp = []
 
     while len(xaddr) > 0:
-        inp.append(get_binary_frame(xaddr, yaddr, timestamps, shape,
-                                    data_format, frame_width))
+        inp.append(get_binary_frame(
+            xaddr, yaddr, timestamps, pol, is_x_first, is_x_flipped,
+            is_y_flipped, shape, data_format, frame_width))
 
     return np.stack(inp, -1)
 
 
-def next_eventframe_batch(x_b_xaddr, x_b_yaddr, x_b_ts, shape, data_format,
+def next_eventframe_batch(x_b_xaddr, x_b_yaddr, x_b_ts, x_b_pol, is_x_first,
+                          is_x_flipped, is_y_flipped, shape, data_format,
                           frame_width):
     """
     Given a batch of x-y-ts event sequences, generate a batch of binary event
@@ -385,13 +413,16 @@ def next_eventframe_batch(x_b_xaddr, x_b_yaddr, x_b_ts, shape, data_format,
     for sample_idx in range(shape[0]):
         input_b_l[sample_idx] = get_binary_frame(
             x_b_xaddr[sample_idx], x_b_yaddr[sample_idx], x_b_ts[sample_idx],
+            x_b_pol[sample_idx], is_x_first, is_x_flipped, is_y_flipped,
             shape[1:], data_format, frame_width)
 
     return input_b_l
 
 
-def get_frames_from_sequence(xaddr, yaddr, num_events_per_frame, data_format,
-                             chip_size, target_shape=None):
+def get_frames_from_sequence(xaddr, yaddr, pol, num_events_per_frame,
+                             data_format, frame_gen_method, is_x_first,
+                             is_x_flipped, is_y_flipped, chip_size,
+                             target_shape=None):
     """
     Extract ``num_events_per_frame`` events from a one-dimensional sequence of
     AER-events. The events are spatially subsampled to ``target_shape``, and
@@ -414,26 +445,75 @@ def get_frames_from_sequence(xaddr, yaddr, num_events_per_frame, data_format,
 
     # Iterate for as long as there are events in the sequence.
     for sample_idx in range(num_frames):
+        sample = frames[sample_idx]
         event_idxs = range(num_events_per_frame * sample_idx,
                            num_events_per_frame * (sample_idx + 1))
 
         # Loop over ``num_events_per_frame`` events
-        for x, y in zip(xaddr[event_idxs], yaddr[event_idxs]):
+        for x, y, p in zip(xaddr[event_idxs], yaddr[event_idxs],
+                           pol[event_idxs]):
             if scale is not None:
                 # Subsample from 240x180 to e.g. 64x64
                 x = int(x * scale[0])
                 y = int(y * scale[1])
-            # Count event at subsampled location (x and y axes are swapped)
-            frames[sample_idx, y, x] += 1
 
-        # Compute standard deviation of event-sum distribution after removing
-        # zeros
-        sample = frames[sample_idx]
-        sigma = np.std(sample[np.nonzero(sample)])
+            add_event_to_frame(sample, x, y, p, frame_gen_method, is_x_first,
+                               is_x_flipped, is_y_flipped)
 
-        # Clip number of events per pixel to three-sigma
-        frames[sample_idx] = np.clip(sample, 0, 3 * sigma)
+        clip_three_sigma(sample, frame_gen_method)
+
+    scale_event_frames(frames, frame_gen_method)
 
     channel_axis = 1 if data_format == 'channels_first' else -1
 
-    return np.expand_dims(frames, channel_axis) / 255.
+    return np.expand_dims(frames, channel_axis)
+
+
+def add_event_to_frame(frame, x, y, p, frame_gen_method='rectified_sum',
+                       is_x_first=True, is_x_flipped=False, is_y_flipped=False):
+
+    x_max, y_max = frame.shape
+
+    x = x_max - 1 - x if is_x_flipped else x
+    y = y_max - 1 - y if is_y_flipped else y
+
+    idx0, idx1 = (x, y) if is_x_first else (y, x)
+
+    incr = 1
+    sign = 1
+    if frame_gen_method == 'signed_sum':
+        sign = 1 if p else -1
+
+    frame[idx0, idx1] += sign * incr
+
+
+def clip_three_sigma(frame, frame_gen_method):
+    # Compute standard deviation of event-sum distribution after removing
+    # zeros, then clip number of events per pixel to three-sigma.
+    if frame_gen_method == 'rectified_sum':
+        sigma = np.std(frame[np.nonzero(frame)])
+        a_min = 0
+        a_max = 3 * sigma
+        # It would make more sense to use the same a_min, a_max as for
+        # 'signed_sum', but we don't because jAER implements it like this.
+    elif frame_gen_method == 'signed_sum':
+        sigma = np.std(frame)
+        mean = np.mean(frame)
+        a_min = mean - 1.5 * sigma
+        a_max = mean + 1.5 * sigma
+    else:
+        a_min = np.min(frame)
+        a_max = np.max(frame)
+
+    np.clip(frame, a_min, a_max, frame)
+
+
+def scale_event_frames(frames, frame_gen_method):
+    if frame_gen_method == 'rectified_sum':
+        np.true_divide(frames, 255., frames)
+    elif frame_gen_method == 'signed_sum':
+        for frame in frames:
+            a_min = np.min(frame)
+            a_max = np.max(frame)
+            scale = a_max - a_min
+            np.true_divide(frame - a_min, scale, frame)

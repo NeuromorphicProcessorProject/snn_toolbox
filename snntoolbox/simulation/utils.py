@@ -545,8 +545,12 @@ class AbstractSNN:
             image_shape = batch_shape[1:3] \
                 if self.data_format == 'channels_last' else batch_shape[2:]
             dvs_gen = DVSIterator(
-                self.config.get('paths', 'dataset_path'), batch_shape,
-                self.data_format,
+                self.config.get('paths', 'dataset_path'),
+                batch_shape, self.data_format,
+                self.config.get('input', 'frame_gen_method'),
+                self.config.getboolean('input', 'is_x_first'),
+                self.config.getboolean('input', 'is_x_flipped'),
+                self.config.getboolean('input', 'is_y_flipped'),
                 self.config.getint('input', 'eventframe_width'),
                 self.config.getint('input', 'num_dvs_events_per_sample'),
                 eval(self.config.get('input', 'chip_size')), image_shape,
