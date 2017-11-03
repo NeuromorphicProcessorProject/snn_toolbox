@@ -601,6 +601,7 @@ class AbstractSNN:
             # Main step: Run the network on a batch of samples for the duration
             # of the simulation.
             print("Starting new simulation...\n")
+            print("Current accuracy:")
             output_b_l_t = self.simulate(**data_batch_kwargs)
 
             # Get classification result by comparing the guessed class (i.e. the
