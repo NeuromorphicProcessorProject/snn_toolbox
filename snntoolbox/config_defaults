@@ -107,7 +107,8 @@ plotproperties = {
 
 [restrictions]
 model_libs = {'keras', 'lasagne', 'caffe'}
-dataset_formats = {'npz', 'jpg', 'aedat}'
+dataset_formats = {'npz', 'jpg', 'aedat'}
+frame_gen_method = {'signed_sum', 'rectified_sum'}
 maxpool_types = {'fir_max', 'exp_max', 'avg_max'}
 simulators_pyNN = {'nest', 'brian', 'Neuron'}
 simulators_other = {'INI', 'brian2', 'MegaSim'}
