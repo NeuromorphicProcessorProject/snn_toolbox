@@ -449,6 +449,11 @@ def update_setup(config_filepath):
         config.set('parameter_sweep', 'param_values',
                    str([eval(config.get('cell', param_name))]))
 
+    if config.getboolean('conversion', 'use_isi_code'):
+        config.set('cell', 'tau_refrac',
+                   str(config.getint('simulation', 'duration')))
+        config.set('conversion', 'softmax_to_relu', 'True')
+
     with open(os.path.join(log_dir_of_current_run, '.config'), str('w')) as f:
         config.write(f)
 

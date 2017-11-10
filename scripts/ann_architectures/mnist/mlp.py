@@ -12,10 +12,11 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 from keras.datasets import mnist
-from keras.layers.core import Dense, Dropout, Activation
+from keras.layers.core import Dense, Dropout
 from keras.models import Sequential
-from keras.optimizers import SGD
+from keras.optimizers import Adam
 from keras.utils import np_utils
+from keras.callbacks import ModelCheckpoint
 
 from snntoolbox.simulation.plotting import plot_history
 
@@ -40,27 +41,28 @@ Y_train = np_utils.to_categorical(y_train, nb_classes)
 Y_test = np_utils.to_categorical(y_test, nb_classes)
 
 model = Sequential()
-model.add(Dense(128, input_shape=(784,)))
-model.add(Activation('relu'))
+model.add(Dense(600, batch_input_shape=(batch_size, 784), activation='relu'))
 model.add(Dropout(0.3))
-model.add(Dense(128))
-model.add(Activation('relu'))
-model.add(Dropout(0.3))
-model.add(Dense(10))
-model.add(Activation('softmax'))
+model.add(Dense(10, activation='softmax'))
+# model.add(Dense(128, input_shape=(784,)))
+# model.add(Activation('relu'))
+# model.add(Dropout(0.3))
+# model.add(Dense(128))
+# model.add(Activation('relu'))
+# model.add(Dropout(0.3))
+# model.add(Dense(10))
+# model.add(Activation('softmax'))
 
-sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-model.compile(loss='categorical_crossentropy', optimizer=sgd,
-              metrics=['accuracy'])
+optimizer = Adam()
+model.compile(optimizer, 'categorical_crossentropy', ['accuracy'])
 
-history = model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
-                    verbose=2, validation_data=(X_test, Y_test))
+checkpoint = ModelCheckpoint('weights.{epoch:02d}-{val_acc:.2f}.h5', 'val_acc')
+history = model.fit(X_train, Y_train, batch_size, nb_epoch,
+                    validation_data=(X_test, Y_test), callbacks=[checkpoint])
 score = model.evaluate(X_test, Y_test, verbose=0)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 
 plot_history(history)
 
-filename = '{:2.2f}'.format(score[1] * 100)
-open(filename + '.json', 'w').write(model.to_json())
-model.save_weights(filename + '.h5', overwrite=True)
+model.save('{:2.2f}.h5'.format(score[1]*100))

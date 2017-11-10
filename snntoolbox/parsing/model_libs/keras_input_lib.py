@@ -5,6 +5,7 @@
 """
 
 import numpy as np
+import keras.backend as k
 
 from snntoolbox.parsing.utils import AbstractModelParser
 
@@ -19,13 +20,13 @@ class ModelParser(AbstractModelParser):
         return get_type(layer)
 
     def get_batchnorm_parameters(self, layer):
-        mean = layer.moving_mean.get_value()
-        var = layer.moving_variance.get_value()
+        mean = k.get_value(layer.moving_mean)
+        var = k.get_value(layer.moving_variance)
         var_eps_sqrt_inv = 1 / np.sqrt(var + layer.epsilon)
         gamma = np.ones_like(mean) if layer.gamma is None else \
-            layer.gamma.get_value()
+            k.get_value(layer.gamma)
         beta = np.zeros_like(mean) if layer.beta is None else \
-            layer.beta.get_value()
+            k.get_value(layer.beta)
         axis = layer.axis
 
         return [mean, var_eps_sqrt_inv, gamma, beta, axis]

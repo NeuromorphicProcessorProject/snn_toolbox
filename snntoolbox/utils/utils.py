@@ -413,9 +413,8 @@ def clamped_relu(x, threshold=0.1, max_value=None):
     """
 
     x = keras.backend.relu(x, max_value=max_value)
-    x = keras.backend.T.set_subtensor(x[keras.backend.T.nonzero(
-        keras.backend.T.lt(x, threshold))], 0)
-    return x
+    return keras.backend.tf.where(keras.backend.less(x, threshold),
+                                  keras.backend.zeros_like(x), x)
 
 
 def wilson_score(p, n):
@@ -464,16 +463,16 @@ def extract_label(label):
         - shape: The shape of the layer
     """
 
-    l = label.split('_')
+    label = label.split('_')
     layer_num = None
-    for i in range(max(4, len(l) - 2)):
-        if l[0][:i].isdigit():
-            layer_num = int(l[0][:i])
-    name = ''.join(s for s in l[0] if not s.isdigit())
+    for i in range(max(4, len(label) - 2)):
+        if label[0][:i].isdigit():
+            layer_num = int(label[0][:i])
+    name = ''.join(s for s in label[0] if not s.isdigit())
     if name[-1] == 'D':
         name = name[:-1]
-    if len(l) > 1:
-        shape = tuple([int(s) for s in l[-1].split('x')])
+    if len(label) > 1:
+        shape = tuple([int(s) for s in label[-1].split('x')])
     else:
         shape = ()
     return layer_num, name, shape

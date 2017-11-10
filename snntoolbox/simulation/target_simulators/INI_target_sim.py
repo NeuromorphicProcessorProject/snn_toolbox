@@ -106,9 +106,11 @@ class SNN(AbstractSNN):
         for layer in self.snn.layers:
             if hasattr(layer, 'bias'):
                 # Adjust biases to time resolution of simulator.
-                layer.bias.set_value(layer.bias.get_value() * self._dt)
+                keras.backend.set_value(
+                    layer.bias, keras.backend.get_value(layer.bias) * self._dt)
                 if bias_relaxation:  # Experimental
-                    layer.b0.set_value(layer.bias.get_value())
+                    keras.backend.set_value(layer.b0,
+                                            keras.backend.get_value(layer.bias))
 
     def simulate(self, **kwargs):
 
@@ -118,7 +120,7 @@ class SNN(AbstractSNN):
         input_b_l = kwargs[str('x_b_l')] * self._dt
 
         output_b_l_t = np.zeros((self.batch_size, self.num_classes,
-                                 self._num_timesteps), 'int32')
+                                 self._num_timesteps))
 
         # Loop through simulation time.
         self.avg_rate = 0
@@ -133,8 +135,6 @@ class SNN(AbstractSNN):
             elif self._dataset_format == 'aedat':
                 input_b_l = kwargs[str('dvs_gen')].next_eventframe_batch()
 
-#            self.scale_first_layer_parameters(sim_step_int, input_b_l)
-
             # Main step: Propagate input through network and record output
             # spikes.
             out_spikes = self.snn.predict_on_batch(input_b_l)
@@ -142,9 +142,9 @@ class SNN(AbstractSNN):
             # Add current spikes to previous spikes.
             if remove_classifier:  # Need to flatten output.
                 output_b_l_t[:, :, sim_step_int] = np.argmax(np.reshape(
-                    out_spikes.astype('int32'), (out_spikes.shape[0], -1)), 1)
+                    out_spikes, (out_spikes.shape[0], -1)), 1)
             else:
-                output_b_l_t[:, :, sim_step_int] = out_spikes.astype('int32')
+                output_b_l_t[:, :, sim_step_int] = out_spikes
 
             # Record neuron variables.
             i = j = 0
@@ -152,7 +152,7 @@ class SNN(AbstractSNN):
                 # Excludes Input, Flatten, Concatenate, etc:
                 if hasattr(layer, 'spiketrain') \
                         and layer.spiketrain is not None:
-                    spiketrains_b_l = layer.spiketrain.get_value()
+                    spiketrains_b_l = keras.backend.get_value(layer.spiketrain)
                     self.avg_rate += np.count_nonzero(spiketrains_b_l)
                     if self.spiketrains_n_b_l_t is not None:
                         self.spiketrains_n_b_l_t[i][0][
@@ -167,10 +167,9 @@ class SNN(AbstractSNN):
                     i += 1
                 if hasattr(layer, 'mem') and self.mem_n_b_l_t is not None:
                     self.mem_n_b_l_t[j][0][Ellipsis, sim_step_int] = \
-                        layer.mem.get_value()
+                        keras.backend.get_value(layer.mem)
                     j += 1
-                # if hasattr(layer, 'v_thresh') and '00Conv' in layer.name:
-                #     print(layer.v_thresh.get_value())
+
             if 'input_b_l_t' in self._log_keys:
                 self.input_b_l_t[Ellipsis, sim_step_int] = input_b_l
             if self._poisson_input or self._dataset_format == 'aedat':
@@ -186,7 +185,7 @@ class SNN(AbstractSNN):
             if self.config.getint('output', 'verbose') > 0 \
                     and sim_step % 1 == 0:
                 if self.config.getboolean('conversion', 'use_isi_code'):
-                    first_spiketimes_b_l = np.argmax(output_b_l_t, 2)
+                    first_spiketimes_b_l = np.argmax(output_b_l_t > 0, 2)
                     first_spiketimes_b_l[np.nonzero(np.sum(
                         output_b_l_t, 2) == 0)] = self._num_timesteps
                     guesses_b = np.argmin(first_spiketimes_b_l, 1)
@@ -212,8 +211,9 @@ class SNN(AbstractSNN):
         self.avg_rate /= self.batch_size * np.sum(self.num_neurons) * \
             self._num_timesteps
 
-        print("Average spike rate: {} spikes per simulation time step.".format(
-            self.avg_rate))
+        if self.spiketrains_n_b_l_t is None:
+            print("Average spike rate: {} spikes per simulation time step."
+                  "".format(self.avg_rate))
 
         return np.cumsum(np.asarray(output_b_l_t, bool), 2)
 
@@ -311,5 +311,5 @@ class SNN(AbstractSNN):
         w, b = self.snn.layers[0].get_weights()
         alpha = (self._duration + tau) / (t + tau)
         beta = b + tau * (self._duration - t) / (t + tau) * w * input_b_l
-        self.snn.layers[0].kernel.set_value(alpha * w)
-        self.snn.layers[0].bias.set_value(beta)
+        keras.backend.set_value(self.snn.layers[0].kernel, alpha * w)
+        keras.backend.set_value(self.snn.layers[0].bias, beta)

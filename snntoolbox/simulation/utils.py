@@ -679,7 +679,6 @@ class AbstractSNN:
 
             # Save log variables to disk.
             log_vars = {key: getattr(self, key) for key in self._log_keys}
-            # log_vars = {'spiketrains_n_b_l_t': np.array([self.spiketrains_n_b_l_t[0], self.spiketrains_n_b_l_t[5], self.spiketrains_n_b_l_t[-1]])}
             log_vars['top1err_b_t'] = self.top1err_b_t
             log_vars['top5err_b_t'] = self.top5err_b_t
             log_vars['top1err_ann'] = self.top1err_ann
@@ -822,6 +821,7 @@ class AbstractSNN:
         `num_neurons`, `num_neurons_with_bias`.
         """
 
+        import keras.backend as k
         from snntoolbox.parsing.utils import get_fanin, get_fanout
 
         self.fanin = [0]
@@ -834,7 +834,7 @@ class AbstractSNN:
                 self.fanin.append(get_fanin(layer))
                 self.fanout.append(get_fanout(layer, self.config))
                 self.num_neurons.append(np.prod(layer.output_shape[1:]))
-                if hasattr(layer, 'bias') and any(layer.bias.get_value()):
+                if hasattr(layer, 'bias') and any(k.get_value(layer.bias)):
                     print("Detected layer with biases: {}".format(layer.name))
                     self.num_neurons_with_bias.append(self.num_neurons[-1])
                 else:
