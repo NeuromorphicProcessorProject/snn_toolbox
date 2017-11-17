@@ -509,11 +509,7 @@ def clip_three_sigma(frame, frame_gen_method):
 
 
 def scale_event_frames(frames, frame_gen_method):
-    if frame_gen_method == 'rectified_sum':
-        np.true_divide(frames, 255., frames)
-    elif frame_gen_method == 'signed_sum':
-        for frame in frames:
-            a_min = np.min(frame)
-            a_max = np.max(frame)
-            scale = a_max - a_min
-            np.true_divide(frame - a_min, scale, frame)
+    for frame in frames:
+        a_min = np.min(frame)
+        a_max = np.max(frame)
+        np.true_divide(frame - a_min, a_max - a_min, frame)
