@@ -27,7 +27,7 @@ class SpikeLayer(Layer):
     def __init__(self, **kwargs):
         self.config = kwargs.pop(str('config'), None)
         self.layer_type = self.class_name
-        self.spiketrain = self.spikerates = None
+        self.spikerates = None
         self.num_bits = self.config.getint('conversion', 'num_bits')
 
         allowed_kwargs = {'input_shape',
@@ -64,34 +64,11 @@ class SpikeLayer(Layer):
     def init_neurons(self, input_shape):
         """Init layer neurons."""
 
-        from snntoolbox.bin.utils import get_log_keys, get_plot_keys
-
         output_shape = self.compute_output_shape(input_shape)
-        if any({'spikerates', 'correlation', 'hist_spikerates_activations'} &
-               get_plot_keys(self.config)):
-            self.spikerates = k.zeros(output_shape)
-        if any({'spiketrains', 'spikecounts', 'operations',
-                'synaptic_operations_b_t', 'neuron_operations_b_t',
-                'spiketrains_n_b_l_t'} & (get_plot_keys(self.config) |
-               get_log_keys(self.config))):
-            self.spiketrain = k.zeros(list(output_shape) + [self.num_bits])
+        self.spikerates = k.zeros(output_shape)
 
     def update_spikevars(self, x):
-        updates = []
-
-        if self.spiketrain is not None:
-            x_binary = to_binary(x, self.num_bits)
-            shape = [self.num_bits] + [1] * len(x.shape[1:])
-            x_times = x_binary * k.constant(np.arange(self.num_bits),
-                                            k.floatx(), shape)
-            perm = (1, 2, 3, 0) if len(shape) > 2 else (1, 0)
-            x_b_l_t = k.expand_dims(k.permute_dimensions(x_times, perm), 0)
-            updates.append(k.tf.assign(self.spiketrain, x_b_l_t))
-
-        if self.spikerates is not None:
-            updates.append(k.tf.assign(self.spikerates, x))
-
-        return updates
+        return [k.tf.assign(self.spikerates, x)]
 
 
 def spike_call(call):
@@ -128,8 +105,7 @@ def to_binary(x, num_bits):
         Input array containing float values. The first dimension has to be of
         length 1.
     num_bits: int
-        The fixed point precision to be used when converting to binary. Will be
-        inferred from ``x`` if not specified.
+        The fixed point precision to be used when converting to binary.
 
     Returns
     -------
@@ -250,8 +226,7 @@ def to_binary_numpy(x, num_bits):
         Input array containing float values. The first dimension has to be of
         length 1.
     num_bits: int
-        The fixed point precision to be used when converting to binary. Will be
-        inferred from ``x`` if not specified.
+        The fixed point precision to be used when converting to binary.
 
     Returns
     -------
@@ -262,16 +237,26 @@ def to_binary_numpy(x, num_bits):
         distributed across the first dimension of ``binary_array``.
     """
 
-    binary_array = np.zeros([num_bits, x.shape[1]])
+    binary_array = np.zeros([num_bits] + list(x.shape[1:]))
 
     powers = [2**-i for i in range(num_bits)]
 
-    for l in range(x.shape[1]):
-        f = x[0, l]
-        for i in range(num_bits):
-            if f >= powers[i]:
-                binary_array[i, l] = 1
-                f -= powers[i]
+    if len(x.shape) > 2:
+        for l in range(x.shape[1]):
+            for m in range(x.shape[2]):
+                for n in range(x.shape[3]):
+                    f = x[0, l, m, n]
+                    for i in range(num_bits):
+                        if f >= powers[i]:
+                            binary_array[i, l, m, n] = 1
+                            f -= powers[i]
+    else:
+        for l in range(x.shape[1]):
+            f = x[0, l]
+            for i in range(num_bits):
+                if f >= powers[i]:
+                    binary_array[i, l] = 1
+                    f -= powers[i]
     return binary_array
 
 
