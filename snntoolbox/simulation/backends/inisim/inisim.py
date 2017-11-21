@@ -696,28 +696,11 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
     def call(self, x, mask=None):
         """Layer functionality."""
 
-        maxpool_type = self.config.get('conversion', 'maxpool_type')
-        if 'binary' in self.activation_str or \
-                self.config.getboolean('conversion', 'use_isi_code'):
-            return k.pool2d(x, self.pool_size, self.strides, self.padding,
-                            pool_mode='max')
-        elif maxpool_type == 'avg_max':
-            update_rule = self.spikerate_pre + (x - self.spikerate_pre) * \
-                          self.dt / self.time
-        elif maxpool_type == 'exp_max':
-            # update_rule = self.spikerate_pre + x / 2. ** (1 / t_inv)
-            update_rule = self.spikerate_pre * 1.005 + x * 0.995
-        elif maxpool_type == 'fir_max':
-            update_rule = self.spikerate_pre + x * self.dt / self.time
-        else:
-            print("Wrong max pooling type, falling back on average pooling.")
-            return k.pool2d(x, self.pool_size, self.strides, self.padding,
-                            pool_mode='avg')
-        self.add_update([(self.spikerate_pre, update_rule),
-                         (self.previous_x, x)])
-        return self._pooling_function([self.spikerate_pre, self.previous_x],
-                                      self.pool_size, self.strides,
-                                      self.padding, self.data_format)
+        print("WARNING: Rate-based spiking MaxPooling layer is not implemented "
+              "in TensorFlow backend. Falling back on AveragePooling. Switch "
+              "to Theano backend to use MaxPooling.")
+        return k.pool2d(x, self.pool_size, self.strides, self.padding,
+                        pool_mode='avg')
 
     def _pooling_function(self, inputs, pool_size, strides, padding,
                           data_format):
