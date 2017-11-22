@@ -11,7 +11,8 @@ from __future__ import print_function, unicode_literals
 import os
 import subprocess
 import sys
-from abc import ABCMeta, abstractmethod
+import abc
+from abc import abstractmethod
 from builtins import int, range
 
 import numpy as np
@@ -21,10 +22,15 @@ from snntoolbox.simulation.utils import AbstractSNN
 
 standard_library.install_aliases()
 
+if sys.version_info >= (3, 4):
+    ABC = abc.ABC
+else:
+    ABC = abc.ABCMeta('ABC', (), {})
+
 INT32_MAX = 2147483646
 
 
-class Megasim_base(metaclass=ABCMeta):
+class Megasim_base(ABC):
     """
         Class that holds the common attributes and methods for the MegaSim modules.
 

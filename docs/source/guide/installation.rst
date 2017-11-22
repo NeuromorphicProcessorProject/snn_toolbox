@@ -19,7 +19,7 @@ Run ``pip install snntoolbox``. This will install the other minimum dependencies
 Development version
 -------------------
 
-To get the latest version, checkout the `repository <git@github.com:NeuromorphicProcessorProject/snn_toolbox.git>`_.
+To get the latest version, checkout the `repository <https://github.com/NeuromorphicProcessorProject/snn_toolbox>`_.
 In the toolbox root directory ``snn_toolbox/``, run ``python setup.py install``.
 
 Additional tools
