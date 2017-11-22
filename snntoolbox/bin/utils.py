@@ -322,17 +322,8 @@ def update_setup(config_filepath):
             with h5py.File(h5_filepath, 'a') as f:
                 if 'optimizer_weights' in f.keys():
                     del f['optimizer_weights']
-            try:
-                keras.models.load_model(h5_filepath,
-                                        get_custom_activations_dict())
-            except Exception as err:
-                print(err)
-                raise AssertionError(
-                    "Input model could not be loaded. This is likely due to a "
-                    "Keras version backwards-incompability. For instance, you "
-                    "might have provided an h5 file with weights, but without "
-                    "network configuration. In earlier versions of Keras, this "
-                    "is contained in a json file.")
+            # Try loading the model.
+            keras.models.load_model(h5_filepath, get_custom_activations_dict())
     elif model_lib == 'lasagne':
         h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
         pkl_filepath = os.path.join(path_wd, filename_ann + '.pkl')

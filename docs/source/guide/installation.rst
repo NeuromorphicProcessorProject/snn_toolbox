@@ -9,6 +9,8 @@ Requirements
 ------------
 
 First, install `Theano <http://www.deeplearning.net/software/theano/install_ubuntu.html>`_.
+Note: As of 22.11.2017, the latest Keras version was not compatible with Theano
+1.0, so please install Theano version 0.9.
 
 Stable version
 --------------
