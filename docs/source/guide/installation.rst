@@ -14,13 +14,15 @@ Stable version
 --------------
 
 Run ``pip install snntoolbox``. This will install the other minimum dependencies
-(Keras, matplotlib, h5py) on the fly.
+(Keras, h5py) on the fly.
 
 Development version
 -------------------
 
 To get the latest version, checkout the `repository <https://github.com/NeuromorphicProcessorProject/snn_toolbox>`_.
-In the toolbox root directory ``snn_toolbox/``, run ``python setup.py install``.
+In the toolbox root directory ``snn_toolbox/``, run ``pip install .``. Do not
+use ``python setup.py install`` because easy_install caused the installation to
+fail on some platforms due to dependency issues.
 
 Additional tools
 ----------------

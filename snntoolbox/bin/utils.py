@@ -325,7 +325,8 @@ def update_setup(config_filepath):
             try:
                 keras.models.load_model(h5_filepath,
                                         get_custom_activations_dict())
-            except:
+            except Exception as err:
+                print(err)
                 raise AssertionError(
                     "Input model could not be loaded. This is likely due to a "
                     "Keras version backwards-incompability. For instance, you "

@@ -8,7 +8,7 @@ dist/*
 build/*
 .eggs/
 snntoolbox.egg-info/
-.pyc
+*.pyc
 
 # Datasets #
 ############
