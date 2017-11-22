@@ -98,7 +98,7 @@ class SNN(AbstractSNN):
         pass
 
     def compile(self):
-        from snntoolbox.simulation.backends.inisim.inisim import bias_relaxation
+        from snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano import bias_relaxation
 
         self.snn = keras.models.Model(
             self._input_images,
@@ -178,7 +178,7 @@ class SNN(AbstractSNN):
 
     def load(self, path, filename):
 
-        from snntoolbox.simulation.backends.inisim.inisim import custom_layers
+        from snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano import custom_layers
 
         filepath = os.path.join(path, filename + '.h5')
 

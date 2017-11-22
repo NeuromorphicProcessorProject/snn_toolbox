@@ -40,12 +40,12 @@ timestep_fraction = 10
 softmax_to_relu = False
 max2avg_pool = False
 maxpool_type = fir_max
-use_isi_code = False
-temporal_pattern_coding = False
+spike_code = temporal_mean_rate
 num_bits = 32
 
 [simulation]
 simulator = INI
+keras_backend = theano
 duration = 200
 dt = 1
 batch_size = 100
@@ -110,6 +110,11 @@ maxpool_types = {'fir_max', 'exp_max', 'avg_max'}
 simulators_pyNN = {'nest', 'brian', 'Neuron'}
 simulators_other = {'INI', 'brian2', 'MegaSim'}
 simulators = %(simulators_pyNN)s | %(simulators_other)s
+# Keras backends:
+keras_backends = {'theano', 'tensorflow'}
+# Spike coding mechanisms:
+spike_codes = {'temporal_mean_rate', 'temporal_pattern', 'ttfs',
+               'ttfs_dyn_thresh', 'ttfs_corrective'}
 # Layers that can be spiking:
 spiking_layers = {'Dense', 'Conv2D', 'MaxPooling2D', 'AveragePooling2D'}
 # Layers that can be implemented by our spiking neuron simulators:
