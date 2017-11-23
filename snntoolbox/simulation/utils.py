@@ -141,6 +141,7 @@ class AbstractSNN:
 
         # Logging variables
         self.spiketrains_n_b_l_t = self.activations_n_b_l = None
+        self.spikerates_n_b_l = None
         self.input_b_l_t = self.mem_n_b_l_t = None
         self.top1err_b_t = self.top5err_b_t = None
         self.synaptic_operations_b_t = self.operations_ann = None
@@ -509,7 +510,7 @@ class AbstractSNN:
         # Divide the test set into batches and run all samples in a batch in
         # parallel.
         dataset_format = self.config.get('input', 'dataset_format')
-        num_batches = int(1e6) if dataset_format == 'aedat' else \
+        num_batches = int(1e9) if dataset_format == 'aedat' else \
             int(np.floor(self.config.getint('simulation', 'num_to_test') /
                          self.batch_size))
 
@@ -538,22 +539,13 @@ class AbstractSNN:
         # If DVS events are used as input, instantiate a DVSIterator.
         if dataset_format == 'aedat':
             from snntoolbox.datasets.aedat.DVSIterator import DVSIterator
-            batch_shape = list(np.array(
-                self.parsed_model.layers[0].batch_input_shape, int))
+            batch_shape = list(self.parsed_model.layers[0].batch_input_shape)
             batch_shape[0] = self.batch_size
-            # Get shape of input image, in case we need to subsample.
-            image_shape = batch_shape[1:3] \
-                if self.data_format == 'channels_last' else batch_shape[2:]
             dvs_gen = DVSIterator(
-                self.config.get('paths', 'dataset_path'),
-                batch_shape, self.data_format,
-                self.config.get('input', 'frame_gen_method'),
-                self.config.getboolean('input', 'is_x_first'),
-                self.config.getboolean('input', 'is_x_flipped'),
-                self.config.getboolean('input', 'is_y_flipped'),
+                self.config.get('paths', 'dataset_path'), batch_shape,
                 self.config.getint('input', 'eventframe_width'),
                 self.config.getint('input', 'num_dvs_events_per_sample'),
-                eval(self.config.get('input', 'chip_size')), image_shape,
+                eval(self.config.get('input', 'chip_size')), batch_shape[2:],
                 eval(self.config.get('input', 'label_dict')))
             data_batch_kwargs['dvs_gen'] = dvs_gen
 
@@ -578,7 +570,7 @@ class AbstractSNN:
                     break
 
                 # Generate frames so we can compare with ANN.
-                x_b_l = data_batch_kwargs['dvs_gen'].get_frame_batch()
+                x_b_l = data_batch_kwargs['dvs_gen'].get_frames_batch()
 
             truth_b = np.argmax(y_b_l, axis=1)
 
@@ -601,7 +593,6 @@ class AbstractSNN:
             # Main step: Run the network on a batch of samples for the duration
             # of the simulation.
             print("Starting new simulation...\n")
-            print("Current accuracy:")
             output_b_l_t = self.simulate(**data_batch_kwargs)
 
             # Get classification result by comparing the guessed class (i.e. the
@@ -708,6 +699,8 @@ class AbstractSNN:
             if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
                     'hist_spikerates_activations'} & self._plot_keys):
                 plot_vars['spiketrains_n_b_l_t'] = self.spiketrains_n_b_l_t
+            if self.spikerates_n_b_l is not None:
+                plot_vars['spikerates_n_b_l'] = self.spikerates_n_b_l
             if len(self._plot_keys) > 0:
                 snn_plt.output_graphs(plot_vars, self.config, log_dir, 0,
                                       self.data_format)
@@ -799,6 +792,16 @@ class AbstractSNN:
                 self.spiketrains_n_b_l_t.append((np.zeros(shape, 'float32'),
                                                  layer.name))
 
+        if any({'spikerates', 'correlation', 'hist_spikerates_activations'} &
+               self._plot_keys) or self.config.get(
+               'conversion', 'spike_code') == 'temporal_pattern':
+            self.spikerates_n_b_l = []
+            for layer in self.parsed_model.layers:
+                if not is_spiking(layer, self.config):
+                    continue
+                self.spikerates_n_b_l.append((np.zeros(layer.output_shape,
+                                                       'float32'), layer.name))
+
         if 'operations' in self._plot_keys or \
                 'synaptic_operations_b_t' in self._log_keys:
             self.synaptic_operations_b_t = np.zeros((self.batch_size,
@@ -828,6 +831,7 @@ class AbstractSNN:
         `num_neurons`, `num_neurons_with_bias`.
         """
 
+        from keras.backend import get_value
         from snntoolbox.parsing.utils import get_fanin, get_fanout
 
         self.fanin = [0]
@@ -840,7 +844,7 @@ class AbstractSNN:
                 self.fanin.append(get_fanin(layer))
                 self.fanout.append(get_fanout(layer, self.config))
                 self.num_neurons.append(np.prod(layer.output_shape[1:]))
-                if hasattr(layer, 'bias') and any(layer.bias.get_value()):
+                if hasattr(layer, 'bias') and any(get_value(layer.bias)):
                     print("Detected layer with biases: {}".format(layer.name))
                     self.num_neurons_with_bias.append(self.num_neurons[-1])
                 else:

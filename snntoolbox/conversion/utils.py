@@ -40,9 +40,65 @@ def normalize_parameters(model, config, **kwargs):
     from snntoolbox.parsing.utils import get_inbound_layers_with_params
 
     print("Normalizing parameters...")
+
     norm_dir = kwargs[str('path')] if 'path' in kwargs else \
         os.path.join(config.get('paths', 'log_dir_of_current_run'),
                      'normalization')
+
+    # if config.getboolean("conversion", "temporal_pattern_coding"):
+    #     scale_facs = OrderedDict({model.layers[0].name: 1})
+    #     for layer in model.layers:
+    #         # Skip if layer has no parameters
+    #         if len(layer.weights) == 0:
+    #             continue
+    #
+    #         parameters = layer.get_weights()
+    #         min_w = np.min(np.abs(parameters[0][np.nonzero(parameters[0])]))
+    #         min_b = np.min(np.abs(parameters[1][np.nonzero(parameters[1])]))
+    #         scale_fac = np.min([min_w, min_b])
+    #         scale_facs[layer.name] = scale_fac
+    #
+    #         inbound = get_inbound_layers_with_params(layer)
+    #         if len(inbound) == 0:  # Input layer
+    #             input_layer = layer.inbound_nodes[0].inbound_layers[0].name
+    #             parameters_int = [
+    #                 parameters[0] * scale_facs[input_layer] / scale_fac,
+    #                 parameters[1] / scale_fac]
+    #         elif len(inbound) == 1:
+    #             parameters_int = [
+    #                 parameters[0] * scale_facs[inbound[0].name] / scale_fac,
+    #                 parameters[1] / scale_fac]
+    #         else:
+    #             parameters_int = [parameters[0]]  # Consider only weights at first
+    #             offset = 0  # Index offset at input filter dimension
+    #             for inb in inbound:
+    #                 f_out = inb.filters  # Num output features of inbound layer
+    #                 f_in = range(offset, offset + f_out)
+    #                 if parameters[0].ndim == 2:  # Fully-connected Layer
+    #                     parameters_int[0][f_in, :] *= \
+    #                         scale_facs[inb.name] / scale_fac
+    #                 else:
+    #                     parameters_int[0][:, :, f_in, :] *= \
+    #                         scale_facs[inb.name] / scale_fac
+    #                 offset += f_out
+    #                 parameters_int.append(parameters[1] / scale_fac)  # Append bias
+    #
+    #         activations = get_activations_layer(model.input, layer.output,
+    #                                             255*kwargs[str('x_norm')], 100)
+    #         print("Activation range before: {}".format((np.min(activations[np.nonzero(activations)]), np.max(activations))))
+    #
+    #         #parameters_int = [p.astype(int) for p in parameters_int]
+    #         layer.set_weights(parameters_int)
+    #         print("Scale fac for layer {}: {}".format(layer.name, scale_fac))
+    #         print("Weight range: {}".format((
+    #             np.min([np.min(parameters_int[0]), np.min(parameters_int[1])]),
+    #             np.max([np.max(parameters_int[0]), np.max(parameters_int[1])]))))
+    #         activations = get_activations_layer(model.input, layer.output,
+    #                                             255*kwargs[str('x_norm')], 100)
+    #         print("Activation range after: {}".format((np.min(activations[np.nonzero(activations)]), np.max(activations))))
+    #
+    #     return
+
     activ_dir = os.path.join(norm_dir, 'activations')
     if not os.path.exists(activ_dir):
         os.makedirs(activ_dir)

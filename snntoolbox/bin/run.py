@@ -36,9 +36,8 @@ def main():
     args = parser.parse_args()
 
     filepath = os.path.abspath(args.config_filepath)
-    #filepath = '/mnt/2646BAF446BAC3B9/.snntoolbox/data/predator_prey/log/gui/test/config_aedat'
     #filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/lenet5/keras/config'
-    #filepath = '/home/rbodo/.snntoolbox/data/mnist/cnn/lenet5/keras/32bit/log/gui/nest/config'
+    #filepath = '/home/rbodo/.snntoolbox/data/mnist/cnn/lenet5/keras/32bit/log/gui/14/config'
     #args.terminal = True
     if filepath is not None:
         assert os.path.isfile(filepath), \
