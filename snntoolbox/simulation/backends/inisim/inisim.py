@@ -15,6 +15,7 @@ import warnings
 
 import numpy as np
 import theano
+from theano import ifelse
 from future import standard_library
 from keras import backend as k
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
@@ -222,13 +223,13 @@ class SpikeLayer(Layer):
             # Experimental: Clamp the membrane potential to zero until the
             # presynaptic neurons fire at their steady-state rates. This helps
             # avoid a transient response.
-            new_mem = k.ifelse.ifelse(k.less(k.mean(self.var), 1e-4) +
-                                      k.greater(self.time, self.duration / 2),
-                                      self.mem + masked_impulse, self.mem)
+            new_mem = ifelse.ifelse(k.less(k.mean(self.var), 1e-4) +
+                                    k.greater(self.time, self.duration / 2),
+                                    self.mem + masked_impulse, self.mem)
         elif hasattr(self, 'clamp_idx'):
             # Set clamp-duration by a specific delay from layer to layer.
-            new_mem = k.ifelse.ifelse(k.less(self.time, self.clamp_idx),
-                                      self.mem, self.mem + masked_impulse)
+            new_mem = ifelse.ifelse(k.less(self.time, self.clamp_idx), self.mem,
+                                    self.mem + masked_impulse)
         elif v_clip:
             # Clip membrane potential to prevent too strong accumulation.
             new_mem = k.clip(self.mem + masked_impulse, -3, 3)
@@ -274,7 +275,7 @@ class SpikeLayer(Layer):
         r_lim = 1 / self.dt
         return thr_min + (thr_max - thr_min) * self.max_spikerate / r_lim
 
-        # return k.ifelse.ifelse(
+        # return ifelse.ifelse(
         #     k.equal(self.time / self.dt % settings['timestep_fraction'], 0) *
         #     k.greater(self.max_spikerate, settings['diff_to_min_rate']/1000) *
         #     k.greater(1 / self.dt - self.max_spikerate,
