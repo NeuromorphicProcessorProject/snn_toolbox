@@ -134,10 +134,13 @@ eventframe_width: int, optional
 label_dict: dict, optional
     Dictionary containing the class labels. Only needed with ``.aedat`` input.
 
-chip_size: tuple, optional
-    When using ``.aedat`` input, the addresses may have to be subsampled from
-    the original ``chip_size`` to the image dimension required by the network.
-    Set to ``None`` to leave image unchanged.
+chip_size: tuple
+    When using ``.aedat`` input, the addresses can be checked for outliers, or
+    may have to be subsampled from the original ``chip_size`` to the image
+    dimension required by the network. Set ``chip_size`` to the shape of the DVS
+    chip that was used to record the aedat sample, e.g. (240, 180). The image
+    dimension to subsample to will be infered from the shape of the input layer
+    of the network.
 
 [tools]
 -------

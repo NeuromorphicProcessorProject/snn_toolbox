@@ -9,18 +9,22 @@ Requirements
 ------------
 
 First, install `Theano <http://www.deeplearning.net/software/theano/install_ubuntu.html>`_.
+Note: As of 22.11.2017, the latest Keras version was not compatible with Theano
+1.0, so please install Theano version 0.9.
 
 Stable version
 --------------
 
 Run ``pip install snntoolbox``. This will install the other minimum dependencies
-(Keras, matplotlib, h5py) on the fly.
+(Keras, h5py) on the fly.
 
 Development version
 -------------------
 
-To get the latest version, checkout the `repository <git@github.com:NeuromorphicProcessorProject/snn_toolbox.git>`_.
-In the toolbox root directory ``snn_toolbox/``, run ``python setup.py install``.
+To get the latest version, checkout the `repository <https://github.com/NeuromorphicProcessorProject/snn_toolbox>`_.
+In the toolbox root directory ``snn_toolbox/``, run ``pip install .``. Do not
+use ``python setup.py install`` because easy_install caused the installation to
+fail on some platforms due to dependency issues.
 
 Additional tools
 ----------------

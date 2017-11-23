@@ -341,17 +341,17 @@ def update_setup(config_filepath):
         json_file = filename_ann + '.json'
         if not os.path.isfile(os.path.join(path_wd, json_file)):
             import keras
+            import h5py
             from snntoolbox.parsing.utils import get_custom_activations_dict
-            try:
-                keras.models.load_model(h5_filepath,
-                                        get_custom_activations_dict())
-            except Exception:
-                raise AssertionError(
-                    "Input model could not be loaded. This is likely due to a "
-                    "Keras version backwards-incompability. For instance, you "
-                    "might have provided an h5 file with weights, but without "
-                    "network configuration. In earlier versions of Keras, this "
-                    "is contained in a json file.")
+            # Remove optimizer_weights here, because they may cause the
+            # load_model method to fail if the network was trained on a
+            # different platform or keras version
+            # (see https://github.com/fchollet/keras/issues/4044).
+            with h5py.File(h5_filepath, 'a') as f:
+                if 'optimizer_weights' in f.keys():
+                    del f['optimizer_weights']
+            # Try loading the model.
+            keras.models.load_model(h5_filepath, get_custom_activations_dict())
     elif model_lib == 'lasagne':
         h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
         pkl_filepath = os.path.join(path_wd, filename_ann + '.pkl')

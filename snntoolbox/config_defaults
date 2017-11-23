@@ -21,6 +21,10 @@ num_dvs_events_per_sample = 2000
 eventframe_width = 10
 label_dict = {}
 chip_size = None
+frame_gen_method =
+is_x_first =
+is_x_flipped =
+is_y_flipped =
 
 [tools]
 evaluate_ann = True
@@ -105,7 +109,8 @@ plotproperties = {
 
 [restrictions]
 model_libs = {'keras', 'lasagne', 'caffe'}
-dataset_formats = {'npz', 'jpg', 'aedat}'
+dataset_formats = {'npz', 'jpg', 'aedat'}
+frame_gen_method = {'signed_sum', 'rectified_sum'}
 maxpool_types = {'fir_max', 'exp_max', 'avg_max'}
 simulators_pyNN = {'nest', 'brian', 'Neuron'}
 simulators_other = {'INI', 'brian2', 'MegaSim'}
