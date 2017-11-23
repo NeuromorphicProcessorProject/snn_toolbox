@@ -1,6 +1,7 @@
 [paths]
 dataset_path = %(path_wd)s/../../datasets/imagenet/validation
 filename_ann = 64.27_85.59
+filename_clamp_indices = clamp_idx_4.json
 class_idx_path = %(dataset_path)s/../imagenet_class_index_1000.json
 
 [input]
@@ -9,7 +10,7 @@ datagen_kwargs = {'preprocessing_function': 'helper_functions'}
 dataflow_kwargs = {'target_size': (224, 224), 'shuffle': True}
 
 [simulation]
-duration = 400
+duration = 200
 batch_size = 1
 num_to_test = 2
 

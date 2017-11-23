@@ -58,9 +58,7 @@ def test_full(config, queue=None):
     num_to_test = config.getint('simulation', 'num_to_test')
 
     # Instantiate an empty spiking network
-    target_sim = import_module('snntoolbox.simulation.target_simulators.' +
-                               config.get('simulation', 'simulator') +
-                               '_target_sim')
+    target_sim = import_target_sim(config)
     spiking_model = target_sim.SNN(config, queue)
 
     # ____________________________ LOAD DATASET ______________________________ #
@@ -218,6 +216,16 @@ def run_parameter_sweep(config, queue):
     return decorator
 
 
+def import_target_sim(config):
+
+    sim_str = config.get('simulation', 'simulator')
+    code_str = '_' + config.get('conversion', 'spike_code') \
+        if sim_str == 'INI' else ''
+
+    return import_module('snntoolbox.simulation.target_simulators.'
+                         + sim_str + code_str + '_target_sim')
+
+
 def load_config(filepath):
     """
     Load a config file from ``filepath``.
@@ -256,6 +264,26 @@ def update_setup(config_filepath):
 
     # Overwrite with user settings.
     config.read(config_filepath)
+
+    keras_backend = config.get('simulation', 'keras_backend')
+    keras_backends = eval(config.get('restrictions', 'keras_backends'))
+    assert keras_backend in keras_backends, \
+        "Keras backend {} not supported. Choose from {}.".format(keras_backend,
+                                                                 keras_backends)
+    os.environ['KERAS_BACKEND'] = keras_backend
+    # The keras import has to happen after setting the backend environment
+    # variable!
+    import keras.backend as k
+    assert k.backend() == keras_backend, \
+        "Keras backend set to {} in snntoolbox config file, but has already " \
+        "been set to {} by a previous keras import. Set backend " \
+        "appropriately in the keras config file.".format(keras_backend,
+                                                         k.backend())
+    if keras_backend == 'tensorflow':
+        # Limit GPU usage of tensorflow.
+        tf_config = k.tf.ConfigProto()
+        tf_config.gpu_options.allow_growth = True
+        k.tensorflow_backend.set_session(k.tf.Session(config=tf_config))
 
     # Name of input file must be given.
     filename_ann = config.get('paths', 'filename_ann')
@@ -313,17 +341,17 @@ def update_setup(config_filepath):
         json_file = filename_ann + '.json'
         if not os.path.isfile(os.path.join(path_wd, json_file)):
             import keras
-            import h5py
             from snntoolbox.parsing.utils import get_custom_activations_dict
-            # Remove optimizer_weights here, because they may cause the
-            # load_model method to fail if the network was trained on a
-            # different platform or keras version
-            # (see https://github.com/fchollet/keras/issues/4044).
-            with h5py.File(h5_filepath, 'a') as f:
-                if 'optimizer_weights' in f.keys():
-                    del f['optimizer_weights']
-            # Try loading the model.
-            keras.models.load_model(h5_filepath, get_custom_activations_dict())
+            try:
+                keras.models.load_model(h5_filepath,
+                                        get_custom_activations_dict())
+            except Exception:
+                raise AssertionError(
+                    "Input model could not be loaded. This is likely due to a "
+                    "Keras version backwards-incompability. For instance, you "
+                    "might have provided an h5 file with weights, but without "
+                    "network configuration. In earlier versions of Keras, this "
+                    "is contained in a json file.")
     elif model_lib == 'lasagne':
         h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
         pkl_filepath = os.path.join(path_wd, filename_ann + '.pkl')
@@ -449,6 +477,17 @@ def update_setup(config_filepath):
         config.set('parameter_sweep', 'param_values',
                    str([eval(config.get('cell', param_name))]))
 
+    spike_code = config.get('conversion', 'spike_code')
+    spike_codes = eval(config.get('restrictions', 'spike_codes'))
+    assert spike_code in spike_codes, \
+        "Unknown spike code {} selected. Choose from {}.".format(spike_code,
+                                                                 spike_codes)
+
+    if spike_code == 'temporal_pattern':
+        num_bits = str(config.getint('conversion', 'num_bits'))
+        config.set('simulation', 'duration', num_bits)
+        config.set('simulation', 'batch_size', '1')
+
     with open(os.path.join(log_dir_of_current_run, '.config'), str('w')) as f:
         config.write(f)
 
@@ -459,8 +498,8 @@ def initialize_simulator(config):
     """Import a module that contains utility functions of spiking simulator."""
     from importlib import import_module
 
-    sim = None
     simulator = config.get('simulation', 'simulator')
+    print("Initializing {} simulator...\n".format(simulator))
     if simulator in eval(config.get('restrictions', 'simulators_pyNN')):
         if simulator == 'nest':
             # Workaround for missing link bug, see
@@ -475,16 +514,21 @@ def initialize_simulator(config):
         # resets the simulator entirely, destroying any network that may
         # have been created in the meantime."
         sim.setup(timestep=config.getfloat('simulation', 'dt'))
-    elif simulator == 'brian2':
-        sim = import_module('brian2')
-    elif simulator == 'INI':
-        sim = import_module('snntoolbox.simulation.backends.inisim.inisim')
+        return sim
+    if simulator == 'brian2':
+        return import_module('brian2')
+    sim_module_str = None
+    if simulator == 'INI':
+        spike_code = config.get('conversion', 'spike_code')
+        sim_module_str = 'inisim.' + spike_code
+        if spike_code == 'temporal_mean_rate':
+            sim_module_str += '_' + config.get('simulation', 'keras_backend')
     elif simulator == 'MegaSim':
-        sim = import_module('snntoolbox.simulation.backends.megasim.megasim')
-    elif simulator == 'INIed':
-        sim = import_module('snntoolbox.simulation.backends.inisim.inied')
+        sim_module_str = 'megasim.megasim'
+    if sim_module_str is None:
+        sim_module_str = 'inisim.temporal_mean_rate_theano'
+    sim = import_module('snntoolbox.simulation.backends.' + sim_module_str)
     assert sim, "Simulator {} could not be initialized.".format(simulator)
-    print("Initialized {} simulator.\n".format(simulator))
     return sim
 
 

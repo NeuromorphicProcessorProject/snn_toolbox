@@ -9,7 +9,7 @@ from __future__ import absolute_import, print_function
 
 import os
 import sys
-# import scipy
+import scipy
 import tarfile
 import json
 import re

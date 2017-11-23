@@ -76,7 +76,6 @@ setup(
     install_requires=[
         'future',
         'keras',
-        'h5py'
     ],
 
     setup_requires=['pytest-runner'],
@@ -107,7 +106,7 @@ setup(
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
-        'console_scripts': ['snntoolbox=snntoolbox.bin.run:main']
-        # 'gui_scripts': ['snntoolbox_gui=snntoolbox.bin.gui.gui:main']
+        'console_scripts': ['snntoolbox=snntoolbox.bin.run:main'],
+        'gui_scripts': ['snntoolbox_gui=snntoolbox.bin.gui.gui:main']
     },
 )
