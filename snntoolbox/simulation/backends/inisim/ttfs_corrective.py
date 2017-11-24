@@ -1,9 +1,17 @@
 # -*- coding: utf-8 -*-
-"""INI spiking neuron simulator.
+"""INI time-to-first-spike simulator backend with corrective spikes.
 
 This module defines the layer objects used to create a spiking neural network
 for our built-in INI simulator
-:py:mod:`~snntoolbox.simulation.target_simulators.INI_target_sim`.
+:py:mod:`~snntoolbox.simulation.target_simulators.INI_ttfs_corrective_target_sim`.
+
+The coding scheme underlying this conversion is that the instantaneous firing
+rate is given by the inverse time-to-first-spike. In contrast to
+:py:mod:`~snntoolbox.simulation.target_simulators.INI_ttfs_target_sim`, this
+one allows corrective spikes to be fired to improve the first guess made by
+``ttfs``.
+
+This simulator works only with Keras backend set to Tensorflow.
 
 @author: rbodo
 """

@@ -6,5 +6,6 @@ to :py:mod:`pyNN_target_sim` here.
 
 @author: rbodo
 """
+
 # noinspection PyUnresolvedReferences
 from snntoolbox.simulation.target_simulators.pyNN_target_sim import SNN

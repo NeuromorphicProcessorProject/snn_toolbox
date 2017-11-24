@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Building and simulating spiking neural networks using INIsim.
+"""INI simulator with time-to-first-spike code and a dynamic threshold.
 
 @author: rbodo
 """
@@ -21,7 +21,7 @@ remove_classifier = False
 class SNN(SNN_):
     """
     The compiled spiking neural network, using layers derived from
-    Keras base classes (see `snntoolbox.simulation.backends.inisim.inisim`).
+    Keras base classes (see `snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh`).
 
     Aims at simulating the network on a self-implemented Integrate-and-Fire
     simulator using a timestepped approach.

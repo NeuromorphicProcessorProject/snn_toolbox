@@ -227,7 +227,7 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.add_input_layer">add_input_layer() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.add_input_layer">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.add_input_layer">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.add_input_layer">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
@@ -241,7 +241,7 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.add_layer">add_layer() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.add_layer">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.add_layer">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.add_layer">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
@@ -250,8 +250,12 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.add_layer">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.add_payloads">add_payloads() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.add_payloads">add_payloads() (in module snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.add_payloads">(in module snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
 </li>
+      </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.adjust_batchsize">adjust_batchsize() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       <li><a href="api/conversion.html#snntoolbox.conversion.utils.apply_normalization_schedule">apply_normalization_schedule() (in module snntoolbox.conversion.utils)</a>
@@ -270,52 +274,100 @@
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.binary_sigmoid">binary_sigmoid() (in module snntoolbox.utils.utils)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.binary_sigmoid_activation">binary_sigmoid_activation() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
-</li>
-      <li><a href="api/utils.html#snntoolbox.utils.utils.binary_tanh">binary_tanh() (in module snntoolbox.utils.utils)</a>
-</li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.binary_tanh_activation">binary_tanh_activation() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
-</li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeAveragePooling2D.build">build() (snntoolbox.simulation.backends.inisim.inisim.SpikeAveragePooling2D method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.binary_sigmoid_activation">binary_sigmoid_activation() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeConv2D.build">(snntoolbox.simulation.backends.inisim.inisim.SpikeConv2D method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.binary_sigmoid_activation">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
 </li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeDense.build">(snntoolbox.simulation.backends.inisim.inisim.SpikeDense method)</a>
+      </ul></li>
+      <li><a href="api/utils.html#snntoolbox.utils.utils.binary_tanh">binary_tanh() (in module snntoolbox.utils.utils)</a>
 </li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeMaxPooling2D.build">(snntoolbox.simulation.backends.inisim.inisim.SpikeMaxPooling2D method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.binary_tanh_activation">binary_tanh_activation() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.binary_tanh_activation">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeAveragePooling2D.build">build() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeAveragePooling2D method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConv2D.build">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConv2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDense.build">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDense method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeMaxPooling2D.build">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeMaxPooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeAveragePooling2D.build">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeAveragePooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConv2D.build">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConv2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeDense.build">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeDense method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeMaxPooling2D.build">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeMaxPooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeAveragePooling2D.build">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeAveragePooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeConv2D.build">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeConv2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeDense.build">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeDense method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeMaxPooling2D.build">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeMaxPooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeAveragePooling2D.build">(snntoolbox.simulation.backends.inisim.ttfs.SpikeAveragePooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeConv2D.build">(snntoolbox.simulation.backends.inisim.ttfs.SpikeConv2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeDense.build">(snntoolbox.simulation.backends.inisim.ttfs.SpikeDense method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeMaxPooling2D.build">(snntoolbox.simulation.backends.inisim.ttfs.SpikeMaxPooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeAveragePooling2D.build">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeAveragePooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeConv2D.build">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeConv2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeDense.build">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeDense method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeMaxPooling2D.build">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeMaxPooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeAveragePooling2D.build">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeAveragePooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeConv2D.build">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeConv2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeDense.build">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeDense method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeMaxPooling2D.build">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeMaxPooling2D method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.build">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.build_convolution">build_convolution (snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN attribute)</a>
-</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.build_convolution">build_convolution() (in module snntoolbox.simulation.utils)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.build_convolution">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.build_convolution">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.build_convolution">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.build_convolution">(snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.build_convolution">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
+</li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.build_convolution">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.build_dense">build_dense (snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN attribute)</a>
-</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.build_dense">build_dense() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.build_dense">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.build_dense">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.build_dense">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.build_dense">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.build_dense">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.build_flatten">build_flatten() (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 
       <ul>
@@ -336,16 +388,16 @@
       </ul></li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.build_parsed_model">build_parsed_model() (snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.build_pooling">build_pooling (snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN attribute)</a>
-</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.build_pooling">build_pooling() (in module snntoolbox.simulation.utils)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.build_pooling">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.build_pooling">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.build_pooling">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.build_pooling">(snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.build_pooling">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.build_pooling">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
@@ -362,16 +414,60 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeAveragePooling2D.call">call() (snntoolbox.simulation.backends.inisim.inisim.SpikeAveragePooling2D method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeAveragePooling2D.call">call() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeAveragePooling2D method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeConv2D.call">(snntoolbox.simulation.backends.inisim.inisim.SpikeConv2D method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConv2D.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConv2D method)</a>
 </li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeDense.call">(snntoolbox.simulation.backends.inisim.inisim.SpikeDense method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDense.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDense method)</a>
 </li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeFlatten.call">(snntoolbox.simulation.backends.inisim.inisim.SpikeFlatten method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten method)</a>
 </li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeMaxPooling2D.call">(snntoolbox.simulation.backends.inisim.inisim.SpikeMaxPooling2D method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeMaxPooling2D.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeMaxPooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeAveragePooling2D.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeAveragePooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConv2D.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConv2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeDense.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeDense method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeFlatten.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeFlatten method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeMaxPooling2D.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeMaxPooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeAveragePooling2D.call">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeAveragePooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeConv2D.call">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeConv2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeDense.call">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeDense method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeMaxPooling2D.call">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeMaxPooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeAveragePooling2D.call">(snntoolbox.simulation.backends.inisim.ttfs.SpikeAveragePooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeConv2D.call">(snntoolbox.simulation.backends.inisim.ttfs.SpikeConv2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeDense.call">(snntoolbox.simulation.backends.inisim.ttfs.SpikeDense method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeMaxPooling2D.call">(snntoolbox.simulation.backends.inisim.ttfs.SpikeMaxPooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeAveragePooling2D.call">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeAveragePooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeConv2D.call">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeConv2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeDense.call">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeDense method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeMaxPooling2D.call">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeMaxPooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeAveragePooling2D.call">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeAveragePooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeConv2D.call">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeConv2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeDense.call">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeDense method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeFlatten.call">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeFlatten method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeMaxPooling2D.call">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeMaxPooling2D method)</a>
 </li>
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.cellparams">cellparams (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN attribute)</a>
@@ -394,18 +490,50 @@
 </li>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.check_sample">check_sample() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeConcatenate.class_name">class_name (snntoolbox.simulation.backends.inisim.inisim.SpikeConcatenate attribute)</a>
-
-      <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeFlatten.class_name">(snntoolbox.simulation.backends.inisim.inisim.SpikeFlatten attribute)</a>
+      <li><a href="api/utils.html#snntoolbox.utils.utils.clamped_relu">clamped_relu() (in module snntoolbox.utils.utils)</a>
 </li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.class_name">(snntoolbox.simulation.backends.inisim.inisim.SpikeLayer attribute)</a>
-</li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeMaxPooling2D.class_name">(snntoolbox.simulation.backends.inisim.inisim.SpikeMaxPooling2D attribute)</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConcatenate.class_name">class_name (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConcatenate attribute)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten.class_name">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.class_name">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate.class_name">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeFlatten.class_name">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeFlatten attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.class_name">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeMaxPooling2D.class_name">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeMaxPooling2D attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeConcatenate.class_name">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeConcatenate attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeFlatten.class_name">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeFlatten attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeLayer.class_name">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeLayer attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeConcatenate.class_name">(snntoolbox.simulation.backends.inisim.ttfs.SpikeConcatenate attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeFlatten.class_name">(snntoolbox.simulation.backends.inisim.ttfs.SpikeFlatten attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.class_name">(snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeConcatenate.class_name">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeConcatenate attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeFlatten.class_name">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeFlatten attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer.class_name">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeConcatenate.class_name">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeConcatenate attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeFlatten.class_name">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeFlatten attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.class_name">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.clean_megasim_sim_data">clean_megasim_sim_data() (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.close_window">close_window() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
@@ -413,7 +541,9 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.compile">compile() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.compile">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.compile">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN.compile">(snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.compile">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
@@ -429,8 +559,6 @@
 </li>
       </ul></li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.confirm_overwrite">confirm_overwrite() (in module snntoolbox.utils.utils)</a>
-</li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.connect">connect() (in module snntoolbox.simulation.target_simulators.pyNN_target_sim)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.connections">connections (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN attribute)</a>
 
@@ -478,6 +606,8 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/utils.html#snntoolbox.utils.utils.echo">echo() (in module snntoolbox.utils.utils)</a>
+</li>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.edit_dataset_settings">edit_dataset_settings() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.edit_experimental_settings">edit_experimental_settings() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
@@ -487,7 +617,7 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.end_sim">end_sim() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.end_sim">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.end_sim">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.end_sim">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
@@ -500,6 +630,8 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/simulation.html#snntoolbox.simulation.utils.estimate_snn_ops">estimate_snn_ops() (in module snntoolbox.simulation.utils)</a>
+</li>
       <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.caffe_input_lib.evaluate">evaluate() (in module snntoolbox.parsing.model_libs.caffe_input_lib)</a>
 
       <ul>
@@ -562,6 +694,8 @@
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.get_ann_ops">get_ann_ops() (in module snntoolbox.simulation.utils)</a>
 </li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.get_avg_rate_from_trains">get_avg_rate_from_trains() (snntoolbox.simulation.utils.AbstractSNN method)</a>
+</li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.get_batch_input_shape">get_batch_input_shape() (snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.caffe_input_lib.ModelParser.get_batchnorm_parameters">get_batchnorm_parameters() (snntoolbox.parsing.model_libs.caffe_input_lib.ModelParser method)</a>
@@ -574,13 +708,23 @@
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.get_batchnorm_parameters">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.get_clamp_idx">get_clamp_idx() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.get_clamp_idx">get_clamp_idx() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.get_clamp_idx">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_custom_activation">get_custom_activation() (in module snntoolbox.parsing.utils)</a>
+</li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_custom_activations_dict">get_custom_activations_dict() (in module snntoolbox.parsing.utils)</a>
 </li>
       <li><a href="api/datasets.html#snntoolbox.datasets.utils.get_dataset">get_dataset() (in module snntoolbox.datasets.utils)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_fanin">get_fanin() (in module snntoolbox.parsing.utils)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_fanout">get_fanout() (in module snntoolbox.parsing.utils)</a>
+</li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_fanout_array">get_fanout_array() (in module snntoolbox.parsing.utils)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_inbound_layers">get_inbound_layers() (in module snntoolbox.parsing.utils)</a>
 
@@ -612,10 +756,24 @@
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.get_input_shape">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.get_isi_from_impulse">get_isi_from_impulse() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.get_isi_from_impulse">get_isi_from_impulse() (in module snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.get_isi_from_impulse">(in module snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.get_layer_idx">get_layer_idx() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.get_layer_idx">get_layer_idx() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.get_layer_idx">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.get_layer_idx">(snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer.get_layer_idx">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.get_layer_idx">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer method)</a>
+</li>
+      </ul></li>
       <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.caffe_input_lib.ModelParser.get_layer_iterable">get_layer_iterable() (snntoolbox.parsing.model_libs.caffe_input_lib.ModelParser method)</a>
 
       <ul>
@@ -626,16 +784,30 @@
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.get_layer_iterable">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.utils.get_layer_ops">get_layer_ops() (in module snntoolbox.simulation.utils)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.utils.get_layer_synaptic_operations">get_layer_synaptic_operations() (in module snntoolbox.simulation.utils)</a>
 </li>
       <li><a href="api/bin.html#snntoolbox.bin.utils.get_log_keys">get_log_keys() (in module snntoolbox.bin.utils)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.get_name">get_name() (snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.get_new_mem">get_new_mem() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.get_new_mem">get_new_mem() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.get_new_mem">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.get_new_thresh">get_new_thresh() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.get_new_mem">(snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer.get_new_mem">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.get_new_mem">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.get_new_thresh">get_new_thresh() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.get_new_thresh">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
+</li>
+      </ul></li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_outbound_activation">get_outbound_activation() (in module snntoolbox.parsing.utils)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_outbound_layers">get_outbound_layers() (in module snntoolbox.parsing.utils)</a>
@@ -670,7 +842,17 @@
 </li>
       <li><a href="api/bin.html#snntoolbox.bin.utils.get_plot_keys">get_plot_keys() (in module snntoolbox.bin.utils)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.get_poisson_frame_batch">get_poisson_frame_batch() (snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.get_poisson_frame_batch">get_poisson_frame_batch() (snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
+</li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.get_psp">get_psp() (snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer.get_psp">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.get_psp">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_quantized_activation_function_from_string">get_quantized_activation_function_from_string() (in module snntoolbox.parsing.utils)</a>
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.get_range">get_range() (in module snntoolbox.utils.utils)</a>
 </li>
@@ -682,8 +864,12 @@
 </li>
       <li><a href="api/conversion.html#snntoolbox.conversion.utils.get_scale_fac">get_scale_fac() (in module snntoolbox.conversion.utils)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.get_spikes">get_spikes() (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer.get_spikes">get_spikes() (snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.get_spikes">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
+      </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.get_spiketrains">get_spiketrains() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
@@ -697,7 +883,7 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.get_spiketrains_input">get_spiketrains_input() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.get_spiketrains_input">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.get_spiketrains_input">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.get_spiketrains_input">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
@@ -706,16 +892,54 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.get_spiketrains_input">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.utils.get_spiking_outbound_layers">get_spiking_outbound_layers() (in module snntoolbox.simulation.utils)</a>
-</li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.get_time">get_time() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.get_spiketrains_output">get_spiketrains_output() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeConcatenate.get_time">(snntoolbox.simulation.backends.inisim.inisim.SpikeConcatenate method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.get_spiketrains_output">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeFlatten.get_time">(snntoolbox.simulation.backends.inisim.inisim.SpikeFlatten method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.get_spiketrains_output">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.get_time">(snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.get_spiketrains_output">(snntoolbox.simulation.utils.AbstractSNN method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.utils.get_spiking_outbound_layers">get_spiking_outbound_layers() (in module snntoolbox.simulation.utils)</a>
+</li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConcatenate.get_time">get_time() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConcatenate static method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten.get_time">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.get_time">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate.get_time">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeFlatten.get_time">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeFlatten static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.get_time">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeConcatenate.get_time">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeConcatenate static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeFlatten.get_time">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeFlatten static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeLayer.get_time">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeConcatenate.get_time">(snntoolbox.simulation.backends.inisim.ttfs.SpikeConcatenate static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeFlatten.get_time">(snntoolbox.simulation.backends.inisim.ttfs.SpikeFlatten static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.get_time">(snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeConcatenate.get_time">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeConcatenate static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeFlatten.get_time">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeFlatten static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer.get_time">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeConcatenate.get_time">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeConcatenate static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeFlatten.get_time">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeFlatten static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.get_time">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer method)</a>
 </li>
       </ul></li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_type">get_type() (in module snntoolbox.parsing.utils)</a>
@@ -754,6 +978,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/utils.html#snntoolbox.utils.utils.hard_sigmoid">hard_sigmoid() (in module snntoolbox.utils.utils)</a>
 </li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.utils.has_stride_unity">has_stride_unity() (in module snntoolbox.parsing.utils)</a>
+</li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.has_weights">has_weights() (in module snntoolbox.parsing.utils)</a>
 
       <ul>
@@ -776,6 +1002,8 @@
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.import_script">import_script() (in module snntoolbox.utils.utils)</a>
 </li>
+      <li><a href="api/bin.html#snntoolbox.bin.utils.import_target_sim">import_target_sim() (in module snntoolbox.bin.utils)</a>
+</li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.in_top_k">in_top_k() (in module snntoolbox.utils.utils)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.init_cells">init_cells() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
@@ -788,10 +1016,34 @@
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.init_log_vars">init_log_vars() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.init_membrane_potential">init_membrane_potential() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.init_membrane_potential">init_membrane_potential() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.init_membrane_potential">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.init_neurons">init_neurons() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.init_membrane_potential">(snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer.init_membrane_potential">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.init_membrane_potential">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.init_neurons">init_neurons() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.init_neurons">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeLayer.init_neurons">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.init_neurons">(snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer.init_neurons">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.init_neurons">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.keras_input_lib.ModelParser.initialize_attributes">initialize_attributes() (snntoolbox.parsing.model_libs.keras_input_lib.ModelParser method)</a>
 
       <ul>
@@ -800,8 +1052,6 @@
       </ul></li>
       <li><a href="api/bin.html#snntoolbox.bin.utils.initialize_simulator">initialize_simulator() (in module snntoolbox.bin.utils)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.initialize_thread">initialize_thread() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.input_b_l_t">input_b_l_t (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
@@ -819,7 +1069,7 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.is_parallelizable">is_parallelizable (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN attribute)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.is_parallelizable">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN attribute)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.is_parallelizable">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN attribute)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.is_parallelizable">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN attribute)</a>
 </li>
@@ -854,8 +1104,16 @@
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.layers_to_skip">(snntoolbox.parsing.utils.AbstractModelParser attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.linear_activation">linear_activation() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.linear_activation">linear_activation() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.linear_activation">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.linear_activation">(snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.linear_activation">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer method)</a>
+</li>
+      </ul></li>
       <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.caffe_input_lib.load">load() (in module snntoolbox.parsing.model_libs.caffe_input_lib)</a>
 
       <ul>
@@ -863,7 +1121,13 @@
 </li>
         <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.lasagne_input_lib.load">(in module snntoolbox.parsing.model_libs.lasagne_input_lib)</a>
 </li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.load">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.load">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN.load">(snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_ttfs_dyn_thresh_target_sim.SNN.load">(snntoolbox.simulation.target_simulators.INI_ttfs_dyn_thresh_target_sim.SNN method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_ttfs_target_sim.SNN.load">(snntoolbox.simulation.target_simulators.INI_ttfs_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.load">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
@@ -898,7 +1162,7 @@
         <li><a href="api/bin.html#snntoolbox.bin.run.main">(in module snntoolbox.bin.run)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikePool.make_node">make_node() (snntoolbox.simulation.backends.inisim.inisim.SpikePool method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikePool.make_node">make_node() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikePool method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.megadirname">megadirname (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN attribute)</a>
 </li>
@@ -956,14 +1220,16 @@
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.n_repeat">n_repeat (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.n_repeat">[1]</a>
 </li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.neuron_operations_b_t">neuron_operations_b_t (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
+</li>
       <li><a href="api/conversion.html#snntoolbox.conversion.utils.normalize_parameters">normalize_parameters() (in module snntoolbox.conversion.utils)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.num_classes">num_classes (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.num_neurons">num_neurons (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.num_neurons">num_neurons (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
+</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.num_neurons_with_bias">num_neurons_with_bias (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Module_conv.num_of_FMs">num_of_FMs (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Module_conv attribute)</a>
@@ -985,8 +1251,6 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.operations_ann">operations_ann (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
-</li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.operations_b_t">operations_b_t (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.plotting.output_graphs">output_graphs() (in module snntoolbox.simulation.plotting)</a>
 </li>
@@ -1062,7 +1326,7 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.parsed_model">(snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikePool.perform">perform() (snntoolbox.simulation.backends.inisim.inisim.SpikePool method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikePool.perform">perform() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikePool method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -1120,10 +1384,18 @@
 <h2 id="Q">Q</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.queue">queue (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.quantized_activation">quantized_activation() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.quantized_activation">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
 </li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/utils.html#snntoolbox.utils.utils.quantized_relu">quantized_relu() (in module snntoolbox.utils.utils)</a>
+</li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.queue">queue (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
+</li>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.quit_toolbox">quit_toolbox() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
   </ul></td>
@@ -1132,22 +1404,56 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikePool.R_op">R_op() (snntoolbox.simulation.backends.inisim.inisim.SpikePool method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikePool.R_op">R_op() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikePool method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.rectify">rectify (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.rectify">[1]</a>
 </li>
+      <li><a href="api/utils.html#snntoolbox.utils.utils.reduce_precision">reduce_precision() (in module snntoolbox.utils.utils)</a>
+</li>
+      <li><a href="api/utils.html#snntoolbox.utils.utils.reduce_precision_var">reduce_precision_var() (in module snntoolbox.utils.utils)</a>
+</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.rescale_fac">rescale_fac (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeConcatenate.reset">reset() (snntoolbox.simulation.backends.inisim.inisim.SpikeConcatenate static method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConcatenate.reset">reset() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConcatenate static method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeFlatten.reset">(snntoolbox.simulation.backends.inisim.inisim.SpikeFlatten static method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten.reset">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten static method)</a>
 </li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.reset">(snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.reset">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
 </li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeMaxPooling2D.reset">(snntoolbox.simulation.backends.inisim.inisim.SpikeMaxPooling2D method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate.reset">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate static method)</a>
 </li>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.reset">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeFlatten.reset">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeFlatten static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.reset">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeMaxPooling2D.reset">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeMaxPooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeConcatenate.reset">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeConcatenate static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeFlatten.reset">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeFlatten static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeLayer.reset">(snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeLayer static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeConcatenate.reset">(snntoolbox.simulation.backends.inisim.ttfs.SpikeConcatenate static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeFlatten.reset">(snntoolbox.simulation.backends.inisim.ttfs.SpikeFlatten method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.reset">(snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeConcatenate.reset">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeConcatenate static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeFlatten.reset">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeFlatten method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer.reset">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeConcatenate.reset">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeConcatenate static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeFlatten.reset">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeFlatten method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.reset">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.reset">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.reset">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
@@ -1162,8 +1468,18 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.reset_container_counters">reset_container_counters() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.reset_spikevars">reset_spikevars() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.reset_spikevars">reset_spikevars() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.reset_spikevars">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.reset_spikevars">(snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer.reset_spikevars">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.reset_spikevars">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer method)</a>
+</li>
+      </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.Reset_to_reminder">Reset_to_reminder (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.Reset_to_reminder">[1]</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.reshape_flattened_spiketrains">reshape_flattened_spiketrains() (snntoolbox.simulation.utils.AbstractSNN method)</a>
@@ -1185,7 +1501,7 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.save">save() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.save">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.save">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.save">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
@@ -1201,6 +1517,8 @@
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.save_parameters">save_parameters() (in module snntoolbox.parsing.utils)</a>
 </li>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.save_settings">save_settings() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
+</li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.scale_first_layer_parameters">scale_first_layer_parameters() (snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.scaling_factor">scaling_factor (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.scaling_factor">[1]</a>
 </li>
@@ -1222,16 +1540,28 @@
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.set_mem_stats">set_mem_stats() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN.set_neuron_operations">set_neuron_operations() (snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN method)</a>
+</li>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.set_preferences">set_preferences() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.set_reset_mem">set_reset_mem() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.set_reset_mem">set_reset_mem() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.set_reset_mem">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.set_reset_mem">(snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.set_reset_mem">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN.set_spikerates">set_spikerates() (snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.set_spiketrain_stats">set_spiketrain_stats() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.set_spiketrain_stats_input">set_spiketrain_stats_input() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.set_spiketrain_stats_input">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.set_spiketrain_stats_input">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.set_spiketrain_stats_input">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
@@ -1240,10 +1570,22 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.set_spiketrain_stats_input">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.set_time">set_time() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN.set_spiketrains">set_spiketrains() (snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN method)</a>
+</li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN.set_synaptic_operations">set_synaptic_operations() (snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN method)</a>
+</li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.set_time">set_time() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.set_time">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.set_time">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.set_time">(snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer.set_time">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.set_time">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.set_time">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.sim">sim (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
@@ -1253,7 +1595,13 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.simulate">simulate() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.simulate">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN method)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.simulate">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN.simulate">(snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_ttfs_dyn_thresh_target_sim.SNN.simulate">(snntoolbox.simulation.target_simulators.INI_ttfs_dyn_thresh_target_sim.SNN method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_ttfs_target_sim.SNN.simulate">(snntoolbox.simulation.target_simulators.INI_ttfs_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.simulate">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
@@ -1265,7 +1613,13 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN">SNN (class in snntoolbox.simulation.target_simulators.brian2_target_sim)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN">(class in snntoolbox.simulation.target_simulators.INI_target_sim)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN">(class in snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN">(class in snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_ttfs_dyn_thresh_target_sim.SNN">(class in snntoolbox.simulation.target_simulators.INI_ttfs_dyn_thresh_target_sim)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_ttfs_target_sim.SNN">(class in snntoolbox.simulation.target_simulators.INI_ttfs_target_sim)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN">(class in snntoolbox.simulation.target_simulators.MegaSim_target_sim)</a>
 </li>
@@ -1275,11 +1629,11 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.snn">snn (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN attribute)</a>
 
       <ul>
-        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_target_sim.SNN.snn">(snntoolbox.simulation.target_simulators.INI_target_sim.SNN attribute)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.snn">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN attribute)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN.snn">(snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/bin.html#module-snntoolbox.bin.gui.gui">snntoolbox.bin.gui.gui (module)</a>
 </li>
       <li><a href="api/bin.html#module-snntoolbox.bin.run">snntoolbox.bin.run (module)</a>
@@ -1298,15 +1652,35 @@
 </li>
       <li><a href="api/parsing.html#module-snntoolbox.parsing.utils">snntoolbox.parsing.utils (module)</a>
 </li>
-      <li><a href="api/simulation.html#module-snntoolbox.simulation.backends.inisim.inisim">snntoolbox.simulation.backends.inisim.inisim (module)</a>
+      <li><a href="api/simulation.html#module-snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow">snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow (module)</a>
 </li>
+      <li><a href="api/simulation.html#module-snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano">snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano (module)</a>
+</li>
+      <li><a href="api/simulation.html#module-snntoolbox.simulation.backends.inisim.temporal_pattern">snntoolbox.simulation.backends.inisim.temporal_pattern (module)</a>
+</li>
+      <li><a href="api/simulation.html#module-snntoolbox.simulation.backends.inisim.ttfs">snntoolbox.simulation.backends.inisim.ttfs (module)</a>
+</li>
+      <li><a href="api/simulation.html#module-snntoolbox.simulation.backends.inisim.ttfs_corrective">snntoolbox.simulation.backends.inisim.ttfs_corrective (module)</a>
+</li>
+      <li><a href="api/simulation.html#module-snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh">snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh (module)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.backends.megasim.megasim">snntoolbox.simulation.backends.megasim.megasim (module)</a>
 </li>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.plotting">snntoolbox.simulation.plotting (module)</a>
 </li>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.brian2_target_sim">snntoolbox.simulation.target_simulators.brian2_target_sim (module)</a>
 </li>
-      <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.INI_target_sim">snntoolbox.simulation.target_simulators.INI_target_sim (module)</a>
+      <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim">snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim (module)</a>
+</li>
+      <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim">snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim (module)</a>
+</li>
+      <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.INI_ttfs_corrective_target_sim">snntoolbox.simulation.target_simulators.INI_ttfs_corrective_target_sim (module)</a>
+</li>
+      <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.INI_ttfs_dyn_thresh_target_sim">snntoolbox.simulation.target_simulators.INI_ttfs_dyn_thresh_target_sim (module)</a>
+</li>
+      <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.INI_ttfs_target_sim">snntoolbox.simulation.target_simulators.INI_ttfs_target_sim (module)</a>
 </li>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.MegaSim_target_sim">snntoolbox.simulation.target_simulators.MegaSim_target_sim (module)</a>
 </li>
@@ -1318,35 +1692,137 @@
 </li>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI">SNNToolboxGUI (class in snntoolbox.bin.gui.gui)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.softmax_activation">softmax_activation() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.softmax_activation">softmax_activation() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.softmax_activation">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.spike_call">spike_call() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.spike_call">spike_call() (in module snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.spike_call">(in module snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.spike_call">(in module snntoolbox.simulation.backends.inisim.temporal_pattern)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.spike_call">(in module snntoolbox.simulation.backends.inisim.ttfs)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.spike_call">(in module snntoolbox.simulation.backends.inisim.ttfs_corrective)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.spike_call">(in module snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh)</a>
+</li>
+      </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.spike_count_histogram">spike_count_histogram() (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN static method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.spike_pool2d">spike_pool2d() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.spike_pool2d">spike_pool2d() (in module snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.spike_pool_2d">spike_pool_2d() (in module snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.spike_pool_2d">spike_pool_2d() (in module snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeAveragePooling2D">SpikeAveragePooling2D (class in snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeAveragePooling2D">SpikeAveragePooling2D (class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeAveragePooling2D">(class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeConcatenate">SpikeConcatenate (class in snntoolbox.simulation.backends.inisim.inisim)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeAveragePooling2D">(class in snntoolbox.simulation.backends.inisim.temporal_pattern)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeConv2D">SpikeConv2D (class in snntoolbox.simulation.backends.inisim.inisim)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeAveragePooling2D">(class in snntoolbox.simulation.backends.inisim.ttfs)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeAveragePooling2D">(class in snntoolbox.simulation.backends.inisim.ttfs_corrective)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeAveragePooling2D">(class in snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh)</a>
+</li>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConcatenate">SpikeConcatenate (class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate">(class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeConcatenate">(class in snntoolbox.simulation.backends.inisim.temporal_pattern)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeConcatenate">(class in snntoolbox.simulation.backends.inisim.ttfs)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeConcatenate">(class in snntoolbox.simulation.backends.inisim.ttfs_corrective)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeConcatenate">(class in snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh)</a>
+</li>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConv2D">SpikeConv2D (class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConv2D">(class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeConv2D">(class in snntoolbox.simulation.backends.inisim.temporal_pattern)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeConv2D">(class in snntoolbox.simulation.backends.inisim.ttfs)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeConv2D">(class in snntoolbox.simulation.backends.inisim.ttfs_corrective)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeConv2D">(class in snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh)</a>
+</li>
+      </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.spikecounts_to_rates">spikecounts_to_rates() (in module snntoolbox.simulation.utils)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeDense">SpikeDense (class in snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDense">SpikeDense (class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeDense">(class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeFlatten">SpikeFlatten (class in snntoolbox.simulation.backends.inisim.inisim)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeDense">(class in snntoolbox.simulation.backends.inisim.temporal_pattern)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer">SpikeLayer (class in snntoolbox.simulation.backends.inisim.inisim)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeDense">(class in snntoolbox.simulation.backends.inisim.ttfs)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeMaxPooling2D">SpikeMaxPooling2D (class in snntoolbox.simulation.backends.inisim.inisim)</a>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeDense">(class in snntoolbox.simulation.backends.inisim.ttfs_corrective)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeDense">(class in snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh)</a>
+</li>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten">SpikeFlatten (class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeFlatten">(class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeFlatten">(class in snntoolbox.simulation.backends.inisim.temporal_pattern)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeFlatten">(class in snntoolbox.simulation.backends.inisim.ttfs)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeFlatten">(class in snntoolbox.simulation.backends.inisim.ttfs_corrective)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeFlatten">(class in snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh)</a>
+</li>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer">SpikeLayer (class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer">(class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeLayer">(class in snntoolbox.simulation.backends.inisim.temporal_pattern)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer">(class in snntoolbox.simulation.backends.inisim.ttfs)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer">(class in snntoolbox.simulation.backends.inisim.ttfs_corrective)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer">(class in snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh)</a>
+</li>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeMaxPooling2D">SpikeMaxPooling2D (class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeMaxPooling2D">(class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeMaxPooling2D">(class in snntoolbox.simulation.backends.inisim.temporal_pattern)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeMaxPooling2D">(class in snntoolbox.simulation.backends.inisim.ttfs)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeMaxPooling2D">(class in snntoolbox.simulation.backends.inisim.ttfs_corrective)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeMaxPooling2D">(class in snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh)</a>
+</li>
+      </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.spikemonitors">spikemonitors (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN attribute)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikePool">SpikePool (class in snntoolbox.simulation.backends.inisim.inisim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikePool">SpikePool (class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano)</a>
+</li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN.spikerates_to_trains">spikerates_to_trains() (snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.spiketrains_n_b_l_t">spiketrains_n_b_l_t (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
@@ -1357,6 +1833,8 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.statemonitors">statemonitors (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN attribute)</a>
 </li>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.stop_processing">stop_processing() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
+</li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.synaptic_operations_b_t">synaptic_operations_b_t (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1386,16 +1864,20 @@
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.Tmin">Tmin (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.Tmin">[1]</a>
 </li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.to_binary">to_binary() (in module snntoolbox.simulation.backends.inisim.temporal_pattern)</a>
+</li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.to_binary_numpy">to_binary_numpy() (in module snntoolbox.simulation.backends.inisim.temporal_pattern)</a>
+</li>
       <li><a href="api/datasets.html#snntoolbox.datasets.utils.to_categorical">to_categorical() (in module snntoolbox.datasets.utils)</a>
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.to_json">to_json() (in module snntoolbox.utils.utils)</a>
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.to_list">to_list() (in module snntoolbox.utils.utils)</a>
 </li>
-      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.toggle_num_to_test_state">toggle_num_to_test_state() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.toggle_num_to_test_state">toggle_num_to_test_state() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
+</li>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.toggle_poisson_input_state">toggle_poisson_input_state() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.toggle_start_state">toggle_start_state() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
@@ -1434,17 +1916,41 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/bin.html#snntoolbox.bin.gui.gui.SNNToolboxGUI.update">update() (snntoolbox.bin.gui.gui.SNNToolboxGUI method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.update_avg_variance">update_avg_variance() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.update_avg_variance">update_avg_variance() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.update_avg_variance">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.update_b">update_b() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.update_b">update_b() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.update_b">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
 </li>
+      </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.update_neurons">update_neurons() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.update_neurons">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer.update_neurons">(snntoolbox.simulation.backends.inisim.ttfs.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer.update_neurons">(snntoolbox.simulation.backends.inisim.ttfs_corrective.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer.update_neurons">(snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeLayer method)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.update_neurons">update_neurons() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.update_payload">update_payload() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.update_payload">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.inisim.SpikeLayer.update_payload">update_payload() (snntoolbox.simulation.backends.inisim.inisim.SpikeLayer method)</a>
-</li>
+      </ul></li>
       <li><a href="api/bin.html#snntoolbox.bin.utils.update_setup">update_setup() (in module snntoolbox.bin.utils)</a>
+</li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeLayer.update_spikevars">update_spikevars() (snntoolbox.simulation.backends.inisim.temporal_pattern.SpikeLayer method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.use_biases">use_biases (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN attribute)</a>
 </li>
@@ -1522,7 +2028,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2017, Bodo Rueckauer.
-      Last updated on Jun 29, 2017.
+      Last updated on Nov 24, 2017.
 
     </p>
   </div>

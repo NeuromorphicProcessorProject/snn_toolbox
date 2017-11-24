@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Building and simulating spiking neural networks using MegaSim.
+"""MegaSim asynchronous spiking simulator.
 
 @author: Evangelos Stromatias
 """

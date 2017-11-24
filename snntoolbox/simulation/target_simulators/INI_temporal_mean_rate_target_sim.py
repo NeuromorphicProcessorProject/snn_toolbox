@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Building and simulating spiking neural networks using INIsim.
+"""INI simulator with temporal mean rate code.
 
 @author: rbodo
 """
@@ -23,7 +23,7 @@ remove_classifier = False
 class SNN(AbstractSNN):
     """
     The compiled spiking neural network, using layers derived from
-    Keras base classes (see `snntoolbox.simulation.backends.inisim.inisim`).
+    Keras base classes (see `snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow`).
 
     Aims at simulating the network on a self-implemented Integrate-and-Fire
     simulator using a timestepped approach.

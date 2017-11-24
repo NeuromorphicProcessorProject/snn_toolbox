@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Building and simulating spiking neural networks using INIsim.
+"""INI simulator with time-to-first-spike code and corrective spikes.
 
 @author: rbodo
 """

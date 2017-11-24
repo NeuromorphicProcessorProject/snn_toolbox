@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
-"""INI spiking neuron simulator.
+"""INI temporal pattern simulator backend.
 
 This module defines the layer objects used to create a spiking neural network
 for our built-in INI simulator
-:py:mod:`~snntoolbox.simulation.target_simulators.INI_target_sim`.
+:py:mod:`~snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim`.
+
+The coding scheme underlying this conversion is that the analog activation value
+is transformed into a binary representation of spikes.
+
+This simulator works only with Keras backend set to Tensorflow.
 
 @author: rbodo
 """

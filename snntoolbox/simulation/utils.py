@@ -777,8 +777,7 @@ class AbstractSNN:
     def restore_snn(self):
         """Restore both the spiking and the parsed network from disk.
 
-        This method works for spiking Keras models
-        `target_simulators.INI_target_sim`.
+        This method works for spiking Keras models.
         """
 
         import keras

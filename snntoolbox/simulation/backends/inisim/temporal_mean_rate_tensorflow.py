@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
-"""INI spiking neuron simulator.
+"""INI temporal mean rate simulator with Tensorflow backend.
 
 This module defines the layer objects used to create a spiking neural network
 for our built-in INI simulator
-:py:mod:`~snntoolbox.simulation.target_simulators.INI_target_sim`.
+:py:mod:`~snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim`.
+
+The coding scheme underlying this conversion is that the analog activation
+value is represented by the average over number of spikes that occur during the
+simulation duration.
 
 @author: rbodo
 """

@@ -233,6 +233,7 @@ softmax_to_relu: bool, optional
 
 maxpool_type: str, optional
     Implementation variants of spiking MaxPooling layers, based on
+
         - ``fir_max``: accumulated absolute firing rate (default)
         - ``avg_max``: moving average of firing rate
         - ``exp_max``: exponential FIR filter.
@@ -243,6 +244,7 @@ max2avg_pool: bool, optional
 spike_code: str, optional
     Describes the code used to transform analog activation values of the
     original network into spikes.
+
         - ``temporal_mean_rate`` (default): Average over number of spikes that
           occur during simulation ``duration``.
         - ``temporal_pattern``: Analog activation value is transformed into
@@ -291,6 +293,7 @@ top_k: int, optional
 
 keras_backend: str, optional
     The backend to use in ``INI`` simulator.
+
         - ``theano``: Only works in combination with
           ``spike_code = temporal_mean_rate``.
         - ``tensorflow``: Does not implement the spiking MaxPool layer when
@@ -347,6 +350,7 @@ payloads: bool, optional
 
 reset: str, optional
     Choose the reset mechanism to apply after spike.
+
         - 'Reset to zero': After spike, the membrane potential is set to the
           resting potential.
         - 'Reset by subtraction': After spike, the membrane potential is reduced

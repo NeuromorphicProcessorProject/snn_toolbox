@@ -4,8 +4,8 @@ examples/models/**/log
 
 # Builds #
 ##########
-dist/*
-build/*
+dist/
+build/
 .eggs/
 snntoolbox.egg-info/
 *.pyc
