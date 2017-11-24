@@ -49,11 +49,6 @@ class SpikeLayer(Layer):
             self.b0 = None
         if clamp_var:
             self.spikerate = self.var = None
-        if self.config.getboolean('conversion', 'use_isi_code'):
-            self.last_spiketimes = None
-            self.thresh_b_l = None
-            self.sum_of_abs_weights = None
-            self.prev_impulse = None
 
         import os
         from snntoolbox.utils.utils import get_abs_path
@@ -119,8 +114,6 @@ class SpikeLayer(Layer):
         else:
             output_spikes = self.linear_activation(new_mem)
 
-        psp = self.get_psp(output_spikes)
-
         # Store spiking
         self.set_reset_mem(new_mem, output_spikes)
 
@@ -145,16 +138,11 @@ class SpikeLayer(Layer):
                 (self.max_spikerate,
                  k.max(self.spikecounts) * self.dt / self.time)])
 
-        # if self.config.getboolean('conversion', 'use_isi_code'):
-        #     self.add_update([(self.v_thresh, self.v_thresh - k.T.true_div(
-        #         k.abs(self.prev_impulse - self.impulse), self.dt)),
-        #                      (self.prev_impulse, self.impulse)])
-
         if self.spiketrain is not None:
             self.add_update([(self.spiketrain,
                               self.time * k.not_equal(output_spikes, 0))])
 
-        return k.cast(psp, k.floatx())
+        return k.cast(output_spikes, k.floatx())
 
     def update_payload(self, residuals, idxs):
         """Update payloads.
@@ -282,18 +270,6 @@ class SpikeLayer(Layer):
         #          settings['diff_to_max_rate'] / 1000),
         #     self.max_spikerate, self.v_thresh)
 
-    def get_psp(self, output_spikes):
-        if self.config.getboolean('conversion', 'use_isi_code'):
-            new_spiketimes = k.T.set_subtensor(self.last_spiketimes[
-                k.T.nonzero(output_spikes)], self.get_time())
-            self.add_update([(self.last_spiketimes, new_spiketimes)])
-            # psp = k.maximum(0, k.T.true_div(self.dt, self.last_spiketimes))
-            psp = k.T.set_subtensor(output_spikes[k.T.nonzero(
-                self.last_spiketimes > 0)], self.dt)
-            return psp
-        else:
-            return output_spikes
-
     def get_time(self):
         """Get simulation time variable.
 
@@ -387,13 +363,6 @@ class SpikeLayer(Layer):
         if clamp_var and do_reset:
             self.spikerate.set_value(np.zeros(self.input_shape, k.floatx()))
             self.var.set_value(np.zeros(self.input_shape, k.floatx()))
-        if self.config.getboolean('conversion', 'use_isi_code'):
-            self.last_spiketimes.set_value(-np.ones(self.output_shape,
-                                                    k.floatx()))
-            # self.v_thresh.set_value(self._v_thresh * np.ones(
-            #     self.output_shape, k.floatx()) + self.sum_of_abs_weights)
-            # self.prev_impulse.set_value(np.zeros(self.output_shape,
-            #                                      k.floatx()))
 
     def init_neurons(self, input_shape):
         """Init layer neurons."""
@@ -424,23 +393,15 @@ class SpikeLayer(Layer):
             self.var = k.zeros(input_shape)
         if hasattr(self, 'clamp_idx'):
             self.clamp_idx = self.get_clamp_idx()
-        if self.config.getboolean('conversion', 'use_isi_code'):
-            self.last_spiketimes = k.variable(-np.ones(output_shape))
-            # self.sum_of_abs_weights = 0 if len(self.weights) == 0 else \
-            #     np.sum(np.abs(self.get_weights()[0]))
-            # self.v_thresh = k.variable(
-            #     self._v_thresh * np.ones(output_shape) +
-            #     self.sum_of_abs_weights)
-            # self.prev_impulse = k.zeros(output_shape)
 
     def get_layer_idx(self):
         """Get index of layer."""
 
-        l = self.name.split('_')[0]
+        label = self.name.split('_')[0]
         layer_idx = None
-        for i in range(len(l)):
-            if l[:i].isdigit():
-                layer_idx = int(l[:i])
+        for i in range(len(label)):
+            if label[:i].isdigit():
+                layer_idx = int(label[:i])
         return layer_idx
 
     def get_clamp_idx(self):
@@ -688,8 +649,7 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
         """Layer functionality."""
 
         maxpool_type = self.config.get('conversion', 'maxpool_type')
-        if 'binary' in self.activation_str or \
-                self.config.getboolean('conversion', 'use_isi_code'):
+        if 'binary' in self.activation_str:
             return k.pool2d(x, self.pool_size, self.strides, self.padding,
                             pool_mode='max')
         elif maxpool_type == 'avg_max':

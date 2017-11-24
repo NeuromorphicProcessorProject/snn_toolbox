@@ -487,6 +487,10 @@ def update_setup(config_filepath):
         num_bits = str(config.getint('conversion', 'num_bits'))
         config.set('simulation', 'duration', num_bits)
         config.set('simulation', 'batch_size', '1')
+    elif 'ttfs' in spike_code:
+        config.set('cell', 'tau_refrac',
+                   str(config.getint('simulation', 'duration')))
+        config.set('conversion', 'softmax_to_relu', 'True')
 
     with open(os.path.join(log_dir_of_current_run, '.config'), str('w')) as f:
         config.write(f)

@@ -45,11 +45,6 @@ class SpikeLayer(Layer):
             self.b0 = None
         if clamp_var:
             self.spikerate = self.var = None
-        if self.config.getboolean('conversion', 'use_isi_code'):
-            self.last_spiketimes = None
-            self.thresh_b_l = None
-            self.sum_of_abs_weights = None
-            self.prev_impulse = None
 
         import os
         from snntoolbox.utils.utils import get_abs_path
@@ -115,8 +110,6 @@ class SpikeLayer(Layer):
         else:
             output_spikes = self.linear_activation(new_mem)
 
-        psp = self.get_psp(output_spikes)
-
         # Store spiking
         self.set_reset_mem(new_mem, output_spikes)
 
@@ -141,16 +134,11 @@ class SpikeLayer(Layer):
                              (self.max_spikerate,
                               k.max(self.spikecounts) * self.dt / self.time)])
 
-        # if self.config.getboolean('conversion', 'use_isi_code'):
-        #     self.add_update([(self.v_thresh, self.v_thresh - np.true_divide(
-        #         k.abs(self.prev_impulse - self.impulse), self.dt)),
-        #                      (self.prev_impulse, self.impulse)])
-
         if self.spiketrain is not None:
             self.add_update([(self.spiketrain, self.time * k.cast(
                 k.not_equal(output_spikes, 0), k.floatx()))])
 
-        return k.cast(psp, k.floatx())
+        return k.cast(output_spikes, k.floatx())
 
     def update_payload(self, residuals, spikes):
         """Update payloads.
@@ -281,21 +269,6 @@ class SpikeLayer(Layer):
         #          settings['diff_to_max_rate'] / 1000),
         #     lambda: self.max_spikerate, lambda: self.v_thresh)
 
-    def get_psp(self, output_spikes):
-        if self.config.getboolean('conversion', 'use_isi_code'):
-            new_spiketimes = k.tf.where(
-                k.not_equal(output_spikes, 0),
-                k.ones_like(output_spikes) * self.get_time(),
-                self.last_spiketimes)
-            self.add_update([(self.last_spiketimes, new_spiketimes)])
-            # psp = k.maximum(0, np.true_divide(self.dt, self.last_spiketimes))
-            psp = k.tf.where(k.greater(self.last_spiketimes, 0),
-                             k.ones_like(output_spikes) * self.dt,
-                             k.zeros_like(output_spikes))
-            return psp
-        else:
-            return output_spikes
-
     def get_time(self):
         """Get simulation time variable.
 
@@ -394,13 +367,6 @@ class SpikeLayer(Layer):
         if clamp_var and do_reset:
             k.set_value(self.spikerate, np.zeros(self.input_shape, k.floatx()))
             k.set_value(self.var, np.zeros(self.input_shape, k.floatx()))
-        if self.config.getboolean('conversion', 'use_isi_code'):
-            k.set_value(self.last_spiketimes, -np.ones(self.output_shape,
-                                                       k.floatx()))
-            # k.set_value(self.v_thresh, self._v_thresh * np.ones(
-            #     self.output_shape, k.floatx()) + self.sum_of_abs_weights)
-            # k.set_value(self.prev_impulse, np.zeros(self.output_shape,
-            #                                      k.floatx()))
 
     def init_neurons(self, input_shape):
         """Init layer neurons."""
@@ -431,14 +397,6 @@ class SpikeLayer(Layer):
             self.var = k.zeros(input_shape)
         if hasattr(self, 'clamp_idx'):
             self.clamp_idx = self.get_clamp_idx()
-        if self.config.getboolean('conversion', 'use_isi_code'):
-            self.last_spiketimes = k.variable(-np.ones(output_shape))
-            # self.sum_of_abs_weights = 0 if len(self.weights) == 0 else \
-            #     np.sum(np.abs(self.get_weights()[0]))
-            # self.v_thresh = k.variable(
-            #     self._v_thresh * np.ones(output_shape) +
-            #     self.sum_of_abs_weights)
-            # self.prev_impulse = k.zeros(output_shape)
 
     def get_layer_idx(self):
         """Get index of layer."""
