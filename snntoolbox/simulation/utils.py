@@ -414,6 +414,8 @@ class AbstractSNN:
         # Get batch input shape
         batch_shape = list(parsed_model.layers[0].batch_input_shape)
         batch_shape[0] = self.batch_size
+        if self.config.get('conversion', 'spike_code') == 'ttfs_dyn_thresh':
+            batch_shape[0] *= 2
 
         self.add_input_layer(batch_shape)
 
