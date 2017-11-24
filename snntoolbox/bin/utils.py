@@ -482,7 +482,6 @@ def update_setup(config_filepath):
     assert spike_code in spike_codes, \
         "Unknown spike code {} selected. Choose from {}.".format(spike_code,
                                                                  spike_codes)
-
     if spike_code == 'temporal_pattern':
         num_bits = str(config.getint('conversion', 'num_bits'))
         config.set('simulation', 'duration', num_bits)
@@ -491,7 +490,9 @@ def update_setup(config_filepath):
         config.set('cell', 'tau_refrac',
                    str(config.getint('simulation', 'duration')))
         config.set('conversion', 'softmax_to_relu', 'True')
-
+    assert keras_backend != 'theano' or spike_code == 'temporal_mean_rate', \
+        "Keras backend 'theano' only works when the 'spike_code' parameter " \
+        "is set to 'temporal_mean_rate' in snntoolbox config."
     with open(os.path.join(log_dir_of_current_run, '.config'), str('w')) as f:
         config.write(f)
 

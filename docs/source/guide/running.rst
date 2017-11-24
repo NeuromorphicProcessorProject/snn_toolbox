@@ -16,7 +16,7 @@ name) to a plain text file containing the settings to be used. Refer to :
 doc:`configuration` for details on what this file looks like.
 
 With ``-t``, we tell the program to stay in the terminal. Omitting this flag
-opens the GUI (beta).
+opens the GUI (not actively developed).
 
 See :doc:`examples` for typical usecases.
 

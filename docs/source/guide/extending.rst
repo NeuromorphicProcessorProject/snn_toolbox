@@ -29,8 +29,3 @@ To add a simulator called 'custom', put a file named ``<custom>_target_sim.py``
 into :py:mod:`~snntoolbox.simulation.target_simulators`. Then create a child
 class ``SNN`` inheriting from `AbstractSNN`, and implement the abstract methods
 tailored to the 'custom' simulator.
-
-Requested extensions
---------------------
-
-* Add support for TensorFlow input models.

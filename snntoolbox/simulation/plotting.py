@@ -77,7 +77,7 @@ def output_graphs(plot_vars, config, path=None, idx=0, data_format=None):
             plot_vars['spiketrains_n_b_l_t'], idx)
         if any({'spikerates', 'correlation', 'hist_spikerates_activations'}
                & plot_keys):
-            if plot_vars['spikerates_n_b_l'] is None:
+            if 'spikerates_n_b_l' not in plot_vars:
                 plot_vars['spikerates_n_b_l'] = spiketrains_to_rates(
                     plot_vars['spiketrains_n_b_l_t'], duration,
                     config.get('conversion', 'spike_code'))

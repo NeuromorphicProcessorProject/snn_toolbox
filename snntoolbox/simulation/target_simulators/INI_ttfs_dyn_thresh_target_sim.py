@@ -104,7 +104,7 @@ class SNN(SNN_):
                     i += 1
                 if hasattr(layer, 'mem') and self.mem_n_b_l_t is not None:
                     self.mem_n_b_l_t[j][0][Ellipsis, sim_step_int] = \
-                        keras.backend.get_value(layer.mem)
+                        keras.backend.get_value(layer.mem)[self.batch_size:]
                     j += 1
 
             if 'input_b_l_t' in self._log_keys:

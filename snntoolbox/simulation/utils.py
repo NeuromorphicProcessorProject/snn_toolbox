@@ -604,7 +604,7 @@ class AbstractSNN:
             # Main step: Run the network on a batch of samples for the duration
             # of the simulation.
             print("Starting new simulation...\n")
-            print("Current accuracy:")
+            print("Current accuracy of batch:")
             output_b_l_t = self.simulate(**data_batch_kwargs)
 
             # Get classification result by comparing the guessed class (i.e. the
@@ -807,9 +807,7 @@ class AbstractSNN:
                 self.spiketrains_n_b_l_t.append((np.zeros(shape, 'float32'),
                                                  layer.name))
 
-        if any({'spikerates', 'correlation', 'hist_spikerates_activations'} &
-               self._plot_keys) or self.config.get(
-               'conversion', 'spike_code') == 'temporal_pattern':
+        if self.config.get('conversion', 'spike_code') == 'temporal_pattern':
             self.spikerates_n_b_l = []
             for layer in self.parsed_model.layers:
                 if not is_spiking(layer, self.config):
@@ -1283,6 +1281,9 @@ def spiketrains_to_rates(spiketrains_n_b_l_t, duration, spike_code):
 
     spikerates_n_b_l: list[tuple[np.array, str]]
     """
+
+    assert spike_code in {'ttfs', 'ttfs_dyn_thresh', 'ttfs_corrective',
+                          'temporal_mean_rate'}
 
     def t2r_ttfs(t):
         isi = t[np.nonzero(t)]
