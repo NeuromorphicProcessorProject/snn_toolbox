@@ -1257,7 +1257,7 @@ def spikecounts_to_rates(spikecounts_n_b_l_t):
             for (spikecounts_b_l_t, name) in spikecounts_n_b_l_t]
 
 
-def spiketrains_to_rates(spiketrains_n_b_l_t, duration, use_ttfs_code=False):
+def spiketrains_to_rates(spiketrains_n_b_l_t, duration, spike_code):
     """Convert spiketrains to spikerates.
 
     The output will have the same shape as the input except for the last
@@ -1272,14 +1272,35 @@ def spiketrains_to_rates(spiketrains_n_b_l_t, duration, use_ttfs_code=False):
     duration: int
         Duration of simulation.
 
-    use_ttfs_code: bool
-        If true, spike rates are computed using the time to first spike.
+    spike_code: str
+        String specifying the spike encoding mechanism. For instance, with
+        'ttfs', the spike rates are computed using the time to first spike.
 
     Returns
     -------
 
     spikerates_n_b_l: list[tuple[np.array, str]]
     """
+
+    def t2r_ttfs(t):
+        isi = t[np.nonzero(t)]
+        return 1. / isi[0] if len(isi) else 0
+
+    def t2r_ttfs_corrective(t):
+        isi = t[np.nonzero(t)]
+        return 1. / isi[-1] if len(isi) % 2 else 0
+
+    def t2r_mean_rate(t):
+        # Multiplication with sign is for possible negative spikes
+        # (e.g. BinaryNet)
+        return np.count_nonzero(t) / duration * np.sign(np.sum(t))
+
+    if spike_code == 'ttfs' or spike_code == 'ttfs_dyn_thresh':
+        f = t2r_ttfs
+    elif spike_code == 'ttfs_corrective':
+        f = t2r_ttfs_corrective
+    else:
+        f = t2r_mean_rate
 
     spikerates_n_b_l = []
     for (i, sp) in enumerate(spiketrains_n_b_l_t):
@@ -1293,31 +1314,14 @@ def spiketrains_to_rates(spiketrains_n_b_l_t, duration, use_ttfs_code=False):
         if len(shape) == 2:
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
-                    if use_ttfs_code:
-                        isi = sp[0][ii, jj][np.nonzero(sp[0][ii, jj])]
-                        rate = 0 if len(isi) == 0 else 1. / isi[0]
-                        spikerates_n_b_l[i][0][ii, jj] = rate
-                    else:
-                        spikerates_n_b_l[i][0][ii, jj] = (
-                            np.count_nonzero(sp[0][ii, jj]) / duration)
-                        spikerates_n_b_l[i][0][ii, jj] *= np.sign(
-                            np.sum(sp[0][ii, jj]))  # For negative spikes
+                    spikerates_n_b_l[i][0][ii, jj] = f(sp[0][ii, jj])
         elif len(shape) == 4:
             for ii in range(len(sp[0])):
                 for jj in range(len(sp[0][ii])):
                     for kk in range(len(sp[0][ii, jj])):
                         for ll in range(len(sp[0][ii, jj, kk])):
-                            if use_ttfs_code:
-                                isi = sp[0][ii, jj, kk, ll][np.nonzero(
-                                    sp[0][ii, jj, kk, ll])]
-                                rate = 0 if len(isi) == 0 else 1. / isi[0]
-                                spikerates_n_b_l[i][0][ii, jj, kk, ll] = rate
-                            else:
-                                spikerates_n_b_l[i][0][ii, jj, kk, ll] = (
-                                    np.count_nonzero(sp[0][ii, jj, kk, ll]) /
-                                    duration)
-                                spikerates_n_b_l[i][0][ii, jj, kk, ll] *= \
-                                    np.sign(np.sum(sp[0][ii, jj, kk, ll]))
+                            spikerates_n_b_l[i][0][ii, jj, kk, ll] = \
+                                f(sp[0][ii, jj, kk, ll])
     return spikerates_n_b_l
 
 
@@ -1391,7 +1395,7 @@ def get_layer_synaptic_operations(spiketrains_b_l, fanout):
         return np.array([np.count_nonzero(s) for s in spiketrains_b_l]) * \
             fanout
     elif hasattr(fanout, 'shape'):  # For conv layers with stride > 1
-        return np.array([np.sum(fanout[s > 0]) for s in spiketrains_b_l])
+        return np.array([np.sum(fanout[s != 0]) for s in spiketrains_b_l])
     else:
         raise TypeError("The 'fanout' parameter should either be integer or "
                         "ndarray.")

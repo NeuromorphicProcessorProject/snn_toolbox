@@ -78,9 +78,9 @@ def output_graphs(plot_vars, config, path=None, idx=0, data_format=None):
         if any({'spikerates', 'correlation', 'hist_spikerates_activations'}
                & plot_keys):
             if plot_vars['spikerates_n_b_l'] is None:
-                use_ttfs_code = 'ttfs' in config.get('conversion', 'spike_code')
                 plot_vars['spikerates_n_b_l'] = spiketrains_to_rates(
-                    plot_vars['spiketrains_n_b_l_t'], duration, use_ttfs_code)
+                    plot_vars['spiketrains_n_b_l_t'], duration,
+                    config.get('conversion', 'spike_code'))
             plot_vars['spikerates_n_l'] = get_sample_activity_from_batch(
                 plot_vars['spikerates_n_b_l'], idx)
 
@@ -855,7 +855,7 @@ def plot_spiketrains(layer, dt, path=None):
     plt.title('Spiketrains \n of layer {}'.format(layer[1]))
     plt.xlabel('time [ms]')
     plt.ylabel('neuron index')
-    plt.xlim(dt, (shape[-1] + 1) * dt)
+    plt.xlim(min([dt, np.min(spiketrains)]), (shape[-1] + 1) * dt)
     if path is not None:
         filename = '7Spiketrains'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
@@ -1076,7 +1076,7 @@ def plot_spikecount_vs_time(spiketrains_n_b_l_t, duration, dt, path=None):
                  spiketrains_n_b_l_t[0][0].shape[-1])
     spikecounts_b_t = np.zeros(b_t_shape)
     for n in range(len(spiketrains_n_b_l_t)):  # Loop over layers
-        spiketrains_b_l_t = np.greater(spiketrains_n_b_l_t[n][0], 0)
+        spiketrains_b_l_t = np.not_equal(spiketrains_n_b_l_t[n][0], 0)
         reduction_axes = tuple(np.arange(1, spiketrains_b_l_t.ndim-1))
         spikecounts_b_t += np.sum(spiketrains_b_l_t, reduction_axes)
     cum_spikecounts_b_t = np.cumsum(spikecounts_b_t, 1)
