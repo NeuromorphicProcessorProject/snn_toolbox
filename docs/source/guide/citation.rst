@@ -3,7 +3,7 @@
 Citation
 ========
 
-If you use this work in your research, please cite our corresponding `publication <https://www.frontiersin.org/articles/10.3389/fnins.2017.00682/abstract>`_.
+If you use this work in your research, please cite our corresponding `publication <https://www.frontiersin.org/articles/10.3389/fnins.2017.00682/abstract>`_
 :
 
 ::
