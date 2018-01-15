@@ -5,7 +5,7 @@ Spiking neural network conversion toolbox
 
 The SNN conversion toolbox contains functions to transform rate-based artificial
 neural networks into spiking neural networks, and to simulate them. The source
-code can be found on `GitHub`_.
+code can be found on `GitHub`_. See also the accompanying `article <https://www.frontiersin.org/articles/10.3389/fnins.2017.00682/abstract>`_.
 
 User Guide
 ----------
