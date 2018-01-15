@@ -13,7 +13,6 @@ Reference:
 from __future__ import print_function
 
 from keras.preprocessing.image import ImageDataGenerator
-
 from keras.applications.imagenet_utils import preprocess_input
 from keras.layers import Flatten, Dense, Conv2D, AveragePooling2D
 from keras.models import Sequential
