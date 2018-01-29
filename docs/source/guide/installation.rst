@@ -16,8 +16,11 @@ or `Tensorflow <https://www.tensorflow.org/>`_.
    Tensorflow as backend. Depending on the backend you choose, different
    features are available in the toolbox simulator. You can install both
    backends and switch between them simply by setting the corresponding
-   parameter in the :ref:`config file <configuration>`.
-
+   parameter in the :ref:`config file <configuration>`::
+   
+      [simulation]
+      keras_backend = tensorflow
+  
 .. note:: As of 22.11.2017, the latest Keras version was not compatible with
    Theano 1.0, so please install Theano version 0.9.
 
