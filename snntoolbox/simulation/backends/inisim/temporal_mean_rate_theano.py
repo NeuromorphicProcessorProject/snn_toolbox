@@ -243,7 +243,7 @@ class SpikeLayer(Layer):
 
         spike_idxs = k.T.nonzero(spikes)
         if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
-            new = k.T.set_subtensor(mem[spike_idxs], 0.)
+            new = mem.copy()  # k.T.set_subtensor(mem[spike_idxs], 0.)
         elif self.config.get('cell', 'reset') == 'Reset by subtraction':
             if self.payloads:  # Experimental.
                 new = k.T.set_subtensor(mem[spike_idxs], 0.)
