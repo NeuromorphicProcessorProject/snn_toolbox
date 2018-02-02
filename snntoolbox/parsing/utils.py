@@ -863,7 +863,8 @@ def get_inbound_layers_without_params(layer):
         List of inbound layers.
     """
 
-    return [layer for layer in layer.inbound_nodes[0].inbound_layers
+    # noinspection PyProtectedMember
+    return [layer for layer in layer._inbound_nodes[0].inbound_layers
             if len(layer.weights) == 0]
 
 
@@ -883,7 +884,8 @@ def get_inbound_layers(layer):
         List of inbound layers.
     """
 
-    return layer.inbound_nodes[0].inbound_layers
+    # noinspection PyProtectedMember
+    return layer._inbound_nodes[0].inbound_layers
 
 
 def get_outbound_layers(layer):
@@ -902,7 +904,8 @@ def get_outbound_layers(layer):
         List of outbound layers.
     """
 
-    return [on.outbound_layer for on in layer.outbound_nodes]
+    # noinspection PyProtectedMember
+    return [on.outbound_layer for on in layer._outbound_nodes]
 
 
 def get_outbound_activation(layer):
