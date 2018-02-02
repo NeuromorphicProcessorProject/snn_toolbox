@@ -556,6 +556,8 @@ class AbstractSNN:
                 self.config.getboolean('input', 'is_y_flipped'),
                 self.config.getint('input', 'eventframe_width'),
                 self.config.getint('input', 'num_dvs_events_per_sample'),
+                self.config.getboolean('input', 'maxpool_subsampling'),
+                self.config.getboolean('input', 'do_clip_three_sigma'),
                 eval(self.config.get('input', 'chip_size')), image_shape,
                 eval(self.config.get('input', 'label_dict')))
             data_batch_kwargs['dvs_gen'] = dvs_gen
@@ -603,7 +605,7 @@ class AbstractSNN:
 
             # Main step: Run the network on a batch of samples for the duration
             # of the simulation.
-            print("Starting new simulation...\n")
+            print("\nStarting new simulation...\n")
             print("Current accuracy of batch:")
             output_b_l_t = self.simulate(**data_batch_kwargs)
 
@@ -634,11 +636,10 @@ class AbstractSNN:
             top5score_moving += sum(in_top_k(output_b_l_t[:, :, -1], truth_b,
                                              self.top_k))
             top5acc_moving = top5score_moving / num_samples_seen
-            if self.config.getint('output', 'verbose') > 0:
-                print("\nBatch {} of {} completed ({:.1%})".format(
-                    batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
-                print("Moving accuracy of SNN (top-1, top-{}): {:.2%}, {:.2%}."
-                      "".format(self.top_k, top1acc_moving, top5acc_moving))
+            print("\nBatch {} of {} completed ({:.1%})".format(
+                batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
+            print("Moving accuracy of SNN (top-1, top-{}): {:.2%}, {:.2%}."
+                  "".format(self.top_k, top1acc_moving, top5acc_moving))
             with open(path_acc, str('a')) as f_acc:
                 f_acc.write(str("{} {:.2%} {:.2%}\n".format(
                     num_samples_seen, top1acc_moving, top5acc_moving)))
@@ -722,12 +723,7 @@ class AbstractSNN:
 
             # Reset network variables.
             self.reset(batch_idx)
-            if self.synaptic_operations_b_t is not None:
-                self.synaptic_operations_b_t = np.zeros_like(
-                    self.synaptic_operations_b_t)
-            if self.neuron_operations_b_t is not None:
-                self.neuron_operations_b_t = np.zeros_like(
-                    self.neuron_operations_b_t)
+            self.reset_log_vars()
 
         # Plot confusion matrix for whole data set.
         if 'confusion_matrix' in self._plot_keys:
@@ -792,7 +788,7 @@ class AbstractSNN:
         """Initialize variables to record during simulation."""
 
         if 'input_b_l_t' in self._log_keys:
-            self.input_b_l_t = np.empty(list(self.parsed_model.input_shape) +
+            self.input_b_l_t = np.zeros(list(self.parsed_model.input_shape) +
                                         [self._num_timesteps])
 
         if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
@@ -835,6 +831,31 @@ class AbstractSNN:
                                     np.bool)
         self.top5err_b_t = np.empty((self.batch_size, self._num_timesteps),
                                     np.bool)
+
+    def reset_log_vars(self):
+        """Reset variables to record during simulation."""
+
+        if self.input_b_l_t is not None:
+            self.input_b_l_t = np.zeros_like(self.input_b_l_t)
+
+        if self.spiketrains_n_b_l_t is not None:
+            for l in range(len(self.spiketrains_n_b_l_t)):
+                self.spiketrains_n_b_l_t[l] = (
+                    np.zeros_like(self.spiketrains_n_b_l_t[l][0]),
+                    self.spiketrains_n_b_l_t[l][1])
+
+        if self.synaptic_operations_b_t is not None:
+            self.synaptic_operations_b_t = np.zeros_like(
+                self.synaptic_operations_b_t)
+
+        if self.neuron_operations_b_t is not None:
+            self.neuron_operations_b_t = np.zeros_like(
+                self.neuron_operations_b_t)
+
+        if self.mem_n_b_l_t is not None:
+            for l in range(len(self.mem_n_b_l_t)):
+                self.mem_n_b_l_t[l] = (np.zeros_like(self.mem_n_b_l_t[l][0]),
+                                       self.mem_n_b_l_t[l][1])
 
     def set_connectivity(self):
         """
