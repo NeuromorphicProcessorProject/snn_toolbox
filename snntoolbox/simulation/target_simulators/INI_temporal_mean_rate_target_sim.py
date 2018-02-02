@@ -8,6 +8,7 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 import os
+import sys
 
 import keras
 import numpy as np
@@ -23,7 +24,8 @@ remove_classifier = False
 class SNN(AbstractSNN):
     """
     The compiled spiking neural network, using layers derived from
-    Keras base classes (see `snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow`).
+    Keras base classes (see
+    `snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow`).
 
     Aims at simulating the network on a self-implemented Integrate-and-Fire
     simulator using a timestepped approach.
@@ -127,6 +129,7 @@ class SNN(AbstractSNN):
         # Loop through simulation time.
         self.avg_rate = 0
         self._input_spikecount = 0
+        actual_num_timesteps = self._num_timesteps
         for sim_step_int in range(self._num_timesteps):
             sim_step = (sim_step_int + 1) * self._dt
             self.set_time(sim_step)
@@ -136,6 +139,13 @@ class SNN(AbstractSNN):
                 input_b_l = self.get_poisson_frame_batch(kwargs[str('x_b_l')])
             elif self._dataset_format == 'aedat':
                 input_b_l = kwargs[str('dvs_gen')].next_eventframe_batch()
+
+            if self.config.getboolean('simulation', 'early_stopping') and \
+                    np.count_nonzero(input_b_l) == 0:
+                actual_num_timesteps = sim_step
+                print("\nInput empty: Finishing simulation {} steps early."
+                      "".format(self._num_timesteps - sim_step_int))
+                break
 
             # Main step: Propagate input through network and record output
             # spikes.
@@ -184,18 +194,33 @@ class SNN(AbstractSNN):
                         self.neuron_operations_b_t[:, 0] += self.fanin[1] * \
                             self.num_neurons[1] * np.ones(self.batch_size) * 2
 
+            spike_sums_b_l = np.sum(output_b_l_t, 2)
+            undecided_b = np.sum(spike_sums_b_l, 1) == 0
+            guesses_b = np.argmax(spike_sums_b_l, 1)
+            none_class_b = -1 * np.ones(self.batch_size)
+            clean_guesses_b = np.where(undecided_b, none_class_b, guesses_b)
+            current_acc = np.mean(kwargs[str('truth_b')] == clean_guesses_b)
             if self.config.getint('output', 'verbose') > 0 \
                     and sim_step % 1 == 0:
-                spike_sums_b_l = np.sum(output_b_l_t, 2)
-                undecided_b = np.sum(spike_sums_b_l, 1) == 0
-                guesses_b = np.argmax(spike_sums_b_l, 1)
-                none_class_b = -1 * np.ones(self.batch_size)
-                clean_guesses_b = np.where(undecided_b, none_class_b, guesses_b)
-                echo('{:.2%}_'.format(np.mean(kwargs[str('truth_b')] ==
-                                              clean_guesses_b)))
+                echo('{:.2%}_'.format(current_acc))
+            else:
+                sys.stdout.write('\r{:>7.2%}'.format(current_acc))
+                sys.stdout.flush()
+
+        if self._dataset_format == 'aedat':
+            remaining_events = len(kwargs[str('dvs_gen')].event_deques_batch[0])
+        elif self._poisson_input and self._num_poisson_events_per_sample > 0:
+            remaining_events = self._num_poisson_events_per_sample - \
+                self._input_spikecount
+        else:
+            remaining_events = 0
+        if remaining_events > 0:
+            print("SNN Toolbox WARNING: Simulation of current batch finished, "
+                  "but {} input events were not processed. Consider increasing "
+                  "the simulation time.".format(remaining_events))
 
         self.avg_rate /= self.batch_size * np.sum(self.num_neurons) * \
-            self._num_timesteps
+            actual_num_timesteps
 
         if self.spiketrains_n_b_l_t is None:
             print("Average spike rate: {} spikes per simulation time step."
@@ -258,7 +283,7 @@ class SNN(AbstractSNN):
                              * self.rescale_fac * np.max(x_b_l)
             input_b_l = (spike_snapshot <= np.abs(x_b_l)).astype('float32')
             self._input_spikecount += \
-                np.count_nonzero(input_b_l) / self.batch_size
+                int(np.count_nonzero(input_b_l) / self.batch_size)
             # For BinaryNets, with input that is not normalized and
             # not all positive, we stimulate with spikes of the same
             # size as the maximum activation, and the same sign as
