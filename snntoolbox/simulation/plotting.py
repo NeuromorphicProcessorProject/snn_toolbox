@@ -836,26 +836,15 @@ def plot_spiketrains(layer, dt, path=None):
         display plots without saving.
     """
 
-    # Flatten layer.
-    shape = [np.prod(layer[0].shape[:-1]), layer[0].shape[-1]]
-    spiketrains = np.reshape(layer[0], shape)
+    duration = layer[0].shape[-1]
+    nz = np.reshape(layer[0], (-1, duration)).nonzero()
 
     plt.figure()
-    # Iterate over neurons in layer.
-    for (neuron, spiketrain) in enumerate(spiketrains):
-        # Remove zeros from spiketrain which falsely indicate spikes at time 0.
-        # Spikes at time 0 are forbidden (and indeed prevented in the
-        # simulation), because of this difficulty to distinguish them from a 0
-        # entry indicating no spike.
-        spiketrain = spiketrain[spiketrain.nonzero()]
-        # Create an array of the same size as the spikelist containing just
-        # the neuron index.
-        y = np.ones_like(spiketrain) * neuron
-        plt.plot(spiketrain, y, '.')
+    plt.scatter(nz[1], nz[0], s=1, linewidths=0, color='b')
     plt.title('Spiketrains \n of layer {}'.format(layer[1]))
     plt.xlabel('time [ms]')
     plt.ylabel('neuron index')
-    plt.xlim(min([dt, np.min(spiketrains)]), (shape[-1] + 1) * dt)
+    plt.xlim(min([dt, np.min(layer[0])]), (duration + 1) * dt)
     if path is not None:
         filename = '7Spiketrains'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
