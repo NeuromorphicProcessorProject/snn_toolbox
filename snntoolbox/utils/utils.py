@@ -392,29 +392,30 @@ def quantized_relu(x, m, f):
     return keras.backend.relu(reduce_precision_var(x, m, f))
 
 
-def clamped_relu(x, threshold=0.1, max_value=None):
+class ClampedReLU:
     """
     Rectified linear unit activation function where values in ``x`` below
     ``threshold`` are clamped to 0, and values above ``max_value`` are clipped \
     to ``max_value``.
 
-    Parameters
+    Attributes
     ----------
 
-    x : keras.backend.variable
-        Input data.
     threshold : Optional[float]
     max_value : Optional[float]
 
-    Returns
-    -------
-
-    x_clamped : keras.backend.variable
     """
 
-    x = keras.backend.relu(x, max_value=max_value)
-    return keras.backend.tf.where(keras.backend.less(x, threshold),
-                                  keras.backend.zeros_like(x), x)
+    def __init__(self, threshold=0.1, max_value=None):  # Todo: Change defaults
+        self.threshold = threshold
+        self.max_value = max_value
+        self.__name__ = 'clamped_relu_{}_{}'.format(self.threshold,
+                                                    self.max_value)
+
+    def __call__(self, *args, **kwargs):
+        x = keras.backend.relu(args[0], max_value=self.max_value)
+        return keras.backend.tf.where(keras.backend.less(x, self.threshold),
+                                      keras.backend.zeros_like(x), x)
 
 
 def wilson_score(p, n):
@@ -527,3 +528,46 @@ def to_list(x):
     """
 
     return x if type(x) is list else [x]
+
+
+def apply_modifications(model, custom_objects=None):
+    """Applies modifications to the model layers to create a new Graph. For
+    example, simply changing `model.layers[idx].activation = new activation`
+    does not change the graph. The entire graph needs to be updated with
+    modified inbound and outbound tensors because of change in layer building
+    function.
+
+    Parameters
+    ----------
+
+        model: keras.models.Model
+
+        custom_objects: dict
+
+    Returns
+    -------
+
+        The modified model with changes applied. Does not mutate the original
+        `model`.
+    """
+
+    # The strategy is to save the modified model and load it back. This is done
+    # because setting the activation in a Keras layer doesnt actually change the
+    # graph. We have to iterate the entire graph and change the layer inbound
+    # and outbound nodes with modified tensors. This is doubly complicated in
+    # Keras 2.x since multiple inbound and outbound nodes are allowed with the
+    # Graph API.
+
+    # Taken from
+    # https://github.com/raghakot/keras-vis/blob/master/vis/utils/utils.py
+
+    import tempfile
+
+    # noinspection PyProtectedMember
+    model_path = os.path.join(tempfile.gettempdir(),
+                              next(tempfile._get_candidate_names()) + '.h5')
+    try:
+        model.save(model_path)
+        return keras.models.load_model(model_path, custom_objects)
+    finally:
+        os.remove(model_path)

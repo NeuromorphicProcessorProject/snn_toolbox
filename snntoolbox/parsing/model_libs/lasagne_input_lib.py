@@ -6,7 +6,6 @@
 
 import lasagne
 import numpy as np
-import keras.backend as k
 
 from snntoolbox.parsing.utils import AbstractModelParser, padding_string
 
@@ -42,14 +41,16 @@ class ModelParser(AbstractModelParser):
         return self._layer_dict.get(class_name, class_name)
 
     def get_batchnorm_parameters(self, layer):
-        mean = k.get_value(layer.mean)
-        var_eps_sqrt_inv = k.get_value(layer.inv_std)
-        gamma = k.get_value(layer.gamma)
-        beta = k.get_value(layer.beta)
-        axis = None  # Lasagne: axes = (0, 2, 3). Keras: axis = 1. Transform:
-        for axis, a in enumerate(layer.axes):
-            if axis != a:
+        mean = layer.mean.get_value()
+        var_eps_sqrt_inv = layer.inv_std.get_value()
+        gamma = layer.gamma.get_value()
+        beta = layer.beta.get_value()
+        axis = -1  # Lasagne: axes = (0, 2, 3). Keras: axis = 1. Transform:
+        for ax, a in enumerate(layer.axes):
+            if ax != a:
+                axis = ax
                 break
+        print("Using BatchNorm axis {}.".format(axis))
         return [mean, var_eps_sqrt_inv, gamma, beta, axis]
 
     def get_inbound_layers(self, layer):
@@ -82,17 +83,21 @@ class ModelParser(AbstractModelParser):
         return len(layer.params)
 
     def parse_dense(self, layer, attributes):
-        weights = k.get_value(layer.W)
-        bias = k.get_value(layer.b)
+        weights = layer.W.get_value()
+        bias = layer.b.get_value()
         if bias is None:
             bias = np.zeros(layer.num_units)
         attributes['parameters'] = [weights, bias]
         attributes['units'] = layer.num_units
 
     def parse_convolution(self, layer, attributes):
-        weights = k.get_value(layer.W)
+        from keras.utils.conv_utils import convert_kernel
+        weights = layer.W.get_value()
         weights = np.transpose(weights, (2, 3, 1, 0))
-        bias = k.get_value(layer.b)
+        import keras
+        if keras.backend.backend() != 'theano':  # Assumes lasagne uses theano.
+            weights = convert_kernel(weights)
+        bias = layer.b.get_value()
         if bias is None:
             bias = np.zeros(layer.num_filters)
         attributes['parameters'] = [weights, bias]

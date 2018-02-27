@@ -708,21 +708,23 @@ def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
 
     # TODO: Due to some issue when porting a Keras1 GoogLeNet model to Keras2,
     # the axis is 1 when it should be -1. Need to find a way to avoid this hack.
-    if axis != -1:
-        # print("Warning: Specifying a batch-normalization axis other than the "
-        #       "default (-1) has not been thoroughly tested yet.")
+    if not (axis == -1 or axis == weight.ndim - 1):
+        print("Warning: Specifying a batch-normalization axis other than the "
+              "default (-1) has not been thoroughly tested yet. There might be "
+              "issues depending on the keras backend version (theano / "
+              "tensorflow) and the image_dim_ordering (channels_first / "
+              "channels_last). Make sure that the accuracy of the parsed model "
+              "matches the input model.")
         axis = -1
 
     ndim = weight.ndim
     reduction_axes = list(range(ndim))
     del reduction_axes[axis]
-
     if sorted(reduction_axes) != list(range(ndim))[:-1]:
         broadcast_shape = [1] * ndim
         broadcast_shape[axis] = weight.shape[axis]
         var_eps_sqrt_inv = np.reshape(var_eps_sqrt_inv, broadcast_shape)
         gamma = np.reshape(gamma, broadcast_shape)
-
     bias_bn = beta + (bias - mean) * gamma * var_eps_sqrt_inv
     weight_bn = weight * gamma * var_eps_sqrt_inv
 
@@ -1120,6 +1122,17 @@ def get_quantized_activation_function_from_string(activation_str):
     return activation
 
 
+def get_clamped_relu_from_string(activation_str):
+
+    from snntoolbox.utils.utils import ClampedReLU
+
+    threshold, max_value = map(eval, activation_str.split('_')[-2:])
+
+    activation = ClampedReLU(threshold, max_value)
+
+    return activation
+
+
 def get_custom_activation(activation_str):
     """
     If ``activation_str`` describes a custom activation function, import this
@@ -1151,10 +1164,8 @@ def get_custom_activation(activation_str):
     elif '_Q' in activation_str:
         activation = get_quantized_activation_function_from_string(
             activation_str)
-    elif activation_str == 'clamped_relu':
-        from snntoolbox.utils.utils import clamped_relu
-        clamped_relu.__name__ = 'clamped_relu'
-        activation = clamped_relu
+    elif 'clamped_relu' in activation_str:
+        activation = get_clamped_relu_from_string(activation_str)
     else:
         activation = activation_str
 
@@ -1167,9 +1178,7 @@ def get_custom_activations_dict():
     loading a Keras model.
     """
 
-    from snntoolbox.utils.utils import binary_sigmoid, binary_tanh, clamped_relu
-
-    clamped_relu.__name__ = 'clamped_relu'
+    from snntoolbox.utils.utils import binary_sigmoid, binary_tanh, ClampedReLU
 
     # Todo: We should be able to load a different activation for each layer.
     # Need to remove this hack:
@@ -1178,5 +1187,5 @@ def get_custom_activations_dict():
 
     return {'binary_sigmoid': binary_sigmoid,
             'binary_tanh': binary_tanh,
-            'clamped_relu': clamped_relu,
+            'clamped_relu': ClampedReLU(),  # Todo: This should work regardless of the specific attributes of the ClampedReLU class used during training.
             activation_str: activation}
