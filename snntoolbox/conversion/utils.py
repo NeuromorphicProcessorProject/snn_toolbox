@@ -380,7 +380,6 @@ def get_activations_batch(ann, x_batch):
 
 def try_reload_activations(layer, model, x_norm, batch_size, activ_dir):
     try:
-        print("Loading activations stored during a previous run.")
         activations = np.load(os.path.join(activ_dir,
                                            layer.name + '.npz'))['arr_0']
     except IOError:
@@ -392,5 +391,6 @@ def try_reload_activations(layer, model, x_norm, batch_size, activ_dir):
                                             batch_size)
         print("Writing activations to disk...")
         np.savez_compressed(os.path.join(activ_dir, layer.name), activations)
-
+    else:
+        print("Loading activations stored during a previous run.")
     return activations

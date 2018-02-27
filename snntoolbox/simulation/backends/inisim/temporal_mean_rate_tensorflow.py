@@ -245,7 +245,7 @@ class SpikeLayer(Layer):
             # Turn off reset (uncomment second line) to get a faster and better
             # top-1 error. The top-5 error is better when resetting:
             new = k.tf.where(k.not_equal(spikes, 0), k.zeros_like(mem), mem)
-            # new = mem.copy()
+            # new = k.tf.identity(mem)
         elif self.config.get('cell', 'reset') == 'Reset by subtraction':
             if self.payloads:  # Experimental.
                 new = k.tf.where(k.not_equal(spikes, 0), k.zeros_like(mem), mem)

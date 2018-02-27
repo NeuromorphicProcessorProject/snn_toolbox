@@ -489,7 +489,6 @@ def update_setup(config_filepath):
     elif 'ttfs' in spike_code:
         config.set('cell', 'tau_refrac',
                    str(config.getint('simulation', 'duration')))
-        config.set('conversion', 'softmax_to_relu', 'True')
     assert keras_backend != 'theano' or spike_code == 'temporal_mean_rate', \
         "Keras backend 'theano' only works when the 'spike_code' parameter " \
         "is set to 'temporal_mean_rate' in snntoolbox config."

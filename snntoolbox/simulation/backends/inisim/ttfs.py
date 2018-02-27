@@ -75,16 +75,23 @@ class SpikeLayer(Layer):
         new_mem = self.get_new_mem()
 
         # Generate spikes.
-        output_spikes = self.linear_activation(new_mem)
+        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
+            output_spikes = self.softmax_activation(new_mem)
+        else:
+            output_spikes = self.linear_activation(new_mem)
 
         # Reset membrane potential after spikes.
         self.set_reset_mem(new_mem, output_spikes)
 
         # Store refractory period after spikes.
-        new_refrac = k.tf.where(k.not_equal(output_spikes, 0),
-                                k.ones_like(output_spikes) *
-                                (self.time + self.tau_refrac),
-                                self.refrac_until)
+        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
+            # We do not constrain softmax output neurons.
+            new_refrac = k.tf.identity(self.refrac_until)
+        else:
+            new_refrac = k.tf.where(k.not_equal(output_spikes, 0),
+                                    k.ones_like(output_spikes) *
+                                    (self.time + self.tau_refrac),
+                                    self.refrac_until)
         self.add_update([(self.refrac_until, new_refrac)])
 
         if self.spiketrain is not None:
@@ -99,6 +106,12 @@ class SpikeLayer(Layer):
     def linear_activation(self, mem):
         """Linear activation."""
         return k.cast(k.greater_equal(mem, self.v_thresh), k.floatx())
+
+    def softmax_activation(self, mem):
+        """Softmax activation."""
+
+        return k.cast(k.less_equal(k.random_uniform(k.shape(mem)),
+                                   k.softmax(mem)), k.floatx())
 
     def get_new_mem(self):
         """Add input to membrane potential."""
@@ -123,22 +136,26 @@ class SpikeLayer(Layer):
         nonzero.
         """
 
-        new = k.tf.where(k.not_equal(spikes, 0), k.zeros_like(mem), mem)
+        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
+            new = k.tf.identity(mem)
+        else:
+            new = k.tf.where(k.not_equal(spikes, 0), k.zeros_like(mem), mem)
         self.add_update([(self.mem, new)])
 
     def get_psp(self, output_spikes):
-        new_spiketimes = k.tf.where(
-            k.not_equal(output_spikes, 0),
-            k.ones_like(output_spikes) * self.time,
-            self.last_spiketimes)
-        assign_new_spiketimes = k.tf.assign(self.last_spiketimes,
-                                            new_spiketimes)
-        with k.tf.control_dependencies([assign_new_spiketimes]):
-            last_spiketimes = self.last_spiketimes + 0  # Dummy op
-            # psp = k.maximum(0., k.tf.divide(self.dt, last_spiketimes))
-            psp = k.tf.where(k.greater(last_spiketimes, 0),
-                             k.ones_like(output_spikes) * self.dt,
-                             k.zeros_like(output_spikes))
+        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
+            psp = k.tf.identity(output_spikes)
+        else:
+            new_spiketimes = k.tf.where(k.not_equal(output_spikes, 0),
+                                        k.ones_like(output_spikes) * self.time,
+                                        self.last_spiketimes)
+            assign_new_spiketimes = k.tf.assign(self.last_spiketimes,
+                                                new_spiketimes)
+            with k.tf.control_dependencies([assign_new_spiketimes]):
+                last_spiketimes = self.last_spiketimes + 0  # Dummy op
+                psp = k.tf.where(k.greater(last_spiketimes, 0),
+                                 k.ones_like(output_spikes) * self.dt,
+                                 k.zeros_like(output_spikes))
         return psp
 
     def get_time(self):
@@ -200,10 +217,12 @@ class SpikeLayer(Layer):
                                         -self._v_thresh, self._v_thresh)
         elif mode == 'bias':
             init_mem = np.zeros(output_shape, k.floatx())
-            if hasattr(self, 'b'):
-                b = self.get_weights()[1]
-                for i in range(len(b)):
-                    init_mem[:, i, Ellipsis] = -b[i]
+            if hasattr(self, 'bias'):
+                bias = self.get_weights()[1]
+                for i in range(len(bias)):
+                    # Todo: This assumes data_format = 'channels_first'
+                    init_mem[:, i, Ellipsis] = bias[i]
+                self.add_update([(self.bias, np.zeros_like(bias))])
         else:  # mode == 'zero':
             init_mem = np.zeros(output_shape, k.floatx())
         return init_mem
@@ -410,11 +429,23 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
         MaxPooling2D.build(self, input_shape)
         self.init_neurons(input_shape)
 
-    @spike_call
     def call(self, x, mask=None):
         """Layer functionality."""
+        # Skip integration of input spikes in membrane potential. Directly
+        # transmit new spikes. The output psp is nonzero wherever there has been
+        # an input spike at any time during simulation.
 
-        return MaxPooling2D.call(self, x)
+        input_psp = MaxPooling2D.call(self, x)
+
+        if self.spiketrain is not None:
+            new_spikes = k.tf.logical_xor(k.greater(input_psp, 0),
+                                          k.greater(self.last_spiketimes, 0))
+            self.add_update([(self.spiketrain,
+                              self.time * k.cast(new_spikes, k.floatx()))])
+
+        psp = self.get_psp(input_psp)
+
+        return k.cast(psp, k.floatx())
 
 
 custom_layers = {'SpikeFlatten': SpikeFlatten,

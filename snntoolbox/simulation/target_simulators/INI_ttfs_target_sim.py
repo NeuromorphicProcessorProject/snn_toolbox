@@ -7,6 +7,7 @@
 from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
+import sys
 import keras
 import numpy as np
 from future import standard_library
@@ -101,29 +102,23 @@ class SNN(SNN_):
                         self.neuron_operations_b_t[:, 0] += self.fanin[1] * \
                             self.num_neurons[1] * np.ones(self.batch_size) * 2
 
-            if self.config.getint('output', 'verbose') > 0 \
-                    and sim_step % 1 == 0:
-                first_spiketimes_b_l = np.argmax(output_b_l_t, 2)
-                undecided_b = np.sum(first_spiketimes_b_l, 1) == 0
-                first_spiketimes_b_l[np.nonzero(np.sum(
-                    output_b_l_t, 2) == 0)] = self._num_timesteps
-                guesses_b = np.argmin(first_spiketimes_b_l, 1)
-                none_class_b = -1 * np.ones(self.batch_size)
-                clean_guesses_b = np.where(undecided_b, none_class_b, guesses_b)
-                echo('{:.2%}_'.format(np.mean(kwargs[str('truth_b')] ==
-                                              clean_guesses_b)))
+            spike_sums_b_l = np.sum(output_b_l_t, 2)
+            undecided_b = np.sum(spike_sums_b_l, 1) == 0
+            guesses_b = np.argmax(spike_sums_b_l, 1)
+            none_class_b = -1 * np.ones(self.batch_size)
+            clean_guesses_b = np.where(undecided_b, none_class_b, guesses_b)
+            current_acc = np.mean(kwargs[str('truth_b')] == clean_guesses_b)
+            if self.config.getint('output', 'verbose') > 0:
+                if sim_step % 1 == 0:
+                    echo('{:.2%}_'.format(current_acc))
+            else:
+                sys.stdout.write('\r{:>7.2%}'.format(current_acc))
+                sys.stdout.flush()
 
-            if all(np.count_nonzero(output_b_l_t, (1, 2)) >= self.top_k):
+            if self.config.getboolean('conversion', 'softmax_to_relu') and \
+                    all(np.count_nonzero(output_b_l_t, (1, 2)) >= self.top_k):
                 print("Finished early.")
                 break
-
-        for b in range(self.batch_size):
-            for l in range(self.num_classes):
-                spike = 0
-                for t in range(self._num_timesteps):
-                    if output_b_l_t[b, l, t]:
-                        spike = True
-                    output_b_l_t[b, l, t] = spike
 
         self.avg_rate /= self.batch_size * np.sum(self.num_neurons) * \
             self._num_timesteps

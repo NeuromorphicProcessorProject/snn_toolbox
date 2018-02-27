@@ -79,7 +79,8 @@ def output_graphs(plot_vars, config, path=None, idx=0, data_format=None):
                & plot_keys):
             if 'spikerates_n_b_l' not in plot_vars:
                 plot_vars['spikerates_n_b_l'] = spiketrains_to_rates(
-                    plot_vars['spiketrains_n_b_l_t'], duration,
+                    plot_vars['spiketrains_n_b_l_t'],
+                    duration / config.getfloat('simulation', 'dt'),
                     config.get('conversion', 'spike_code'))
             plot_vars['spikerates_n_l'] = get_sample_activity_from_batch(
                 plot_vars['spikerates_n_b_l'], idx)
@@ -409,7 +410,7 @@ def plot_layer_correlation(rates, activations, title, config, path=None):
                  textcoords='offset points')
     plt.title(title, fontsize=20)
     plt.locator_params(nbins=4)
-    lim = max([1.1, max(activations)])
+    lim = max([1.1, max(activations), max(rates)])
     plt.xlim([0, lim])
     plt.ylim([0, lim])
     plt.xlabel('ANN activations', fontsize=16)
@@ -840,7 +841,7 @@ def plot_spiketrains(layer, dt, path=None):
     nz = np.reshape(layer[0], (-1, duration)).nonzero()
 
     plt.figure()
-    plt.scatter(nz[1], nz[0], s=1, linewidths=0, color='b')
+    plt.scatter(nz[1] * dt, nz[0], s=1, linewidths=0, color='b')
     plt.title('Spiketrains \n of layer {}'.format(layer[1]))
     plt.xlabel('time [ms]')
     plt.ylabel('neuron index')

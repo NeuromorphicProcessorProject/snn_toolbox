@@ -1307,11 +1307,11 @@ def spiketrains_to_rates(spiketrains_n_b_l_t, duration, spike_code):
 
     def t2r_ttfs(t):
         isi = t[np.nonzero(t)]
-        return 1. / isi[0] if len(isi) else 0
+        return 1. / isi[0] if len(isi) else 0.
 
     def t2r_ttfs_corrective(t):
         isi = t[np.nonzero(t)]
-        return 1. / isi[-1] if len(isi) % 2 else 0
+        return 1. / isi[-1] if len(isi) % 2 else 0.
 
     def t2r_mean_rate(t):
         # Multiplication with sign is for possible negative spikes
@@ -1325,27 +1325,12 @@ def spiketrains_to_rates(spiketrains_n_b_l_t, duration, spike_code):
     else:
         f = t2r_mean_rate
 
-    spikerates_n_b_l = []
-    for (i, sp) in enumerate(spiketrains_n_b_l_t):
-        shape = sp[0].shape[:-1]  # output_shape of layer
-        # Allocate list containing an empty array of shape
-        # 'output_shape' for each layer of the network, which will
-        # hold the spikerates of a mini-batch.
-        spikerates_n_b_l.append((np.empty(shape), sp[1]))
-        # Count number of spikes fired in the layer and divide by the
-        # simulation time to get the mean firing rate of each neuron.
-        if len(shape) == 2:
-            for ii in range(len(sp[0])):
-                for jj in range(len(sp[0][ii])):
-                    spikerates_n_b_l[i][0][ii, jj] = f(sp[0][ii, jj])
-        elif len(shape) == 4:
-            for ii in range(len(sp[0])):
-                for jj in range(len(sp[0][ii])):
-                    for kk in range(len(sp[0][ii, jj])):
-                        for ll in range(len(sp[0][ii, jj, kk])):
-                            spikerates_n_b_l[i][0][ii, jj, kk, ll] = \
-                                f(sp[0][ii, jj, kk, ll])
-    return spikerates_n_b_l
+    # For output layer, we always have multiple spikes (even with ttfs), so use
+    # ``t2r_mean_rate``.
+    return [(np.apply_along_axis(f, -1, spiketrains_b_l_t), label)
+            for spiketrains_b_l_t, label in spiketrains_n_b_l_t[:-1]] + \
+           [(np.apply_along_axis(t2r_mean_rate, -1, spiketrains_n_b_l_t[-1][0]),
+             spiketrains_n_b_l_t[-1][1])]
 
 
 def get_sample_activity_from_batch(activity_batch, idx=0):
