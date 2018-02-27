@@ -2,6 +2,7 @@
 
 """LeNet for MNIST"""
 
+import os
 from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
@@ -10,7 +11,7 @@ from keras.callbacks import ModelCheckpoint, TensorBoard
 
 from snntoolbox.parsing.utils import \
     get_quantized_activation_function_from_string
-from snntoolbox.utils.utils import clamped_relu
+from snntoolbox.utils.utils import ClampedReLU
 
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
 X_train = X_train.reshape(X_train.shape[0], 1, 28, 28).astype('float32') / 255.
@@ -19,7 +20,7 @@ Y_train = np_utils.to_categorical(y_train, 10)
 Y_test = np_utils.to_categorical(y_test, 10)
 
 # nonlinearity = get_quantized_activation_function_from_string('relu_Q1.4')
-# nonlinearity = clamped_relu
+# nonlinearity = ClampedReLU
 nonlinearity = 'relu'
 
 model = Sequential()
@@ -42,7 +43,7 @@ model.compile('adam', 'categorical_crossentropy', metrics=['accuracy'])
 path = '/home/rbodo/.snntoolbox/data/mnist/cnn/lenet5/keras/gradients'
 
 checkpoint = ModelCheckpoint('weights.{epoch:02d}-{val_acc:.2f}.h5', 'val_acc')
-gradients = TensorBoard(path + '/logs', 2, write_grads=True)
+gradients = TensorBoard(os.path.join(path, 'logs'), 2, write_grads=True)
 model.fit(X_train, Y_train, validation_data=(X_test, Y_test),
           callbacks=[checkpoint, gradients])
 
@@ -50,4 +51,4 @@ score = model.evaluate(X_test, Y_test)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 
-model.save(path + '/{:2.2f}.h5'.format(score[1]*100))
+model.save(os.path.join(path, '{:2.2f}.h5'.format(score[1]*100)))

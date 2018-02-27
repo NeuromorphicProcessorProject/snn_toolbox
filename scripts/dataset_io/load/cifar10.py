@@ -55,7 +55,7 @@ def get_cifar10(path=None, filename=None, flat=False):
     """
 
     # Whether to apply global contrast normalization and ZCA whitening
-    gcn = False
+    gcn = True
     zca = False
     nb_classes = 10
 
@@ -65,7 +65,7 @@ def get_cifar10(path=None, filename=None, flat=False):
     y_train = to_categorical(y_train, nb_classes)
     y_test = to_categorical(y_test, nb_classes)
 
-    datagen = ImageDataGenerator(rescale=1./255, featurewise_center=gcn,
+    datagen = ImageDataGenerator(rescale=1./255., featurewise_center=gcn,
                                  featurewise_std_normalization=gcn,
                                  zca_whitening=zca)
     datagen.fit(x_test/255.)
@@ -93,5 +93,6 @@ def get_cifar10(path=None, filename=None, flat=False):
 
 #    return (x_train, y_train, x_test, y_test)
 
+
 if __name__ == '__main__':
-    get_cifar10('/home/rbodo/.snntoolbox/Datasets/cifar10/original/')
+    get_cifar10('/home/rbodo/.snntoolbox/Datasets/cifar10/gcn/')

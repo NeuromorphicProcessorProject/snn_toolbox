@@ -38,6 +38,7 @@ def preprocess_input(x):
 
     return x
 
+
 batch_size = 10
 target_size = (224, 224)
 

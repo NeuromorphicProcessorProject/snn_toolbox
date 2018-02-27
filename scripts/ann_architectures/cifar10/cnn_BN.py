@@ -22,11 +22,11 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import np_utils
 
 # from snntoolbox.simulation.plotting import plot_history
-# from snntoolbox.utils.utils import clamped_relu
+# from snntoolbox.utils.utils import ClampedReLU
 
 batch_size = 32
 nb_epoch = 50
-activation = 'relu'  # 'sigmoid'  # clamped_relu  # 'relu'
+activation = 'relu'  # 'sigmoid'  # ClampedReLU  # 'relu'
 reg = None  # keras.regularizers.l2(0.0001)
 
 # Data set
@@ -66,7 +66,7 @@ model.compile('adam', 'categorical_crossentropy', metrics=['accuracy'])
 # model_pretrained = keras.models.load_model('/home/rbodo/.snntoolbox/data/'
 #                                            'cifar10/87.86/87.86.h5')
 # model_pretrained = keras.models.load_model('cnn_BN.06-0.89.h5',
-#                                            {'clamped_relu': clamped_relu},
+#                                            {'ClampedReLU': ClampedReLU},
 #                                            compile=True)
 # model.set_weights(model_pretrained.get_weights())
 
