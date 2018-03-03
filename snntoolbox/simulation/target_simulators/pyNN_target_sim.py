@@ -179,7 +179,7 @@ class SNN(AbstractSNN):
         vars_to_record = self.get_vars_to_record()
 
         if 'spikes' in vars_to_record:
-            self.layers[0].record(['spikes'])  # Input layer has no 'v'
+            self.layers[0].record([str('spikes')])  # Input layer has no 'v'
 
         for layer in self.layers[1:]:
             layer.set(**self.cellparams)
@@ -220,10 +220,10 @@ class SNN(AbstractSNN):
         if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
                 'hist_spikerates_activations'} & self._plot_keys) \
                 or 'spiketrains_n_b_l_t' in self._log_keys:
-            vars_to_record.append('spikes')
+            vars_to_record.append(str('spikes'))
 
-        if 'mem_n_b_l_t' in self._log_keys or 'mem' in self._plot_keys:
-            vars_to_record.append('v')
+        if 'mem_n_b_l_t' in self._log_keys or 'v_mem' in self._plot_keys:
+            vars_to_record.append(str('v'))
 
         return vars_to_record
 

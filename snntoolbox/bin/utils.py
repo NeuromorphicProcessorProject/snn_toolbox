@@ -266,7 +266,8 @@ def update_setup(config_filepath):
     config.read(config_filepath)
 
     keras_backend = config.get('simulation', 'keras_backend')
-    keras_backends = eval(config.get('restrictions', 'keras_backends'))
+    keras_backends = config_string_to_set_of_strings(
+        config.get('restrictions', 'keras_backends'))
     assert keras_backend in keras_backends, \
         "Keras backend {} not supported. Choose from {}.".format(keras_backend,
                                                                  keras_backends)
@@ -291,7 +292,8 @@ def update_setup(config_filepath):
 
     # Check that simulator choice is valid.
     simulator = config.get('simulation', 'simulator')
-    simulators = eval(config.get('restrictions', 'simulators'))
+    simulators = config_string_to_set_of_strings(config.get('restrictions',
+                                                            'simulators'))
     assert simulator in simulators, \
         "Simulator '{}' not supported. Choose from {}".format(simulator,
                                                               simulators)
@@ -317,7 +319,8 @@ def update_setup(config_filepath):
 
     # Check that choice of input model library is valid.
     model_lib = config.get('input', 'model_lib')
-    model_libs = eval(config.get('restrictions', 'model_libs'))
+    model_libs = config_string_to_set_of_strings(config.get('restrictions',
+                                                            'model_libs'))
     assert model_lib in model_libs, "ERROR: Input model library '{}' ".format(
         model_lib) + "not supported yet. Possible values: {}".format(model_libs)
 
@@ -433,7 +436,8 @@ def update_setup(config_filepath):
         config.set('simulation', 'num_to_test', str(batch_size))
 
     plot_var = get_plot_keys(config)
-    plot_vars = eval(config.get('restrictions', 'plot_vars'))
+    plot_vars = config_string_to_set_of_strings(config.get('restrictions',
+                                                           'plot_vars'))
     assert all([v in plot_vars for v in plot_var]), \
         "Plot variable(s) {} not understood.".format(
             [v for v in plot_var if v not in plot_vars])
@@ -443,7 +447,8 @@ def update_setup(config_filepath):
         config.set('output', 'plot_vars', str(plot_vars_all))
 
     log_var = get_log_keys(config)
-    log_vars = eval(config.get('restrictions', 'log_vars'))
+    log_vars = config_string_to_set_of_strings(config.get('restrictions',
+                                                          'log_vars'))
     assert all([v in log_vars for v in log_var]), \
         "Log variable(s) {} not understood.".format(
             [v for v in log_var if v not in log_vars])
@@ -478,7 +483,8 @@ def update_setup(config_filepath):
                    str([eval(config.get('cell', param_name))]))
 
     spike_code = config.get('conversion', 'spike_code')
-    spike_codes = eval(config.get('restrictions', 'spike_codes'))
+    spike_codes = config_string_to_set_of_strings(config.get('restrictions',
+                                                             'spike_codes'))
     assert spike_code in spike_codes, \
         "Unknown spike code {} selected. Choose from {}.".format(spike_code,
                                                                  spike_codes)
@@ -504,7 +510,8 @@ def initialize_simulator(config):
 
     simulator = config.get('simulation', 'simulator')
     print("Initializing {} simulator...\n".format(simulator))
-    if simulator in eval(config.get('restrictions', 'simulators_pyNN')):
+    if simulator in config_string_to_set_of_strings(
+            config.get('restrictions', 'simulators_pyNN')):
         if simulator == 'nest':
             # Workaround for missing link bug, see
             # https://github.com/ContinuumIO/anaconda-issues/issues/152
@@ -537,8 +544,13 @@ def initialize_simulator(config):
 
 
 def get_log_keys(config):
-    return set(eval(config.get('output', 'log_vars')))
+    return config_string_to_set_of_strings(config.get('output', 'log_vars'))
 
 
 def get_plot_keys(config):
-    return set(eval(config.get('output', 'plot_vars')))
+    return config_string_to_set_of_strings(config.get('output', 'plot_vars'))
+
+
+def config_string_to_set_of_strings(string):
+    set_unicode = set(eval(string))
+    return {str(s) for s in set_unicode}

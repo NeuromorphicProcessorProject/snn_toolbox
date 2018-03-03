@@ -71,7 +71,7 @@ class SNN(AbstractSNN):
         self._cell_params = None
 
         # Track the output layer spikes.
-        self.output_spikemonitor = self.sim.SpikeMonitor(self.layers[-1])
+        self.output_spikemonitor = None
 
     @property
     def is_parallelizable(self):
@@ -147,10 +147,10 @@ class SNN(AbstractSNN):
 
     def compile(self):
 
+        self.output_spikemonitor = self.sim.SpikeMonitor(self.layers[-1])
+        spikemonitors = self.spikemonitors + [self.output_spikemonitor]
         self.snn = self.sim.Network(self.layers, self.connections,
-                                    self.spikemonitors +
-                                    [self.output_spikemonitor],
-                                    self.statemonitors)
+                                    spikemonitors, self.statemonitors)
         self.snn.store()
 
         # Set input layer
@@ -211,7 +211,8 @@ class SNN(AbstractSNN):
 
     def get_spiketrains(self, **kwargs):
         j = self._spiketrains_container_counter
-        if j >= len(self.spiketrains_n_b_l_t):
+        if self.spiketrains_n_b_l_t is None or \
+                j >= len(self.spiketrains_n_b_l_t):
             return None
 
         shape = self.spiketrains_n_b_l_t[j][0].shape
@@ -247,10 +248,12 @@ class SNN(AbstractSNN):
         return spiketrains_b_l_t
 
     def get_vmem(self, **kwargs):
+        j = kwargs[str('monitor_index')]
+        if j >= len(self.statemonitors):
+            return None
         try:
             return np.array([
-                np.array(v).transpose() for v in
-                self.statemonitors[kwargs[str('monitor_index')]].v])
+                np.array(v).transpose() for v in self.statemonitors[j].v])
         except AttributeError:
             return None
 
