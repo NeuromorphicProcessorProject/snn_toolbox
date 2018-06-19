@@ -532,7 +532,7 @@ def to_list(x):
 
 def apply_modifications(model, custom_objects=None):
     """Applies modifications to the model layers to create a new Graph. For
-    example, simply changing `model.layers[idx].activation = new activation`
+    example, simply changing ``model.layers[idx].activation = new activation``
     does not change the graph. The entire graph needs to be updated with
     modified inbound and outbound tensors because of change in layer building
     function.
@@ -548,7 +548,7 @@ def apply_modifications(model, custom_objects=None):
     -------
 
         The modified model with changes applied. Does not mutate the original
-        `model`.
+        ``model``.
     """
 
     # The strategy is to save the modified model and load it back. This is done
