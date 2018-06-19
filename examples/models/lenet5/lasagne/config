@@ -2,6 +2,9 @@
 dataset_path = %(path_wd)s/../../../datasets/mnist
 filename_ann = 99.02
 
+[tools]
+evaluate_ann = True
+
 [input]
 model_lib = lasagne
 poisson_input = True

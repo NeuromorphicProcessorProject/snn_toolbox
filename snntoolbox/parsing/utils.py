@@ -660,8 +660,8 @@ class AbstractModelParser:
 
         return self.parsed_model
 
-    def evaluate_parsed(self, batch_size, num_to_test, x_test=None,
-                        y_test=None, dataflow=None):
+    def evaluate(self, batch_size, num_to_test, x_test=None, y_test=None,
+                 dataflow=None):
         """Evaluate parsed Keras model.
 
         Can use either numpy arrays ``x_test, y_test`` containing the test
@@ -837,7 +837,7 @@ def get_inbound_layers_with_params(layer):
         inbound = get_inbound_layers(inbound)
         if len(inbound) == 1:
             inbound = inbound[0]
-            if has_weights(inbound) > 0:
+            if has_weights(inbound):
                 return [inbound]
         else:
             result = []
@@ -865,9 +865,8 @@ def get_inbound_layers_without_params(layer):
         List of inbound layers.
     """
 
-    # noinspection PyProtectedMember
-    return [layer for layer in layer._inbound_nodes[0].inbound_layers
-            if len(layer.weights) == 0]
+    return [layer for layer in get_inbound_layers(layer)
+            if not has_weights(layer)]
 
 
 def get_inbound_layers(layer):
@@ -886,8 +885,12 @@ def get_inbound_layers(layer):
         List of inbound layers.
     """
 
-    # noinspection PyProtectedMember
-    return layer._inbound_nodes[0].inbound_layers
+    try:
+        # noinspection PyProtectedMember
+        inbound_layers = layer._inbound_nodes[0].inbound_layers
+    except AttributeError:  # For Keras backward-compatibility.
+        inbound_layers = layer.inbound_nodes[0].inbound_layers
+    return inbound_layers
 
 
 def get_outbound_layers(layer):
@@ -906,8 +909,12 @@ def get_outbound_layers(layer):
         List of outbound layers.
     """
 
-    # noinspection PyProtectedMember
-    return [on.outbound_layer for on in layer._outbound_nodes]
+    try:
+        # noinspection PyProtectedMember
+        outbound_nodes = layer._outbound_nodes
+    except AttributeError:  # For Keras backward-compatibility.
+        outbound_nodes = layer.outbound_nodes
+    return [on.outbound_layer for on in outbound_nodes]
 
 
 def get_outbound_activation(layer):

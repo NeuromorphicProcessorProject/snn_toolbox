@@ -21,8 +21,7 @@ class TestInputModel:
             _input_model_and_lib['input_model']['model'], _config)
         model_parser.parse()
         model_parser.build_parsed_model()
-        score = model_parser.evaluate_parsed(batch_size, num_to_test,
-                                             **_testset)
+        score = model_parser.evaluate(batch_size, num_to_test, **_testset)
         target_acc = _input_model_and_lib['target_acc']
         assert round(100 * score[1], 2) >= target_acc
 
@@ -42,8 +41,7 @@ class TestInputModel:
         model_parser.parse()
         parsed_model = model_parser.build_parsed_model()
         normalize_parameters(parsed_model, _config, **_normset)
-        score = model_parser.evaluate_parsed(batch_size, num_to_test,
-                                             **_testset)
+        score = model_parser.evaluate(batch_size, num_to_test, **_testset)
         target_acc = _input_model_and_lib['target_acc']
 
         assert round(100 * score[1], 2) >= target_acc

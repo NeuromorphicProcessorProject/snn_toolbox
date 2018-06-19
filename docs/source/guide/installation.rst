@@ -21,17 +21,14 @@ or `Tensorflow <https://www.tensorflow.org/>`_.
       [simulation]
       keras_backend = tensorflow
   
-.. note:: As of 22.11.2017, the latest Keras version was not compatible with
-   Theano 1.0, so please install Theano version 0.9.
-
-Stable version
---------------
+Release version
+---------------
 
 Run ``pip install snntoolbox``. This will install the other minimum dependencies
 (Keras, h5py) on the fly.
 
-Development version
--------------------
+Development version (recommended)
+---------------------------------
 
 To get the latest version, checkout the `repository <https://github.com/NeuromorphicProcessorProject/snn_toolbox>`_.
 In the toolbox root directory ``snn_toolbox/``, run ``pip install .``.

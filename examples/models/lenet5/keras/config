@@ -3,7 +3,7 @@ dataset_path = %(path_wd)s/../../../datasets/mnist
 filename_ann = 98.96
 
 [tools]
-evaluate_ann = False
+evaluate_ann = True
 
 [simulation]
 simulator = INI

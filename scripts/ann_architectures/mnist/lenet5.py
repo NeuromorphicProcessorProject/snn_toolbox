@@ -13,6 +13,9 @@ from snntoolbox.parsing.utils import \
     get_quantized_activation_function_from_string
 from snntoolbox.utils.utils import ClampedReLU
 
+batch_size = 32
+epochs = 10
+
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
 X_train = X_train.reshape(X_train.shape[0], 1, 28, 28).astype('float32') / 255.
 X_test = X_test.reshape(X_test.shape[0], 1, 28, 28).astype('float32') / 255.
@@ -44,8 +47,9 @@ path = '/home/rbodo/.snntoolbox/data/mnist/cnn/lenet5/keras/gradients'
 
 checkpoint = ModelCheckpoint('weights.{epoch:02d}-{val_acc:.2f}.h5', 'val_acc')
 gradients = TensorBoard(os.path.join(path, 'logs'), 2, write_grads=True)
-model.fit(X_train, Y_train, validation_data=(X_test, Y_test),
-          callbacks=[checkpoint, gradients])
+callbacks = []  # [checkpoint, gradients]
+model.fit(X_train, Y_train, batch_size, epochs,
+          validation_data=(X_test, Y_test), callbacks=callbacks)
 
 score = model.evaluate(X_test, Y_test)
 print('Test score:', score[0])

@@ -41,7 +41,7 @@ filename_parsed_model: string, optional
 
 filename_snn: str, optional
     Name given to converted spiking model when exported to test it in a specific
-    simulator. Default: ``snn_<filename_ann>_<simulator>``.
+    simulator. Default: ``<filename_ann>_<simulator>``.
 
 filename_clamp_indices: str, optional
     Name of file containing a dictionary of clamp indices. Each ``key``

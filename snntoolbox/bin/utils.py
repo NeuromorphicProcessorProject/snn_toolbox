@@ -98,7 +98,7 @@ def test_full(config, queue=None):
         if config.getboolean('tools', 'evaluate_ann') and not is_stop(queue):
             print("Evaluating parsed model on {} samples...".format(
                 num_to_test))
-            model_parser.evaluate_parsed(config.getint(
+            model_parser.evaluate(config.getint(
                 'simulation', 'batch_size'), num_to_test, **testset)
 
         # Write parsed model to disk
@@ -498,6 +498,7 @@ def update_setup(config_filepath):
     assert keras_backend != 'theano' or spike_code == 'temporal_mean_rate', \
         "Keras backend 'theano' only works when the 'spike_code' parameter " \
         "is set to 'temporal_mean_rate' in snntoolbox config."
+
     with open(os.path.join(log_dir_of_current_run, '.config'), str('w')) as f:
         config.write(f)
 
