@@ -26,7 +26,6 @@ from snntoolbox.parsing.utils import get_inbound_layers
 standard_library.install_aliases()
 
 # Experimental
-bias_relaxation = False
 clamp_var = False
 v_clip = False
 
@@ -45,7 +44,7 @@ class SpikeLayer(Layer):
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.refrac_until = self.max_spikerate = None
-        if bias_relaxation:
+        if self.config.getboolean('cell', 'bias_relaxation'):
             self.b0 = None
         if clamp_var:
             self.spikerate = self.var = None
@@ -568,7 +567,7 @@ class SpikeDense(Dense, SpikeLayer):
         Dense.build(self, input_shape)
         self.init_neurons(input_shape)
 
-        if bias_relaxation:
+        if self.config.getboolean('cell', 'bias_relaxation'):
             self.b0 = k.variable(k.get_value(self.bias))
             self.add_update([(self.bias, self.update_b())])
 
@@ -596,7 +595,7 @@ class SpikeConv2D(Conv2D, SpikeLayer):
         Conv2D.build(self, input_shape)
         self.init_neurons(input_shape)
 
-        if bias_relaxation:
+        if self.config.getboolean('cell', 'bias_relaxation'):
             self.b0 = k.variable(k.get_value(self.bias))
             self.add_update([(self.bias, self.update_b())])
 

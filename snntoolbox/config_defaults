@@ -80,6 +80,7 @@ scaling_factor = 10000000
 payloads = False
 reset = Reset by subtraction
 leak = False
+bias_relaxation = False
 
 [parameter_sweep]
 param_values = []

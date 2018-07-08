@@ -19,7 +19,6 @@ import warnings
 
 import numpy as np
 import theano
-from theano import ifelse
 from future import standard_library
 from keras import backend as k
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
@@ -30,7 +29,6 @@ from snntoolbox.parsing.utils import get_inbound_layers
 standard_library.install_aliases()
 
 # Experimental
-bias_relaxation = False
 clamp_var = False
 v_clip = False
 
@@ -49,7 +47,7 @@ class SpikeLayer(Layer):
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.refrac_until = self.max_spikerate = None
-        if bias_relaxation:
+        if self.config.getboolean('cell', 'bias_relaxation'):
             self.b0 = None
         if clamp_var:
             self.spikerate = self.var = None
@@ -215,13 +213,14 @@ class SpikeLayer(Layer):
             # Experimental: Clamp the membrane potential to zero until the
             # presynaptic neurons fire at their steady-state rates. This helps
             # avoid a transient response.
-            new_mem = ifelse.ifelse(k.less(k.mean(self.var), 1e-4) +
-                                    k.greater(self.time, self.duration / 2),
-                                    self.mem + masked_impulse, self.mem)
+            new_mem = theano.ifelse.ifelse(
+                k.less(k.mean(self.var), 1e-4) +
+                k.greater(self.time, self.duration / 2),
+                self.mem + masked_impulse, self.mem)
         elif hasattr(self, 'clamp_idx'):
             # Set clamp-duration by a specific delay from layer to layer.
-            new_mem = ifelse.ifelse(k.less(self.time, self.clamp_idx), self.mem,
-                                    self.mem + masked_impulse)
+            new_mem = theano.ifelse.ifelse(k.less(self.time, self.clamp_idx),
+                                           self.mem, self.mem + masked_impulse)
         elif v_clip:
             # Clip membrane potential to prevent too strong accumulation.
             new_mem = k.clip(self.mem + masked_impulse, -3, 3)
@@ -267,7 +266,7 @@ class SpikeLayer(Layer):
         r_lim = 1 / self.dt
         return thr_min + (thr_max - thr_min) * self.max_spikerate / r_lim
 
-        # return ifelse.ifelse(
+        # return theano.ifelse.ifelse(
         #     k.equal(self.time / self.dt % settings['timestep_fraction'], 0) *
         #     k.greater(self.max_spikerate, settings['diff_to_min_rate']/1000) *
         #     k.greater(1 / self.dt - self.max_spikerate,
@@ -562,7 +561,7 @@ class SpikeDense(Dense, SpikeLayer):
         Dense.build(self, input_shape)
         self.init_neurons(input_shape)
 
-        if bias_relaxation:
+        if self.config.getboolean('cell', 'bias_relaxation'):
             self.b0 = k.variable(self.bias.get_value())
             self.add_update([(self.bias, self.update_b())])
 
@@ -590,7 +589,7 @@ class SpikeConv2D(Conv2D, SpikeLayer):
         Conv2D.build(self, input_shape)
         self.init_neurons(input_shape)
 
-        if bias_relaxation:
+        if self.config.getboolean('cell', 'bias_relaxation'):
             self.b0 = k.variable(self.bias.get_value())
             self.add_update([(self.bias, self.update_b())])
 

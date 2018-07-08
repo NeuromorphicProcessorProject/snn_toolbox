@@ -100,8 +100,6 @@ class SNN(AbstractSNN):
         pass
 
     def compile(self):
-        from snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano \
-            import bias_relaxation
 
         self.snn = keras.models.Model(
             self._input_images,
@@ -113,7 +111,7 @@ class SNN(AbstractSNN):
                 # Adjust biases to time resolution of simulator.
                 bias = keras.backend.get_value(layer.bias) * self._dt
                 keras.backend.set_value(layer.bias, bias)
-                if bias_relaxation:  # Experimental
+                if self.config.getboolean('cell', 'bias_relaxation'):
                     keras.backend.set_value(layer.b0,
                                             keras.backend.get_value(layer.bias))
 
