@@ -26,7 +26,7 @@ particular experiment.
    <https://keras.io/getting-started/faq/#where-is-the-keras-configuration-file-stored>`_
    contains the option ``"image_data_format": "channels_first"``.
 
-.. note:: (20.6.2018) These examples work for Keras version <= 2.0.6.
+.. note:: (8.7.2018) These examples work for Keras version == 2.1.6.
 
 .. _ExampleA:
 
