@@ -1509,7 +1509,7 @@ def main():
 
     from snntoolbox.bin.utils import load_config
     config = load_config(os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                      '..', '..', 'snntoolbox',
+                                                      '..', '..',
                                                       'config_defaults')))
 
     root = tk.Tk()
