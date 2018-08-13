@@ -124,8 +124,10 @@ class SNN(AbstractSNN):
         from snntoolbox.simulation.utils import build_convolution
 
         delay = self.config.getfloat('cell', 'delay')
-        self._conns, self._biases = build_convolution(layer, delay)
-
+        transpose_kernel = \
+            self.config.get('simulation', 'keras_backend') == 'tensorflow'
+        self._conns, self._biases = build_convolution(layer, delay,
+                                                      transpose_kernel)
         self.set_biases()
 
         print("Connecting layer...")

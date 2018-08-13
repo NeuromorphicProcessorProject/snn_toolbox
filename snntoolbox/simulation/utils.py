@@ -1117,7 +1117,7 @@ def get_samples_from_list(x_test, y_test, dataflow, config):
     return x_test, y_test
 
 
-def build_convolution(layer, delay):
+def build_convolution(layer, delay, transpose_kernel=False):
     """Build convolution layer.
 
     Parameters
@@ -1127,6 +1127,9 @@ def build_convolution(layer, delay):
         Parsed model layer.
     delay: float
         Synaptic delay.
+    transpose_kernel: bool
+        Whether or not to convert kernels from Tensorflow to Theano format
+        (correlation instead of convolution).
 
     Returns
     -------
@@ -1146,6 +1149,10 @@ def build_convolution(layer, delay):
                                   "simulator.")
 
     weights, biases = layer.get_weights()
+
+    if transpose_kernel:
+        from keras.utils.conv_utils import convert_kernel
+        weights = convert_kernel(weights)
 
     # Biases.
     i_offset = np.empty(np.prod(layer.output_shape[1:]))
