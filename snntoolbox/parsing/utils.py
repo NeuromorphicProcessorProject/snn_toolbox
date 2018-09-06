@@ -962,11 +962,13 @@ def get_fanin(layer):
 
     """
 
-    if 'Conv' in layer.name:
-        fanin = np.prod(layer.kernel_size) * layer.input_shape[1]
-    elif 'Dense' in layer.name:
+    layer_type = get_type(layer)
+    if 'Conv' in layer_type:
+        ax = 1 if keras.backend.image_data_format() == 'channels_first' else -1
+        fanin = np.prod(layer.kernel_size) * layer.input_shape[ax]
+    elif 'Dense' in layer_type:
         fanin = layer.input_shape[1]
-    elif 'Pool' in layer.name:
+    elif 'Pool' in layer_type:
         fanin = 0
     else:
         fanin = 0

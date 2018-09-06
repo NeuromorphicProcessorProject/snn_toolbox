@@ -621,7 +621,7 @@ class AbstractSNN:
 
             # Get classification error of current batch, for each time step.
             self.top1err_b_t = guesses_b_t != np.broadcast_to(
-                np.expand_dims(truth_b, 1), guesses_b_t.shape)
+                np.expand_dims(truth_b, -1), guesses_b_t.shape)
             for t in range(self._num_timesteps):
                 self.top5err_b_t[:, t] = ~in_top_k(output_b_l_t[:, :, t],
                                                    truth_b, self.top_k)
@@ -877,7 +877,8 @@ class AbstractSNN:
                 self.fanin.append(get_fanin(layer))
                 self.fanout.append(get_fanout(layer, self.config))
                 self.num_neurons.append(np.prod(layer.output_shape[1:]))
-                if hasattr(layer, 'bias') and any(k.get_value(layer.bias)):
+                if hasattr(layer, 'bias') and layer.bias is not None and \
+                        any(k.get_value(layer.bias)):
                     print("Detected layer with biases: {}".format(layer.name))
                     self.num_neurons_with_bias.append(self.num_neurons[-1])
                 else:

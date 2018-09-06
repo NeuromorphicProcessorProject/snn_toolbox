@@ -57,7 +57,7 @@ batch_size = 100
 num_to_test = 1000
 sample_idxs_to_test = []
 reset_between_nth_sample = 1
-top_k = 5
+top_k = 1
 keras_backend = theano
 early_stopping = False
 
