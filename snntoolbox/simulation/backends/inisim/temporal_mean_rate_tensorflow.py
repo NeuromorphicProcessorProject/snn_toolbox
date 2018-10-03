@@ -499,10 +499,6 @@ class SpikeConcatenate(Concatenate):
         kwargs.pop(str('config'))
         Concatenate.__init__(self, axis, **kwargs)
 
-    def _merge_function(self, inputs):
-
-        return self._merge_function(inputs)
-
     @staticmethod
     def get_time():
 
