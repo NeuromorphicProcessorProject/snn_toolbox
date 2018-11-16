@@ -570,7 +570,7 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, config,
     plt.ylim([0, 1])
     plt.xlim([0, len(corr)])
     plt.xticks([i + 0.5 for i in range(len(labels))], labels, rotation=90)
-    plt.tick_params(bottom='off')
+    plt.tick_params(bottom=False)
     plt.title('Correlation between ANN activations \n and SNN spikerates,\n ' +
               'averaged over {} samples'.format(len(spikerates_batch[0][0])))
     plt.ylabel('Pearson Correlation Coefficient')

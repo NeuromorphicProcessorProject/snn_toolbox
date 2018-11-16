@@ -26,14 +26,12 @@ particular experiment.
    <https://keras.io/getting-started/faq/#where-is-the-keras-configuration-file-stored>`_
    contains the option ``"image_data_format": "channels_first"``.
 
-.. note:: (8.7.2018) These examples work for Keras version == 2.1.6.
-
 .. _ExampleA:
 
 Example A - LeNet on MNIST
 --------------------------
 
-Here we test the classical LeNet architecture on MNIST, using one implementation
+Here we test the classic LeNet architecture on MNIST, using one implementation
 in Keras, one in Lasagne, and one in Caffe.
 
 Keras
