@@ -79,17 +79,27 @@ class SNN(AbstractSNN):
             self.sim.IF_cond_exp, self.cellparams, label=layer.name))
 
     def build_dense(self, layer):
+        """
 
-        if layer.activation == 'softmax':
-            raise warnings.warn("Activation 'softmax' not implemented. Using "
-                                "'relu' activation instead.", RuntimeWarning)
+        Parameters
+        ----------
+        layer : keras.layers.Dense
+
+        Returns
+        -------
+
+        """
+
+        if layer.activation.__name__ == 'softmax':
+            warnings.warn("Activation 'softmax' not implemented. Using 'relu' "
+                          "activation instead.", RuntimeWarning)
 
         weights, biases = layer.get_weights()
         self._biases = np.array(biases, 'float64')
         self.set_biases()
         delay = self.config.getfloat('cell', 'delay')
-        for i in range(len(weights)):
-            for j in range(len(weights[0])):
+        for i in range(weights.shape[0]):
+            for j in range(weights.shape[1]):
                 self._conns.append((i, j, weights[i, j], delay))
         self.connections.append(self.sim.Projection(
             self.layers[-2], self.layers[-1],
@@ -204,8 +214,11 @@ class SNN(AbstractSNN):
         This has not been tested yet.
         """
 
-        warnings.warn("Biases are implemented but might have no effect. Please "
-                      "check!", RuntimeWarning)
+        if not np.any(self._biases):
+            return
+
+        warnings.warn("Biases are implemented but might have no effect. "
+                      "Please check!", RuntimeWarning)
         self.layers[-1].set(i_offset=self._biases * self._dt)
 
     def get_vars_to_record(self):

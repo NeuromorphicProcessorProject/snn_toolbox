@@ -19,6 +19,7 @@ import numpy as np
 from snntoolbox.bin.utils import get_log_keys, get_plot_keys
 from snntoolbox.parsing.utils import get_type
 from snntoolbox.utils.utils import echo
+import keras
 
 
 class AbstractSNN:
@@ -495,6 +496,8 @@ class AbstractSNN:
         from snntoolbox.utils.utils import in_top_k
         if len(self._plot_keys) > 0:
             import snntoolbox.simulation.plotting as snn_plt
+        else:
+            snn_plt = None
 
         # Get directory where logging quantities will be stored.
         log_dir = kwargs[str('path')] if 'path' in kwargs \
@@ -567,6 +570,7 @@ class AbstractSNN:
 
             # Get a batch of samples
             x_b_l = None
+            y_b_l = None
             if x_test is not None:
                 batch_idxs = range(self.batch_size * batch_idx,
                                    self.batch_size * (batch_idx + 1))
@@ -593,15 +597,15 @@ class AbstractSNN:
             # Using one batch of activations, estimate the expected number of
             # synaptic operations of SNN. (ANN activation is a measure for the
             # expected SNN spike count.)
-            if False:  # batch_idx == 0:
-                activations_n_b_l = get_activations_batch(self.parsed_model,
-                                                          x_b_l)
-                snn_ops_expected = estimate_snn_ops(activations_n_b_l,
-                                                    self.fanout,
-                                                    self._num_timesteps)
-                print("Expected number of operations of SNN after {} time "
-                      "steps: {}.".format(self._num_timesteps,
-                                          snn_ops_expected))
+            # if batch_idx == 0:
+            #     activations_n_b_l = get_activations_batch(self.parsed_model,
+            #                                               x_b_l)
+            #     snn_ops_expected = estimate_snn_ops(activations_n_b_l,
+            #                                         self.fanout,
+            #                                         self._num_timesteps)
+            #     print("Expected number of operations of SNN after {} time "
+            #           "steps: {}.".format(self._num_timesteps,
+            #                               snn_ops_expected))
 
             # Main step: Run the network on a batch of samples for the duration
             # of the simulation.
@@ -818,7 +822,7 @@ class AbstractSNN:
             self.neuron_operations_b_t = np.zeros((self.batch_size,
                                                    self._num_timesteps))
 
-        if 'mem_n_b_l_t' in self._log_keys or 'mem' in self._plot_keys:
+        if 'mem_n_b_l_t' in self._log_keys or 'v_mem' in self._plot_keys:
             self.mem_n_b_l_t = []
             for layer in self.parsed_model.layers:
                 if not is_spiking(layer, self.config):
@@ -864,7 +868,6 @@ class AbstractSNN:
         `num_neurons`, `num_neurons_with_bias`.
         """
 
-        import keras.backend as k
         from snntoolbox.parsing.utils import get_fanin, get_fanout
 
         self.fanin = [0]
@@ -878,7 +881,7 @@ class AbstractSNN:
                 self.fanout.append(get_fanout(layer, self.config))
                 self.num_neurons.append(np.prod(layer.output_shape[1:]))
                 if hasattr(layer, 'bias') and layer.bias is not None and \
-                        any(k.get_value(layer.bias)):
+                        any(keras.backend.get_value(layer.bias)):
                     print("Detected layer with biases: {}".format(layer.name))
                     self.num_neurons_with_bias.append(self.num_neurons[-1])
                 else:
@@ -1161,8 +1164,10 @@ def build_convolution(layer, delay, transpose_kernel=False):
     for i in range(len(biases)):
         i_offset[i:(i + 1) * n] = biases[i]
 
-    nx = layer.input_shape[3]  # Width of feature map
-    ny = layer.input_shape[2]  # Height of feature map
+    ii = 1 if keras.backend.image_data_format() == 'channels_first' else 0
+
+    nx = layer.input_shape[2 + ii]  # Width of feature map
+    ny = layer.input_shape[1 + ii]  # Height of feature map
     kx, ky = layer.kernel_size  # Width and height of kernel
     px = int((kx - 1) / 2)  # Zero-padding columns
     py = int((ky - 1) / 2)  # Zero-padding rows
