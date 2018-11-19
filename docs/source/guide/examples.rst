@@ -59,6 +59,15 @@ to test.
 Optionally, we can ask the toolbox to ``output`` plots and save some quantities
 that were monitored during the simulation to disk.
 
+.. note:: The model ``98.96.h5`` in the example above was trained using Keras
+   version <= 2.1.6. If you installed the toolbox using a newer Keras version,
+   this model may show a drop in accuracy because of a change in the Flatten
+   layer. Downgrade Keras to maintain accuracy, or set ``filename_ann = 99.14``
+   to use a model trained with Keras 2.2.4.
+
+.. note:: If you plan on simulating the converted model on a pyNN simulator
+   (Nest, Brian, ...), please have a look at `github issue #25 <https://github.com/NeuromorphicProcessorProject/snn_toolbox/issues/25>`_.
+
 Caffe
 .....
 

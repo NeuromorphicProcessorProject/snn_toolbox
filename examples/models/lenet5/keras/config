@@ -1,6 +1,6 @@
 [paths]
 dataset_path = %(path_wd)s/../../../datasets/mnist
-filename_ann = 99.14
+filename_ann = 98.96
 
 [tools]
 evaluate_ann = True
