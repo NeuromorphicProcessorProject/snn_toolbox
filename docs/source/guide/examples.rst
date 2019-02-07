@@ -7,11 +7,11 @@ To set up an :doc:`experiment <running>` with the SNN toolbox, we need to create
 a config file as described in :doc:`settings <configuration>`. Here we show a
 number of examples of such configuration files.
 
-    A. `LeNet on MNIST <ExampleA>`_
-    B. `BinaryConnect on CIFAR-10 <ExampleB>`_
-    C. `BinaryNet on CIFAR-10 <ExampleC>`_
-    D. `VGG-16 on ImageNet <ExampleD>`_
-    E. `Inception-V3 on ImageNet <ExampleE>`_
+    A. `LeNet on MNIST <ExampleA_>`_
+    B. `BinaryConnect on CIFAR-10 <ExampleB_>`_
+    C. `BinaryNet on CIFAR-10 <ExampleC_>`_
+    D. `VGG-16 on ImageNet <ExampleD_>`_
+    E. `Inception-V3 on ImageNet <ExampleE_>`_
 
 They are stored in the ``examples`` subdirectory of the repository root, and
 should also be included in the installation. They contain the network
