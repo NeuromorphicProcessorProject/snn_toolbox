@@ -65,7 +65,8 @@ def test_full(config, queue=None):
 
     normset, testset = get_dataset(config)
 
-    if config.getboolean('tools', 'convert') and not is_stop(queue):
+    parsed_model = None
+    if config.getboolean('tools', 'parse') and not is_stop(queue):
 
         # ___________________________ LOAD MODEL _____________________________ #
 
@@ -106,7 +107,22 @@ def test_full(config, queue=None):
             os.path.join(config.get('paths', 'path_wd'),
                          config.get('paths', 'filename_parsed_model') + '.h5'))
 
-        # ____________________________ CONVERT _______________________________ #
+    # ______________________________ CONVERT _________________________________ #
+
+    if config.getboolean('tools', 'convert') and not is_stop(queue):
+        if parsed_model is None:
+            from snntoolbox.parsing.model_libs.keras_input_lib import load
+            try:
+                parsed_model = load(
+                    config.get('paths', 'path_wd'),
+                    config.get('paths', 'filename_parsed_model'),
+                    filepath_custom_objects=
+                    config.get('paths', 'filepath_custom_objects'))['model']
+            except FileNotFoundError:
+                print("Could not find parsed model {} in path {}. Consider "
+                      "setting `parse = True` in your config file.".format(
+                        config.get('paths', 'path_wd'),
+                        config.get('paths', 'filename_parsed_model')))
 
         spiking_model.build(parsed_model)
 
@@ -234,7 +250,7 @@ def load_config(filepath):
     try:
         import configparser
     except ImportError:
-        # noinspection PyPep8Naming
+        # noinspection PyPep8Naming,PyUnresolvedReferences
         import ConfigParser as configparser
         # noinspection PyUnboundLocalVariable
         configparser = configparser
@@ -301,7 +317,7 @@ def update_setup(config_filepath):
     # Warn user that it is not possible to use Brian2 simulator by loading a
     # pre-converted network from disk.
     if simulator == 'brian2' and not config.getboolean('tools', 'convert'):
-        print(dedent("""\ \n
+        print(dedent("""\n
             SNN toolbox Warning: When using Brian 2 simulator, you need to
             convert the network each time you start a new session. (No
             saving/reloading methods implemented.) Setting convert = True.
