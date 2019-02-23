@@ -116,6 +116,7 @@ class AbstractModelParser:
             # Absorb BatchNormalization layer into parameters of previous layer
             if layer_type == 'BatchNormalization':
                 parameters_bn = list(self.get_batchnorm_parameters(layer))
+                parameters_bn, axis = parameters_bn[:-1], parameters_bn[-1]
                 inbound = self.get_inbound_layers_with_parameters(layer)
                 assert len(inbound) == 1, \
                     "Could not find unique layer with parameters " \
@@ -124,11 +125,13 @@ class AbstractModelParser:
                 prev_layer_idx = name_map[str(id(prev_layer))]
                 parameters = list(
                     self._layer_list[prev_layer_idx]['parameters'])
+                prev_layer_type = self.get_type(prev_layer)
                 print("Absorbing batch-normalization parameters into " +
-                      "parameters of previous {}.".format(self.get_type(
-                          prev_layer)))
+                      "parameters of previous {}.".format(prev_layer_type))
+                axis = -2 if prev_layer_type == 'DepthwiseConv2D' else axis
                 self._layer_list[prev_layer_idx]['parameters'] = \
-                    absorb_bn_parameters(*(parameters + parameters_bn))
+                    absorb_bn_parameters(*(parameters + parameters_bn),
+                                         axis=axis)
 
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
@@ -708,14 +711,16 @@ def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
 
     # TODO: Due to some issue when porting a Keras1 GoogLeNet model to Keras2,
     # the axis is 1 when it should be -1. Need to find a way to avoid this hack.
-    if not (axis == -1 or axis == weight.ndim - 1):
-        print("Warning: Specifying a batch-normalization axis other than the "
-              "default (-1) has not been thoroughly tested yet. There might be "
-              "issues depending on the keras backend version (theano / "
-              "tensorflow) and the image_dim_ordering (channels_first / "
-              "channels_last). Make sure that the accuracy of the parsed model "
-              "matches the input model.")
-        axis = -1
+    # if not (axis == -1 or axis == weight.ndim - 1):
+    #     print("Warning: Specifying a batch-normalization axis other than the "
+    #           "default (-1) has not been thoroughly tested yet. There might "
+    #           "be issues depending on the keras backend version (theano / "
+    #           "tensorflow) and the image_dim_ordering (channels_first / "
+    #           "channels_last). Make sure that the accuracy of the parsed "
+    #           "model matches the input model.")
+    #     axis = -1
+
+    print("Using BatchNorm axis {}.".format(axis))
 
     ndim = weight.ndim
     reduction_axes = list(range(ndim))
@@ -725,7 +730,10 @@ def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
         broadcast_shape[axis] = weight.shape[axis]
         var_eps_sqrt_inv = np.reshape(var_eps_sqrt_inv, broadcast_shape)
         gamma = np.reshape(gamma, broadcast_shape)
-    bias_bn = beta + (bias - mean) * gamma * var_eps_sqrt_inv
+        beta = np.reshape(beta, broadcast_shape)
+        bias = np.reshape(bias, broadcast_shape)
+        mean = np.reshape(mean, broadcast_shape)
+    bias_bn = np.ravel(beta + (bias - mean) * gamma * var_eps_sqrt_inv)
     weight_bn = weight * gamma * var_eps_sqrt_inv
 
     return weight_bn, bias_bn

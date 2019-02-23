@@ -28,7 +28,6 @@ class ModelParser(AbstractModelParser):
         beta = np.zeros_like(mean) if layer.beta is None else \
             k.get_value(layer.beta)
         axis = layer.axis
-        print("Using BatchNorm axis {}.".format(axis))
 
         return [mean, var_eps_sqrt_inv, gamma, beta, axis]
 
