@@ -187,7 +187,10 @@ class AbstractModelParser:
             if layer_type == 'Conv2D':
                 self.parse_convolution(layer, attributes)
 
-            if layer_type in {'Dense', 'Conv2D'}:
+            if layer_type == 'DepthwiseConv2D':
+                self.parse_depthwiseconvolution(layer, attributes)
+
+            if layer_type in {'Dense', 'Conv2D', 'DepthwiseConv2D'}:
                 weights, bias = attributes['parameters']
                 if self.config.getboolean('cell', 'binarize_weights'):
                     from snntoolbox.utils.utils import binarize
@@ -510,6 +513,21 @@ class AbstractModelParser:
         pass
 
     @abstractmethod
+    def parse_depthwiseconvolution(self, layer, attributes):
+        """Parse a depthwise convolution layer.
+
+        Parameters
+        ----------
+
+        layer:
+            Layer.
+        attributes: dict
+            The layer attributes as key-value pairs in a dict.
+        """
+
+        pass
+
+    @abstractmethod
     def parse_pooling(self, layer, attributes):
         """Parse a pooling layer.
 
@@ -651,6 +669,7 @@ class AbstractModelParser:
             inbound = [parsed_layers[inb] for inb in layer.pop('inbound')]
             if len(inbound) == 1:
                 inbound = inbound[0]
+            check_for_custom_activations(layer)
             parsed_layers[layer['name']] = parsed_layer(**layer)(inbound)
 
         print("Compiling parsed model...\n")

@@ -147,10 +147,8 @@ def normalize_parameters(model, config, **kwargs):
             scale_fac = scale_facs[layer.name]
         inbound = get_inbound_layers_with_params(layer)
         if len(inbound) == 0:  # Input layer
-            # noinspection PyProtectedMember
-            input_layer = layer._inbound_nodes[0].inbound_layers[0].name
             parameters_norm = [
-                parameters[0] * scale_facs[input_layer] / scale_fac,
+                parameters[0] * scale_facs[model.layers[0].name] / scale_fac,
                 parameters[1] / scale_fac]
         elif len(inbound) == 1:
             parameters_norm = [
@@ -370,7 +368,8 @@ def get_activations_batch(ann, x_batch):
     activations_batch = []
     for layer in ann.layers:
         if layer.__class__.__name__ in ['Input', 'InputLayer', 'Flatten',
-                                        'Concatenate']:
+                                        'Concatenate', 'ZeroPadding2D',
+                                        'Reshape']:
             continue
         activations = keras.models.Model(ann.input,
                                          layer.output).predict_on_batch(x_batch)
@@ -393,4 +392,4 @@ def try_reload_activations(layer, model, x_norm, batch_size, activ_dir):
         np.savez_compressed(os.path.join(activ_dir, layer.name), activations)
     else:
         print("Loading activations stored during a previous run.")
-    return activations
+    return np.array(activations)
