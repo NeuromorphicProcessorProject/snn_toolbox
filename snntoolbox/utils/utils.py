@@ -8,6 +8,7 @@ import sys
 
 import keras
 import numpy as np
+from keras.layers import ReLU
 
 
 def get_range(start=0.0, stop=1.0, num=5, method='linear'):
@@ -416,6 +417,22 @@ class ClampedReLU:
         x = keras.backend.relu(args[0], max_value=self.max_value)
         return keras.backend.tf.where(keras.backend.less(x, self.threshold),
                                       keras.backend.zeros_like(x), x)
+
+
+class LimitedReLU(ReLU):
+    def __init__(self, cfg):
+        super(LimitedReLU, self).__init__(**cfg)
+        self.__name__ = '{}_{}_{}_LimitedReLU'.format(
+            self.negative_slope, self.max_value, self.threshold)
+
+    def get_cfg(self):
+        return self.get_config()
+
+    def set_cfg(self, cfg):
+        self.__init__(cfg)
+
+    def __call__(self, *args, **kwargs):
+        return super(LimitedReLU, self).call(args[0])
 
 
 def wilson_score(p, n):

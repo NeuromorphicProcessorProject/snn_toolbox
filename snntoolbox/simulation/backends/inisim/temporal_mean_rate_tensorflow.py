@@ -18,7 +18,8 @@ from __future__ import print_function, unicode_literals
 import numpy as np
 from future import standard_library
 from keras import backend as k
-from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
+from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, \
+    Conv2D, DepthwiseConv2D, ZeroPadding2D, Reshape
 from keras.layers import Layer, Concatenate
 
 from snntoolbox.parsing.utils import get_inbound_layers
@@ -546,6 +547,63 @@ class SpikeFlatten(Flatten):
         return self.__class__.__name__
 
 
+class SpikeZeroPadding2D(ZeroPadding2D):
+    """Spike ZeroPadding2D layer."""
+
+    def __init__(self, **kwargs):
+        kwargs.pop(str('config'))
+        ZeroPadding2D.__init__(self, **kwargs)
+
+    def call(self, x, mask=None):
+
+        return ZeroPadding2D.call(self, x)
+
+    @staticmethod
+    def get_time():
+
+        pass
+
+    @staticmethod
+    def reset(sample_idx):
+        """Reset layer variables."""
+
+        pass
+
+    @property
+    def class_name(self):
+        """Get class name."""
+
+        return self.__class__.__name__
+
+
+class SpikeReshape(Reshape):
+    """Spike Reshape layer."""
+
+    def __init__(self, **kwargs):
+        kwargs.pop(str('config'))
+        Reshape.__init__(self, **kwargs)
+
+    def call(self, x, mask=None):
+
+        return Reshape.call(self, x)
+
+    @staticmethod
+    def get_time():
+        pass
+
+    @staticmethod
+    def reset(sample_idx):
+        """Reset layer variables."""
+
+        pass
+
+    @property
+    def class_name(self):
+        """Get class name."""
+
+        return self.__class__.__name__
+
+
 class SpikeDense(Dense, SpikeLayer):
     """Spike Dense layer."""
 
@@ -599,6 +657,34 @@ class SpikeConv2D(Conv2D, SpikeLayer):
     def call(self, x, mask=None):
 
         return Conv2D.call(self, x)
+
+
+class SpikeDepthwiseConv2D(DepthwiseConv2D, SpikeLayer):
+    """Spike 2D DepthwiseConvolution."""
+
+    def build(self, input_shape):
+        """Creates the layer weights.
+        Must be implemented on all layers that have weights.
+
+        Parameters
+        ----------
+
+        input_shape: Union[list, tuple, Any]
+            Keras tensor (future input to layer) or list/tuple of Keras tensors
+            to reference for weight shape computations.
+        """
+
+        DepthwiseConv2D.build(self, input_shape)
+        self.init_neurons(input_shape)
+
+        if self.config.getboolean('cell', 'bias_relaxation'):
+            self.b0 = k.variable(k.get_value(self.bias))
+            self.add_update([(self.bias, self.update_b())])
+
+    @spike_call
+    def call(self, x, mask=None):
+
+        return DepthwiseConv2D.call(self, x)
 
 
 class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
@@ -657,8 +743,11 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
 
 
 custom_layers = {'SpikeFlatten': SpikeFlatten,
+                 'SpikeReshape': SpikeReshape,
+                 'SpikeZeroPadding2D': SpikeZeroPadding2D,
                  'SpikeDense': SpikeDense,
                  'SpikeConv2D': SpikeConv2D,
+                 'SpikeDepthwiseConv2D': SpikeDepthwiseConv2D,
                  'SpikeAveragePooling2D': SpikeAveragePooling2D,
                  'SpikeMaxPooling2D': SpikeMaxPooling2D,
                  'SpikeConcatenate': SpikeConcatenate}
