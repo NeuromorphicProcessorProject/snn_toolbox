@@ -1014,6 +1014,11 @@ def get_fanout(layer, config):
             fanout += next_layer.units
         elif 'Pool' in next_layer.name:
             fanout += 1
+        elif 'DepthwiseConv' in next_layer.name:
+            if has_stride_unity(next_layer):
+                fanout += np.prod(next_layer.kernel_size)
+            else:
+                fanout += get_fanout_array(layer, next_layer, True)
         elif 'Conv' in next_layer.name:
             if has_stride_unity(next_layer):
                 fanout += np.prod(next_layer.kernel_size) * next_layer.filters
@@ -1029,15 +1034,18 @@ def has_stride_unity(layer):
     return all([s == 1 for s in layer.strides])
 
 
-def get_fanout_array(layer_pre, layer_post):
+def get_fanout_array(layer_pre, layer_post, is_depthwise_conv=False):
     """
     Return an array of the same shape as ``layer_pre``, where each entry gives
     the number of outgoing connections of a neuron. In convolution layers where
     the post-synaptic layer has stride > 1, the fan-out varies between neurons.
     """
 
-    nx = layer_post.output_shape[3]  # Width of feature map
-    ny = layer_post.output_shape[2]  # Height of feature map
+    ax = 1 if keras.backend.image_data_format() == 'channels_first' else 0
+
+    nx = layer_post.output_shape[2 + ax]  # Width of feature map
+    ny = layer_post.output_shape[1 + ax]  # Height of feature map
+    nz = layer_post.output_shape[ax]  # Number of channels
     kx, ky = layer_post.kernel_size  # Width and height of kernel
     px = int((kx - 1) / 2) if layer_post.padding == 'valid' else 0
     py = int((ky - 1) / 2) if layer_post.padding == 'valid' else 0
@@ -1046,26 +1054,32 @@ def get_fanout_array(layer_pre, layer_post):
 
     fanout = np.zeros(layer_pre.output_shape[1:])
 
-    for x_pre in range(fanout.shape[1]):
-        for y_pre in range(fanout.shape[2]):
+    for y_pre in range(fanout.shape[0 + ax]):
+        y_post = [int((y_pre + py) / sy)]
+        wy = (y_pre + py) % sy
+        i = 1
+        while wy + i * sy < ky:
+            y = y_post[0] - i
+            if 0 <= y < ny:
+                y_post.append(y)
+            i += 1
+        for x_pre in range(fanout.shape[1 + ax]):
             x_post = [int((x_pre + px) / sx)]
-            y_post = [int((y_pre + py) / sy)]
-            wx = [(x_pre + px) % sx]
-            wy = [(y_pre + py) % sy]
+            wx = (x_pre + px) % sx
             i = 1
-            while wx[0] + i * sx < kx:
+            while wx + i * sx < kx:
                 x = x_post[0] - i
                 if 0 <= x < nx:
                     x_post.append(x)
                 i += 1
-            i = 1
-            while wy[0] + i * sy < ky:
-                y = y_post[0] - i
-                if 0 <= y < ny:
-                    y_post.append(y)
-                i += 1
 
-            fanout[:, x_pre, y_pre] = len(x_post) * len(y_post)
+            if ax:
+                fanout[:, y_pre, x_pre] = len(x_post) * len(y_post)
+            else:
+                fanout[y_pre, x_pre, :] = len(x_post) * len(y_post)
+
+    if not is_depthwise_conv:
+        fanout *= nz
 
     return fanout
 
