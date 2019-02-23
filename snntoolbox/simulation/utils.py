@@ -190,7 +190,7 @@ class AbstractSNN:
         Parameters
         ----------
 
-        input_shape: tuple
+        input_shape: list | tuple
             Input shape to the network, including the batch size as first
             dimension.
         """
@@ -649,7 +649,9 @@ class AbstractSNN:
                     num_samples_seen, top1acc_moving, top5acc_moving)))
 
             # Evaluate ANN on the same batch as SNN for a direct comparison.
-            score = self.parsed_model.test_on_batch(x_b_l, y_b_l)
+            score = self.parsed_model.evaluate(x_b_l, y_b_l,
+                                               self.parsed_model.input_shape[0],
+                                               verbose=0)
             score1_ann += score[1] * self.batch_size
             score5_ann += score[2] * self.batch_size
             self.top1err_ann = 1 - score1_ann / num_samples_seen
