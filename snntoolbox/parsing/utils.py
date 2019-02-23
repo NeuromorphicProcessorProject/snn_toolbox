@@ -1181,20 +1181,73 @@ def get_custom_activation(activation_str):
     return activation, activation_str
 
 
-def get_custom_activations_dict():
+def get_custom_activations_dict(filepath=None):
     """
     Import all implemented custom activation functions so they can be used when
     loading a Keras model.
+
+    Parameters
+    ----------
+
+    filepath : Optional[str]
+        Path to json file containing additional custom objects.
     """
 
-    from snntoolbox.utils.utils import binary_sigmoid, binary_tanh, ClampedReLU
+    from snntoolbox.utils.utils import binary_sigmoid, binary_tanh, \
+        ClampedReLU, LimitedReLU
 
     # Todo: We should be able to load a different activation for each layer.
     # Need to remove this hack:
     activation_str = 'relu_Q1.4'
     activation = get_quantized_activation_function_from_string(activation_str)
 
-    return {'binary_sigmoid': binary_sigmoid,
-            'binary_tanh': binary_tanh,
-            'clamped_relu': ClampedReLU(),  # Todo: This should work regardless of the specific attributes of the ClampedReLU class used during training.
-            activation_str: activation}
+    custom_objects = {'binary_sigmoid': binary_sigmoid,
+                      'binary_tanh': binary_tanh,
+                      # Todo: This should work regardless of the specific
+                      #  attributes of the ClampedReLU class used during
+                      #  training.
+                      'clamped_relu': ClampedReLU(),
+                      'LimitedReLU': LimitedReLU,
+                      'relu6': LimitedReLU({'max_value': 6}),
+                      activation_str: activation}
+
+    if filepath is not None and filepath != '':
+        import json
+        with open(filepath) as f:
+            kwargs = json.load(f)
+
+        for key in kwargs:
+            if 'LimitedReLU' in key:
+                custom_objects[key] = LimitedReLU(kwargs[key])
+
+    return custom_objects
+
+
+def check_for_custom_activations(layer_attributes):
+    """
+    Check if the layer contains a custom activation function, and deal with it
+    appropriately.
+
+    Parameters
+    ----------
+
+    layer_attributes: dict
+        A dictionary containing the attributes of the layer.
+    """
+
+    if 'activation' not in layer_attributes.keys():
+        return
+
+    activation = layer_attributes.get('activation')
+
+    if 'LimitedReLU' in activation:
+        from snntoolbox.utils.utils import LimitedReLU
+        args = activation.split('_')[:-1]
+        kwargs = {key: float(arg) for key, arg in
+                  zip(['negative_slope', 'max_value', 'threshold'], args)}
+        layer_attributes['activation'] = LimitedReLU(kwargs)
+
+        raise NotImplementedError("The parsing of MobileNet (with "
+                                  "DepthwiseConv2D and ReLU6 layers) is not "
+                                  "fully implemented yet in this version of "
+                                  "the toolbox.")

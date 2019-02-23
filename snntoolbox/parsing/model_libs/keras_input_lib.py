@@ -85,7 +85,7 @@ class ModelParser(AbstractModelParser):
         pass
 
 
-def load(path, filename):
+def load(path, filename, **kwargs):
     """Load network from file.
 
     Parameters
@@ -126,8 +126,10 @@ def load(path, filename):
                       ['accuracy', metrics.top_k_categorical_accuracy])
     else:
         from snntoolbox.parsing.utils import get_custom_activations_dict
-        model = models.load_model(filepath + '.h5',
-                                  get_custom_activations_dict())
+        filepath_custom_objects = kwargs.get('filepath_custom_objects', None)
+        model = models.load_model(
+            filepath + '.h5',
+            get_custom_activations_dict(filepath_custom_objects))
         model.compile(model.optimizer, model.loss,
                       ['accuracy', metrics.top_k_categorical_accuracy])
 

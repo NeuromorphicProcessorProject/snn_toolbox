@@ -7,6 +7,7 @@ filename_ann =
 filename_parsed_model =
 filename_snn =
 filename_clamp_indices =
+filepath_custom_objects =
 class_idx_path =
 
 [input]
