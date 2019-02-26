@@ -542,6 +542,11 @@ def initialize_simulator(config):
         # resets the simulator entirely, destroying any network that may
         # have been created in the meantime."
         sim.setup(timestep=config.getfloat('simulation', 'dt'))
+
+        # if simulator == 'spiNNaker':
+        #     sim.set_number_of_neurons_per_core(sim.SpikeSourcePoisson, 100)
+        #     sim.set_number_of_neurons_per_core(sim.IF_cond_exp, 140)
+
         return sim
     if simulator == 'brian2':
         return import_module('brian2')

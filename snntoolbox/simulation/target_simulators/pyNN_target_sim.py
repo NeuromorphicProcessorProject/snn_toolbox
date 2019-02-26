@@ -52,8 +52,6 @@ class SNN(AbstractSNN):
         AbstractSNN.__init__(self, config, queue)
 
         self.layers = []
-        self._conns = []  # Temporary container for layer connections.
-        self._biases = []  # Temporary container for layer biases.
         self.connections = []  # Final container for all layers.
         self.cellparams = {key: config.getfloat('cell', key) for key in
                            cellparams_pyNN}
@@ -73,7 +71,6 @@ class SNN(AbstractSNN):
         if 'Flatten' in layer.__class__.__name__:
             return
 
-        self._conns = []
         self.layers.append(self.sim.Population(
             np.asscalar(np.prod(layer.output_shape[1:], dtype=np.int)),
             self.sim.IF_cond_exp, self.cellparams, label=layer.name))
@@ -95,15 +92,16 @@ class SNN(AbstractSNN):
                           "activation instead.", RuntimeWarning)
 
         weights, biases = layer.get_weights()
-        self._biases = np.array(biases, 'float64')
-        self.set_biases()
+        biases = np.array(biases, 'float64')
+        self.set_biases(biases)
         delay = self.config.getfloat('cell', 'delay')
+        connections = []
         for i in range(weights.shape[0]):
             for j in range(weights.shape[1]):
-                self._conns.append((i, j, weights[i, j], delay))
+                connections.append((i, j, weights[i, j], delay))
         self.connections.append(self.sim.Projection(
             self.layers[-2], self.layers[-1],
-            self.sim.FromListConnector(self._conns, ['weight', 'delay'])))
+            self.sim.FromListConnector(connections, ['weight', 'delay'])))
 
     def build_convolution(self, layer):
         from snntoolbox.simulation.utils import build_convolution
@@ -111,21 +109,22 @@ class SNN(AbstractSNN):
         delay = self.config.getfloat('cell', 'delay')
         transpose_kernel = \
             self.config.get('simulation', 'keras_backend') == 'tensorflow'
-        self._conns, self._biases = build_convolution(layer, delay,
-                                                      transpose_kernel)
-        self.set_biases()
+        connections, biases = build_convolution(layer, delay, transpose_kernel)
+
+        self.set_biases(biases)
+
         self.connections.append(self.sim.Projection(
             self.layers[-2], self.layers[-1],
-            self.sim.FromListConnector(self._conns, ['weight', 'delay'])))
+            self.sim.FromListConnector(connections, ['weight', 'delay'])))
 
     def build_pooling(self, layer):
         from snntoolbox.simulation.utils import build_pooling
 
         delay = self.config.getfloat('cell', 'delay')
-        self._conns = build_pooling(layer, delay)
+        connections = build_pooling(layer, delay)
         self.connections.append(self.sim.Projection(
             self.layers[-2], self.layers[-1],
-            self.sim.FromListConnector(self._conns, ['weight', 'delay'])))
+            self.sim.FromListConnector(connections, ['weight', 'delay'])))
 
     def compile(self):
 
@@ -135,8 +134,7 @@ class SNN(AbstractSNN):
 
         if self._poisson_input:
             rates = kwargs[str('x_b_l')].flatten()
-            for neuron_idx, neuron in enumerate(self.layers[0]):
-                neuron.rate = rates[neuron_idx] / self.rescale_fac * 1000
+            self.layers[0].set(rate=list(rates / self.rescale_fac * 1000))
         elif self._dataset_format == 'aedat':
             raise NotImplementedError
         else:
@@ -177,14 +175,14 @@ class SNN(AbstractSNN):
     def load(self, path, filename):
 
         self.layers = self.load_assembly(path, filename)
-        for i in range(len(self.layers)-1):
-            filepath = os.path.join(path, self.layers[i+1].label)
+        for i in range(len(self.layers) - 1):
+            filepath = os.path.join(path, self.layers[i + 1].label)
             assert os.path.isfile(filepath), \
                 "Connections were not found at specified location."
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 warnings.warn('deprecated', UserWarning)
-                self.sim.Projection(self.layers[i], self.layers[i+1],
+                self.sim.Projection(self.layers[i], self.layers[i + 1],
                                     self.sim.FromFileConnector(filepath))
 
     def init_cells(self):
@@ -196,7 +194,7 @@ class SNN(AbstractSNN):
 
         for layer in self.layers[1:]:
             layer.set(**self.cellparams)
-            layer.initialize(v=self.layers[1].get('v_rest'))
+            layer.initialize(v=layer.get('v_rest'))
             layer.record(vars_to_record)
 
         # The spikes of the last layer are recorded by default because they
@@ -205,7 +203,7 @@ class SNN(AbstractSNN):
             vars_to_record.append(str('spikes'))
             self.layers[-1].record(vars_to_record)
 
-    def set_biases(self):
+    def set_biases(self, biases):
         """Set biases.
 
         Notes
@@ -214,12 +212,12 @@ class SNN(AbstractSNN):
         This has not been tested yet.
         """
 
-        if not np.any(self._biases):
+        if not np.any(biases):
             return
 
         warnings.warn("Biases are implemented but might have no effect. "
                       "Please check!", RuntimeWarning)
-        self.layers[-1].set(i_offset=self._biases * self._dt)
+        self.layers[-1].set(i_offset=biases*self._dt)
 
     def get_vars_to_record(self):
         """Get variables to record during simulation.
@@ -324,7 +322,7 @@ class SNN(AbstractSNN):
         s['labels'] = labels  # List of population labels describing the net.
         s['variables'] = variables  # List of variable names.
         s['size'] = len(self.layers)  # Number of populations in assembly.
-        cPickle.dump(s, open(filepath, 'wb'))
+        cPickle.dump(s, open(filepath, 'wb'), -1)
 
     def save_connections(self, path):
         """Write parameters of a neural network to disk.
