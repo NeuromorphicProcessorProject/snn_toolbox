@@ -103,9 +103,9 @@ def test_full(config, queue=None):
                 'simulation', 'batch_size'), num_to_test, **testset)
 
         # Write parsed model to disk
-        parsed_model.save(
+        parsed_model.save(str(
             os.path.join(config.get('paths', 'path_wd'),
-                         config.get('paths', 'filename_parsed_model') + '.h5'))
+                         config.get('paths', 'filename_parsed_model') + '.h5')))
 
     # ______________________________ CONVERT _________________________________ #
 
@@ -116,8 +116,8 @@ def test_full(config, queue=None):
                 parsed_model = load(
                     config.get('paths', 'path_wd'),
                     config.get('paths', 'filename_parsed_model'),
-                    filepath_custom_objects=
-                    config.get('paths', 'filepath_custom_objects'))['model']
+                    filepath_custom_objects=config.get(
+                        'paths', 'filepath_custom_objects'))['model']
             except FileNotFoundError:
                 print("Could not find parsed model {} in path {}. Consider "
                       "setting `parse = True` in your config file.".format(
@@ -354,7 +354,7 @@ def update_setup(config_filepath):
         assert os.path.isfile(prototxt_filepath), \
             "File {} not found.".format(prototxt_filepath)
     elif model_lib == 'keras':
-        h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
+        h5_filepath = str(os.path.join(path_wd, filename_ann + '.h5'))
         assert os.path.isfile(h5_filepath), \
             "File {} not found.".format(h5_filepath)
         json_file = filename_ann + '.json'

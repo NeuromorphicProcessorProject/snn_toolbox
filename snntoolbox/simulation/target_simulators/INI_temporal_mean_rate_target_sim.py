@@ -237,7 +237,7 @@ class SNN(AbstractSNN):
 
     def save(self, path, filename):
 
-        filepath = os.path.join(path, filename + '.h5')
+        filepath = str(os.path.join(path, filename + '.h5'))
         print("Saving model to {}...\n".format(filepath))
         self.snn.save(filepath, self.config.getboolean('output', 'overwrite'))
 

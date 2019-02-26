@@ -119,7 +119,7 @@ def load(path, filename, **kwargs):
     import os
     from keras import models, metrics
 
-    filepath = os.path.join(path, filename)
+    filepath = str(os.path.join(path, filename))
 
     if os.path.exists(filepath + '.json'):
         model = models.model_from_json(open(filepath + '.json').read())
@@ -133,6 +133,8 @@ def load(path, filename, **kwargs):
     else:
         from snntoolbox.parsing.utils import get_custom_activations_dict
         filepath_custom_objects = kwargs.get('filepath_custom_objects', None)
+        if filepath_custom_objects is not None:
+            filepath_custom_objects = str(filepath_custom_objects)  # python 2
         model = models.load_model(
             filepath + '.h5',
             get_custom_activations_dict(filepath_custom_objects))

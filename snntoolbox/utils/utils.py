@@ -8,7 +8,6 @@ import sys
 
 import keras
 import numpy as np
-from keras.layers import ReLU
 
 
 def get_range(start=0.0, stop=1.0, num=5, method='linear'):
@@ -419,7 +418,7 @@ class ClampedReLU:
                                       keras.backend.zeros_like(x), x)
 
 
-class LimitedReLU(ReLU):
+class LimitedReLU(keras.layers.ReLU):
     def __init__(self, cfg):
         super(LimitedReLU, self).__init__(**cfg)
         self.__name__ = '{}_{}_{}_LimitedReLU'.format(
