@@ -132,8 +132,8 @@ spiking_layers = {'Dense', 'Conv2D', 'DepthwiseConv2D', 'MaxPooling2D',
 # Layers that can be implemented by our spiking neuron simulators:
 snn_layers = %(spiking_layers)s | {'Reshape', 'Flatten', 'Concatenate',
                                    'ZeroPadding2D'}
-pyNN_keys = {'v_reset', 'v_rest', 'e_rev_E', 'e_rev_I', 'i_offset', 'cm',
-             'tau_m', 'tau_syn_E', 'tau_syn_I', 'delay'}
+cellparams_pyNN = {'v_thresh', 'v_reset', 'v_rest', 'cm', 'tau_refrac',
+                   'tau_m', 'tau_syn_E', 'tau_syn_I'}
 log_vars = {'activations_n_b_l', 'spiketrains_n_b_l_t', 'input_b_l_t',
             'mem_n_b_l_t', 'synaptic_operations_b_t', 'neuron_operations_b_t',
             'all'}

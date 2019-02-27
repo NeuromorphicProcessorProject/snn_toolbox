@@ -23,9 +23,6 @@ from pyNN.utility import ProgressBar
 
 standard_library.install_aliases()
 
-cellparams_pyNN = {'v_thresh', 'v_reset', 'v_rest', 'e_rev_E', 'e_rev_I', 'cm',
-                   'i_offset', 'tau_refrac', 'tau_m', 'tau_syn_E', 'tau_syn_I'}
-
 
 class SNN(AbstractSNN):
     """Class to hold the compiled spiking neural network.
@@ -54,9 +51,14 @@ class SNN(AbstractSNN):
         AbstractSNN.__init__(self, config, queue)
 
         self.layers = []
-        self.connections = []  # Final container for all layers.
+        self.connections = []
         self.cellparams = {key: config.getfloat('cell', key) for key in
-                           cellparams_pyNN}
+                           config_string_to_set_of_strings(config.get(
+                               'restrictions', 'cellparams_pyNN'))}
+        if 'i_offset' in self.cellparams.keys():
+            print("SNN toolbox WARNING: The cell parameter 'i_offset' is "
+                  "reserved for the biases and should not be set globally.")
+            self.cellparams.pop('i_offset')
 
     @property
     def is_parallelizable(self):
@@ -218,9 +220,7 @@ class SNN(AbstractSNN):
         if not np.any(biases):
             return
 
-        warnings.warn("Biases are implemented but might have no effect. "
-                      "Please check!", RuntimeWarning)
-        self.layers[-1].set(i_offset=biases*self._dt)
+        self.layers[-1].set(i_offset=biases*self._dt/1e2)
 
     def get_vars_to_record(self):
         """Get variables to record during simulation.
