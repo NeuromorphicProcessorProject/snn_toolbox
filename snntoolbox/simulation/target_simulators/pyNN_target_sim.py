@@ -18,6 +18,8 @@ from six.moves import cPickle
 
 from snntoolbox.utils.utils import confirm_overwrite
 from snntoolbox.simulation.utils import AbstractSNN
+from snntoolbox.bin.utils import config_string_to_set_of_strings
+from pyNN.utility import ProgressBar
 
 standard_library.install_aliases()
 
@@ -146,8 +148,9 @@ class SNN(AbstractSNN):
             except AttributeError:
                 raise NotImplementedError
 
-        self.sim.run(self._duration - self._dt)
-
+        self.sim.run(self._duration - self._dt,
+                     callbacks=[MyProgressBar(self._dt, self._duration)])
+        print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.layers)
 
         return output_b_l_t
@@ -412,3 +415,18 @@ class SNN(AbstractSNN):
 
     def set_spiketrain_stats_input(self):
         AbstractSNN.set_spiketrain_stats_input(self)
+
+
+class MyProgressBar(object):
+    """
+    A callback which draws a progress bar in the terminal.
+    """
+
+    def __init__(self, interval, t_stop):
+        self.interval = interval
+        self.t_stop = t_stop
+        self.pb = ProgressBar(width=int(t_stop / interval), char=".")
+
+    def __call__(self, t):
+        self.pb(t / self.t_stop)
+        return t + self.interval

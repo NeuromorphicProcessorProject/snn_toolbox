@@ -125,6 +125,8 @@ class SNN(AbstractSNN):
         output_b_l_t = np.zeros((self.batch_size, self.num_classes,
                                  self._num_timesteps))
 
+        print("Current accuracy of batch:")
+
         # Loop through simulation time.
         self.avg_rate = 0
         self._input_spikecount = 0
