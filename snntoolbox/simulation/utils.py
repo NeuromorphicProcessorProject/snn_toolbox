@@ -610,7 +610,6 @@ class AbstractSNN:
             # Main step: Run the network on a batch of samples for the duration
             # of the simulation.
             print("\nStarting new simulation...\n")
-            print("Current accuracy of batch:")
             output_b_l_t = self.simulate(**data_batch_kwargs)
 
             # Get classification result by comparing the guessed class (i.e. the
@@ -1161,10 +1160,8 @@ def build_convolution(layer, delay, transpose_kernel=False):
         weights = convert_kernel(weights)
 
     # Biases.
-    i_offset = np.empty(np.prod(layer.output_shape[1:]))
-    n = int(len(i_offset) / len(biases))
-    for i in range(len(biases)):
-        i_offset[i:(i + 1) * n] = biases[i]
+    n = int(np.prod(layer.output_shape[1:]) / len(biases))
+    i_offset = np.repeat(biases, n)
 
     ii = 1 if keras.backend.image_data_format() == 'channels_first' else 0
 
