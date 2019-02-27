@@ -546,6 +546,33 @@ def initialize_simulator(config):
         #     sim.set_number_of_neurons_per_core(sim.SpikeSourcePoisson, 100)
         #     sim.set_number_of_neurons_per_core(sim.IF_curr_exp, 140)
 
+        delay = config.getfloat('cell', 'delay')
+        tau_refrac = config.getfloat('cell', 'tau_refrac')
+        dt = config.getfloat('simulation', 'dt')
+        if tau_refrac < dt / 1e3:
+            print("\nSNN toolbox WARNING: Refractory period ({}) must be at "
+                  "least one time step / 1e3 ({}). Setting tau_refrac = dt / "
+                  "1e3.".format(tau_refrac, dt / 1e3))
+            config.set('cell', 'tau_refrac', str(dt / 1e3))
+        elif tau_refrac > dt / 1e3:
+            print("\nSNN toolbox WARNING: We recommend to set the refractory "
+                  "period ({}) to be as small as possible (one time step / 1e3"
+                  ", {}).".format(tau_refrac, dt / 1e3))
+        if delay < dt:
+            print("\nSNN toolbox WARNING: Delay ({}) must be at least one "
+                  "time step ({}). Setting delay = dt.".format(delay, dt))
+            config.set('cell', 'delay', str(dt))
+        elif delay > dt:
+            print("\nSNN toolbox WARNING: We recommend to set the delay ({}) "
+                  "to be as small as possible (one time step, {}).".format(
+                    delay, dt))
+        v_thresh = config.getfloat('cell', 'v_thresh')
+        if v_thresh != 0.01:
+            print("\nSNN toolbox WARNING: For optimal correspondence between "
+                  "the original ANN and the converted SNN simulated on pyNN, "
+                  "the threshold should be 0.01. Overriding user-set value {}."
+                  "".format(v_thresh))
+            config.set('cell', 'v_thresh', '0.01')
         return sim
     if simulator == 'brian2':
         return import_module('brian2')

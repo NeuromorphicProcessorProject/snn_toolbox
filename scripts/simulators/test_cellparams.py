@@ -25,47 +25,48 @@ if __name__ == '__main__':
         plt.legend(loc="upper left")
         plt.ylim(-0.1, num + 0.1)
 
-    cellparams = {'v_thresh': 1,
+    cellparams = {'v_thresh': 0.01,
                   'v_reset': 0,
                   'v_rest': 0,
-                  'e_rev_E': 10,
-                  'e_rev_I': -10,
                   'i_offset': 0,
-                  'cm': 0.09,
+                  'cm': 1,
                   'tau_m': 1000,
-                  'tau_refrac': 0,
+                  'tau_refrac': 0.001,
                   'tau_syn_E': 0.01,
                   'tau_syn_I': 0.01}
-    simparams = {'duration': 100,
+    simparams = {'duration': 10,
                  'dt': 1,
                  'delay': 1,
-                 'input_rate': 1000}
+                 'input_rate': 0}
 
-    sim.setup()
+    sim.setup(simparams['dt'], min_delay=simparams['dt'])
 
     inp = sim.Population(1, sim.SpikeSourcePoisson(
         duration=simparams['duration'], rate=simparams['input_rate']))
 
     inp.label = 'input cell'
-    outp = sim.Population(1, sim.IF_cond_exp, cellparams=cellparams)
+    outp = sim.Population(1, sim.IF_curr_exp, cellparams=cellparams)
     outp.label = 'output cell'
 
     inp.record('spikes')
     outp.record(['v', 'spikes'])
 
-    synapse = sim.StaticSynapse(weight=0.5, delay=simparams['delay'])
+    synapse = sim.StaticSynapse(weight=1, delay=simparams['delay'])
 
     connector = sim.OneToOneConnector()
 
     connection = sim.Projection(inp, outp, connector, synapse)
 
+    def report_time(t):
+        print("Time: {}".format(t))
+        return t + simparams['dt']
+
     par = 'i_offset'
-    for p in [0, 0.1, 1]:
+    for p in [0.01]:
         outp.set(**{par: p})
         cellparams[par] = p
-        inp.set(rate=simparams['input_rate'])
         outp.initialize(v=cellparams['v_rest'])
-        sim.run(simparams['duration'])
+        sim.run(simparams['duration'], callbacks=[report_time])
         sim.reset(annotations={par: p})
 
     inp_data = inp.get_data()
@@ -83,7 +84,7 @@ if __name__ == '__main__':
 
     plt.figure()
     for segment in outp_data.segments:
-        vm = segment.analogsignalarrays[0]
+        vm = segment.analogsignals[0]
         plt.plot(vm.times, vm,
                  label=str(segment.annotations[par]))
     plt.plot(vm.times, np.ones_like(vm.times) * cellparams['v_thresh'], 'r--',
