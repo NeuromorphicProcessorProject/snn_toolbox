@@ -203,6 +203,8 @@ def run_parameter_sweep(config, queue):
                     param_name))
                 print(['{:.2f}'.format(i) for i in param_values])
                 print('\n')
+            elif len(param_values) == 0:
+                param_values.append(eval(config.get('cell', param_name)))
 
             # Loop over parameter to sweep
             for p in param_values:
@@ -494,9 +496,6 @@ def update_setup(config_filepath):
     except KeyError:
         print("Unkown parameter name {} to sweep.".format(param_name))
         raise RuntimeError
-    if not eval(config.get('parameter_sweep', 'param_values')):
-        config.set('parameter_sweep', 'param_values',
-                   str([eval(config.get('cell', param_name))]))
 
     spike_code = config.get('conversion', 'spike_code')
     spike_codes = config_string_to_set_of_strings(config.get('restrictions',
