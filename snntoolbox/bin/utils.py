@@ -544,7 +544,7 @@ def initialize_simulator(config):
 
         # if simulator == 'spiNNaker':
         #     sim.set_number_of_neurons_per_core(sim.SpikeSourcePoisson, 100)
-        #     sim.set_number_of_neurons_per_core(sim.IF_cond_exp, 140)
+        #     sim.set_number_of_neurons_per_core(sim.IF_curr_exp, 140)
 
         return sim
     if simulator == 'brian2':
