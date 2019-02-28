@@ -66,9 +66,11 @@ class SNN(AbstractSNN):
 
     def add_input_layer(self, input_shape):
 
+        celltype = self.sim.SpikeSourcePoisson() if self._poisson_input \
+            else self.sim.SpikeSourceArray()
         self.layers.append(self.sim.Population(
-            np.asscalar(np.prod(input_shape[1:], dtype=np.int)),
-            self.sim.SpikeSourcePoisson(), label='InputLayer'))
+            np.asscalar(np.prod(input_shape[1:], dtype=np.int)), celltype,
+            label='InputLayer'))
 
     def add_layer(self, layer):
 
@@ -136,19 +138,16 @@ class SNN(AbstractSNN):
 
     def simulate(self, **kwargs):
 
+        x_flat = kwargs[str('x_b_l')].flatten()
         if self._poisson_input:
-            rates = kwargs[str('x_b_l')].flatten()
-            self.layers[0].set(rate=list(rates / self.rescale_fac * 1000))
+            self.layers[0].set(rate=list(x_flat / self.rescale_fac * 1000))
         elif self._dataset_format == 'aedat':
             raise NotImplementedError
         else:
-            constant_input_currents = kwargs[str('x_b_l')].flatten()
-            try:
-                for neuron_idx, neuron in enumerate(self.layers[0]):
-                    # TODO: Implement constant input currents.
-                    neuron.current = constant_input_currents[neuron_idx]
-            except AttributeError:
-                raise NotImplementedError
+            spike_times = \
+                [np.linspace(0, self._duration, self._duration * amplitude)
+                 for amplitude in x_flat]
+            self.layers[0].set(spike_times=spike_times)
 
         self.sim.run(self._duration - self._dt,
                      callbacks=[MyProgressBar(self._dt, self._duration)])

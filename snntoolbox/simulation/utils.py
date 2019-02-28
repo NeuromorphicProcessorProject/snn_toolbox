@@ -989,7 +989,7 @@ class AbstractSNN:
                             spiketrains_b_l_t[Ellipsis, t], self.fanout[0])
         else:
             if self.input_b_l_t is not None:
-                raise NotImplementedError
+                self.input_b_l_t = self.get_spiketrains_input()
             # This constant input does not involve synaptic operations, so we
             # count it in ``neuron_operations_b_t``.
             if self.neuron_operations_b_t is not None:

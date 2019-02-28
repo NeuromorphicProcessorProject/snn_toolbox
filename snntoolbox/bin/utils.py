@@ -437,12 +437,6 @@ def update_setup(config_filepath):
         config.set('paths', 'filename_snn', '{}_{}'.format(filename_ann,
                                                            simulator))
 
-    if simulator != 'INI' and not config.getboolean('input', 'poisson_input'):
-        config.set('input', 'poisson_input', str(True))
-        print(dedent("""\
-            SNN toolbox Warning: Currently, turning off Poisson input is
-            only possible in INI simulator. Falling back on Poisson input."""))
-
     # Make sure the number of samples to test is not lower than the batch size.
     batch_size = config.getint('simulation', 'batch_size')
     if config.getint('simulation', 'num_to_test') < batch_size:

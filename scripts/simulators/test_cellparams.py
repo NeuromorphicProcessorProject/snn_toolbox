@@ -39,7 +39,7 @@ if __name__ == '__main__':
                  'delay': 1,
                  'input_rate': 0}
 
-    sim.setup(simparams['dt'], min_delay=simparams['dt'])
+    sim.setup(simparams['dt'])
 
     inp = sim.Population(1, sim.SpikeSourcePoisson(
         duration=simparams['duration'], rate=simparams['input_rate']))
