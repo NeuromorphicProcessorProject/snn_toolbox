@@ -391,6 +391,26 @@ def quantized_relu(x, m, f):
     """
     return keras.backend.relu(reduce_precision_var(x, m, f))
 
+class LimitedReLU:
+    def __init__(self, cfg):
+        self.negative_slope = cfg['negative_slope']
+        self.max_value = cfg['max_value']
+        self.threshold = cfg['threshold']
+        self.__name__ = '{}_{}_{}_LimitedReLU'.format(self.negative_slope, self.max_value, self.threshold)
+        
+    def get_cfg(self):
+        return {'negative_slope' : self.negative_slope,
+                'max_value' : self.max_value,
+                'threshold' : self.threshold}
+        
+    def set_cfg(self, cfg):
+        self.negative_slope = cfg['negative_slope']
+        self.max_value = cfg['max_value']
+        self.threshold = cfg['threshold']
+        self.__name__ = '{}_{}_{}_LimitedReLU'.format(self.negative_slope, self.max_value, self.threshold)
+    
+    def __call__ (self, *args, **kwargs):
+        return keras.backend.relu(args[0], self.negative_slope, self.max_value, self.threshold)
 
 class ClampedReLU:
     """

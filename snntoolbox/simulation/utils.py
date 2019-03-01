@@ -1147,18 +1147,12 @@ def build_convolution(layer, delay, transpose_kernel=False):
         Flattened array containing the biases of all neurons in the ``layer``.
     """
 
-    if (np.isscalar(layer.strides) and layer.strides > 1) \
-            or any([s > 1 for s in layer.strides]):
-        raise NotImplementedError("Convolution layers with stride larger than "
-                                  "unity are not yet implemented for this "
-                                  "simulator.")
 
     weights, biases = layer.get_weights()
 
     if transpose_kernel:
         from keras.utils.conv_utils import convert_kernel
         weights = convert_kernel(weights)
-
     # Biases.
     n = int(np.prod(layer.output_shape[1:]) / len(biases))
     i_offset = np.repeat(biases, n)
@@ -1170,7 +1164,8 @@ def build_convolution(layer, delay, transpose_kernel=False):
     kx, ky = layer.kernel_size  # Width and height of kernel
     px = int((kx - 1) / 2)  # Zero-padding columns
     py = int((ky - 1) / 2)  # Zero-padding rows
-
+    sx = layer.strides[1]
+    sy = layer.strides[0]
     if layer.padding == 'valid':
         # In padding 'valid', the original sidelength is
         # reduced by one less than the kernel size.
@@ -1188,12 +1183,11 @@ def build_convolution(layer, delay, transpose_kernel=False):
             layer.padding))
 
     connections = []
-
     # Loop over output filters 'fout'
     for fout in range(weights.shape[3]):
-        for y in range(y0, ny - y0):
-            for x in range(x0, nx - x0):
-                target = x - x0 + (y - y0) * mx + fout * mx * my
+        for y in range(y0, ny - y0, sy):
+            for x in range(x0, nx - x0, sx):
+                target = int((x - x0)/sy + (y - y0) * mx/(sx*sy) + fout * mx * my/(sx*sy))
                 # Loop over input filters 'fin'
                 for fin in range(weights.shape[2]):
                     for k in range(-py, py + 1):
@@ -1239,8 +1233,10 @@ def build_pooling(layer, delay):
         warnings.warn("Layer type 'MaxPooling' not supported yet. " +
                       "Falling back on 'AveragePooling'.", RuntimeWarning)
 
-    nx = layer.input_shape[3]  # Width of feature map
-    ny = layer.input_shape[2]  # Hight of feature map
+    ii = 1 if keras.backend.image_data_format() == 'channels_first' else 0
+
+    nx = layer.input_shape[2+ii]  # Width of feature map
+    ny = layer.input_shape[1+ii]  # Hight of feature map
     dx = layer.pool_size[1]  # Width of pool
     dy = layer.pool_size[0]  # Hight of pool
     sx = layer.strides[1]
@@ -1248,7 +1244,7 @@ def build_pooling(layer, delay):
 
     connections = []
 
-    for fout in range(layer.input_shape[1]):  # Feature maps
+    for fout in range(layer.input_shape[3-2*ii]):  # Feature maps
         for y in range(0, ny - dy + 1, sy):
             for x in range(0, nx - dx + 1, sx):
                 target = int(x / sx + y / sy * ((nx - dx) / sx + 1) +
