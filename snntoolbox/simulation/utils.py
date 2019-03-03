@@ -1047,8 +1047,8 @@ class AbstractSNN:
         Parameters
         ----------
 
-        spiketrains: list
-            List of spike times.
+        spiketrains: ndarray
+            Spike times.
         shape
             Layer shape.
 
@@ -1155,12 +1155,6 @@ def build_convolution(layer, delay, transpose_kernel=False):
         Flattened array containing the biases of all neurons in the ``layer``.
     """
 
-    if (np.isscalar(layer.strides) and layer.strides > 1) \
-            or any([s > 1 for s in layer.strides]):
-        raise NotImplementedError("Convolution layers with stride larger than "
-                                  "unity are not yet implemented for this "
-                                  "simulator.")
-
     weights, biases = layer.get_weights()
 
     if transpose_kernel:
@@ -1179,16 +1173,19 @@ def build_convolution(layer, delay, transpose_kernel=False):
     px = int((kx - 1) / 2)  # Zero-padding columns
     py = int((ky - 1) / 2)  # Zero-padding rows
 
+    sx = layer.strides[1]
+    sy = layer.strides[0]
+
     if layer.padding == 'valid':
         # In padding 'valid', the original sidelength is
         # reduced by one less than the kernel size.
-        mx = nx - kx + 1  # Number of columns in output filters
-        my = ny - ky + 1  # Number of rows in output filters
+        mx = (nx - kx + 1) // sx  # Number of columns in output filters
+        my = (ny - ky + 1) // sy  # Number of rows in output filters
         x0 = px
         y0 = py
     elif layer.padding == 'same':
-        mx = nx
-        my = ny
+        mx = nx // sx
+        my = ny // sy
         x0 = 0
         y0 = 0
     else:
@@ -1199,9 +1196,10 @@ def build_convolution(layer, delay, transpose_kernel=False):
 
     # Loop over output filters 'fout'
     for fout in range(weights.shape[3]):
-        for y in range(y0, ny - y0):
-            for x in range(x0, nx - x0):
-                target = x - x0 + (y - y0) * mx + fout * mx * my
+        for y in range(y0, ny - y0, sy):
+            for x in range(x0, nx - x0, sx):
+                target = int((x - x0) / sx + (y - y0) / sy * mx +
+                             fout * mx * my)
                 # Loop over input filters 'fin'
                 for fin in range(weights.shape[2]):
                     for k in range(-py, py + 1):
