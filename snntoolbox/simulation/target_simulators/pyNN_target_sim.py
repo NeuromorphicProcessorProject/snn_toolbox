@@ -75,6 +75,8 @@ class SNN(AbstractSNN):
     def add_layer(self, layer):
 
         if 'Flatten' in layer.__class__.__name__:
+            self.flatten_shapes.append(
+                (layer.name, get_shape_from_label(self.layers[-1].label)))
             return
 
         self.layers.append(self.sim.Population(
@@ -98,13 +100,36 @@ class SNN(AbstractSNN):
                           "activation instead.", RuntimeWarning)
 
         weights, biases = layer.get_weights()
-        biases = np.array(biases, 'float64')
-        self.set_biases(biases)
+
+        self.set_biases(np.array(biases, 'float64'))
         delay = self.config.getfloat('cell', 'delay')
         connections = []
-        for i in range(weights.shape[0]):
-            for j in range(weights.shape[1]):
-                connections.append((i, j, weights[i, j], delay))
+        if len(self.flatten_shapes) == 1:
+            print("Swapping data_format of Flatten layer.")
+            flatten_name, shape = self.flatten_shapes.pop()
+            if self.data_format == 'channels_last':
+                y_in, x_in, f_in = shape
+            else:
+                f_in, y_in, x_in = shape
+            for i in range(weights.shape[0]):  # Input neurons
+                # Sweep across channel axis of feature map. Assumes that each
+                # consecutive input neuron lies in a different channel. This is
+                # the case for channels_last, but not for channels_first.
+                f = i % f_in
+                # Sweep across height of feature map. Increase y by one if all
+                # rows along the channel axis were seen.
+                y = i // (f_in * x_in)
+                # Sweep across width of feature map.
+                x = (i // f_in) % x_in
+                new_i = f * x_in * y_in + x_in * y + x
+                for j in range(weights.shape[1]):  # Output neurons
+                    connections.append((new_i, j, weights[i, j], delay))
+        elif len(self.flatten_shapes) > 1:
+            raise RuntimeWarning("Not all Flatten layers have been consumed.")
+        else:
+            for i in range(weights.shape[0]):
+                for j in range(weights.shape[1]):
+                    connections.append((i, j, weights[i, j], delay))
         self.connections.append(self.sim.Projection(
             self.layers[-2], self.layers[-1],
             self.sim.FromListConnector(connections, ['weight', 'delay'])))
@@ -429,3 +454,29 @@ class MyProgressBar(object):
     def __call__(self, t):
         self.pb(t / self.t_stop)
         return t + self.interval
+
+
+def get_shape_from_label(label):
+    """
+    Extract the output shape of a flattened pyNN layer from the layer name
+    generated during parsing.
+
+    Parameters
+    ----------
+
+    label: str
+        Layer name containing shape information after a '_' separator.
+
+    Returns
+    -------
+
+    : list
+        The layer shape.
+
+    Example
+    -------
+        >>> get_shape_from_label('02Conv2D_16x32x32')
+        [16, 32, 32]
+
+    """
+    return [int(i) for i in label.split('_')[1].split('x')]

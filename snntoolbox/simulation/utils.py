@@ -128,6 +128,8 @@ class AbstractSNN:
         calling :py:func:`snntoolbox.bin.utils.initialize_simulator`. For
         instance, if using Brian simulator, this initialization would be
         equivalent to ``import pyNN.brian as sim``.
+    flatten_shapes: list[(str, list)]
+        List containing the (name, shape) tuples for each Flatten layer.
     """
 
     def __init__(self, config, queue=None):
@@ -172,6 +174,8 @@ class AbstractSNN:
         self._spiketrains_container_counter = None
 
         self.data_format = None
+
+        self.flatten_shapes = []
 
     @property
     @abstractmethod
@@ -429,8 +433,7 @@ class AbstractSNN:
                 self.build_dense(layer)
             elif layer_type == 'Conv2D':
                 self.build_convolution(layer)
-                if layer.data_format == 'channels_last':
-                    self.data_format = layer.data_format
+                self.data_format = layer.data_format
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
                 self.build_pooling(layer)
             elif layer_type == 'Flatten':
@@ -1159,6 +1162,7 @@ def build_convolution(layer, delay, transpose_kernel=False):
 
     if transpose_kernel:
         from keras.utils.conv_utils import convert_kernel
+        print("Transposing kernels.")
         weights = convert_kernel(weights)
 
     # Biases.
