@@ -341,8 +341,10 @@ class SNN(AbstractSNN):
             labels.append(population.label)
             data = {}
             for variable in variables:
-                data[variable] = getattr(population, variable)
-            data['celltype'] = population.celltype.describe()
+                if hasattr(population, variable):
+                    data[variable] = getattr(population,variable)
+            if hasattr(population.celltype, 'describe'):
+                data['celltype'] = population.celltype.describe()
             if population.label != 'InputLayer':
                 data['i_offset'] = population.get('i_offset')
             s[population.label] = data
