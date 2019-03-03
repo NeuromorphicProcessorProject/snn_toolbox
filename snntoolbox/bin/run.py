@@ -35,11 +35,11 @@ def main():
                              'Omit this flag to open GUI.')
     args = parser.parse_args()
 
-    # filepath = os.path.abspath(args.config_filepath)
+    filepath = os.path.abspath(args.config_filepath)
     # filepath = '/mnt/2646BAF446BAC3B9/Data/snn_conversion/mobilenet/v2/log/gui/no_clamp/config'
     # filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/lenet5/keras/config'
-    filepath = '/mnt/2646BAF446BAC3B9/Data/snn_conversion/mnist/cnn/lenet5/keras/pyNN/channels_first/log/gui/01/config'
-    args.terminal = True
+    # filepath = '/mnt/2646BAF446BAC3B9/Data/snn_conversion/mnist/cnn/lenet5/keras/pyNN/channels_first/log/gui/01/config'
+    # args.terminal = True
     if filepath is not None:
         assert os.path.isfile(filepath), \
             "Configuration file not found at {}.".format(filepath)
