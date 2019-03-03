@@ -1245,8 +1245,11 @@ def build_pooling(layer, delay):
         warnings.warn("Layer type 'MaxPooling' not supported yet. " +
                       "Falling back on 'AveragePooling'.", RuntimeWarning)
 
-    nx = layer.input_shape[3]  # Width of feature map
-    ny = layer.input_shape[2]  # Hight of feature map
+    ii = 1 if keras.backend.image_data_format() == 'channels_first' else 0
+
+    nx = layer.input_shape[2 + ii]  # Width of feature map
+    ny = layer.input_shape[1 + ii]  # Height of feature map
+    nz = layer.input_shape[3 - 2 * ii]  # Number of feature maps
     dx = layer.pool_size[1]  # Width of pool
     dy = layer.pool_size[0]  # Hight of pool
     sx = layer.strides[1]
@@ -1254,7 +1257,7 @@ def build_pooling(layer, delay):
 
     connections = []
 
-    for fout in range(layer.input_shape[1]):  # Feature maps
+    for fout in range(nz):
         for y in range(0, ny - dy + 1, sy):
             for x in range(0, nx - dx + 1, sx):
                 target = int(x / sx + y / sy * ((nx - dx) / sx + 1) +
