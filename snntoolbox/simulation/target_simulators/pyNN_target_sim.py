@@ -342,7 +342,7 @@ class SNN(AbstractSNN):
             data = {}
             for variable in variables:
                 if hasattr(population, variable):
-                    data[variable] = getattr(population,variable)
+                    data[variable] = getattr(population, variable)
             if hasattr(population.celltype, 'describe'):
                 data['celltype'] = population.celltype.describe()
             if population.label != 'InputLayer':
