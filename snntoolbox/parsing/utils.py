@@ -127,8 +127,10 @@ class AbstractModelParser:
                 print("Absorbing batch-normalization parameters into " +
                       "parameters of previous {}.".format(self.get_type(
                           prev_layer)))
+                args = parameters + parameters_bn + \
+                    [keras.backend.image_data_format()]
                 self._layer_list[prev_layer_idx]['parameters'] = \
-                    absorb_bn_parameters(*(parameters + parameters_bn))
+                    absorb_bn_parameters(*args)
 
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
@@ -700,32 +702,38 @@ class AbstractModelParser:
 
 
 def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
-                         axis):
+                         axis, image_data_format):
     """
     Absorb the parameters of a batch-normalization layer into the previous
     layer.
     """
 
-    # TODO: Due to some issue when porting a Keras1 GoogLeNet model to Keras2,
-    # the axis is 1 when it should be -1. Need to find a way to avoid this hack.
-    if not (axis == -1 or axis == weight.ndim - 1):
-        print("Warning: Specifying a batch-normalization axis other than the "
-              "default (-1) has not been thoroughly tested yet. There might be "
-              "issues depending on the keras backend version (theano / "
-              "tensorflow) and the image_dim_ordering (channels_first / "
-              "channels_last). Make sure that the accuracy of the parsed model "
-              "matches the input model.")
-        axis = -1
+    axis = weight.ndim - 1 if axis == -1 else axis
 
-    ndim = weight.ndim
-    reduction_axes = list(range(ndim))
-    del reduction_axes[axis]
-    if sorted(reduction_axes) != list(range(ndim))[:-1]:
-        broadcast_shape = [1] * ndim
-        broadcast_shape[axis] = weight.shape[axis]
-        var_eps_sqrt_inv = np.reshape(var_eps_sqrt_inv, broadcast_shape)
-        gamma = np.reshape(gamma, broadcast_shape)
-    bias_bn = beta + (bias - mean) * gamma * var_eps_sqrt_inv
+    print("Using BatchNorm axis {}.".format(axis))
+
+    # Map batch norm axis from layer dimension space to kernel dimension space.
+    # kernel_axes tells where to map each axis of a layer. Assumes that kernels
+    # are shaped like [height, width, num_input_channels, num_output_channels],
+    # and layers like [batch_size, channels, height, width] or
+    # [batch_size, height, width, channels].
+    if weight.ndim == 4:
+        kernel_axes = [None, 3, 0, 1] if image_data_format == 'channels_first' \
+            else [None, 0, 1, 3]
+        layer2kernel_axes_map = {layer_axis: kernel_axis for layer_axis,
+                                 kernel_axis in enumerate(kernel_axes)}
+        # Read: batch axis is mapped nowhere, channel axis is mapped from 1 or
+        # 3 to 3, etc.
+        axis = layer2kernel_axes_map[axis]
+
+    broadcast_shape = [1] * weight.ndim
+    broadcast_shape[axis] = weight.shape[axis]
+    var_eps_sqrt_inv = np.reshape(var_eps_sqrt_inv, broadcast_shape)
+    gamma = np.reshape(gamma, broadcast_shape)
+    beta = np.reshape(beta, broadcast_shape)
+    bias = np.reshape(bias, broadcast_shape)
+    mean = np.reshape(mean, broadcast_shape)
+    bias_bn = np.ravel(beta + (bias - mean) * gamma * var_eps_sqrt_inv)
     weight_bn = weight * gamma * var_eps_sqrt_inv
 
     return weight_bn, bias_bn
