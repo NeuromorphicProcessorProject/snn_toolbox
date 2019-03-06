@@ -60,6 +60,8 @@ class SNN(AbstractSNN):
                   "reserved for the biases and should not be set globally.")
             self.cellparams.pop('i_offset')
 
+        self.change_padding = False
+
     @property
     def is_parallelizable(self):
         return False
@@ -73,6 +75,17 @@ class SNN(AbstractSNN):
             label='InputLayer'))
 
     def add_layer(self, layer):
+
+        # This implementation of ZeroPadding layers assumes symmetric single
+        # padding ((1, 1), (1, 1)).
+        # Todo: Generalize for asymmetric padding or arbitrary size.
+        if 'ZeroPadding' in layer.__class__.__name__:
+            if set(layer.padding).issubset((1, (1, 1))):
+                self.change_padding = True
+                return
+            else:
+                raise NotImplementedError(
+                    "Border_mode {} not supported.".format(layer.padding))
 
         if 'Flatten' in layer.__class__.__name__:
             self.flatten_shapes.append(
@@ -136,6 +149,18 @@ class SNN(AbstractSNN):
 
     def build_convolution(self, layer):
         from snntoolbox.simulation.utils import build_convolution
+
+        # If the parsed model contains a ZeroPadding layer, we need to tell the
+        # Conv layer about it here, because ZeroPadding layers are removed when
+        # building the pyNN model.
+        if self.change_padding:
+            if layer.padding == 'valid':
+                self.change_padding = False
+                layer.padding = 'ZeroPadding'
+            else:
+                raise NotImplementedError(
+                    "Border_mode {} in combination with ZeroPadding is not "
+                    "supported.".format(layer.padding))
 
         delay = self.config.getfloat('cell', 'delay')
         transpose_kernel = \

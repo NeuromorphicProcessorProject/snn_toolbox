@@ -1173,6 +1173,16 @@ def build_convolution(layer, delay, transpose_kernel=False):
 
     nx = layer.input_shape[2 + ii]  # Width of feature map
     ny = layer.input_shape[1 + ii]  # Height of feature map
+
+    # Assumes symmetric padding ((1, 1), (1, 1)). Need to reduce dimensions of
+    # input here because the layer.input_shape refers to the ZeroPadding layer
+    # contained in the parsed model, which is removed when building the SNN.
+    if layer.padding == 'ZeroPadding':
+        print("Applying ZeroPadding.")
+        nx -= 2
+        ny -= 2
+        layer.padding = 'same'
+
     kx, ky = layer.kernel_size  # Width and height of kernel
     px = int((kx - 1) / 2)  # Zero-padding columns
     py = int((ky - 1) / 2)  # Zero-padding rows

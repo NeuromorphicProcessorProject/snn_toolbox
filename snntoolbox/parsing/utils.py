@@ -778,6 +778,9 @@ def padding_string(pad, pool_size):
         Border mode identifier.
     """
 
+    if isinstance(pad, str):
+        return pad
+
     if pad == (0, 0):
         padding = 'valid'
     elif pad == (pool_size[0] // 2, pool_size[1] // 2):
