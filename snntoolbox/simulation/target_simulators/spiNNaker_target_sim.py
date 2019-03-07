@@ -39,14 +39,43 @@ class SNN(PYSNN):
                           "activation instead.", RuntimeWarning)
 
         weights, biases = layer.get_weights()
-        biases = np.array(biases, 'float64')
-        self.set_biases(biases)
+
+        self.set_biases(np.array(biases, 'float64'))
         delay = self.config.getfloat('cell', 'delay')
 
-        exc_connections = [(i, j, weights[i, j], delay)
-                           for i, j in zip(*np.nonzero(weights > 0))]
-        inh_connections = [(i, j, weights[i, j], delay)
-                           for i, j in zip(*np.nonzero(weights <= 0))]
+        if len(self.flatten_shapes) == 1:
+            print("Swapping data_format of Flatten layer.")
+            flatten_name, shape = self.flatten_shapes.pop()
+            if self.data_format == 'channels_last':
+                y_in, x_in, f_in = shape
+            else:
+                f_in, y_in, x_in = shape
+            exc_connections = []
+            inh_connections = []
+            for i in range(weights.shape[0]):  # Input neurons
+                # Sweep across channel axis of feature map. Assumes that each
+                # consecutive input neuron lies in a different channel. This is
+                # the case for channels_last, but not for channels_first.
+                f = i % f_in
+                # Sweep across height of feature map. Increase y by one if all
+                # rows along the channel axis were seen.
+                y = i // (f_in * x_in)
+                # Sweep across width of feature map.
+                x = (i // f_in) % x_in
+                new_i = f * x_in * y_in + x_in * y + x
+                for j in range(weights.shape[1]):  # Output neurons
+                    c = (new_i, j, weights[i, j], delay)
+                    if c[2] > 0:
+                        exc_connections.append(c)
+                    else:
+                        inh_connections.append(c)
+        elif len(self.flatten_shapes) > 1:
+            raise RuntimeWarning("Not all Flatten layers have been consumed.")
+        else:
+            exc_connections = [(i, j, weights[i, j], delay)
+                               for i, j in zip(*np.nonzero(weights > 0))]
+            inh_connections = [(i, j, weights[i, j], delay)
+                               for i, j in zip(*np.nonzero(weights <= 0))]
 
         self.connections.append(self.sim.Projection(
             self.layers[-2], self.layers[-1],
@@ -59,6 +88,18 @@ class SNN(PYSNN):
 
     def build_convolution(self, layer):
         from snntoolbox.simulation.utils import build_convolution
+
+        # If the parsed model contains a ZeroPadding layer, we need to tell the
+        # Conv layer about it here, because ZeroPadding layers are removed when
+        # building the pyNN model.
+        if self.change_padding:
+            if layer.padding == 'valid':
+                self.change_padding = False
+                layer.padding = 'ZeroPadding'
+            else:
+                raise NotImplementedError(
+                    "Border_mode {} in combination with ZeroPadding is not "
+                    "supported.".format(layer.padding))
 
         delay = self.config.getfloat('cell', 'delay')
         transpose_kernel = \

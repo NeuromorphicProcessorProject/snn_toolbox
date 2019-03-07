@@ -543,23 +543,22 @@ def initialize_simulator(config):
         delay = config.getfloat('cell', 'delay')
         tau_refrac = config.getfloat('cell', 'tau_refrac')
         dt = config.getfloat('simulation', 'dt')
-        if tau_refrac < dt / 1e3:
+        # We found that in some cases the refractory period can actually be
+        # smaller than the time step.
+        scale = 1e1 if dt == 0.1 else 1e3
+        if tau_refrac < dt / scale:
             print("\nSNN toolbox WARNING: Refractory period ({}) must be at "
-                  "least one time step / 1e3 ({}). Setting tau_refrac = dt / "
-                  "1e3.".format(tau_refrac, dt / 1e3))
-            config.set('cell', 'tau_refrac', str(dt / 1e3))
-        elif tau_refrac > dt / 1e3:
+                  "least one time step / {} ({}). Setting tau_refrac = dt / "
+                  "{}.".format(tau_refrac, scale, dt / scale, scale))
+            config.set('cell', 'tau_refrac', str(dt / scale))
+        elif tau_refrac > dt / scale:
             print("\nSNN toolbox WARNING: We recommend to set the refractory "
-                  "period ({}) to be as small as possible (one time step / 1e3"
-                  ", {}).".format(tau_refrac, dt / 1e3))
-        if delay < dt:
-            print("\nSNN toolbox WARNING: Delay ({}) must be at least one "
+                  "period ({}) to be as small as possible (one time step / {}"
+                  ", {}).".format(tau_refrac, scale, dt / scale))
+        if delay != dt:
+            print("\nSNN toolbox WARNING: Delay ({}) should be equal to one "
                   "time step ({}). Setting delay = dt.".format(delay, dt))
             config.set('cell', 'delay', str(dt))
-        elif delay > dt:
-            print("\nSNN toolbox WARNING: We recommend to set the delay ({}) "
-                  "to be as small as possible (one time step, {}).".format(
-                    delay, dt))
         v_thresh = config.getfloat('cell', 'v_thresh')
         if v_thresh != 0.01:
             print("\nSNN toolbox WARNING: For optimal correspondence between "

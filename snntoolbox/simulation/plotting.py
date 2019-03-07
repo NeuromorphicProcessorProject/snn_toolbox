@@ -171,7 +171,8 @@ def plot_layer_summaries(plot_vars, config, path=None, data_format=None):
             os.makedirs(newpath)
         if 'spiketrains' in plot_keys:
             plot_spiketrains(plot_vars['spiketrains_n_l_t'][i],
-                             config.getfloat('simulation', 'dt'), newpath)
+                             config.getfloat('simulation', 'dt'), newpath,
+                             data_format)
         if 'spikerates' in plot_keys:
             plot_layer_activity(plot_vars['spikerates_n_l'][i],
                                 str('Spikerates'), newpath,
@@ -184,8 +185,8 @@ def plot_layer_summaries(plot_vars, config, path=None, data_format=None):
                                 str('Activations'), newpath,
                                 data_format=data_format)
         if 'spikerates_n_l' in plot_vars and 'activations_n_l' in plot_vars:
-            plot_activations_minus_rates(plot_vars['spikerates_n_l'][i][0],
-                                         plot_vars['activations_n_l'][i][0],
+            plot_activations_minus_rates(plot_vars['activations_n_l'][i][0],
+                                         plot_vars['spikerates_n_l'][i][0],
                                          name, newpath, data_format)
         if 'correlation' in plot_keys:
             plot_layer_correlation(plot_vars['spikerates_n_l'][i][0].flatten(),
@@ -813,7 +814,7 @@ def plot_param_sweep(results, n, params, param_name, param_logscale):
     ax.set_ylim(0, 1)
 
 
-def plot_spiketrains(layer, dt, path=None):
+def plot_spiketrains(layer, dt, path=None, data_format=None):
     """Plot which neuron fired at what time during the simulation.
 
     Parameters
@@ -835,17 +836,25 @@ def plot_spiketrains(layer, dt, path=None):
     path: Optional[str]
         If not ``None``, specifies where to save the resulting image. Else,
         display plots without saving.
+
+    data_format: Optional[str]
+        One of 'channels_first' or 'channels_last'.
     """
 
-    duration = layer[0].shape[-1]
-    nz = np.reshape(layer[0], (-1, duration)).nonzero()
+    data = layer[0]
+    duration = data.shape[-1]
+
+    if data_format == 'channels_last' and data.ndim == 4:
+        data = np.moveaxis(data, 2, 0)
+
+    nz = np.reshape(data, (-1, duration)).nonzero()
 
     plt.figure()
     plt.scatter(nz[1] * dt, nz[0], s=1, linewidths=0, color='b')
     plt.title('Spiketrains \n of layer {}'.format(layer[1]))
     plt.xlabel('time [ms]')
     plt.ylabel('neuron index')
-    plt.xlim(min([dt, np.min(layer[0])]), (duration + 1) * dt)
+    plt.xlim(min([dt, np.min(data)]), (duration + 1) * dt)
     if path is not None:
         filename = '7Spiketrains'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')

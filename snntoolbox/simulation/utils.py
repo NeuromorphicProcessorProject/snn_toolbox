@@ -128,6 +128,8 @@ class AbstractSNN:
         calling :py:func:`snntoolbox.bin.utils.initialize_simulator`. For
         instance, if using Brian simulator, this initialization would be
         equivalent to ``import pyNN.brian as sim``.
+    flatten_shapes: list[(str, list)]
+        List containing the (name, shape) tuples for each Flatten layer.
     """
 
     def __init__(self, config, queue=None):
@@ -172,6 +174,8 @@ class AbstractSNN:
         self._spiketrains_container_counter = None
 
         self.data_format = None
+
+        self.flatten_shapes = []
 
     @property
     @abstractmethod
@@ -427,10 +431,9 @@ class AbstractSNN:
             layer_type = get_type(layer)
             if layer_type == 'Dense':
                 self.build_dense(layer)
-            elif layer_type == 'Conv2D':
+            elif layer_type in {'Conv2D', 'DepthwiseConv2D'}:
                 self.build_convolution(layer)
-                if layer.data_format == 'channels_last':
-                    self.data_format = layer.data_format
+                self.data_format = layer.data_format
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
                 self.build_pooling(layer)
             elif layer_type == 'Flatten':
@@ -1047,8 +1050,8 @@ class AbstractSNN:
         Parameters
         ----------
 
-        spiketrains: list
-            List of spike times.
+        spiketrains: ndarray
+            Spike times.
         shape
             Layer shape.
 
@@ -1064,6 +1067,14 @@ class AbstractSNN:
         for k, spiketrain in enumerate(spiketrains):
             for t in spiketrain:
                 spiketrains_flat[k, int(t / self._dt)] = t
+
+        # For Conv layers with 'channels_last', need to (1) reshape so that the
+        # channel comes first; (2) move the channel axis to the back again;
+        # (3) flatten the array, so it can be reshaped later according to the
+        # data_format. If this is not done, the spikerates plot is scrambled.
+        if self.data_format == 'channels_last' and len(shape) == 5:
+            spiketrains_flat = np.ravel(np.moveaxis(np.reshape(
+                spiketrains_flat, [shape[i] for i in [0, 3, 1, 2, 4]]), 1, 3))
 
         spiketrains_b_l_t = np.reshape(spiketrains_flat, shape)
 
@@ -1147,12 +1158,13 @@ def build_convolution(layer, delay, transpose_kernel=False):
         Flattened array containing the biases of all neurons in the ``layer``.
     """
 
-
     weights, biases = layer.get_weights()
 
     if transpose_kernel:
         from keras.utils.conv_utils import convert_kernel
+        print("Transposing kernels.")
         weights = convert_kernel(weights)
+
     # Biases.
     n = int(np.prod(layer.output_shape[1:]) / len(biases))
     i_offset = np.repeat(biases, n)
@@ -1161,8 +1173,12 @@ def build_convolution(layer, delay, transpose_kernel=False):
 
     nx = layer.input_shape[2 + ii]  # Width of feature map
     ny = layer.input_shape[1 + ii]  # Height of feature map
-    
+
+    # Assumes symmetric padding ((1, 1), (1, 1)). Need to reduce dimensions of
+    # input here because the layer.input_shape refers to the ZeroPadding layer
+    # contained in the parsed model, which is removed when building the SNN.
     if layer.padding == 'ZeroPadding':
+        print("Applying ZeroPadding.")
         nx -= 2
         ny -= 2
         layer.padding = 'same'
@@ -1170,18 +1186,20 @@ def build_convolution(layer, delay, transpose_kernel=False):
     kx, ky = layer.kernel_size  # Width and height of kernel
     px = int((kx - 1) / 2)  # Zero-padding columns
     py = int((ky - 1) / 2)  # Zero-padding rows
-    sx = layer.strides[0]
-    sy = layer.strides[1]
+
+    sx = layer.strides[1]
+    sy = layer.strides[0]
+
     if layer.padding == 'valid':
         # In padding 'valid', the original sidelength is
         # reduced by one less than the kernel size.
-        mx = nx - kx + 1  # Number of columns in output filters
-        my = ny - ky + 1  # Number of rows in output filters
+        mx = (nx - kx + 1) // sx  # Number of columns in output filters
+        my = (ny - ky + 1) // sy  # Number of rows in output filters
         x0 = px
         y0 = py
     elif layer.padding == 'same':
-        mx = nx
-        my = ny
+        mx = nx // sx
+        my = ny // sy
         x0 = 0
         y0 = 0
     else:
@@ -1189,11 +1207,13 @@ def build_convolution(layer, delay, transpose_kernel=False):
             layer.padding))
 
     connections = []
+
     # Loop over output filters 'fout'
     for fout in range(weights.shape[3]):
         for y in range(y0, ny - y0, sy):
             for x in range(x0, nx - x0, sx):
-                target = int((x - x0)/sy + (y - y0) * mx/(sx*sy) + fout * mx * my/(sx*sy))
+                target = int((x - x0) / sx + (y - y0) / sy * mx +
+                             fout * mx * my)
                 # Loop over input filters 'fin'
                 for fin in range(weights.shape[2]):
                     for k in range(-py, py + 1):
@@ -1241,8 +1261,9 @@ def build_pooling(layer, delay):
 
     ii = 1 if keras.backend.image_data_format() == 'channels_first' else 0
 
-    nx = layer.input_shape[2+ii]  # Width of feature map
-    ny = layer.input_shape[1+ii]  # Hight of feature map
+    nx = layer.input_shape[2 + ii]  # Width of feature map
+    ny = layer.input_shape[1 + ii]  # Height of feature map
+    nz = layer.input_shape[3 - 2 * ii]  # Number of feature maps
     dx = layer.pool_size[1]  # Width of pool
     dy = layer.pool_size[0]  # Hight of pool
     sx = layer.strides[0]
@@ -1250,7 +1271,7 @@ def build_pooling(layer, delay):
 
     connections = []
 
-    for fout in range(layer.input_shape[3-2*ii]):  # Feature maps
+    for fout in range(nz):
         for y in range(0, ny - dy + 1, sy):
             for x in range(0, nx - dx + 1, sx):
                 target = int(x / sx + y / sy * ((nx - dx) / sx + 1) +

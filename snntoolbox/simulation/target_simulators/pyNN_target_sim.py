@@ -61,6 +61,8 @@ class SNN(AbstractSNN):
             self.cellparams.pop('i_offset')
         self.change_padding = False
 
+        self.change_padding = False
+
     @property
     def is_parallelizable(self):
         return False
@@ -82,10 +84,20 @@ class SNN(AbstractSNN):
             else:
                 raise NotImplementedErrror("Border_mode {} not supported".format(layer.padding))
 
+        # This implementation of ZeroPadding layers assumes symmetric single
+        # padding ((1, 1), (1, 1)).
+        # Todo: Generalize for asymmetric padding or arbitrary size.
+        if 'ZeroPadding' in layer.__class__.__name__:
+            if set(layer.padding).issubset((1, (1, 1))):
+                self.change_padding = True
+                return
+            else:
+                raise NotImplementedError(
+                    "Border_mode {} not supported.".format(layer.padding))
+
         if 'Flatten' in layer.__class__.__name__:
-            from keras.backend import image_data_format
-            if image_data_format() == 'channels_last':
-                 self.flatten_shape = [int(i) for i in self.layers[-1].label.split('_')[1].split('x')]
+            self.flatten_shapes.append(
+            (layer.name, get_shape_from_label(self.layers[-1].label)))
             return
 
         self.layers.append(self.sim.Population(
@@ -109,19 +121,54 @@ class SNN(AbstractSNN):
                           "activation instead.", RuntimeWarning)
 
         weights, biases = layer.get_weights()
-        biases = np.array(biases, 'float64')
-        self.set_biases(biases)
+
+        self.set_biases(np.array(biases, 'float64'))
         delay = self.config.getfloat('cell', 'delay')
         connections = []
-        for i in range(weights.shape[0]):
-            for j in range(weights.shape[1]):
-                connections.append((i, j, weights[i, j], delay))
+        if len(self.flatten_shapes) == 1:
+            print("Swapping data_format of Flatten layer.")
+            flatten_name, shape = self.flatten_shapes.pop()
+            if self.data_format == 'channels_last':
+                y_in, x_in, f_in = shape
+            else:
+                f_in, y_in, x_in = shape
+            for i in range(weights.shape[0]):  # Input neurons
+                # Sweep across channel axis of feature map. Assumes that each
+                # consecutive input neuron lies in a different channel. This is
+                # the case for channels_last, but not for channels_first.
+                f = i % f_in
+                # Sweep across height of feature map. Increase y by one if all
+                # rows along the channel axis were seen.
+                y = i // (f_in * x_in)
+                # Sweep across width of feature map.
+                x = (i // f_in) % x_in
+                new_i = f * x_in * y_in + x_in * y + x
+                for j in range(weights.shape[1]):  # Output neurons
+                    connections.append((new_i, j, weights[i, j], delay))
+        elif len(self.flatten_shapes) > 1:
+            raise RuntimeWarning("Not all Flatten layers have been consumed.")
+        else:
+            for i in range(weights.shape[0]):
+                for j in range(weights.shape[1]):
+                    connections.append((i, j, weights[i, j], delay))
         self.connections.append(self.sim.Projection(
             self.layers[-2], self.layers[-1],
             self.sim.FromListConnector(connections, ['weight', 'delay'])))
 
     def build_convolution(self, layer):
         from snntoolbox.simulation.utils import build_convolution
+
+        # If the parsed model contains a ZeroPadding layer, we need to tell the
+        # Conv layer about it here, because ZeroPadding layers are removed when
+        # building the pyNN model.
+        if self.change_padding:
+            if layer.padding == 'valid':
+                self.change_padding = False
+                layer.padding = 'ZeroPadding'
+            else:
+                raise NotImplementedError(
+                    "Border_mode {} in combination with ZeroPadding is not "
+                    "supported.".format(layer.padding))
 
         delay = self.config.getfloat('cell', 'delay')
         transpose_kernel = \
@@ -328,7 +375,7 @@ class SNN(AbstractSNN):
             data = {}
             for variable in variables:
                 if hasattr(population, variable):
-                    data[variable] = getattr(population,variable)
+                    data[variable] = getattr(population, variable)
             if hasattr(population.celltype, 'describe'):
                 data['celltype'] = population.celltype.describe()
             if population.label != 'InputLayer':
@@ -442,3 +489,29 @@ class MyProgressBar(object):
     def __call__(self, t):
         self.pb(t / self.t_stop)
         return t + self.interval
+
+
+def get_shape_from_label(label):
+    """
+    Extract the output shape of a flattened pyNN layer from the layer name
+    generated during parsing.
+
+    Parameters
+    ----------
+
+    label: str
+        Layer name containing shape information after a '_' separator.
+
+    Returns
+    -------
+
+    : list
+        The layer shape.
+
+    Example
+    -------
+        >>> get_shape_from_label('02Conv2D_16x32x32')
+        [16, 32, 32]
+
+    """
+    return [int(i) for i in label.split('_')[1].split('x')]
