@@ -1161,11 +1161,17 @@ def build_convolution(layer, delay, transpose_kernel=False):
 
     nx = layer.input_shape[2 + ii]  # Width of feature map
     ny = layer.input_shape[1 + ii]  # Height of feature map
+    
+    if layer.padding == 'ZeroPadding':
+        nx -= 2
+        ny -= 2
+        layer.padding = 'same'
+
     kx, ky = layer.kernel_size  # Width and height of kernel
     px = int((kx - 1) / 2)  # Zero-padding columns
     py = int((ky - 1) / 2)  # Zero-padding rows
-    sx = layer.strides[1]
-    sy = layer.strides[0]
+    sx = layer.strides[0]
+    sy = layer.strides[1]
     if layer.padding == 'valid':
         # In padding 'valid', the original sidelength is
         # reduced by one less than the kernel size.
@@ -1239,8 +1245,8 @@ def build_pooling(layer, delay):
     ny = layer.input_shape[1+ii]  # Hight of feature map
     dx = layer.pool_size[1]  # Width of pool
     dy = layer.pool_size[0]  # Hight of pool
-    sx = layer.strides[1]
-    sy = layer.strides[0]
+    sx = layer.strides[0]
+    sy = layer.strides[1]
 
     connections = []
 

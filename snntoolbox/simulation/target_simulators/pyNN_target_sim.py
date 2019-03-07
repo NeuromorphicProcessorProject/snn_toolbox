@@ -59,6 +59,7 @@ class SNN(AbstractSNN):
             print("SNN toolbox WARNING: The cell parameter 'i_offset' is "
                   "reserved for the biases and should not be set globally.")
             self.cellparams.pop('i_offset')
+        self.change_padding = False
 
     @property
     def is_parallelizable(self):
@@ -73,8 +74,18 @@ class SNN(AbstractSNN):
             label='InputLayer'))
 
     def add_layer(self, layer):
+        
+        if 'ZeroPadding' in layer.__class__.__name__:
+            if set(layer.padding).issubset({1,(1,1)}):
+                self.change_padding = True
+                return
+            else:
+                raise NotImplementedErrror("Border_mode {} not supported".format(layer.padding))
 
         if 'Flatten' in layer.__class__.__name__:
+            from keras.backend import image_data_format
+            if image_data_format() == 'channels_last':
+                 self.flatten_shape = [int(i) for i in self.layers[-1].label.split('_')[1].split('x')]
             return
 
         self.layers.append(self.sim.Population(
