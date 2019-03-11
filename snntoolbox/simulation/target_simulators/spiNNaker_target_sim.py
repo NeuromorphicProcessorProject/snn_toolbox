@@ -77,14 +77,32 @@ class SNN(PYSNN):
             inh_connections = [(i, j, weights[i, j], delay)
                                for i, j in zip(*np.nonzero(weights <= 0))]
 
-        self.connections.append(self.sim.Projection(
-            self.layers[-2], self.layers[-1],
-            self.sim.FromListConnector(exc_connections, ['weight', 'delay'])))
+        if self.config.getboolean('tools', 'simulate'):
+            self.connections.append(self.sim.Projection(
+                self.layers[-2], self.layers[-1],
+                self.sim.FromListConnector(exc_connections,
+                                           ['weight', 'delay'])))
 
-        self.connections.append(self.sim.Projection(
-            self.layers[-2], self.layers[-1],
-            self.sim.FromListConnector(inh_connections, ['weight', 'delay']),
-            receptor_type='inhibitory'))
+            self.connections.append(self.sim.Projection(
+                self.layers[-2], self.layers[-1],
+                self.sim.FromListConnector(inh_connections,
+                                           ['weight', 'delay']),
+                receptor_type='inhibitory'))
+
+        lines = [
+            "\n",
+            "# Load dense projections created by snntoolbox.\n",
+            "filepath = os.path.join(path_wd, layers[-1].label)\n",
+            "sim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
+            "filepath))\n",
+            "\n",
+            "# Set biases.\n",
+            "filepath = os.path.join(path_wd, layers[-1].label + '_biases')\n",
+            "biases = np.loadtxt(filepath)\n",
+            "layers[-1].set(i_offset=biases*dt/1e2)\n"
+        ]
+        with open(self.output_script_path, 'a') as f:
+            f.writelines(lines)
 
     def build_convolution(self, layer):
         from snntoolbox.simulation.utils import build_convolution
@@ -111,23 +129,32 @@ class SNN(PYSNN):
         exc_connections = [c for c in connections if c[2] > 0]
         inh_connections = [c for c in connections if c[2] <= 0]
 
-        self.connections.append(self.sim.Projection(
-            self.layers[-2], self.layers[-1],
-            self.sim.FromListConnector(exc_connections, ['weight', 'delay'])))
+        if self.config.getboolean('tools', 'simulate'):
+            self.connections.append(self.sim.Projection(
+                self.layers[-2], self.layers[-1],
+                self.sim.FromListConnector(exc_connections,
+                                           ['weight', 'delay'])))
 
-        self.connections.append(self.sim.Projection(
-            self.layers[-2], self.layers[-1],
-            self.sim.FromListConnector(inh_connections, ['weight', 'delay']),
-            receptor_type='inhibitory'))
+            self.connections.append(self.sim.Projection(
+                self.layers[-2], self.layers[-1],
+                self.sim.FromListConnector(inh_connections,
+                                           ['weight', 'delay']),
+                receptor_type='inhibitory'))
 
-    def build_pooling(self, layer):
-        from snntoolbox.simulation.utils import build_pooling
-
-        delay = self.config.getfloat('cell', 'delay')
-        connections = build_pooling(layer, delay)
-        self.connections.append(self.sim.Projection(
-            self.layers[-2], self.layers[-1],
-            self.sim.FromListConnector(connections, ['weight', 'delay'])))
+        lines = [
+            "\n",
+            "# Load convolution projections created by snntoolbox.\n",
+            "filepath = os.path.join(path_wd, layers[-1].label)\n",
+            "sim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
+            "filepath))\n",
+            "\n",
+            "# Set biases.\n",
+            "filepath = os.path.join(path_wd, layers[-1].label + '_biases')\n",
+            "biases = np.loadtxt(filepath)\n",
+            "layers[-1].set(i_offset=biases*dt/1e2)\n"
+        ]
+        with open(self.output_script_path, 'a') as f:
+            f.writelines(lines)
 
     def save_connections(self, path):
         """Write parameters of a neural network to disk.
