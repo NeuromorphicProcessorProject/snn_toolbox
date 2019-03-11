@@ -129,10 +129,11 @@ class AbstractModelParser:
                 print("Absorbing batch-normalization parameters into " +
                       "parameters of previous {}.".format(prev_layer_type))
                 axis = -2 if prev_layer_type == 'DepthwiseConv2D' else axis
-                args = parameters + parameters_bn + \
-                    [keras.backend.image_data_format()]
+                args = parameters + parameters_bn
+                kwargs = {'axis': axis, 'image_data_format':
+                    keras.backend.image_data_format()}
                 self._layer_list[prev_layer_idx]['parameters'] = \
-                    absorb_bn_parameters(*args, axis=axis)
+                    absorb_bn_parameters(*args, **kwargs)
 
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
