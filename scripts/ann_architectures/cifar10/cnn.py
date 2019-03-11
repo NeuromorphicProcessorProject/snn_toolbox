@@ -1,49 +1,29 @@
-# coding=utf-8
-
-"""
-Train a (fairly simple) deep CNN on the CIFAR10 small images dataset.
-
-GPU run command:
-THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python cifar10_cnn.py
-
-Gets to about 0.5 test loss or 83% accuracy after 65 epochs.
-
-"""
-
-from __future__ import absolute_import
 from __future__ import print_function
-
+import keras
 from keras.datasets import cifar10
-from keras.layers.convolutional import Conv2D, MaxPooling2D
-from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.models import Sequential
-from keras.optimizers import SGD
 from keras.preprocessing.image import ImageDataGenerator
-from keras.utils import np_utils
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Activation, Flatten
+from keras.layers import Conv2D, MaxPooling2D
+import os
 
-from snntoolbox.simulation.plotting import plot_history
+batch_size = 10
+num_classes = 10
+epochs = 1
+data_augmentation = False
+num_predictions = 20
+save_dir = os.path.join(os.getcwd(), 'saved_models')
+model_name = 'keras_cifar10_trained_model.h5'
 
-batch_size = 32
-nb_classes = 10
-nb_epoch = 150
+# The data, split between train and test sets:
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+print('x_train shape:', x_train.shape)
+print(x_train.shape[0], 'train samples')
+print(x_test.shape[0], 'test samples')
 
-data_augmentation = True
-
-# Input image dimensions
-img_rows, img_cols = 32, 32
-img_channels = 3
-
-# Data set
-(X_train, y_train), (X_test, y_test) = cifar10.load_data()
-X_train = X_train.astype("float32")
-X_test = X_test.astype("float32")
-X_train /= 255
-X_test /= 255
-Y_train = np_utils.to_categorical(y_train, nb_classes)
-Y_test = np_utils.to_categorical(y_test, nb_classes)
-print('X_train shape:', X_train.shape)
-print(X_train.shape[0], 'train samples')
-print(X_test.shape[0], 'test samples')
+# Convert class vectors to binary class matrices.
+y_train = keras.utils.to_categorical(y_train, num_classes)
+y_test = keras.utils.to_categorical(y_test, num_classes)
 
 model = Sequential()
 
@@ -66,59 +46,81 @@ model.add(Flatten())
 model.add(Dense(512))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
-model.add(Dense(nb_classes))
+model.add(Dense(num_classes))
 model.add(Activation('softmax'))
 
-sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-model.compile(loss='categorical_crossentropy', optimizer=sgd,
+# initiate RMSprop optimizer
+opt = keras.optimizers.rmsprop(lr=0.0001, decay=1e-6)
+
+# Let's train the model using RMSprop
+model.compile(loss='categorical_crossentropy',
+              optimizer=opt,
               metrics=['accuracy'])
 
+x_train = x_train.astype('float32')
+x_test = x_test.astype('float32')
+x_train /= 255
+x_test /= 255
+
 if not data_augmentation:
-    print("Not using data augmentation or normalization")
-#    early_stopping = EarlyStopping(monitor='val_loss', patience=3)
-    history = model.fit(X_train, Y_train, batch_size=batch_size,
-                        validation_data=(X_test, Y_test), nb_epoch=nb_epoch)
-    score = model.evaluate(X_test, Y_test)
+    print('Not using data augmentation.')
+    model.fit(x_train, y_train,
+              batch_size=batch_size,
+              epochs=epochs,
+              validation_data=(x_test, y_test),
+              shuffle=True)
 else:
-    print("Using real time data augmentation")
+    print('Using real-time data augmentation.')
+    # This will do preprocessing and realtime data augmentation:
+    datagen = ImageDataGenerator(
+        featurewise_center=False,  # set input mean to 0 over the dataset
+        samplewise_center=False,  # set each sample mean to 0
+        featurewise_std_normalization=False,  # divide inputs by std of the dataset
+        samplewise_std_normalization=False,  # divide each input by its std
+        zca_whitening=False,  # apply ZCA whitening
+        zca_epsilon=1e-06,  # epsilon for ZCA whitening
+        rotation_range=0,  # randomly rotate images in the range (degrees, 0 to 180)
+        # randomly shift images horizontally (fraction of total width)
+        width_shift_range=0.1,
+        # randomly shift images vertically (fraction of total height)
+        height_shift_range=0.1,
+        shear_range=0.,  # set range for random shear
+        zoom_range=0.,  # set range for random zoom
+        channel_shift_range=0.,  # set range for random channel shifts
+        # set mode for filling points outside the input boundaries
+        fill_mode='nearest',
+        cval=0.,  # value used for fill_mode = "constant"
+        horizontal_flip=True,  # randomly flip images
+        vertical_flip=False,  # randomly flip images
+        # set rescaling factor (applied before any other transformation)
+        rescale=None,
+        # set function that will be applied on each input
+        preprocessing_function=None,
+        # image data format, either "channels_first" or "channels_last"
+        data_format=None,
+        # fraction of images reserved for validation (strictly between 0 and 1)
+        validation_split=0.0)
 
-    gcn = True
-    zca = True
+    # Compute quantities required for feature-wise normalization
+    # (std, mean, and principal components if ZCA whitening is applied).
+    datagen.fit(x_train)
 
-    # This will do preprocessing and realtime data augmentation
-    traingen = ImageDataGenerator(featurewise_center=gcn,
-                                  featurewise_std_normalization=gcn,
-                                  zca_whitening=zca,
-                                  rotation_range=10,
-                                  width_shift_range=0.1,
-                                  height_shift_range=0.1,
-                                  horizontal_flip=True)
+    # Fit the model on the batches generated by datagen.flow().
+    model.fit_generator(datagen.flow(x_train, y_train,
+                                     batch_size=batch_size),
+                        epochs=epochs,
+                        steps_per_epoch=len(x_train)/batch_size,
+                        validation_data=(x_test, y_test),
+                        workers=4)
 
-    # Compute quantities required for featurewise normalization
-    # (std, mean, and principal components if ZCA whitening is applied)
-    traingen.fit(X_train)
+# Save model and weights
+if not os.path.isdir(save_dir):
+    os.makedirs(save_dir)
+model_path = os.path.join(save_dir, model_name)
+model.save(model_path)
+print('Saved trained model at %s ' % model_path)
 
-    trainflow = traingen.flow(X_train, Y_train, batch_size=batch_size)
-
-    testgen = ImageDataGenerator(featurewise_center=gcn,
-                                 featurewise_std_normalization=gcn,
-                                 zca_whitening=zca)
-
-    testgen.fit(X_test)
-
-    testflow = testgen.flow(X_test, Y_test, batch_size=batch_size)
-
-    # Fit the model on the batches generated by datagen.flow()
-    history = model.fit_generator(trainflow, nb_epoch=nb_epoch,
-                                  samples_per_epoch=len(X_train),
-                                  validation_data=testflow,
-                                  nb_val_samples=len(X_test))
-
-    score = model.evaluate_generator(testflow, val_samples=len(X_test))
-
-plot_history(history)
-
-print('Test score:', score[0])
-print('Test accuracy:', score[1])
-
-model.save('{:2.2f}.h5'.format(score[1]*100))
+# Score trained model.
+scores = model.evaluate(x_test, y_test, verbose=1)
+print('Test loss:', scores[0])
+print('Test accuracy:', scores[1])
