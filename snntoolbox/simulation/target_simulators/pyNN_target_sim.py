@@ -188,7 +188,11 @@ class SNN(AbstractSNN):
 
     def simulate(self, **kwargs):
 
-        x_flat = kwargs[str('x_b_l')].flatten()
+        data = kwargs[str('x_b_l')]
+        if self.data_format == 'channels_last' and data.ndim == 4:
+            data = np.moveaxis(data, 3, 1)
+
+        x_flat = np.ravel(data)
         if self._poisson_input:
             self.layers[0].set(rate=list(x_flat / self.rescale_fac * 1000))
         elif self._dataset_format == 'aedat':
