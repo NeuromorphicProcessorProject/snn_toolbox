@@ -1,0 +1,22 @@
+[paths]
+dataset_path = %(path_wd)s/dataset
+filename_ann = custom_example
+filename_snn = custom_example_snn
+
+[tools]
+evaluate_ann = True
+normalize = False
+
+[simulation]
+simulator = spiNNaker
+duration = 300
+num_to_test = 10
+batch_size = 1
+keras_backend = tensorflow
+
+[input]
+poisson_input = True
+
+[output]
+log_vars = {}
+plot_vars = {}
