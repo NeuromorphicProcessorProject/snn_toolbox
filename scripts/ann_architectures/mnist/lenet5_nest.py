@@ -51,9 +51,9 @@ model.add(Dense(84, activation='relu'))
 model.add(Dense(10, activation=output_nonlinearity))
 
 model.compile('adam', loss, metrics=['accuracy'])
-
-checkpoint = ModelCheckpoint('{epoch:02d}-{val_acc:.2f}.h5', 'val_acc',
-                             save_best_only=True)
+print(model.summary())
+checkpoint = ModelCheckpoint(os.path.join(path, '{epoch:02d}-{val_acc:.2f}.h5'),
+                             'val_acc', save_best_only=True)
 callbacks = [checkpoint]
 model.fit(x_train, y_train, batch_size, epochs,
           validation_data=(x_test, y_test), callbacks=callbacks)

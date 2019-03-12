@@ -1073,8 +1073,9 @@ class AbstractSNN:
         # (3) flatten the array, so it can be reshaped later according to the
         # data_format. If this is not done, the spikerates plot is scrambled.
         if self.data_format == 'channels_last' and len(shape) == 5:
-            spiketrains_flat = np.ravel(np.moveaxis(np.reshape(
-                spiketrains_flat, [shape[i] for i in [0, 3, 1, 2, 4]]), 1, 3))
+            spiketrains_flat = np.reshape(np.moveaxis(np.reshape(
+                spiketrains_flat, [shape[i] for i in [0, 3, 1, 2, 4]]), 1, 3),
+                (-1, shape[-1]))
 
         spiketrains_b_l_t = np.reshape(spiketrains_flat, shape)
 
