@@ -478,6 +478,11 @@ def update_setup(config_filepath):
     plot_var = get_plot_keys(config)
     plot_vars = config_string_to_set_of_strings(config.get('restrictions',
                                                            'plot_vars'))
+    if simulator != 'INI' and not config.getboolean('input', 'poisson_input'):
+        config.set('input', 'poisson_input', str(True))
+        print(dedent("""\
+            SNN toolbox Warning: Currently, turning off Poisson input is
+            only possible in INI simulator. Falling back on Poisson input."""))
     assert all([v in plot_vars for v in plot_var]), \
         "Plot variable(s) {} not understood.".format(
             [v for v in plot_var if v not in plot_vars])

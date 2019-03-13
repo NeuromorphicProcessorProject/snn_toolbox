@@ -231,6 +231,10 @@ class SNN(PYSNN):
         with open(self.output_script_path, 'a') as f:
             f.writelines(lines)
 
+    def save(self, path, filename):
+        #Temporary fix to stop IsADirectory error 
+        print("Not saving model to {}...".format(path))
+    
     def save_connections(self, path):
         """Write parameters of a neural network to disk.
 
