@@ -784,13 +784,21 @@ class AbstractSNN:
         This method works for spiking Keras models.
         """
 
-        import keras
         print("Restoring spiking network...\n")
         self.load(self.config.get('paths', 'path_wd'),
                   self.config.get('paths', 'filename_snn'))
         self.parsed_model = keras.models.load_model(os.path.join(
             self.config.get('paths', 'path_wd'),
             self.config.get('paths', 'filename_parsed_model') + '.h5'))
+        self.num_classes = int(self.parsed_model.layers[-1].output_shape[-1])
+        self.top_k = min(self.num_classes, self.config.getint('simulation',
+                                                              'top_k'))
+        # Compute number of operations of ANN.
+        if self.fanout is None:
+            self.set_connectivity()
+            self.operations_ann = get_ann_ops(self.num_neurons,
+                                              self.num_neurons_with_bias,
+                                              self.fanin)
 
     def init_log_vars(self):
         """Initialize variables to record during simulation."""
@@ -1168,7 +1176,7 @@ def build_convolution(layer, delay, transpose_kernel=False):
 
     # Biases.
     n = int(np.prod(layer.output_shape[1:]) / len(biases))
-    i_offset = np.repeat(biases, n)
+    i_offset = np.repeat(biases, n).astype('float64')
 
     ii = 1 if keras.backend.image_data_format() == 'channels_first' else 0
 

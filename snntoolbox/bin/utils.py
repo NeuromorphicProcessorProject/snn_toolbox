@@ -550,11 +550,6 @@ def initialize_simulator(config):
     print("Initializing {} simulator...\n".format(simulator))
     if simulator in config_string_to_set_of_strings(
             config.get('restrictions', 'simulators_pyNN')):
-        if simulator == 'nest':
-            # Workaround for missing link bug, see
-            # https://github.com/ContinuumIO/anaconda-issues/issues/152
-            # noinspection PyUnresolvedReferences
-            import readline
         sim = import_module('pyNN.' + simulator)
 
         # From the pyNN documentation:

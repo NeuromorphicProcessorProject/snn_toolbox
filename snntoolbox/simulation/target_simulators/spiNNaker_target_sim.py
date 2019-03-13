@@ -81,25 +81,48 @@ class SNN(PYSNN):
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
                 self.sim.FromListConnector(exc_connections,
-                                           ['weight', 'delay'])))
+                                           ['weight', 'delay']),
+                label=self.layers[-1].label+'_excitatory'))
 
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
                 self.sim.FromListConnector(inh_connections,
                                            ['weight', 'delay']),
-                receptor_type='inhibitory'))
+                receptor_type='inhibitory',
+                label=self.layers[-1].label+'_inhibitory'))
+        else:
+            # The spinnaker implementation of Projection.save() is not working
+            # yet, so we do save the connections manually here.
+            filepath = os.path.join(self.config.get('paths', 'path_wd'),
+                                    self.layers[-1].label)
+            # noinspection PyTypeChecker
+            np.savetxt(filepath + '_excitatory', np.array(exc_connections),
+                       ['%d', '%d', '%.18f', '%.3f'],
+                       header="columns = ['i', 'j', 'weight', 'delay']")
+            # noinspection PyTypeChecker
+            np.savetxt(filepath + '_inhibitory', np.array(inh_connections),
+                       ['%d', '%d', '%.18f', '%.3f'],
+                       header="columns = ['i', 'j', 'weight', 'delay']")
 
         lines = [
             "\n",
-            "# Load dense projections created by snntoolbox.\n",
-            "filepath = os.path.join(path_wd, layers[-1].label)\n",
-            "sim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
-            "filepath))\n",
+            "\t# Load dense projections created by snntoolbox.\n",
+            "\tfilepath = os.path.join(path_wd, layers[-1].label + "
+            "'_excitatory')"
             "\n",
-            "# Set biases.\n",
-            "filepath = os.path.join(path_wd, layers[-1].label + '_biases')\n",
-            "biases = np.loadtxt(filepath)\n",
-            "layers[-1].set(i_offset=biases*dt/1e2)\n"
+            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
+            "filepath))\n",
+            "\tfilepath = os.path.join(path_wd, layers[-1].label + "
+            "'_inhibitory')"
+            "\n",
+            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
+            "filepath), receptor_type='inhibitory')\n",
+            "\n",
+            "\t# Set biases.\n",
+            "\tfilepath = os.path.join(path_wd, layers[-1].label + '_biases')"
+            "\n",
+            "\tbiases = np.loadtxt(filepath)\n",
+            "\tlayers[-1].set(i_offset=biases*dt/1e2)\n"
         ]
         with open(self.output_script_path, 'a') as f:
             f.writelines(lines)
@@ -133,25 +156,77 @@ class SNN(PYSNN):
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
                 self.sim.FromListConnector(exc_connections,
-                                           ['weight', 'delay'])))
+                                           ['weight', 'delay']),
+                label=self.layers[-1].label+'_excitatory'))
 
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
                 self.sim.FromListConnector(inh_connections,
                                            ['weight', 'delay']),
-                receptor_type='inhibitory'))
+                receptor_type='inhibitory',
+                label=self.layers[-1].label+'_inhibitory'))
+        else:
+            # The spinnaker implementation of Projection.save() is not working
+            # yet, so we do save the connections manually here.
+            filepath = os.path.join(self.config.get('paths', 'path_wd'),
+                                    self.layers[-1].label)
+            # noinspection PyTypeChecker
+            np.savetxt(filepath + '_excitatory', np.array(exc_connections),
+                       ['%d', '%d', '%.18f', '%.3f'],
+                       header="columns = ['i', 'j', 'weight', 'delay']")
+            # noinspection PyTypeChecker
+            np.savetxt(filepath + '_inhibitory', np.array(inh_connections),
+                       ['%d', '%d', '%.18f', '%.3f'],
+                       header="columns = ['i', 'j', 'weight', 'delay']")
 
         lines = [
             "\n",
-            "# Load convolution projections created by snntoolbox.\n",
-            "filepath = os.path.join(path_wd, layers[-1].label)\n",
-            "sim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
-            "filepath))\n",
+            "\t# Load convolution projections created by snntoolbox.\n",
+            "\tfilepath = os.path.join(path_wd, layers[-1].label + "
+            "'_excitatory')"
             "\n",
-            "# Set biases.\n",
-            "filepath = os.path.join(path_wd, layers[-1].label + '_biases')\n",
-            "biases = np.loadtxt(filepath)\n",
-            "layers[-1].set(i_offset=biases*dt/1e2)\n"
+            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
+            "filepath))\n",
+            "\tfilepath = os.path.join(path_wd, layers[-1].label + "
+            "'_inhibitory')"
+            "\n",
+            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
+            "filepath), receptor_type='inhibitory')\n",
+            "\n",
+            "\t# Set biases.\n",
+            "\tfilepath = os.path.join(path_wd, layers[-1].label + '_biases')"
+            "\n",
+            "\tbiases = np.loadtxt(filepath)\n",
+            "\tlayers[-1].set(i_offset=biases*dt/1e2)\n"
+        ]
+        with open(self.output_script_path, 'a') as f:
+            f.writelines(lines)
+
+    def build_pooling(self, layer):
+        from snntoolbox.simulation.utils import build_pooling
+
+        delay = self.config.getfloat('cell', 'delay')
+        connections = build_pooling(layer, delay)
+        if self.config.getboolean('tools', 'simulate'):
+            self.connections.append(self.sim.Projection(
+                self.layers[-2], self.layers[-1],
+                self.sim.FromListConnector(connections, ['weight', 'delay'])))
+        else:
+            # The spinnaker implementation of Projection.save() is not working
+            # yet, so we do save the connections manually here.
+            filepath = os.path.join(self.config.get('paths', 'path_wd'),
+                                    self.layers[-1].label)
+            # noinspection PyTypeChecker
+            np.savetxt(filepath, np.array(connections),
+                       ['%d', '%d', '%.18f', '%.3f'],
+                       header="columns = ['i', 'j', 'weight', 'delay']")
+
+        lines = [
+            "\n",
+            "\t# Load pooling projections created by snntoolbox.\n",
+            "\tfilepath = os.path.join(path_wd, layers[-1].label)\n",
+            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
+            "filepath))\n"
         ]
         with open(self.output_script_path, 'a') as f:
             f.writelines(lines)
@@ -183,11 +258,7 @@ class SNN(PYSNN):
 
         # Iterate over layers to save each projection in a separate txt file.
         for projection in self.connections:
-            # filename = projection.label.partition('→')[-1] \
-            #     if hasattr(projection, 'label') else 'layer_{}'.format(i)
-            # filepath =  os.path.join(path, filename)
-            # filepath = os.path.join(path, self.layers[i + 1].label)
-            filepath = os.path.join(path, projection.label.partition('→')[-1])
+            filepath = os.path.join(path, projection._projection_edge.label)
             if self.config.getboolean('output', 'overwrite') or \
                     confirm_overwrite(filepath):
                 projection.save('connections', filepath)

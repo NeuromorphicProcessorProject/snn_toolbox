@@ -10,8 +10,10 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 import os
+import sys
 import warnings
 
+from importlib import import_module
 import numpy as np
 from future import standard_library
 from six.moves import cPickle
@@ -64,9 +66,20 @@ class SNN(AbstractSNN):
         self.change_padding = False
 
         self.output_script_path = os.path.join(
-            self.config.get('paths', 'path_wd'),
-            '{}_pyNN.py'.format(self.config.get('paths', 'filename_ann')))
-        print(self.output_script_path)
+            self.config.get('paths', 'path_wd'), '{}.py'.format(
+                self.config.get('paths', 'filename_snn')))
+
+    @property
+    def is_parallelizable(self):
+        return False
+
+    def add_input_layer(self, input_shape):
+
+        celltype = self.sim.SpikeSourcePoisson() if self._poisson_input \
+            else self.sim.SpikeSourceArray()
+        self.layers.append(self.sim.Population(
+            np.asscalar(np.prod(input_shape[1:], dtype=np.int)), celltype,
+            label='InputLayer'))
 
         lines = [
             '"""\n',
@@ -84,67 +97,57 @@ class SNN(AbstractSNN):
             "import os\n",
             "import numpy as np\n",
             "from importlib import import_module\n",
-            "import configparser\n",
             "from snntoolbox.bin.utils import config_string_to_set_of_strings",
-            "\n\n",
-            "# Load snntoolbox configuration. The '.config' file read here \n"
-            "# differs from the 'config' file read by the toolbox in two \n"
-            "# ways: (1) '.config' complements the 'config' file by all \n"
-            "# default settings which were not explicitly specified by the \n"
-            "# user. (2) The toolbox may have overridden some settings during\n"
-            "# conversion. Check the console output of the toolbox for\n"
-            "# respective messages.\n",
-            "filepath = '{}'\n".format(os.path.join(self.config.get(
+            "\n",
+            "try:\n",
+            "\timport configparser\n",
+            "except ImportError:\n",
+            "\timport ConfigParser as configparser\n",
+            "\tconfigparser = configparser\n",
+            "\n\n\n",
+            "def get_model():\n",
+            "\t# Load snntoolbox configuration. The '.config' file read here \n"
+            "\t# differs from the 'config' file read by the toolbox in two \n"
+            "\t# ways: (1) '.config' complements the 'config' file by all \n"
+            "\t# default settings which were not explicitly specified by the \n"
+            "\t# user. (2) The toolbox may have overridden some settings \n"
+            "\t# during conversion. Check the console output of the toolbox \n"
+            "\t# for respective messages.\n",
+            "\tfilepath = '{}'\n".format(os.path.join(self.config.get(
                 'paths', 'log_dir_of_current_run'), '.config')),
-            "config = configparser.ConfigParser()\n",
-            "config.read(filepath)\n",
+            "\tconfig = configparser.ConfigParser()\n",
+            "\tconfig.read(filepath)\n",
             "\n",
-            "# Define path to where the network connections are stored.\n",
-            "path_wd = config.get('paths', 'path_wd')\n",
+            "\t# Define path to where the network connections are stored.\n",
+            "\tpath_wd = config.get('paths', 'path_wd')\n",
             "\n",
-            "# Define cell parameters.\n",
-            "cellparams = {key: config.getfloat('cell', key) for key in "
+            "\t# Define cell parameters.\n",
+            "\tcellparams = {key: config.getfloat('cell', key) for key in "
             "config_string_to_set_of_strings(config.get('restrictions', "
             "'cellparams_pyNN'))}\n",
             "\n",
-            "# Configure simulator.\n",
-            "simulator = config.get('simulation', 'simulator')\n",
-            "dt = config.getfloat('simulation', 'dt')\n",
-            "sim = import_module('pyNN.{}'.format(simulator))\n",
-            "sim.setup(timestep=dt)\n",
+            "\t# Configure simulator.\n",
+            "\tsimulator = config.get('simulation', 'simulator')\n",
+            "\tdt = config.getfloat('simulation', 'dt')\n",
+            "\tsim = import_module('pyNN.{}'.format(simulator))\n",
+            "\tsim.setup(timestep=dt)\n",
             "\n",
-            "# Build the network.",
+            "\t# Build the network.",
             "\n",
-            "layers = []\n",
-            "\n"
-        ]
-        with open(self.output_script_path, 'w') as f:
-            f.writelines(lines)
-
-    @property
-    def is_parallelizable(self):
-        return False
-
-    def add_input_layer(self, input_shape):
-
-        celltype = self.sim.SpikeSourcePoisson() if self._poisson_input \
-            else self.sim.SpikeSourceArray()
-        self.layers.append(self.sim.Population(
-            np.asscalar(np.prod(input_shape[1:], dtype=np.int)), celltype,
-            label='InputLayer'))
-
-        lines = [
-            "# Define input layer.\n",
-            "use_poisson_input = config.getboolean('input', 'poisson_input')\n",
-            "celltype = sim.SpikeSourcePoisson() if use_poisson_input else "
+            "\tlayers = []\n",
+            "\n",
+            "\t# Define input layer.\n",
+            "\tuse_poisson_input = config.getboolean('input', 'poisson_input')"
+            "\n",
+            "\tcelltype = sim.SpikeSourcePoisson() if use_poisson_input else "
             "sim.SpikeSourceArray()\n",
-            "layers.append(sim.Population(np.asscalar(np.prod({}, "
+            "\tlayers.append(sim.Population(np.asscalar(np.prod({}, "
             "dtype=np.int)), celltype, label='InputLayer'))\n"
             "".format(input_shape[1:]),
             "\n",
-            "# Add remaining layers.\n"
+            "\t# Add remaining layers.\n"
         ]
-        with open(self.output_script_path, 'a') as f:
+        with open(self.output_script_path, 'w') as f:
             f.writelines(lines)
 
     def add_layer(self, layer):
@@ -171,13 +174,16 @@ class SNN(AbstractSNN):
             np.asscalar(np.prod(layer.output_shape[1:], dtype=np.int)),
             self.sim.IF_curr_exp, self.cellparams, label=layer.name))
 
+        self.layers[-1].initialize(v=self.layers[-1].get('v_rest'))
+
         lines = [
             "\n",
-            "# Add layer {}.\n".format(layer.name),
-            "print('Building layer {}.')\n".format(layer.name),
-            "layers.append(sim.Population(np.asscalar(np.prod({}, "
+            "\t# Add layer {}.\n".format(layer.name),
+            "\tprint('Building layer {}.')\n".format(layer.name),
+            "\tlayers.append(sim.Population(np.asscalar(np.prod({}, "
             "dtype=np.int)), sim.IF_curr_exp, cellparams, label='{}'))\n"
-            "".format(layer.output_shape[1:], layer.name)
+            "".format(layer.output_shape[1:], layer.name),
+            "\tlayers[-1].initialize(v=layers[-1].get('v_rest'))\n"
         ]
         with open(self.output_script_path, 'a') as f:
             f.writelines(lines)
@@ -237,15 +243,16 @@ class SNN(AbstractSNN):
 
         lines = [
             "\n",
-            "# Load dense projections created by snntoolbox.\n",
-            "filepath = os.path.join(path_wd, layers[-1].label)\n",
-            "sim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
+            "\t# Load dense projections created by snntoolbox.\n",
+            "\tfilepath = os.path.join(path_wd, layers[-1].label)\n",
+            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
             "filepath))\n",
             "\n",
-            "# Set biases.\n",
-            "filepath = os.path.join(path_wd, layers[-1].label + '_biases')\n",
-            "biases = np.loadtxt(filepath)\n",
-            "layers[-1].set(i_offset=biases*dt/1e2)\n"
+            "\t# Set biases.\n",
+            "\tfilepath = os.path.join(path_wd, layers[-1].label + '_biases')"
+            "\n",
+            "\tbiases = np.loadtxt(filepath)\n",
+            "\tlayers[-1].set(i_offset=biases*dt/1e2)\n"
         ]
         with open(self.output_script_path, 'a') as f:
             f.writelines(lines)
@@ -279,15 +286,16 @@ class SNN(AbstractSNN):
 
         lines = [
             "\n",
-            "# Load convolution projections created by snntoolbox.\n",
-            "filepath = os.path.join(path_wd, layers[-1].label)\n",
-            "sim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
+            "\t# Load convolution projections created by snntoolbox.\n",
+            "\tfilepath = os.path.join(path_wd, layers[-1].label)\n",
+            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
             "filepath))\n",
             "\n",
-            "# Set biases.\n",
-            "filepath = os.path.join(path_wd, layers[-1].label + '_biases')\n",
-            "biases = np.loadtxt(filepath)\n",
-            "layers[-1].set(i_offset=biases*dt/1e2)\n"
+            "\t# Set biases.\n",
+            "\tfilepath = os.path.join(path_wd, layers[-1].label + '_biases')"
+            "\n",
+            "\tbiases = np.loadtxt(filepath)\n",
+            "\tlayers[-1].set(i_offset=biases*dt/1e2)\n"
         ]
         with open(self.output_script_path, 'a') as f:
             f.writelines(lines)
@@ -304,9 +312,9 @@ class SNN(AbstractSNN):
 
         lines = [
             "\n",
-            "# Load pooling projections created by snntoolbox.\n",
-            "filepath = os.path.join(path_wd, layers[-1].label)\n",
-            "sim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
+            "\t# Load pooling projections created by snntoolbox.\n",
+            "\tfilepath = os.path.join(path_wd, layers[-1].label)\n",
+            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
             "filepath))\n"
         ]
         with open(self.output_script_path, 'a') as f:
@@ -316,8 +324,10 @@ class SNN(AbstractSNN):
 
         lines = [
             "\n",
-            "print('Finished building pyNN model.')\n",
-            '\n',
+            "\tprint('Finished building pyNN model.\n')\n",
+            "\n",
+            "\treturn sim, layers\n",
+            "\n",
             "# pyNN script compilation complete.\n"
         ]
         with open(self.output_script_path, 'a') as f:
@@ -370,16 +380,24 @@ class SNN(AbstractSNN):
 
     def load(self, path, filename):
 
+        if os.path.exists(self.output_script_path):
+            self.sim, self.layers = get_snn_from_script(self.output_script_path)
+            return
+
         self.layers = self.load_assembly(path, filename)
         for i in range(len(self.layers) - 1):
             filepath = os.path.join(path, self.layers[i + 1].label)
             assert os.path.isfile(filepath), \
                 "Connections were not found at specified location."
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                warnings.warn('deprecated', UserWarning)
-                self.sim.Projection(self.layers[i], self.layers[i + 1],
-                                    self.sim.FromFileConnector(filepath))
+            self.sim.Projection(self.layers[i], self.layers[i + 1],
+                                self.sim.FromFileConnector(filepath))
+            self.layers[i + 1].set(**self.cellparams)
+            self.layers[i + 1].initialize(v=self.layers[i + 1].get('v_rest'))
+            # Biases should be already be loaded from the assembly file.
+            # Otherwise do this:
+            # filepath = os.path.join(path, self.layers[i + 1].label+'_biases')
+            # biases = np.loadtxt(filepath)
+            # self.layers[i + 1].set(i_offset=biases*self._dt/1e2)
 
     def init_cells(self):
 
@@ -389,8 +407,6 @@ class SNN(AbstractSNN):
             self.layers[0].record([str('spikes')])  # Input layer has no 'v'
 
         for layer in self.layers[1:]:
-            layer.set(**self.cellparams)
-            layer.initialize(v=layer.get('v_rest'))
             layer.record(vars_to_record)
 
         # The spikes of the last layer are recorded by default because they
@@ -568,13 +584,13 @@ class SNN(AbstractSNN):
             filepath = os.path.join(path, layer.label + '_biases')
             if self.config.getboolean('output', 'overwrite') or \
                     confirm_overwrite(filepath):
+                if 'Input' in layer.label:
+                    continue
                 try:
                     biases = layer.get('i_offset')
                 except KeyError:
-                    print("Skipping layer {}".format(layer.label))
                     continue
                 if np.isscalar(biases):
-                    print("Skipping layer {}".format(layer.label))
                     continue
                 np.savetxt(filepath, biases)
 
@@ -675,3 +691,28 @@ def get_shape_from_label(label):
 
     """
     return [int(i) for i in label.split('_')[1].split('x')]
+
+
+def get_snn_from_script(filepath):
+
+    path = os.path.dirname(filepath)
+
+    sys.path.append(os.path.abspath(path))
+
+    filename, ext = os.path.splitext(os.path.basename(filepath))
+
+    # Need to make sure that filename contains no dots to be able to import it.
+    if '.' in filename:
+        filename_new = filename.replace('.', '`')
+
+        os.rename(os.path.join(path, filename + ext),
+                  os.path.join(path, filename_new + ext))
+
+        pynn_script = import_module(filename_new)
+
+        os.rename(os.path.join(path, filename_new + ext),
+                  os.path.join(path, filename + ext))
+    else:
+        pynn_script = import_module(filename)
+
+    return pynn_script.get_model()
