@@ -62,6 +62,7 @@ class SNN(AbstractSNN):
             print("SNN toolbox WARNING: The cell parameter 'i_offset' is "
                   "reserved for the biases and should not be set globally.")
             self.cellparams.pop('i_offset')
+        self.change_padding = False
 
         self.change_padding = False
 
@@ -152,6 +153,13 @@ class SNN(AbstractSNN):
 
     def add_layer(self, layer):
         
+        if 'ZeroPadding' in layer.__class__.__name__:
+            if set(layer.padding).issubset({1,(1,1)}):
+                self.change_padding = True
+                return
+            else:
+                raise NotImplementedErrror("Border_mode {} not supported".format(layer.padding))
+
         # This implementation of ZeroPadding layers assumes symmetric single
         # padding ((1, 1), (1, 1)).
         # Todo: Generalize for asymmetric padding or arbitrary size.
@@ -167,7 +175,7 @@ class SNN(AbstractSNN):
 
         if 'Flatten' in layer.__class__.__name__:
             self.flatten_shapes.append(
-                (layer.name, get_shape_from_label(self.layers[-1].label)))
+            (layer.name, get_shape_from_label(self.layers[-1].label)))
             return
 
         self.layers.append(self.sim.Population(
