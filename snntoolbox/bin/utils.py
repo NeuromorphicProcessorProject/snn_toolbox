@@ -84,11 +84,11 @@ def test_full(config, queue=None):
                                num_to_test, **testset)
 
         # _____________________________ PARSE ________________________________ #
-        if config.getboolean('tools', 'parse') and not is_stop(queue):
-            print("Parsing input model...")
-            model_parser = model_lib.ModelParser(input_model['model'], config)
-            model_parser.parse()
-            parsed_model = model_parser.build_parsed_model()
+
+        print("Parsing input model...")
+        model_parser = model_lib.ModelParser(input_model['model'], config)
+        model_parser.parse()
+        parsed_model = model_parser.build_parsed_model()
 
         # ____________________________ NORMALIZE _____________________________ #
 
@@ -115,9 +115,9 @@ def test_full(config, queue=None):
             try:
                 parsed_model = load(
                     config.get('paths', 'path_wd'),
-                    (config.get('paths', 'filename_parsed_model') + '.h5',
+                    config.get('paths', 'filename_parsed_model'),
                     filepath_custom_objects=config.get(
-                        'paths', 'filepath_custom_objects'))['model'])
+                        'paths', 'filepath_custom_objects'))['model']
             except FileNotFoundError:
                 print("Could not find parsed model {} in path {}. Consider "
                       "setting `parse = True` in your config file.".format(
