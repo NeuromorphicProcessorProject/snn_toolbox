@@ -1274,9 +1274,9 @@ def build_pooling(layer, delay):
     ny = layer.input_shape[1 + ii]  # Height of feature map
     nz = layer.input_shape[3 - 2 * ii]  # Number of feature maps
     dx = layer.pool_size[1]  # Width of pool
-    dy = layer.pool_size[0]  # Hight of pool
-    sx = layer.strides[0]
-    sy = layer.strides[1]
+    dy = layer.pool_size[0]  # Height of pool
+    sx = layer.strides[1]
+    sy = layer.strides[0]
 
     connections = []
 
