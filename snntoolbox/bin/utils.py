@@ -375,48 +375,53 @@ def update_setup(config_filepath):
 
     # Check input model is found and has the right format for the specified
     # model library.
-    if model_lib == 'caffe':
-        caffemodel_filepath = os.path.join(path_wd,
-                                           filename_ann + '.caffemodel')
-        caffemodel_h5_filepath = os.path.join(path_wd,
-                                              filename_ann + '.caffemodel.h5')
-        assert os.path.isfile(caffemodel_filepath) or os.path.isfile(
-            caffemodel_h5_filepath), "File {} or {} not found.".format(
-            caffemodel_filepath, caffemodel_h5_filepath)
-        prototxt_filepath = os.path.join(path_wd, filename_ann + '.prototxt')
-        assert os.path.isfile(prototxt_filepath), \
-            "File {} not found.".format(prototxt_filepath)
-    elif model_lib == 'keras':
-        h5_filepath = str(os.path.join(path_wd, filename_ann + '.h5'))
-        assert os.path.isfile(h5_filepath), \
-            "File {} not found.".format(h5_filepath)
-        json_file = filename_ann + '.json'
-        if not os.path.isfile(os.path.join(path_wd, json_file)):
-            import keras
-            import h5py
-            from snntoolbox.parsing.utils import get_custom_activations_dict
-            # Remove optimizer_weights here, because they may cause the
-            # load_model method to fail if the network was trained on a
-            # different platform or keras version
-            # (see https://github.com/fchollet/keras/issues/4044).
-            with h5py.File(h5_filepath, 'a') as f:
-                if 'optimizer_weights' in f.keys():
-                    del f['optimizer_weights']
-            # Try loading the model.
-            keras.models.load_model(h5_filepath, get_custom_activations_dict(
-                config.get('paths', 'filepath_custom_objects')))
-    elif model_lib == 'lasagne':
-        h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
-        pkl_filepath = os.path.join(path_wd, filename_ann + '.pkl')
-        assert os.path.isfile(h5_filepath) or os.path.isfile(pkl_filepath), \
-            "File {} not found.".format('.h5 or .pkl')
-        py_filepath = os.path.join(path_wd, filename_ann + '.py')
-        assert os.path.isfile(py_filepath), \
-            "File {} not found.".format(py_filepath)
-    else:
-        print("For the specified input model library {}, ".format(model_lib) +
-              "no test is implemented to check if input model files exist in "
-              "the specified working directory!")
+    if config.getboolean('tools', 'evaluate_ann') \
+            or config.getboolean('tools', 'parse'):
+        if model_lib == 'caffe':
+            caffemodel_filepath = os.path.join(path_wd,
+                                               filename_ann + '.caffemodel')
+            caffemodel_h5_filepath = os.path.join(path_wd, filename_ann +
+                                                  '.caffemodel.h5')
+            assert os.path.isfile(caffemodel_filepath) or os.path.isfile(
+                caffemodel_h5_filepath), "File {} or {} not found.".format(
+                caffemodel_filepath, caffemodel_h5_filepath)
+            prototxt_filepath = os.path.join(path_wd, filename_ann +
+                                             '.prototxt')
+            assert os.path.isfile(prototxt_filepath), \
+                "File {} not found.".format(prototxt_filepath)
+        elif model_lib == 'keras':
+            h5_filepath = str(os.path.join(path_wd, filename_ann + '.h5'))
+            assert os.path.isfile(h5_filepath), \
+                "File {} not found.".format(h5_filepath)
+            json_file = filename_ann + '.json'
+            if not os.path.isfile(os.path.join(path_wd, json_file)):
+                import keras
+                import h5py
+                from snntoolbox.parsing.utils import get_custom_activations_dict
+                # Remove optimizer_weights here, because they may cause the
+                # load_model method to fail if the network was trained on a
+                # different platform or keras version
+                # (see https://github.com/fchollet/keras/issues/4044).
+                with h5py.File(h5_filepath, 'a') as f:
+                    if 'optimizer_weights' in f.keys():
+                        del f['optimizer_weights']
+                # Try loading the model.
+                keras.models.load_model(
+                    h5_filepath, get_custom_activations_dict(
+                        config.get('paths', 'filepath_custom_objects')))
+        elif model_lib == 'lasagne':
+            h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
+            pkl_filepath = os.path.join(path_wd, filename_ann + '.pkl')
+            assert os.path.isfile(h5_filepath) or \
+                os.path.isfile(pkl_filepath), \
+                "File {} not found.".format('.h5 or .pkl')
+            py_filepath = os.path.join(path_wd, filename_ann + '.py')
+            assert os.path.isfile(py_filepath), \
+                "File {} not found.".format(py_filepath)
+        else:
+            print("For the specified input model library {}, no test is "
+                  "implemented to check if input model files exist in the "
+                  "specified working directory!".format(model_lib))
 
     # Set default path if user did not specify it.
     if config.get('paths', 'dataset_path') == '':
