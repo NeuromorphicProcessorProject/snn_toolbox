@@ -329,6 +329,7 @@ def update_setup(config_filepath):
             config.get('restrictions', 'simulators_pyNN')):
         delay = config.getfloat('cell', 'delay')
         tau_refrac = config.getfloat('cell', 'tau_refrac')
+        v_thresh = config.getfloat('cell', 'v_thresh')
         dt = config.getfloat('simulation', 'dt')
         # We found that in some cases the refractory period can actually be
         # smaller than the time step.
@@ -342,17 +343,19 @@ def update_setup(config_filepath):
             print("\nSNN toolbox WARNING: We recommend to set the refractory "
                   "period ({}) to be as small as possible (one time step / {}"
                   ", {}).".format(tau_refrac, scale, dt / scale))
-        if delay != dt:
-            print("\nSNN toolbox WARNING: Delay ({}) should be equal to one "
+        if delay < dt:
+            print("\nSNN toolbox WARNING: Delay ({}) must be at least one "
                   "time step ({}). Setting delay = dt.".format(delay, dt))
             config.set('cell', 'delay', str(dt))
-        v_thresh = config.getfloat('cell', 'v_thresh')
+        elif delay > dt:
+            print("\nSNN toolbox WARNING: We recommend to set the delay ({}) "
+                  "to be as small as possible (one time step, {})."
+                  "".format(delay, dt))
         if v_thresh != 0.01:
             print("\nSNN toolbox WARNING: For optimal correspondence between "
                   "the original ANN and the converted SNN simulated on pyNN, "
-                  "the threshold should be 0.01. Overriding user-set value {}."
+                  "the threshold should be 0.01. Current value: {}."
                   "".format(v_thresh))
-            config.set('cell', 'v_thresh', '0.01')
 
     # Set default path if user did not specify it.
     if config.get('paths', 'path_wd') == '':
@@ -400,7 +403,8 @@ def update_setup(config_filepath):
                 if 'optimizer_weights' in f.keys():
                     del f['optimizer_weights']
             # Try loading the model.
-            keras.models.load_model(h5_filepath, get_custom_activations_dict())
+            keras.models.load_model(h5_filepath, get_custom_activations_dict(
+                config.get('paths', 'filepath_custom_objects')))
     elif model_lib == 'lasagne':
         h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
         pkl_filepath = os.path.join(path_wd, filename_ann + '.pkl')

@@ -79,8 +79,7 @@ def output_graphs(plot_vars, config, path=None, idx=0, data_format=None):
                & plot_keys):
             if 'spikerates_n_b_l' not in plot_vars:
                 plot_vars['spikerates_n_b_l'] = spiketrains_to_rates(
-                    plot_vars['spiketrains_n_b_l_t'],
-                    duration / config.getfloat('simulation', 'dt'),
+                    plot_vars['spiketrains_n_b_l_t'], duration,
                     config.get('conversion', 'spike_code'))
             plot_vars['spikerates_n_l'] = get_sample_activity_from_batch(
                 plot_vars['spikerates_n_b_l'], idx)
