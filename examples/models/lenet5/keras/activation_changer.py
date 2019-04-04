@@ -1,17 +1,12 @@
 import keras
+from keras.layers import Activation
 from keras import activations
 from keras.models import load_model
-from keras.utils.generic_utils import get_custom_objects
 from keras.datasets import mnist
 import keras.utils as utils
 import numpy as np
 from keras.utils import np_utils
-
-
-def noisy_softplus(x, k=0.17, sigma=0.5):
-    return sigma*k*keras.activations.softplus(x/(sigma*k))
-
-get_custom_objects().update({'noisy_softplus': noisy_softplus})
+from snntoolbox.utils.utils import NoisySoftplus
 
 
 #loading model
@@ -21,7 +16,7 @@ model = load_model(filename)
 
 #model.summary()
 #generating testing and training data
-(X_train, y_train), (X_test, y_test) = mnist.load_data()
+(X_train, Y_train), (X_test, Y_test) = mnist.load_data()
 
 X_train = X_train.reshape(X_train.shape[0], 28, 28, 1).astype('float32')
 X_test = X_test.reshape(X_test.shape[0], 28, 28, 1).astype('float32')
@@ -29,16 +24,16 @@ X_test = X_test.reshape(X_test.shape[0], 28, 28, 1).astype('float32')
 X_train /= 255
 X_test /= 255
 
-Y_train = np_utils.to_categorical(y_train, 10)
-Y_test = np_utils.to_categorical(y_test, 10)
+Y_train = np_utils.to_categorical(Y_train, 10)
+Y_test = np_utils.to_categorical(Y_test, 10)
 
 X_train = np.moveaxis(X_train, 3, 1)
 X_test = np.moveaxis(X_test, 3, 1)
 
 #Evaluating pretrained model
 score = model.evaluate(X_test, Y_test, verbose=0)
-print('Original Test loss:', score[0])
-print('Original Test accuracy:', score[1])
+print('Original Test Loss:', score[0])
+print('Original Test Accuracy:', score[1])
 
 
 #Tinkering with model
@@ -50,8 +45,8 @@ for layer in model.layers:
     
     #changing activation
     if hasattr(layer, 'activation') and layer.activation == activations.relu:
-        layer.activation = noisy_softplus
-     
+        layer.activation = NoisySoftplus
+             
     '''#removing bias
     if hasattr(layer, 'use_bias') and layerconf['use_bias']:
         print("Found biased layer")
@@ -75,10 +70,9 @@ for layer in model.layers:
     else:
         layer = type(layer).from_config(layerconf)
     '''
-#model = utils.apply_modifications(model)
 
-model.save("modified"+filename)
-model = load_model("modified"+filename, custom_objects={'noisy_softplus': noisy_softplus})
+model.save("modified_"+filename)
+model = load_model("modified_"+filename, custom_objects ={'NoisySoftplus': NoisySoftplus()})
 #model.summary()
 
 
@@ -88,5 +82,27 @@ for layer in model.layers:
         print(layer.activation)
 '''
 score = model.evaluate(X_test, Y_test, batch_size = 1, verbose=0)
-print('NSP Test loss:', score[0])
-print('NSP Accuracy:', score[1])
+print('NSP Test Loss:', score[0])
+print('NSP Test Accuracy:', score[1])
+
+
+epochs = 1
+print('Retraining network for %d epochs...' % epochs)
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+
+model.fit(X_train, Y_train,
+                    batch_size=10,
+                    epochs=epochs,
+                    verbose=0,
+validation_data=(X_test, Y_test))
+
+print('Evaluating retrained network...')
+
+score = model.evaluate(X_test, Y_test, batch_size = 100, verbose=0)
+print('Retrained Test loss:', score[0])
+print('Retrained Test accuracy:', score[1])
+
+#model.save("lenet5_retrained.h5")

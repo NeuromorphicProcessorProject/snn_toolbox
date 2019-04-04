@@ -1188,6 +1188,16 @@ def get_clamped_relu_from_string(activation_str):
 
     return activation
 
+def get_noisy_softplus_from_string(activation_str):
+
+    from snntoolbox.utils.utils import NoisySoftplus
+
+    k, sigma = map(eval, activation_str.split('_')[-2:])
+
+    activation = NoisySoftplus(k, sigma)
+
+    return activation
+
 
 def get_custom_activation(activation_str):
     """
@@ -1222,6 +1232,9 @@ def get_custom_activation(activation_str):
             activation_str)
     elif 'clamped_relu' in activation_str:
         activation = get_clamped_relu_from_string(activation_str)
+    elif 'NoisySoftplus' in activation_str:
+        from snntoolbox.utils.utils import NoisySoftplus
+        activation = NoisySoftplus
     else:
         activation = activation_str
 
@@ -1241,7 +1254,7 @@ def get_custom_activations_dict(filepath=None):
     """
 
     from snntoolbox.utils.utils import binary_sigmoid, binary_tanh, \
-        ClampedReLU, LimitedReLU
+        ClampedReLU, LimitedReLU, NoisySoftplus
 
     # Todo: We should be able to load a different activation for each layer.
     # Need to remove this hack:
@@ -1256,6 +1269,7 @@ def get_custom_activations_dict(filepath=None):
                       'clamped_relu': ClampedReLU(),
                       'LimitedReLU': LimitedReLU,
                       'relu6': LimitedReLU({'max_value': 6}),
+                      'Noisy_Softplus': NoisySoftplus,
                       activation_str: activation}
 
     if filepath is not None and filepath != '':
@@ -1266,7 +1280,7 @@ def get_custom_activations_dict(filepath=None):
         for key in kwargs:
             if 'LimitedReLU' in key:
                 custom_objects[key] = LimitedReLU(kwargs[key])
-
+    import pdb; pdb.set_trace()
     return custom_objects
 
 
