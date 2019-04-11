@@ -28,7 +28,6 @@ class ModelParser(AbstractModelParser):
         beta = np.zeros_like(mean) if layer.beta is None else \
             k.get_value(layer.beta)
         axis = layer.axis
-        print("Using BatchNorm axis {}.".format(axis))
 
         return [mean, var_eps_sqrt_inv, gamma, beta, axis]
 
@@ -85,7 +84,7 @@ class ModelParser(AbstractModelParser):
         pass
 
 
-def load(path, filename):
+def load(path, filename, **kwargs):
     """Load network from file.
 
     Parameters
@@ -113,7 +112,7 @@ def load(path, filename):
     import os
     from keras import models, metrics
 
-    filepath = os.path.join(path, filename)
+    filepath = str(os.path.join(path, filename))
 
     if os.path.exists(filepath + '.json'):
         model = models.model_from_json(open(filepath + '.json').read())
@@ -126,8 +125,12 @@ def load(path, filename):
                       ['accuracy', metrics.top_k_categorical_accuracy])
     else:
         from snntoolbox.parsing.utils import get_custom_activations_dict
-        model = models.load_model(filepath + '.h5',
-                                  get_custom_activations_dict())
+        filepath_custom_objects = kwargs.get('filepath_custom_objects', None)
+        if filepath_custom_objects is not None:
+            filepath_custom_objects = str(filepath_custom_objects)  # python 2
+        model = models.load_model(
+            filepath + '.h5',
+            get_custom_activations_dict(filepath_custom_objects))
         model.compile(model.optimizer, model.loss,
                       ['accuracy', metrics.top_k_categorical_accuracy])
 

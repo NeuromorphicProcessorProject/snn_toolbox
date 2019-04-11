@@ -2,8 +2,8 @@
 """Functions common to input model parsers.
 
 The core of this module is an abstract base class extracts an input model
-written in some neural network library and prepares it for further processing in
-the SNN toolbox.
+written in some neural network library and prepares it for further processing
+in the SNN toolbox.
 
 .. autosummary::
     :nosignatures:
@@ -61,8 +61,8 @@ class AbstractModelParser:
         specifications. Obtained by calling `parse`. Used to build new, parsed
         Keras model.
     _layer_dict: dict
-        Maps the layer names of the specific input model library to our standard
-        names (currently Keras).
+        Maps the layer names of the specific input model library to our
+        standard names (currently Keras).
     parsed_model: keras.models.Model
         The parsed model.
     """
@@ -86,18 +86,19 @@ class AbstractModelParser:
         instantiation of a new, parsed Keras model (done in a later step by
         `build_parsed_model`).
 
-        This function applies several simplifications and adaptations to prepare
-        the model for conversion to spiking. These modifications include:
+        This function applies several simplifications and adaptations to
+        prepare the model for conversion to spiking. These modifications
+        include:
 
         - Removing layers only used during training (Dropout,
           BatchNormalization, ...)
         - Absorbing the parameters of BatchNormalization layers into the
           parameters of the preceeding layer. This does not affect performance
           because batch-norm-parameters are constant at inference time.
-        - Removing ReLU activation layers, because their function is inherent to
-          the spike generation mechanism. The information which nonlinearity was
-          used in the original model is preserved in the ``activation`` key in
-          `_layer_list`. If the output layer employs the softmax function, a
+        - Removing ReLU activation layers, because their function is inherent
+          to the spike generation mechanism. The information which nonlinearity
+          was used in the original model is preserved in the ``activation`` key
+          in `_layer_list`. If the output layer employs the softmax function, a
           spiking version is used when testing the SNN in INIsim or MegaSim
           simulators.
         - Inserting a Flatten layer between Conv and FC layers, if the input
@@ -116,6 +117,7 @@ class AbstractModelParser:
             # Absorb BatchNormalization layer into parameters of previous layer
             if layer_type == 'BatchNormalization':
                 parameters_bn = list(self.get_batchnorm_parameters(layer))
+                parameters_bn, axis = parameters_bn[:-1], parameters_bn[-1]
                 inbound = self.get_inbound_layers_with_parameters(layer)
                 assert len(inbound) == 1, \
                     "Could not find unique layer with parameters " \
@@ -124,13 +126,15 @@ class AbstractModelParser:
                 prev_layer_idx = name_map[str(id(prev_layer))]
                 parameters = list(
                     self._layer_list[prev_layer_idx]['parameters'])
+                prev_layer_type = self.get_type(prev_layer)
                 print("Absorbing batch-normalization parameters into " +
-                      "parameters of previous {}.".format(self.get_type(
-                          prev_layer)))
-                args = parameters + parameters_bn + \
-                    [keras.backend.image_data_format()]
+                      "parameters of previous {}.".format(prev_layer_type))
+                axis = -2 if prev_layer_type == 'DepthwiseConv2D' else axis
+                args = parameters + parameters_bn
+                kwargs = {'axis': axis, 'image_data_format':
+                          keras.backend.image_data_format()}
                 self._layer_list[prev_layer_idx]['parameters'] = \
-                    absorb_bn_parameters(*args)
+                    absorb_bn_parameters(*args, **kwargs)
 
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
@@ -158,7 +162,8 @@ class AbstractModelParser:
                 continue
 
             if not inserted_flatten:
-                inserted_flatten = self.try_insert_flatten(layer, idx, name_map)
+                inserted_flatten = self.try_insert_flatten(layer, idx,
+                                                           name_map)
                 idx += inserted_flatten
 
             print("Parsing layer {}.".format(layer_type))
@@ -402,8 +407,8 @@ class AbstractModelParser:
 
         The format is <layer_num><layer_type>_<layer_shape>.
 
-        >>> # Name of first convolution layer with 32 feature maps and dimension
-        >>> # 64x64:
+        >>> # Name of first convolution layer with 32 feature maps and
+        >>> # dimension 64x64:
         "00Conv2D_32x64x64"
         >>> # Name of final dense layer with 100 units:
         "06Dense_100"
@@ -465,7 +470,8 @@ class AbstractModelParser:
         prev_layer_output_shape = self.get_output_shape(previous_layers[0])
         if len(output_shape) < len(prev_layer_output_shape) and \
                 self.get_type(layer) != 'Flatten':
-            assert len(previous_layers) == 1, "Layer to flatten must be unique."
+            assert len(previous_layers) == 1, \
+                "Layer to flatten must be unique."
             print("Inserting layer Flatten.")
             num_str = str(idx) if idx > 9 else '0' + str(idx)
             shape_string = str(np.prod(prev_layer_output_shape[1:]))
@@ -635,8 +641,8 @@ class AbstractModelParser:
             A Keras model, functionally equivalent to `input_model`.
         """
 
-        img_input = keras.layers.Input(batch_shape=self.get_batch_input_shape(),
-                                       name='input')
+        img_input = keras.layers.Input(
+            batch_shape=self.get_batch_input_shape(), name='input')
         parsed_layers = {'input': img_input}
         print("Building parsed model...\n")
         for layer in self._layer_list:
@@ -718,8 +724,8 @@ def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
     # and layers like [batch_size, channels, height, width] or
     # [batch_size, height, width, channels].
     if weight.ndim == 4:
-        kernel_axes = [None, 3, 0, 1] if image_data_format == 'channels_first' \
-            else [None, 0, 1, 3]
+        kernel_axes = [None, 3, 0, 1] \
+            if image_data_format == 'channels_first' else [None, 0, 1, 3]
         layer2kernel_axes_map = {layer_axis: kernel_axis for layer_axis,
                                  kernel_axis in enumerate(kernel_axes)}
         # Read: batch axis is mapped nowhere, channel axis is mapped from 1 or
@@ -756,6 +762,9 @@ def padding_string(pad, pool_size):
     padding: str
         Border mode identifier.
     """
+
+    if isinstance(pad, str):
+        return pad
 
     if pad == (0, 0):
         padding = 'valid'
@@ -1001,9 +1010,9 @@ def get_fanout(layer, config):
 
     fanout: Union[int, ndarray]
         Fan-out. The fan-out of a neuron projecting onto a convolution layer
-        varies between neurons in a feature map if the stride of the convolution
-        layer is greater than unity. In this case, return an array of the same
-        shape as the layer.
+        varies between neurons in a feature map if the stride of the
+        convolution layer is greater than unity. In this case, return an array
+        of the same shape as the layer.
     """
 
     from snntoolbox.simulation.utils import get_spiking_outbound_layers
@@ -1037,15 +1046,18 @@ def has_stride_unity(layer):
     return all([s == 1 for s in layer.strides])
 
 
-def get_fanout_array(layer_pre, layer_post):
+def get_fanout_array(layer_pre, layer_post, is_depthwise_conv=False):
     """
     Return an array of the same shape as ``layer_pre``, where each entry gives
     the number of outgoing connections of a neuron. In convolution layers where
     the post-synaptic layer has stride > 1, the fan-out varies between neurons.
     """
 
-    nx = layer_post.output_shape[3]  # Width of feature map
-    ny = layer_post.output_shape[2]  # Height of feature map
+    ax = 1 if keras.backend.image_data_format() == 'channels_first' else 0
+
+    nx = layer_post.output_shape[2 + ax]  # Width of feature map
+    ny = layer_post.output_shape[1 + ax]  # Height of feature map
+    nz = layer_post.output_shape[ax]  # Number of channels
     kx, ky = layer_post.kernel_size  # Width and height of kernel
     px = int((kx - 1) / 2) if layer_post.padding == 'valid' else 0
     py = int((ky - 1) / 2) if layer_post.padding == 'valid' else 0
@@ -1054,26 +1066,32 @@ def get_fanout_array(layer_pre, layer_post):
 
     fanout = np.zeros(layer_pre.output_shape[1:])
 
-    for x_pre in range(fanout.shape[1]):
-        for y_pre in range(fanout.shape[2]):
+    for y_pre in range(fanout.shape[0 + ax]):
+        y_post = [int((y_pre + py) / sy)]
+        wy = (y_pre + py) % sy
+        i = 1
+        while wy + i * sy < ky:
+            y = y_post[0] - i
+            if 0 <= y < ny:
+                y_post.append(y)
+            i += 1
+        for x_pre in range(fanout.shape[1 + ax]):
             x_post = [int((x_pre + px) / sx)]
-            y_post = [int((y_pre + py) / sy)]
-            wx = [(x_pre + px) % sx]
-            wy = [(y_pre + py) % sy]
+            wx = (x_pre + px) % sx
             i = 1
-            while wx[0] + i * sx < kx:
+            while wx + i * sx < kx:
                 x = x_post[0] - i
                 if 0 <= x < nx:
                     x_post.append(x)
                 i += 1
-            i = 1
-            while wy[0] + i * sy < ky:
-                y = y_post[0] - i
-                if 0 <= y < ny:
-                    y_post.append(y)
-                i += 1
 
-            fanout[:, x_pre, y_pre] = len(x_post) * len(y_post)
+            if ax:
+                fanout[:, y_pre, x_pre] = len(x_post) * len(y_post)
+            else:
+                fanout[y_pre, x_pre, :] = len(x_post) * len(y_post)
+
+    if not is_depthwise_conv:
+        fanout *= nz
 
     return fanout
 
@@ -1154,8 +1172,8 @@ def get_custom_activation(activation_str):
     """
     If ``activation_str`` describes a custom activation function, import this
     function from `snntoolbox.utils.utils` and return it. If custom activation
-    function is not found or implemented, return the ``activation_str`` in place
-    of the activation function.
+    function is not found or implemented, return the ``activation_str`` in
+    place of the activation function.
 
     Parameters
     ----------
@@ -1189,10 +1207,16 @@ def get_custom_activation(activation_str):
     return activation, activation_str
 
 
-def get_custom_activations_dict():
+def get_custom_activations_dict(filepath=None):
     """
     Import all implemented custom activation functions so they can be used when
     loading a Keras model.
+
+    Parameters
+    ----------
+
+    filepath : Optional[str]
+        Path to json file containing additional custom objects.
     """
 
     from snntoolbox.utils.utils import binary_sigmoid, binary_tanh, ClampedReLU

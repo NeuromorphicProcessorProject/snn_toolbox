@@ -61,13 +61,14 @@ def test_full(config, queue=None):
     target_sim = import_target_sim(config)
     spiking_model = target_sim.SNN(config, queue)
 
-    # ____________________________ LOAD DATASET ______________________________ #
+    # ___________________________ LOAD DATASET ______________________________ #
 
     normset, testset = get_dataset(config)
 
-    if config.getboolean('tools', 'convert') and not is_stop(queue):
+    parsed_model = None
+    if config.getboolean('tools', 'parse') and not is_stop(queue):
 
-        # ___________________________ LOAD MODEL _____________________________ #
+        # __________________________ LOAD MODEL _____________________________ #
 
         model_lib = import_module('snntoolbox.parsing.model_libs.' +
                                   config.get('input', 'model_lib') +
@@ -77,19 +78,20 @@ def test_full(config, queue=None):
 
         # Evaluate input model.
         if config.getboolean('tools', 'evaluate_ann') and not is_stop(queue):
-            print("Evaluating input model on {} samples...".format(num_to_test))
+            print("Evaluating input model on {} samples...".format(
+                num_to_test))
             model_lib.evaluate(input_model['val_fn'],
                                config.getint('simulation', 'batch_size'),
                                num_to_test, **testset)
 
-        # _____________________________ PARSE ________________________________ #
+        # ____________________________ PARSE ________________________________ #
 
         print("Parsing input model...")
         model_parser = model_lib.ModelParser(input_model['model'], config)
         model_parser.parse()
         parsed_model = model_parser.build_parsed_model()
 
-        # ____________________________ NORMALIZE _____________________________ #
+        # ___________________________ NORMALIZE _____________________________ #
 
         if config.getboolean('tools', 'normalize') and not is_stop(queue):
             normalize_parameters(parsed_model, config, **normset)
@@ -102,11 +104,27 @@ def test_full(config, queue=None):
                 'simulation', 'batch_size'), num_to_test, **testset)
 
         # Write parsed model to disk
-        parsed_model.save(
+        parsed_model.save(str(
             os.path.join(config.get('paths', 'path_wd'),
-                         config.get('paths', 'filename_parsed_model') + '.h5'))
+                         config.get('paths', 'filename_parsed_model') +
+                         '.h5')))
 
-        # ____________________________ CONVERT _______________________________ #
+    # _____________________________ CONVERT _________________________________ #
+
+    if config.getboolean('tools', 'convert') and not is_stop(queue):
+        if parsed_model is None:
+            from snntoolbox.parsing.model_libs.keras_input_lib import load
+            try:
+                parsed_model = load(
+                    config.get('paths', 'path_wd'),
+                    config.get('paths', 'filename_parsed_model'),
+                    filepath_custom_objects=config.get(
+                        'paths', 'filepath_custom_objects'))['model']
+            except FileNotFoundError:
+                print("Could not find parsed model {} in path {}. Consider "
+                      "setting `parse = True` in your config file.".format(
+                        config.get('paths', 'path_wd'),
+                        config.get('paths', 'filename_parsed_model')))
 
         spiking_model.build(parsed_model)
 
@@ -115,7 +133,7 @@ def test_full(config, queue=None):
         spiking_model.save(config.get('paths', 'path_wd'),
                            config.get('paths', 'filename_snn'))
 
-    # _______________________________ SIMULATE _______________________________ #
+    # ______________________________ SIMULATE _______________________________ #
 
     if config.getboolean('tools', 'simulate') and not is_stop(queue):
 
@@ -187,6 +205,8 @@ def run_parameter_sweep(config, queue):
                     param_name))
                 print(['{:.2f}'.format(i) for i in param_values])
                 print('\n')
+            elif len(param_values) == 0:
+                param_values.append(eval(config.get('cell', param_name)))
 
             # Loop over parameter to sweep
             for p in param_values:
@@ -234,7 +254,7 @@ def load_config(filepath):
     try:
         import configparser
     except ImportError:
-        # noinspection PyPep8Naming
+        # noinspection PyPep8Naming,PyUnresolvedReferences
         import ConfigParser as configparser
         # noinspection PyUnboundLocalVariable
         configparser = configparser
@@ -251,8 +271,8 @@ def load_config(filepath):
 def update_setup(config_filepath):
     """Update default settings with user settings and check they are valid.
 
-    Load settings from configuration file at ``config_filepath``, and check that
-    parameter choices are valid. Non-specified settings are filled in with
+    Load settings from configuration file at ``config_filepath``, and check
+    that parameter choices are valid. Non-specified settings are filled in with
     defaults.
     """
 
@@ -269,8 +289,8 @@ def update_setup(config_filepath):
     keras_backends = config_string_to_set_of_strings(
         config.get('restrictions', 'keras_backends'))
     assert keras_backend in keras_backends, \
-        "Keras backend {} not supported. Choose from {}.".format(keras_backend,
-                                                                 keras_backends)
+        "Keras backend {} not supported. Choose from {}.".format(
+            keras_backend, keras_backends)
     os.environ['KERAS_BACKEND'] = keras_backend
     # The keras import has to happen after setting the backend environment
     # variable!
@@ -301,7 +321,7 @@ def update_setup(config_filepath):
     # Warn user that it is not possible to use Brian2 simulator by loading a
     # pre-converted network from disk.
     if simulator == 'brian2' and not config.getboolean('tools', 'convert'):
-        print(dedent("""\ \n
+        print(dedent("""\n
             SNN toolbox Warning: When using Brian 2 simulator, you need to
             convert the network each time you start a new session. (No
             saving/reloading methods implemented.) Setting convert = True.
@@ -322,51 +342,59 @@ def update_setup(config_filepath):
     model_libs = config_string_to_set_of_strings(config.get('restrictions',
                                                             'model_libs'))
     assert model_lib in model_libs, "ERROR: Input model library '{}' ".format(
-        model_lib) + "not supported yet. Possible values: {}".format(model_libs)
+        model_lib) + "not supported yet. Possible values: {}".format(
+        model_libs)
 
     # Check input model is found and has the right format for the specified
     # model library.
-    if model_lib == 'caffe':
-        caffemodel_filepath = os.path.join(path_wd,
-                                           filename_ann + '.caffemodel')
-        caffemodel_h5_filepath = os.path.join(path_wd,
-                                              filename_ann + '.caffemodel.h5')
-        assert os.path.isfile(caffemodel_filepath) or os.path.isfile(
-            caffemodel_h5_filepath), "File {} or {} not found.".format(
-            caffemodel_filepath, caffemodel_h5_filepath)
-        prototxt_filepath = os.path.join(path_wd, filename_ann + '.prototxt')
-        assert os.path.isfile(prototxt_filepath), \
-            "File {} not found.".format(prototxt_filepath)
-    elif model_lib == 'keras':
-        h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
-        assert os.path.isfile(h5_filepath), \
-            "File {} not found.".format(h5_filepath)
-        json_file = filename_ann + '.json'
-        if not os.path.isfile(os.path.join(path_wd, json_file)):
-            import keras
-            import h5py
-            from snntoolbox.parsing.utils import get_custom_activations_dict
-            # Remove optimizer_weights here, because they may cause the
-            # load_model method to fail if the network was trained on a
-            # different platform or keras version
-            # (see https://github.com/fchollet/keras/issues/4044).
-            with h5py.File(h5_filepath, 'a') as f:
-                if 'optimizer_weights' in f.keys():
-                    del f['optimizer_weights']
-            # Try loading the model.
-            keras.models.load_model(h5_filepath, get_custom_activations_dict())
-    elif model_lib == 'lasagne':
-        h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
-        pkl_filepath = os.path.join(path_wd, filename_ann + '.pkl')
-        assert os.path.isfile(h5_filepath) or os.path.isfile(pkl_filepath), \
-            "File {} not found.".format('.h5 or .pkl')
-        py_filepath = os.path.join(path_wd, filename_ann + '.py')
-        assert os.path.isfile(py_filepath), \
-            "File {} not found.".format(py_filepath)
-    else:
-        print("For the specified input model library {}, ".format(model_lib) +
-              "no test is implemented to check if input model files exist in "
-              "the specified working directory!")
+    if config.getboolean('tools', 'evaluate_ann') \
+            or config.getboolean('tools', 'parse'):
+        if model_lib == 'caffe':
+            caffemodel_filepath = os.path.join(path_wd,
+                                               filename_ann + '.caffemodel')
+            caffemodel_h5_filepath = os.path.join(path_wd, filename_ann +
+                                                  '.caffemodel.h5')
+            assert os.path.isfile(caffemodel_filepath) or os.path.isfile(
+                caffemodel_h5_filepath), "File {} or {} not found.".format(
+                caffemodel_filepath, caffemodel_h5_filepath)
+            prototxt_filepath = os.path.join(path_wd, filename_ann +
+                                             '.prototxt')
+            assert os.path.isfile(prototxt_filepath), \
+                "File {} not found.".format(prototxt_filepath)
+        elif model_lib == 'keras':
+            h5_filepath = str(os.path.join(path_wd, filename_ann + '.h5'))
+            assert os.path.isfile(h5_filepath), \
+                "File {} not found.".format(h5_filepath)
+            json_file = filename_ann + '.json'
+            if not os.path.isfile(os.path.join(path_wd, json_file)):
+                import keras
+                import h5py
+                from snntoolbox.parsing.utils import \
+                    get_custom_activations_dict
+                # Remove optimizer_weights here, because they may cause the
+                # load_model method to fail if the network was trained on a
+                # different platform or keras version
+                # (see https://github.com/fchollet/keras/issues/4044).
+                with h5py.File(h5_filepath, 'a') as f:
+                    if 'optimizer_weights' in f.keys():
+                        del f['optimizer_weights']
+                # Try loading the model.
+                keras.models.load_model(
+                    h5_filepath, get_custom_activations_dict(
+                        config.get('paths', 'filepath_custom_objects')))
+        elif model_lib == 'lasagne':
+            h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
+            pkl_filepath = os.path.join(path_wd, filename_ann + '.pkl')
+            assert os.path.isfile(h5_filepath) or \
+                os.path.isfile(pkl_filepath), \
+                "File {} not found.".format('.h5 or .pkl')
+            py_filepath = os.path.join(path_wd, filename_ann + '.py')
+            assert os.path.isfile(py_filepath), \
+                "File {} not found.".format(py_filepath)
+        else:
+            print("For the specified input model library {}, no test is "
+                  "implemented to check if input model files exist in the "
+                  "specified working directory!".format(model_lib))
 
     # Set default path if user did not specify it.
     if config.get('paths', 'dataset_path') == '':
@@ -419,12 +447,6 @@ def update_setup(config_filepath):
         config.set('paths', 'filename_snn', '{}_{}'.format(filename_ann,
                                                            simulator))
 
-    if simulator != 'INI' and not config.getboolean('input', 'poisson_input'):
-        config.set('input', 'poisson_input', str(True))
-        print(dedent("""\
-            SNN toolbox Warning: Currently, turning off Poisson input is
-            only possible in INI simulator. Falling back on Poisson input."""))
-
     # Make sure the number of samples to test is not lower than the batch size.
     batch_size = config.getint('simulation', 'batch_size')
     if config.getint('simulation', 'num_to_test') < batch_size:
@@ -469,7 +491,8 @@ def update_setup(config_filepath):
                           "plotting.", ImportWarning)
             config.set('output', 'plot_vars', str({}))
     if matplotlib is not None:
-        matplotlib.rcParams.update(eval(config.get('output', 'plotproperties')))
+        matplotlib.rcParams.update(eval(config.get('output',
+                                                   'plotproperties')))
 
     # Check settings for parameter sweep
     param_name = config.get('parameter_sweep', 'param_name')
@@ -478,9 +501,6 @@ def update_setup(config_filepath):
     except KeyError:
         print("Unkown parameter name {} to sweep.".format(param_name))
         raise RuntimeError
-    if not eval(config.get('parameter_sweep', 'param_values')):
-        config.set('parameter_sweep', 'param_values',
-                   str([eval(config.get('cell', param_name))]))
 
     spike_code = config.get('conversion', 'spike_code')
     spike_codes = config_string_to_set_of_strings(config.get('restrictions',
@@ -513,11 +533,6 @@ def initialize_simulator(config):
     print("Initializing {} simulator...\n".format(simulator))
     if simulator in config_string_to_set_of_strings(
             config.get('restrictions', 'simulators_pyNN')):
-        if simulator == 'nest':
-            # Workaround for missing link bug, see
-            # https://github.com/ContinuumIO/anaconda-issues/issues/152
-            # noinspection PyUnresolvedReferences
-            import readline
         sim = import_module('pyNN.' + simulator)
 
         # From the pyNN documentation:

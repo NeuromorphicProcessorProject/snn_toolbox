@@ -2,9 +2,9 @@
 
 """Common functions for spiking simulators.
 
-Most notably, this module defines the abstract base class `AbstractSNN` used to
-create spiking neural networks. This class has to be inherited from when another
-simulator is added to the toolbox (see :ref:`extending`).
+Most notably, this module defines the abstract base class `AbstractSNN` used
+to create spiking neural networks. This class has to be inherited from when
+another simulator is added to the toolbox (see :ref:`extending`).
 
 @author: rbodo
 """
@@ -77,13 +77,13 @@ class AbstractSNN:
         The batch size for parallel testing of multiple samples.
     spiketrains_n_b_l_t: list[tuple[np.array, str]]
         Spike trains of a batch of samples of all neurons in the network over
-        the whole simulation time. Each entry in ``spiketrains_batch`` contains
-        a tuple ``(spiketimes, label)`` for each layer of the network.
-        ``spiketimes`` is an array where the last index contains the spike times
-        of the specific neuron, and the first indices run over the number of
-        neurons in the layer: (batch_size, n_chnls, n_rows, n_cols, duration).
-        ``label`` is a string specifying both the layer type and the index,
-        e.g. ``'03Conv2D_32x64x64'``.
+        the whole simulation time. Each entry in ``spiketrains_batch``
+        contains a tuple ``(spiketimes, label)`` for each layer of the network.
+        ``spiketimes`` is an array where the last index contains the spike
+        times of the specific neuron, and the first indices run over the number
+        of neurons in the layer: (batch_size, n_chnls, n_rows, n_cols,
+        duration). ``label`` is a string specifying both the layer type and the
+        index, e.g. ``'03Conv2D_32x64x64'``.
     activations_n_b_l: list[tuple[np.array, str]]
         Activations of the ANN.
     mem_n_b_l_t: list[tuple[np.array, str]]
@@ -91,9 +91,11 @@ class AbstractSNN:
     input_b_l_t: ndarray
         Input to the SNN over time.
     top1err_b_t: ndarray
-        Top-1 error of SNN over time. Shape: (`batch_size`, ``_num_timesteps``).
+        Top-1 error of SNN over time. Shape:
+        (`batch_size`, ``_num_timesteps``).
     top5err_b_t: ndarray
-        Top-5 error of SNN over time. Shape: (`batch_size`, ``_num_timesteps``).
+        Top-5 error of SNN over time. Shape:
+        (`batch_size`, ``_num_timesteps``).
     synaptic_operations_b_t: ndarray
         Number of synaptic operations of SNN over time. Shape:
         (`batch_size`, ``_num_timesteps``)
@@ -128,6 +130,8 @@ class AbstractSNN:
         calling :py:func:`snntoolbox.bin.utils.initialize_simulator`. For
         instance, if using Brian simulator, this initialization would be
         equivalent to ``import pyNN.brian as sim``.
+    flatten_shapes: list[(str, list)]
+        List containing the (name, shape) tuples for each Flatten layer.
     """
 
     def __init__(self, config, queue=None):
@@ -148,7 +152,8 @@ class AbstractSNN:
         self.synaptic_operations_b_t = self.operations_ann = None
         self.neuron_operations_b_t = None
         self.top1err_ann = self.top5err_ann = None
-        self.num_neurons = self.num_neurons_with_bias = self.num_synapses = None
+        self.num_neurons = self.num_neurons_with_bias = self.num_synapses = \
+            None
         self.fanin = self.fanout = None
         self._dt = self.config.getfloat('simulation', 'dt')
         self._duration = self.config.getint('simulation', 'duration')
@@ -173,6 +178,8 @@ class AbstractSNN:
 
         self.data_format = None
 
+        self.flatten_shapes = []
+
     @property
     @abstractmethod
     def is_parallelizable(self):
@@ -190,7 +197,7 @@ class AbstractSNN:
         Parameters
         ----------
 
-        input_shape: tuple
+        input_shape: list | tuple
             Input shape to the network, including the batch size as first
             dimension.
         """
@@ -281,7 +288,8 @@ class AbstractSNN:
         output_b_l_t: ndarray
             Array of shape (`batch_size`, `num_classes`, ``num_timesteps``),
             containing the number of output spikes of the neurons in the final
-            layer, for each sample and for each time step during the simulation.
+            layer, for each sample and for each time step during the
+            simulation.
         """
 
         pass
@@ -429,8 +437,7 @@ class AbstractSNN:
                 self.build_dense(layer)
             elif layer_type == 'Conv2D':
                 self.build_convolution(layer)
-                if layer.data_format == 'channels_last':
-                    self.data_format = layer.data_format
+                self.data_format = layer.data_format
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
                 self.build_pooling(layer)
             elif layer_type == 'Flatten':
@@ -445,7 +452,8 @@ class AbstractSNN:
             self.operations_ann = get_ann_ops(self.num_neurons,
                                               self.num_neurons_with_bias,
                                               self.fanin)
-            print("Number of operations of ANN: {}".format(self.operations_ann))
+            print("Number of operations of ANN: {}".format(
+                self.operations_ann))
             print("Number of neurons: {}".format(sum(self.num_neurons[1:])))
             print("Number of synapses: {}\n".format(self.num_synapses))
 
@@ -481,8 +489,8 @@ class AbstractSNN:
             Optional keyword arguments, for instance
 
             - path: Optional[str]
-                Where to store the output plots. If no path given, this value is
-                taken from the settings dictionary.
+                Where to store the output plots. If no path given, this value
+                is taken from the settings dictionary.
 
         Returns
         -------
@@ -610,12 +618,11 @@ class AbstractSNN:
             # Main step: Run the network on a batch of samples for the duration
             # of the simulation.
             print("\nStarting new simulation...\n")
-            print("Current accuracy of batch:")
             output_b_l_t = self.simulate(**data_batch_kwargs)
 
-            # Get classification result by comparing the guessed class (i.e. the
-            # index of the neuron in the last layer which spiked most) to the
-            # ground truth.
+            # Get classification result by comparing the guessed class (i.e.
+            # the index of the neuron in the last layer which spiked most) to
+            # the ground truth.
             guesses_b_t = np.argmax(output_b_l_t, 1)
             # Find sample indices for which there was no output spike yet.
             undecided_b_t = np.nonzero(np.sum(output_b_l_t, 1) == 0)
@@ -649,7 +656,8 @@ class AbstractSNN:
                     num_samples_seen, top1acc_moving, top5acc_moving)))
 
             # Evaluate ANN on the same batch as SNN for a direct comparison.
-            score = self.parsed_model.test_on_batch(x_b_l, y_b_l)
+            score = self.parsed_model.evaluate(
+                x_b_l, y_b_l, self.parsed_model.input_shape[0], verbose=0)
             score1_ann += score[1] * self.batch_size
             score5_ann += score[2] * self.batch_size
             self.top1err_ann = 1 - score1_ann / num_samples_seen
@@ -672,8 +680,9 @@ class AbstractSNN:
 
             # Plot confusion matrix.
             if 'confusion_matrix' in self._plot_keys:
-                snn_plt.plot_confusion_matrix(truth_d, guesses_d, log_dir,
-                                              list(np.arange(self.num_classes)))
+                snn_plt.plot_confusion_matrix(
+                    truth_d, guesses_d, log_dir,
+                    list(np.arange(self.num_classes)))
 
             # Cumulate operation count over time and scale to MOps.
             if self.synaptic_operations_b_t is not None:
@@ -689,8 +698,9 @@ class AbstractSNN:
                                          self._duration, self._dt, log_dir)
 
             # Calculate ANN activations for plots.
-            if any({'activations', 'correlation', 'hist_spikerates_activations'}
-                   & self._plot_keys) or 'activations_n_b_l' in self._log_keys:
+            if any({'activations', 'correlation',
+                    'hist_spikerates_activations'} & self._plot_keys) or \
+                    'activations_n_b_l' in self._log_keys:
                 print("Calculating activations...\n")
                 self.activations_n_b_l = get_activations_batch(
                     self.parsed_model, x_b_l)
@@ -747,7 +757,8 @@ class AbstractSNN:
 
         # Print final result.
         print("Simulation finished.\n\n")
-        ss = '' if self.config.getint('simulation', 'num_to_test') == 1 else 's'
+        ss = '' if self.config.getint('simulation', 'num_to_test') == 1 \
+            else 's'
         print("Total accuracy: {:.2%} on {} test sample{}.\n\n".format(
             top1acc_total, len(guesses_d), ss))
         print("Accuracy averaged over classes: {:.2%}".format(avg_acc))
@@ -762,8 +773,8 @@ class AbstractSNN:
         """Reduce batch size to single sample if necessary.
 
         Not every simulator is able to simulate multiple samples in parallel.
-        If this is the case (indicated by `is_parallelizable`), set `batch_size`
-        to 1.
+        If this is the case (indicated by `is_parallelizable`), set
+        `batch_size` to 1.
         """
 
         self._batch_size = self.config.getint('simulation', 'batch_size')
@@ -780,13 +791,21 @@ class AbstractSNN:
         This method works for spiking Keras models.
         """
 
-        import keras
         print("Restoring spiking network...\n")
         self.load(self.config.get('paths', 'path_wd'),
                   self.config.get('paths', 'filename_snn'))
         self.parsed_model = keras.models.load_model(os.path.join(
             self.config.get('paths', 'path_wd'),
             self.config.get('paths', 'filename_parsed_model') + '.h5'))
+        self.num_classes = int(self.parsed_model.layers[-1].output_shape[-1])
+        self.top_k = min(self.num_classes, self.config.getint('simulation',
+                                                              'top_k'))
+        # Compute number of operations of ANN.
+        if self.fanout is None:
+            self.set_connectivity()
+            self.operations_ann = get_ann_ops(self.num_neurons,
+                                              self.num_neurons_with_bias,
+                                              self.fanin)
 
     def init_log_vars(self):
         """Initialize variables to record during simulation."""
@@ -988,7 +1007,7 @@ class AbstractSNN:
                             spiketrains_b_l_t[Ellipsis, t], self.fanout[0])
         else:
             if self.input_b_l_t is not None:
-                raise NotImplementedError
+                self.input_b_l_t = self.get_spiketrains_input()
             # This constant input does not involve synaptic operations, so we
             # count it in ``neuron_operations_b_t``.
             if self.neuron_operations_b_t is not None:
@@ -1039,15 +1058,15 @@ class AbstractSNN:
 
     def reshape_flattened_spiketrains(self, spiketrains, shape):
         """
-        Convert list of spike times into array where nonzero entries (indicating
-        spike times) are properly spread out across array. Then reshape the flat
-        array into original layer ``shape``.
+        Convert list of spike times into array where nonzero entries
+        (indicating spike times) are properly spread out across array. Then
+        reshape the flat array into original layer ``shape``.
 
         Parameters
         ----------
 
-        spiketrains: list
-            List of spike times.
+        spiketrains: ndarray
+            Spike times.
         shape
             Layer shape.
 
@@ -1063,6 +1082,15 @@ class AbstractSNN:
         for k, spiketrain in enumerate(spiketrains):
             for t in spiketrain:
                 spiketrains_flat[k, int(t / self._dt)] = t
+
+        # For Conv layers with 'channels_last', need to (1) reshape so that the
+        # channel comes first; (2) move the channel axis to the back again;
+        # (3) flatten the array, so it can be reshaped later according to the
+        # data_format. If this is not done, the spikerates plot is scrambled.
+        if self.data_format == 'channels_last' and len(shape) == 5:
+            spiketrains_flat = np.reshape(np.moveaxis(np.reshape(
+                spiketrains_flat, [shape[i] for i in [0, 3, 1, 2, 4]]), 1, 3),
+                (-1, shape[-1]))
 
         spiketrains_b_l_t = np.reshape(spiketrains_flat, shape)
 
@@ -1146,23 +1174,16 @@ def build_convolution(layer, delay, transpose_kernel=False):
         Flattened array containing the biases of all neurons in the ``layer``.
     """
 
-    if (np.isscalar(layer.strides) and layer.strides > 1) \
-            or any([s > 1 for s in layer.strides]):
-        raise NotImplementedError("Convolution layers with stride larger than "
-                                  "unity are not yet implemented for this "
-                                  "simulator.")
-
     weights, biases = layer.get_weights()
 
     if transpose_kernel:
         from keras.utils.conv_utils import convert_kernel
+        print("Transposing kernels.")
         weights = convert_kernel(weights)
 
     # Biases.
-    i_offset = np.empty(np.prod(layer.output_shape[1:]))
-    n = int(len(i_offset) / len(biases))
-    for i in range(len(biases)):
-        i_offset[i:(i + 1) * n] = biases[i]
+    n = int(np.prod(layer.output_shape[1:]) / len(biases))
+    i_offset = np.repeat(biases, n).astype('float64')
 
     ii = 1 if keras.backend.image_data_format() == 'channels_first' else 0
 
@@ -1172,16 +1193,19 @@ def build_convolution(layer, delay, transpose_kernel=False):
     px = int((kx - 1) / 2)  # Zero-padding columns
     py = int((ky - 1) / 2)  # Zero-padding rows
 
+    sx = layer.strides[1]
+    sy = layer.strides[0]
+
     if layer.padding == 'valid':
         # In padding 'valid', the original sidelength is
         # reduced by one less than the kernel size.
-        mx = nx - kx + 1  # Number of columns in output filters
-        my = ny - ky + 1  # Number of rows in output filters
+        mx = (nx - kx + 1) // sx  # Number of columns in output filters
+        my = (ny - ky + 1) // sy  # Number of rows in output filters
         x0 = px
         y0 = py
     elif layer.padding == 'same':
-        mx = nx
-        my = ny
+        mx = nx // sx
+        my = ny // sy
         x0 = 0
         y0 = 0
     else:
@@ -1192,9 +1216,10 @@ def build_convolution(layer, delay, transpose_kernel=False):
 
     # Loop over output filters 'fout'
     for fout in range(weights.shape[3]):
-        for y in range(y0, ny - y0):
-            for x in range(x0, nx - x0):
-                target = x - x0 + (y - y0) * mx + fout * mx * my
+        for y in range(y0, ny - y0, sy):
+            for x in range(x0, nx - x0, sx):
+                target = int((x - x0) / sx + (y - y0) / sy * mx +
+                             fout * mx * my)
                 # Loop over input filters 'fin'
                 for fin in range(weights.shape[2]):
                     for k in range(-py, py + 1):
@@ -1240,16 +1265,19 @@ def build_pooling(layer, delay):
         warnings.warn("Layer type 'MaxPooling' not supported yet. " +
                       "Falling back on 'AveragePooling'.", RuntimeWarning)
 
-    nx = layer.input_shape[3]  # Width of feature map
-    ny = layer.input_shape[2]  # Hight of feature map
+    ii = 1 if keras.backend.image_data_format() == 'channels_first' else 0
+
+    nx = layer.input_shape[2 + ii]  # Width of feature map
+    ny = layer.input_shape[1 + ii]  # Height of feature map
+    nz = layer.input_shape[3 - 2 * ii]  # Number of feature maps
     dx = layer.pool_size[1]  # Width of pool
-    dy = layer.pool_size[0]  # Hight of pool
+    dy = layer.pool_size[0]  # Height of pool
     sx = layer.strides[1]
     sy = layer.strides[0]
 
     connections = []
 
-    for fout in range(layer.input_shape[1]):  # Feature maps
+    for fout in range(nz):
         for y in range(0, ny - dy + 1, sy):
             for x in range(0, nx - dx + 1, sx):
                 target = int(x / sx + y / sy * ((nx - dx) / sx + 1) +
@@ -1342,7 +1370,8 @@ def spiketrains_to_rates(spiketrains_n_b_l_t, duration, spike_code):
     # ``t2r_mean_rate``.
     return [(np.apply_along_axis(f, -1, spiketrains_b_l_t), label)
             for spiketrains_b_l_t, label in spiketrains_n_b_l_t[:-1]] + \
-           [(np.apply_along_axis(t2r_mean_rate, -1, spiketrains_n_b_l_t[-1][0]),
+           [(np.apply_along_axis(
+               t2r_mean_rate, -1, spiketrains_n_b_l_t[-1][0]),
              spiketrains_n_b_l_t[-1][1])]
 
 
@@ -1403,7 +1432,8 @@ def get_layer_synaptic_operations(spiketrains_b_l, fanout):
     fanout: Union[int, ndarray]
         Number of outgoing connections per neuron. Can be a single integer, or
         an array of the same shape as the layer, if the fanout varies from
-        neuron to neuron (as is the case in convolution layers with stride > 1).
+        neuron to neuron (as is the case in convolution layers with
+        stride > 1).
 
     Returns
     -------
@@ -1434,8 +1464,8 @@ def get_ann_ops(num_neurons, num_neurons_with_bias, fanin):
     num_neurons_with_bias: list[int]
         Number of neurons with bias.
     fanin: list[int]
-        List of fan-in of neurons in Conv, Dense and Pool layers. Input and Pool
-        layers have fan-in 0 so they are not counted.
+        List of fan-in of neurons in Conv, Dense and Pool layers. Input and
+        Pool layers have fan-in 0 so they are not counted.
 
 
     Returns
@@ -1481,4 +1511,5 @@ def is_spiking(layer, config):
         ``True`` if converted layer will have spiking neurons.
     """
 
-    return get_type(layer) in eval(config.get('restrictions', 'spiking_layers'))
+    return get_type(layer) in eval(config.get('restrictions',
+                                              'spiking_layers'))
