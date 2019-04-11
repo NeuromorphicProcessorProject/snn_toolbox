@@ -544,6 +544,10 @@ def initialize_simulator(config):
         return sim
     if simulator == 'brian2':
         return import_module('brian2')
+    if simulator == 'loihi':
+        # noinspection PyUnresolvedReferences
+        import nxsdk.api.n2a as sim
+        return sim
     sim_module_str = None
     if simulator == 'INI':
         spike_code = config.get('conversion', 'spike_code')
