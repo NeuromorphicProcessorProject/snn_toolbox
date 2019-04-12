@@ -246,13 +246,7 @@ class SNN(AbstractSNN):
             self.layers[-1].record(vars_to_record)
 
     def set_biases(self, biases):
-        """Set biases.
-
-        Notes
-        -----
-
-        This has not been tested yet.
-        """
+        """Set biases."""
 
         if not np.any(biases):
             return

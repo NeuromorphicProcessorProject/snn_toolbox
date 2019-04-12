@@ -1,0 +1,41 @@
+[paths]
+dataset_path = %(path_wd)s/../../../datasets/mnist
+filename_ann = 99.14
+
+[tools]
+evaluate_ann = True
+
+[simulation]
+simulator = loihi
+duration = 100
+num_to_test = 100
+batch_size = 10
+keras_backend = tensorflow
+
+[loihi_compartment_kwargs]
+biasMant = 0
+biasExp = 0
+vThMant = 4
+functionalState = 2
+compartmentVoltageDecay = 0
+compartmentCurrentDecay = 4096
+refractoryDelay = 1
+
+[loihi_connection_kwargs]
+delay = 0
+enableDelay = 0
+enableLearning = 0
+numDelayBits = 0
+numWeightBits = 8
+# 1: MIXED, 2: EXCITATORY, 3: INHIBITORY
+signMode = 1
+# 0: SPARSE, 1: RUNLENGTH, 3: DENSE
+compressionMode = 3
+weightExponent = 0
+
+[input]
+poisson_input = False
+
+[output]
+log_vars = {'all'}
+plot_vars = {'all'}
