@@ -52,8 +52,8 @@ def get_range(start=0.0, stop=1.0, num=5, method='linear'):
 
 def confirm_overwrite(filepath):
     """
-    If config.get('output', 'overwrite')==False and the file exists, ask user if
-    it should be overwritten.
+    If config.get('output', 'overwrite')==False and the file exists, ask user
+    if it should be overwritten.
     """
 
     if os.path.isfile(filepath):
@@ -142,8 +142,8 @@ def get_abs_path(filepath, config):
     filepath: str
         Filename or relative or absolute path. If only the filename is given,
         file is assumed to be in current working directory
-        (``config.get('paths', 'path_wd')``). Non-absolute paths are interpreted
-        relative to working dir.
+        (``config.get('paths', 'path_wd')``). Non-absolute paths are
+        interpreted relative to working dir.
     config: configparser.ConfigParser
         Settings.
 
@@ -369,8 +369,8 @@ def reduce_precision_var(x, m, f):
 
 def quantized_relu(x, m, f):
     """
-    Rectified linear unit activation function with precision of ``x`` reduced to
-    fixed point format ``Qm.f``.
+    Rectified linear unit activation function with precision of ``x`` reduced
+    to fixed point format ``Qm.f``.
 
     Parameters
     ----------
@@ -392,10 +392,17 @@ def quantized_relu(x, m, f):
     return keras.backend.relu(reduce_precision_var(x, m, f))
 
 
+def to_integer(weights, biases, bitwidth):
+    max_val = np.max(np.abs(np.concatenate([weights, biases], None)))
+    weights = (weights / max_val * (2**bitwidth - 1)).astype(int)
+    biases = (biases / max_val * (2**bitwidth - 1)).astype(int)
+    return weights, biases
+
+
 class ClampedReLU:
     """
     Rectified linear unit activation function where values in ``x`` below
-    ``threshold`` are clamped to 0, and values above ``max_value`` are clipped \
+    ``threshold`` are clamped to 0, and values above ``max_value`` are clipped
     to ``max_value``.
 
     Attributes
@@ -552,11 +559,11 @@ def apply_modifications(model, custom_objects=None):
     """
 
     # The strategy is to save the modified model and load it back. This is done
-    # because setting the activation in a Keras layer doesnt actually change the
-    # graph. We have to iterate the entire graph and change the layer inbound
-    # and outbound nodes with modified tensors. This is doubly complicated in
-    # Keras 2.x since multiple inbound and outbound nodes are allowed with the
-    # Graph API.
+    # because setting the activation in a Keras layer doesnt actually change
+    # the graph. We have to iterate the entire graph and change the layer
+    # inbound and outbound nodes with modified tensors. This is doubly
+    # complicated in Keras 2.x since multiple inbound and outbound nodes are
+    # allowed with the Graph API.
 
     # Taken from
     # https://github.com/raghakot/keras-vis/blob/master/vis/utils/utils.py

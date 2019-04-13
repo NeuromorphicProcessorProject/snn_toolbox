@@ -124,6 +124,17 @@ class SNN(AbstractSNN):
 
     def compile(self):
 
+        vars_to_record = self.get_vars_to_record()
+
+        for layer in self.layers:
+            self.probes.append(layer.probe(vars_to_record))  # , [self.sim.SpikeProbeCondition(), self.sim.IntervalProbeCondition()]))
+
+        # The spikes of the last layer are recorded by default because they
+        # contain the networks output (classification guess).
+        if self.sim.ProbeParameter.SPIKE not in vars_to_record:  # This check won't work
+            vars_to_record.append(self.sim.ProbeParameter.SPIKE)
+            self.probes[-1] = self.layers[-1].probe(vars_to_record)
+
         self.board = self.sim.N2Compiler().compile(self.net)
 
     def simulate(self, **kwargs):
@@ -152,7 +163,7 @@ class SNN(AbstractSNN):
 
     def save(self, path, filename):
 
-        raise NotImplementedError
+        pass
 
     def load(self, path, filename):
 
@@ -160,16 +171,7 @@ class SNN(AbstractSNN):
 
     def init_cells(self):
 
-        vars_to_record = self.get_vars_to_record()
-
-        for layer in self.layers:
-            self.probes.append(layer.probe(vars_to_record, None))
-
-        # The spikes of the last layer are recorded by default because they
-        # contain the networks output (classification guess).
-        if self.sim.ProbeParameter.SPIKE not in vars_to_record:  # This check won't work
-            vars_to_record.append(self.sim.ProbeParameter.SPIKE)
-            self.probes[-1] = self.layers[-1].probe(vars_to_record)
+        pass
 
     def set_biases(self, biases):
         """Set biases."""
@@ -177,9 +179,10 @@ class SNN(AbstractSNN):
         if not np.any(biases):
             return
 
-        self.layers[-1].setState('biasMant', biases, range(len(biases)))
+        self.layers[-1].setState('biasMant', biases.astype(int),
+                                 range(len(biases)))
         # It should not be necessary to set the `ids` argument above.
-        # A bug report was filed on 4/9/19. Should be fixed after next pull.
+        # A bug report was filed on 4/9/19. Should be fixed after next pull.......
 
     def get_vars_to_record(self):
         """Get variables to record during simulation.
@@ -218,26 +221,28 @@ class SNN(AbstractSNN):
             kwargs[str('monitor_index')] + 1
         spiketrains_flat = self.probes[i][0].data
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(
-            spiketrains_flat, shape)
+            spiketrains_flat, shape, False)
         return spiketrains_b_l_t
 
     def get_spiketrains_input(self):
         shape = list(self.parsed_model.input_shape) + [self._num_timesteps]
         spiketrains_flat = self.probes[0][0].data
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(
-            spiketrains_flat, shape)
+            spiketrains_flat, shape, False)
         return spiketrains_b_l_t
 
     def get_spiketrains_output(self):
         shape = [self.batch_size, self.num_classes, self._num_timesteps]
         spiketrains_flat = self.probes[-1][0].data
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(
-            spiketrains_flat, shape)
+            spiketrains_flat, shape, False)
         return spiketrains_b_l_t
 
     def get_vmem(self, **kwargs):
-        # Need to map layer name to probe index.
-        return self.probes[kwargs[str('layer')].name][-1].data
+        i = kwargs[str('monitor_index')]
+        # Need to skip input layer because the toolbox does not expect it to
+        # record the membrane potentials.
+        return None if i == 0 else self.probes[i][-1].data
 
     def set_spiketrain_stats_input(self):
         AbstractSNN.set_spiketrain_stats_input(self)
@@ -250,7 +255,8 @@ class SNN(AbstractSNN):
         core_id_map = np.repeat(np.arange(self.core_counter,
                                           self.core_counter + num_cores),
                                 num_neurons_per_core)
-        compartment_kwargs = self.config['loihi_compartment_kwargs']
+        compartment_kwargs = eval(self.config.get('loihi',
+                                                  'compartment_kwargs'))
         prototypes = []
         for core_id in core_id_map:
             compartment_kwargs['logicalCoreId'] = core_id
@@ -259,10 +265,17 @@ class SNN(AbstractSNN):
         prototype_map = core_id_map - self.core_counter
         self.core_counter += num_cores
 
-        return prototypes, prototype_map
+        return prototypes, list(prototype_map)
 
     def connect(self, weights):
-        connection_kwargs = self.config['loihi_connection_kwargs']
+
+        # Even though we already converted the weights to integers during
+        # parsing, they will have become float type again after compiling the
+        # internal Keras model. The transpose is necessary for Loihi
+        # convention.
+        weights = weights.transpose().astype(int)
+
+        connection_kwargs = eval(self.config.get('loihi', 'connection_kwargs'))
 
         connection_kwargs['signMode'] = 2
         self.net.createConnectionGroup(

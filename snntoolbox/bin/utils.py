@@ -263,6 +263,7 @@ def load_config(filepath):
         "Configuration file not found at {}.".format(filepath)
 
     config = configparser.ConfigParser()
+    config.optionxform = str
     config.read(filepath)
 
     return config
@@ -545,7 +546,6 @@ def initialize_simulator(config):
     if simulator == 'brian2':
         return import_module('brian2')
     if simulator == 'loihi':
-        # noinspection PyUnresolvedReferences
         import nxsdk.api.n2a as sim
         return sim
     sim_module_str = None

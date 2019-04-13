@@ -193,27 +193,11 @@ class AbstractModelParser:
 
             if layer_type in {'Dense', 'Conv2D'}:
                 weights, bias = attributes['parameters']
-                if self.config.getboolean('cell', 'binarize_weights'):
-                    from snntoolbox.utils.utils import binarize
-                    print("Binarizing weights.")
-                    weights = binarize(weights)
-                elif self.config.getboolean('cell', 'quantize_weights'):
-                    assert 'Qm.f' in attributes, \
-                        "In the [cell] section of the configuration file, "\
-                        "'quantize_weights' was set to True. For this to " \
-                        "work, the layer needs to specify the fixed point " \
-                        "number format 'Qm.f'."
-                    from snntoolbox.utils.utils import reduce_precision
-                    m, f = attributes.get('Qm.f')
-                    print("Quantizing weights to Q{}.{}.".format(m, f))
-                    weights = reduce_precision(weights, m, f)
-                    if attributes.get('quantize_bias', False):
-                        bias = reduce_precision(bias, m, f)
+
+                weights, bias = modify_parameter_precision(
+                    weights, bias, self.config, attributes)
+
                 attributes['parameters'] = (weights, bias)
-                # These attributes are not needed any longer and would not be
-                # understood by Keras when building the parsed model.
-                attributes.pop('quantize_bias', None)
-                attributes.pop('Qm.f', None)
 
                 self.absorb_activation(layer, attributes)
 
@@ -743,6 +727,37 @@ def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
     weight_bn = weight * gamma * var_eps_sqrt_inv
 
     return weight_bn, bias_bn
+
+
+def modify_parameter_precision(weights, biases, config, attributes):
+    if config.getboolean('cell', 'binarize_weights'):
+        from snntoolbox.utils.utils import binarize
+        print("Binarizing weights.")
+        weights = binarize(weights)
+    elif config.getboolean('cell', 'quantize_weights'):
+        assert 'Qm.f' in attributes, \
+            "In the [cell] section of the configuration file, " \
+            "'quantize_weights' was set to True. For this to " \
+            "work, the layer needs to specify the fixed point " \
+            "number format 'Qm.f'."
+        from snntoolbox.utils.utils import reduce_precision
+        m, f = attributes.get('Qm.f')
+        print("Quantizing weights to Q{}.{}.".format(m, f))
+        weights = reduce_precision(weights, m, f)
+        if attributes.get('quantize_bias', False):
+            biases = reduce_precision(biases, m, f)
+    elif config.get('simulation', 'simulator') == 'loihi':
+        from snntoolbox.utils.utils import to_integer
+        b = eval(config.get('loihi', 'connection_kwargs'))['numWeightBits']
+        weights, biases = to_integer(weights, biases, b)
+        print("Converted layer parameters to {} bit integers.".format(b))
+
+    # These attributes are not needed any longer and would not be
+    # understood by Keras when building the parsed model.
+    attributes.pop('quantize_bias', None)
+    attributes.pop('Qm.f', None)
+
+    return weights, biases
 
 
 def padding_string(pad, pool_size):

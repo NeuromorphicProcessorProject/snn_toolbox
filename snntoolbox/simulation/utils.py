@@ -1056,7 +1056,7 @@ class AbstractSNN:
                 self.neuron_operations_b_t[:, t] += \
                     self.num_neurons_with_bias[i + 1]
 
-    def reshape_flattened_spiketrains(self, spiketrains, shape):
+    def reshape_flattened_spiketrains(self, spiketrains, shape, is_list=True):
         """
         Convert list of spike times into array where nonzero entries
         (indicating spike times) are properly spread out across array. Then
@@ -1069,6 +1069,11 @@ class AbstractSNN:
             Spike times.
         shape
             Layer shape.
+        is_list: Optional[bool]
+            If ``True`` (default), ``spiketrains`` is a list of spike times.
+            In this case, we distribute the spike times across a numpy array.
+            If ``False``, ``spiketrains`` is already a 2D array of shape
+            (num_neurons, num_timesteps).
 
         Returns
         -------
@@ -1078,10 +1083,13 @@ class AbstractSNN:
             Shape: (`batch_size`, ``shape``, ``num_timesteps``)
         """
 
-        spiketrains_flat = np.zeros((np.prod(shape[:-1]), shape[-1]))
-        for k, spiketrain in enumerate(spiketrains):
-            for t in spiketrain:
-                spiketrains_flat[k, int(t / self._dt)] = t
+        if is_list:
+            spiketrains_flat = np.zeros((np.prod(shape[:-1]), shape[-1]))
+            for k, spiketrain in enumerate(spiketrains):
+                for t in spiketrain:
+                    spiketrains_flat[k, int(t / self._dt)] = t
+        else:
+            spiketrains_flat = np.reshape(spiketrains, (-1, shape[-1]))
 
         # For Conv layers with 'channels_last', need to (1) reshape so that the
         # channel comes first; (2) move the channel axis to the back again;
