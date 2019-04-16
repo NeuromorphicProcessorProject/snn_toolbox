@@ -54,7 +54,11 @@ class SNN(AbstractSNN):
 
         num_neurons = np.prod(input_shape[1:], dtype=np.int).item()
 
-        prototypes, prototype_map = self.partition_layer(num_neurons)
+        compartment_kwargs = eval(self.config.get('loihi',
+                                                  'compartment_kwargs'))
+
+        prototypes, prototype_map = self.partition_layer(num_neurons,
+                                                         compartment_kwargs)
 
         self.layers.append(self.net.createCompartmentGroup(
             'InputLayer', num_neurons, prototypes, prototype_map))
@@ -68,7 +72,12 @@ class SNN(AbstractSNN):
 
         num_neurons = np.prod(layer.output_shape[1:], dtype=np.int).item()
 
-        prototypes, prototype_map = self.partition_layer(num_neurons)
+        compartment_kwargs = eval(self.config.get('loihi',
+                                                  'compartment_kwargs'))
+
+        # compartment_kwargs['vThMant'] *= self.scale_facs[layer.name]
+        prototypes, prototype_map = self.partition_layer(num_neurons,
+                                                         compartment_kwargs)
 
         self.layers.append(self.net.createCompartmentGroup(
             layer.name, num_neurons, prototypes, prototype_map))
@@ -109,7 +118,9 @@ class SNN(AbstractSNN):
 
         self.set_biases(biases)
 
-        weights = connection_list_to_matrix(connections, layer.get_)
+        shape = (np.prod(layer.input_shape[1:]),
+                 np.prod(layer.output_shape[1:]))
+        weights = connection_list_to_matrix(connections, shape)
 
         self.connect(weights)
 
@@ -127,7 +138,7 @@ class SNN(AbstractSNN):
         vars_to_record = self.get_vars_to_record()
 
         for layer in self.layers:
-            self.probes.append(layer.probe(vars_to_record))  # , [self.sim.SpikeProbeCondition(), self.sim.IntervalProbeCondition()]))
+            self.probes.append(layer.probe(vars_to_record))
 
         # The spikes of the last layer are recorded by default because they
         # contain the networks output (classification guess).
@@ -143,8 +154,7 @@ class SNN(AbstractSNN):
         if self.data_format == 'channels_last' and data.ndim == 4:
             data = np.moveaxis(data, 3, 1)
 
-        x_flat = np.ravel(data)
-        self.layers[0].setState('biasMant', x_flat, range(len(x_flat)))
+        self.set_inputs(np.ravel(data).astype(int))
 
         self.board.run(self._duration)
 
@@ -247,7 +257,7 @@ class SNN(AbstractSNN):
     def set_spiketrain_stats_input(self):
         AbstractSNN.set_spiketrain_stats_input(self)
 
-    def partition_layer(self, num_neurons):
+    def partition_layer(self, num_neurons, compartment_kwargs):
         num_cores = self.num_cores_per_layer.pop(0)
         num_neurons_per_core = \
             np.ones(num_cores, int) * int(num_neurons / num_cores)
@@ -255,8 +265,6 @@ class SNN(AbstractSNN):
         core_id_map = np.repeat(np.arange(self.core_counter,
                                           self.core_counter + num_cores),
                                 num_neurons_per_core)
-        compartment_kwargs = eval(self.config.get('loihi',
-                                                  'compartment_kwargs'))
         prototypes = []
         for core_id in core_id_map:
             compartment_kwargs['logicalCoreId'] = core_id
@@ -288,6 +296,14 @@ class SNN(AbstractSNN):
             srcGrp=self.layers[-2], dstGrp=self.layers[-1],
             prototype=self.sim.ConnectionPrototype(**connection_kwargs),
             connectionMask=weights < 0, weight=weights)
+
+    def set_inputs(self, inputs):
+        for i, node_id in enumerate(self.layers[0].nodeIds):
+            _, chip_id, core_id, cx_id, _, _ = \
+                self.net.resourceMap.compartment(node_id)
+            cx_cfg = self.board.n2Chips[chip_id].n2Cores[core_id].cxCfg
+            cx_cfg.data[cx_id]._bias = inputs[i]
+            cx_cfg.pushModified()
 
 
 def get_shape_from_label(label):

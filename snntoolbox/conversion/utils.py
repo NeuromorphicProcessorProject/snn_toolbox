@@ -111,8 +111,8 @@ def normalize_parameters(model, config, **kwargs):
             #     if np.median(softmax_inputs) < 0:
             #         print("WARNING: You allowed the toolbox to replace "
             #               "softmax by ReLU activations. However, more than "
-            #               "half of the activations are negative, which could "
-            #               "reduce accuracy. Consider setting "
+            #               "half of the activations are negative, which "
+            #               "could reduce accuracy. Consider setting "
             #               "settings['softmax_to_relu'] = False.")
             #         settings['softmax_to_relu'] = False
             i += 1
@@ -187,8 +187,9 @@ def normalize_parameters(model, config, **kwargs):
             if len(layer.weights) == 0:
                 continue
 
-            label = str(idx) + layer.__class__.__name__ if \
-                config.getboolean('output', 'use_simple_labels') else layer.name
+            label = str(idx) + layer.__class__.__name__ \
+                if config.getboolean('output', 'use_simple_labels') \
+                else layer.name
             parameters = weights[layer.name]
             parameters_norm = layer.get_weights()[0]
             weight_dict = {'weights': parameters.flatten(),
@@ -210,7 +211,8 @@ def normalize_parameters(model, config, **kwargs):
                                'Activations_norm':
                                activations_norm[np.nonzero(activations_norm)]}
             scale_fac = scale_facs[layer.name]
-            plot_hist(activation_dict, 'Activation', label, norm_dir, scale_fac)
+            plot_hist(activation_dict, 'Activation', label, norm_dir,
+                      scale_fac)
             ax = tuple(np.arange(len(layer.output_shape))[1:])
             plot_max_activ_hist(
                 {'Activations_max': np.max(activations, axis=ax)},
@@ -370,8 +372,8 @@ def get_activations_batch(ann, x_batch):
         if layer.__class__.__name__ in ['Input', 'InputLayer', 'Flatten',
                                         'Concatenate']:
             continue
-        activations = keras.models.Model(ann.input,
-                                         layer.output).predict_on_batch(x_batch)
+        activations = keras.models.Model(
+            ann.input, layer.output).predict_on_batch(x_batch)
         activations_batch.append((activations, layer.name))
     return activations_batch
 
