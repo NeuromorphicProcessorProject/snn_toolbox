@@ -746,11 +746,6 @@ def modify_parameter_precision(weights, biases, config, attributes):
         weights = reduce_precision(weights, m, f)
         if attributes.get('quantize_bias', False):
             biases = reduce_precision(biases, m, f)
-    elif config.get('simulation', 'simulator') == 'loihi':
-        from snntoolbox.utils.utils import to_integer
-        b = eval(config.get('loihi', 'connection_kwargs'))['numWeightBits']
-        weights, biases = to_integer(weights, biases, b)
-        print("Converted layer parameters to {} bit integers.".format(b))
 
     # These attributes are not needed any longer and would not be
     # understood by Keras when building the parsed model.

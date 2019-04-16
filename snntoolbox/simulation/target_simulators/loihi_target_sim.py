@@ -13,6 +13,7 @@ import numpy as np
 from future import standard_library
 
 from snntoolbox.simulation.utils import AbstractSNN
+from snntoolbox.utils.utils import to_integer
 
 standard_library.install_aliases()
 
@@ -42,6 +43,8 @@ class SNN(AbstractSNN):
         self.board = None
         self.core_counter = 0
         self.num_cores_per_layer = [1, 10, 10, 1]
+        self.num_weight_bits = eval(self.config.get(
+            'loihi', 'connection_kwargs'))['numWeightBits']
 
     @property
     def is_parallelizable(self):
@@ -100,11 +103,13 @@ class SNN(AbstractSNN):
 
         weights, biases = layer.get_weights()
 
-        self.set_biases(biases)
-
         if len(self.flatten_shapes):
             _, shape = self.flatten_shapes.pop()
             weights = fix_flatten(weights, shape, self.data_format)
+
+        weights, biases = to_integer(weights, biases, self.num_weight_bits)
+
+        self.set_biases(biases)
 
         self.connect(weights)
 
@@ -116,11 +121,13 @@ class SNN(AbstractSNN):
 
         connections, biases = build_convolution(layer, 0, transpose_kernel)
 
-        self.set_biases(biases)
-
         shape = (np.prod(layer.input_shape[1:]),
                  np.prod(layer.output_shape[1:]))
         weights = connection_list_to_matrix(connections, shape)
+
+        weights, biases = to_integer(weights, biases, self.num_weight_bits)
+
+        self.set_biases(biases)
 
         self.connect(weights)
 
@@ -189,10 +196,7 @@ class SNN(AbstractSNN):
         if not np.any(biases):
             return
 
-        self.layers[-1].setState('biasMant', biases.astype(int),
-                                 range(len(biases)))
-        # It should not be necessary to set the `ids` argument above.
-        # A bug report was filed on 4/9/19. Should be fixed after next pull.......
+        self.layers[-1].setState('biasMant', biases.astype(int))
 
     def get_vars_to_record(self):
         """Get variables to record during simulation.
@@ -302,6 +306,7 @@ class SNN(AbstractSNN):
             _, chip_id, core_id, cx_id, _, _ = \
                 self.net.resourceMap.compartment(node_id)
             cx_cfg = self.board.n2Chips[chip_id].n2Cores[core_id].cxCfg
+            # noinspection PyProtectedMember
             cx_cfg.data[cx_id]._bias = inputs[i]
             cx_cfg.pushModified()
 
