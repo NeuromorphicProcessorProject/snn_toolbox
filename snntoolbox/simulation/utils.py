@@ -1172,7 +1172,7 @@ def build_convolution(layer, delay, transpose_kernel=False):
     if transpose_kernel:
         from keras.utils.conv_utils import convert_kernel
         print("Transposing kernels.")
-        weights = convert_kernel(weights)
+        weights = convert_kernel(weights) * 1000
 
     # Biases.
     n = int(np.prod(layer.output_shape[1:]) / len(biases))
@@ -1268,7 +1268,7 @@ def build_pooling(layer, delay):
         warnings.warn("Layer type 'MaxPooling' not supported yet. " +
                       "Falling back on 'AveragePooling'.", RuntimeWarning)
 
-    ii = 1 if keras.backend.image_data_format() == 'channels_first' else 0
+    ii = 1 #if keras.backend.image_data_format() == 'channels_first' else 0
 
     nx = layer.input_shape[2 + ii]  # Width of feature map
     ny = layer.input_shape[1 + ii]  # Height of feature map
@@ -1288,7 +1288,7 @@ def build_pooling(layer, delay):
                 for k in range(dy):
                     source = x + (y + k) * nx + fout * nx * ny
                     for l in range(dx):
-                        connections.append((source + l, target, 1 / (dx * dy),
+                        connections.append((source + l, target, 1000 / (dx * dy),
                                             delay))
         echo('.')
     print('')

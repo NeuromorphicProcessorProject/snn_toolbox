@@ -147,6 +147,7 @@ class SNN(PYSNN):
             self.config.get('simulation', 'keras_backend') == 'tensorflow'
         weights, biases = build_convolution(layer, delay, transpose_kernel)
         #self.set_biases(biases)
+        import pdb; pdb.set_trace()
 
         exc_connections = [c for c in weights if c[2] > 0]
         inh_connections = [c for c in weights if c[2] <= 0]
@@ -208,13 +209,13 @@ class SNN(PYSNN):
         delay = self.config.getfloat('cell', 'delay')
         transpose_kernel = \
             self.config.get('simulation', 'keras_backend') == 'tensorflow'
-        weights = build_pooling(layer, delay)
+        weights = build_pooling(layer, delay) 
         if self.config.getboolean('tools', 'simulate'):
-
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
                 self.sim.FromListConnector(weights,
                                            ['weight', 'delay']),
+                receptor_type='excitatory',
                 label=self.layers[-1].label+'_excitatory'))
         else:
             # The spinnaker implementation of Projection.save() is not working
@@ -280,7 +281,7 @@ class SNN(PYSNN):
 
         x_flat = np.ravel(data)
         if self._poisson_input:
-            self.layers[0].set(rate=list(x_flat * self.rescale_fac * self.config.getint('input', 'input_rate')))
+            self.layers[0].set(rate=list(x_flat / self.rescale_fac * 1000))
         elif self._dataset_format == 'aedat':
             raise NotImplementedError
         else:

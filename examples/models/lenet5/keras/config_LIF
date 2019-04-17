@@ -9,7 +9,7 @@ normalise = True
 
 [simulation]
 simulator = spiNNaker
-duration = 300
+duration = 3000
 num_to_test = 1
 batch_size = 1
 keras_backend = tensorflow
