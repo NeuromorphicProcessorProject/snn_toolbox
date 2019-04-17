@@ -40,7 +40,7 @@ class SNN(PYSNN):
 
         weights, biases = layer.get_weights()
 
-        self.set_biases(np.array(biases, 'float64'))
+        #self.set_biases(np.array(biases, 'float64'))
         delay = self.config.getfloat('cell', 'delay')
 
         if len(self.flatten_shapes) == 1:
@@ -145,18 +145,18 @@ class SNN(PYSNN):
         delay = self.config.getfloat('cell', 'delay')
         transpose_kernel = \
             self.config.get('simulation', 'keras_backend') == 'tensorflow'
-        connections, biases = build_convolution(layer, delay, transpose_kernel)
+        weights, biases = build_convolution(layer, delay, transpose_kernel)
+        #self.set_biases(biases)
 
-        self.set_biases(biases)
-
-        exc_connections = [c for c in connections if c[2] > 0]
-        inh_connections = [c for c in connections if c[2] <= 0]
+        exc_connections = [c for c in weights if c[2] > 0]
+        inh_connections = [c for c in weights if c[2] <= 0]
 
         if self.config.getboolean('tools', 'simulate'):
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
                 self.sim.FromListConnector(exc_connections,
                                            ['weight', 'delay']),
+                receptor_type='excitatory',
                 label=self.layers[-1].label+'_excitatory'))
 
             self.connections.append(self.sim.Projection(
@@ -206,11 +206,16 @@ class SNN(PYSNN):
         from snntoolbox.simulation.utils import build_pooling
 
         delay = self.config.getfloat('cell', 'delay')
-        connections = build_pooling(layer, delay)
+        transpose_kernel = \
+            self.config.get('simulation', 'keras_backend') == 'tensorflow'
+        weights = build_pooling(layer, delay)
         if self.config.getboolean('tools', 'simulate'):
+
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
-                self.sim.FromListConnector(connections, ['weight', 'delay'])))
+                self.sim.FromListConnector(weights,
+                                           ['weight', 'delay']),
+                label=self.layers[-1].label+'_excitatory'))
         else:
             # The spinnaker implementation of Projection.save() is not working
             # yet, so we do save the connections manually here.
@@ -230,7 +235,7 @@ class SNN(PYSNN):
         ]
         with open(self.output_script_path, 'a') as f:
             f.writelines(lines)
-
+    
     def save(self, path, filename):
         #Temporary fix to stop IsADirectory error 
         print("Not saving model to {}...".format(path))
@@ -266,3 +271,26 @@ class SNN(PYSNN):
             if self.config.getboolean('output', 'overwrite') or \
                     confirm_overwrite(filepath):
                 projection.save('connections', filepath)
+                
+    def simulate(self, **kwargs):
+        #sim.set_number_of_neurons_per_core
+        data = kwargs[str('x_b_l')]
+        if self.data_format == 'channels_last' and data.ndim == 4:
+            data = np.moveaxis(data, 3, 1)
+
+        x_flat = np.ravel(data)
+        if self._poisson_input:
+            self.layers[0].set(rate=list(x_flat * self.rescale_fac * self.config.getint('input', 'input_rate')))
+        elif self._dataset_format == 'aedat':
+            raise NotImplementedError
+        else:
+            spike_times = \
+                [np.linspace(0, self._duration, self._duration * amplitude)
+                 for amplitude in x_flat]
+            self.layers[0].set(spike_times=spike_times)
+        self.sim.run(self._duration - self._dt)
+        
+        print("\nCollecting results...")
+        output_b_l_t = self.get_recorded_vars(self.layers)
+
+        return output_b_l_t

@@ -1,0 +1,23 @@
+[paths]
+dataset_path = %(path_wd)s/../../../datasets/mnist
+filename_ann = 98.96
+
+[tools]
+evaluate_ann = True
+convert = True
+normalise = True
+
+[simulation]
+simulator = spiNNaker
+duration = 300
+num_to_test = 1
+batch_size = 1
+keras_backend = tensorflow
+
+[input]
+poisson_input = True
+input_rate = 1000
+
+[output]
+#log_vars = {'all'}
+plot_vars = {'input_image', 'spiketrains', 'spikerates'}

@@ -1178,7 +1178,7 @@ def build_convolution(layer, delay, transpose_kernel=False):
     n = int(np.prod(layer.output_shape[1:]) / len(biases))
     i_offset = np.repeat(biases, n).astype('float64')
 
-    ii = 1 if keras.backend.image_data_format() == 'channels_first' else 0
+    ii = 1# if keras.backend.image_data_format() == 'channels_first' else 0
 
     nx = layer.input_shape[2 + ii]  # Width of feature map
     ny = layer.input_shape[1 + ii]  # Height of feature map

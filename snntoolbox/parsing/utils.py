@@ -1280,7 +1280,6 @@ def get_custom_activations_dict(filepath=None):
         for key in kwargs:
             if 'LimitedReLU' in key:
                 custom_objects[key] = LimitedReLU(kwargs[key])
-    import pdb; pdb.set_trace()
     return custom_objects
 
 
