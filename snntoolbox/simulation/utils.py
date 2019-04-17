@@ -206,7 +206,8 @@ class AbstractSNN:
 
     @abstractmethod
     def add_layer(self, layer):
-        """Do anything that concerns adding any layer independently of its type.
+        """Do anything that concerns adding any layer independently of its
+        type.
 
         Parameters
         ----------

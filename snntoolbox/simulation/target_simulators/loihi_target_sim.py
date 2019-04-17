@@ -42,7 +42,8 @@ class SNN(AbstractSNN):
         self.net = self.sim.NxNet()
         self.board = None
         self.core_counter = 0
-        self.num_cores_per_layer = [1, 10, 10, 1]
+        self.num_cores_per_layer = \
+            eval(self.config.get('loihi', 'num_cores_per_layer'))
         self.num_weight_bits = eval(self.config.get(
             'loihi', 'connection_kwargs'))['numWeightBits']
 
@@ -59,7 +60,7 @@ class SNN(AbstractSNN):
 
         compartment_kwargs = eval(self.config.get('loihi',
                                                   'compartment_kwargs'))
-
+        compartment_kwargs['vThMant'] = 4
         prototypes, prototype_map = self.partition_layer(num_neurons,
                                                          compartment_kwargs)
 
@@ -70,7 +71,7 @@ class SNN(AbstractSNN):
 
         if 'Flatten' in layer.__class__.__name__:
             self.flatten_shapes.append(
-                (layer.name, get_shape_from_label(self.layers[-1].label)))
+                (layer.name, get_shape_from_label(self.layers[-1].name)))
             return
 
         num_neurons = np.prod(layer.output_shape[1:], dtype=np.int).item()
@@ -78,7 +79,6 @@ class SNN(AbstractSNN):
         compartment_kwargs = eval(self.config.get('loihi',
                                                   'compartment_kwargs'))
 
-        # compartment_kwargs['vThMant'] *= self.scale_facs[layer.name]
         prototypes, prototype_map = self.partition_layer(num_neurons,
                                                          compartment_kwargs)
 
@@ -293,7 +293,7 @@ class SNN(AbstractSNN):
         self.net.createConnectionGroup(
             srcGrp=self.layers[-2], dstGrp=self.layers[-1],
             prototype=self.sim.ConnectionPrototype(**connection_kwargs),
-            connectionMask=weights >= 0, weight=weights)
+            connectionMask=weights > 0, weight=weights)
 
         connection_kwargs['signMode'] = 3
         self.net.createConnectionGroup(
