@@ -39,6 +39,7 @@ class SNN(AbstractSNN):
 
         self.layers = []
         self.probes = []
+        self.probe_idx_map = {}
         self.net = self.sim.NxNet()
         self.board = None
         self.core_counter = 0
@@ -60,7 +61,8 @@ class SNN(AbstractSNN):
 
         compartment_kwargs = eval(self.config.get('loihi',
                                                   'compartment_kwargs'))
-        compartment_kwargs['vThMant'] = 4
+        compartment_kwargs['vThMant'] = 2 ** 2
+        compartment_kwargs['biasExp'] = 0  # Bias is overwritten later.
         prototypes, prototype_map = self.partition_layer(num_neurons,
                                                          compartment_kwargs)
 
@@ -78,7 +80,6 @@ class SNN(AbstractSNN):
 
         compartment_kwargs = eval(self.config.get('loihi',
                                                   'compartment_kwargs'))
-
         prototypes, prototype_map = self.partition_layer(num_neurons,
                                                          compartment_kwargs)
 
@@ -149,9 +150,10 @@ class SNN(AbstractSNN):
 
         # The spikes of the last layer are recorded by default because they
         # contain the networks output (classification guess).
-        if self.sim.ProbeParameter.SPIKE not in vars_to_record:  # This check won't work
+        if 'spikes' not in self.probe_idx_map.keys():
             vars_to_record.append(self.sim.ProbeParameter.SPIKE)
             self.probes[-1] = self.layers[-1].probe(vars_to_record)
+            self.probe_idx_map['spikes'] = len(self.probes) - 1
 
         self.board = self.sim.N2Compiler().compile(self.net)
 
@@ -160,9 +162,8 @@ class SNN(AbstractSNN):
         data = kwargs[str('x_b_l')]
         if self.data_format == 'channels_last' and data.ndim == 4:
             data = np.moveaxis(data, 3, 1)
-
+        self.reset(0)
         self.set_inputs(np.ravel(data).astype(int))
-
         self.board.run(self._duration)
 
         print("\nCollecting results...")
@@ -172,7 +173,28 @@ class SNN(AbstractSNN):
 
     def reset(self, sample_idx):
 
-        print("Resetting between samples not yet implemented.")
+        print("Resetting membrane potentials...")
+        self.board.sync = True
+        for layer in self.layers:
+            for i, node_id in enumerate(layer.nodeIds):
+                _, chip_id, core_id, cx_id, _, _ = \
+                    self.net.resourceMap.compartment(node_id)
+                self.board.n2Chips[chip_id].n2Cores[core_id].cxState[
+                    int(cx_id)].v = 0
+        self.board.sync = False
+        print("Done.")
+
+        # a = []
+        # self.board.sync = True
+        # for i, node_id in enumerate(self.layers[0].nodeIds):
+        #     _, chip_id, core_id, cx_id, _, _ = \
+        #         self.net.resourceMap.compartment(node_id)
+        #     cxstate = self.board.n2Chips[chip_id].n2Cores[core_id].cxState[
+        #         int(cx_id)]
+        #     cxstate.fetch()
+        #     a.append(cxstate.v)
+        # print(np.sum(a))
+        # self.board.sync = False
 
     def end_sim(self):
 
@@ -209,14 +231,15 @@ class SNN(AbstractSNN):
         """
 
         vars_to_record = []
-
         if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
                 'hist_spikerates_activations'} & self._plot_keys) \
                 or 'spiketrains_n_b_l_t' in self._log_keys:
             vars_to_record.append(self.sim.ProbeParameter.SPIKE)
+            self.probe_idx_map['spikes'] = len(vars_to_record) - 1
 
         if 'mem_n_b_l_t' in self._log_keys or 'v_mem' in self._plot_keys:
             vars_to_record.append(self.sim.ProbeParameter.COMPARTMENT_VOLTAGE)
+            self.probe_idx_map['v_mem'] = len(vars_to_record) - 1
 
         return vars_to_record
 
@@ -233,30 +256,45 @@ class SNN(AbstractSNN):
         # by `get_spiketrains_input()`.
         i = len(self.layers) - 1 if kwargs[str('monitor_index')] == -1 else \
             kwargs[str('monitor_index')] + 1
-        spiketrains_flat = self.probes[i][0].data
+        idx = self.probe_idx_map['spikes']
+        spiketrains_flat = self.probes[i][idx].data[:, -self._num_timesteps:]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(
             spiketrains_flat, shape, False)
         return spiketrains_b_l_t
 
     def get_spiketrains_input(self):
         shape = list(self.parsed_model.input_shape) + [self._num_timesteps]
-        spiketrains_flat = self.probes[0][0].data
+        idx = self.probe_idx_map['spikes']
+        spiketrains_flat = self.probes[0][idx].data[:, -self._num_timesteps:]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(
             spiketrains_flat, shape, False)
         return spiketrains_b_l_t
 
     def get_spiketrains_output(self):
         shape = [self.batch_size, self.num_classes, self._num_timesteps]
-        spiketrains_flat = self.probes[-1][0].data
+        idx = self.probe_idx_map['spikes']
+        spiketrains_flat = self.probes[-1][idx].data[:, -self._num_timesteps:]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(
             spiketrains_flat, shape, False)
         return spiketrains_b_l_t
 
     def get_vmem(self, **kwargs):
         i = kwargs[str('monitor_index')]
-        # Need to skip input layer because the toolbox does not expect it to
-        # record the membrane potentials.
-        return None if i == 0 else self.probes[i][-1].data
+        if 'v_mem' in self.probe_idx_map.keys():
+            idx = self.probe_idx_map['v_mem']
+            # Need to skip input layer because the toolbox does not expect it
+            # to record the membrane potentials.
+            if i == 0:
+                import os
+                import matplotlib.pyplot as plt
+                fig = plt.figure()
+                self.probes[i][idx].plot()
+                fig.savefig(os.path.join(self.config.get(
+                    'paths', 'log_dir_of_current_run'), 'v_input.png'))
+                return
+            else:
+                idx = self.probe_idx_map['v_mem']
+                return self.probes[i][idx].data[:, -self._num_timesteps:]
 
     def set_spiketrain_stats_input(self):
         AbstractSNN.set_spiketrain_stats_input(self)
@@ -289,6 +327,13 @@ class SNN(AbstractSNN):
 
         connection_kwargs = eval(self.config.get('loihi', 'connection_kwargs'))
 
+        assert connection_kwargs['compressionMode'] == 0, \
+            "Compression mode must be SPARSE when splitting the weight " \
+            "matrix into excitatory and inhibitory connections " \
+            "(signMode 2, 3) via the connectionMask argument. (DENSE " \
+            "compression mode does not properly handle wholes in the weight " \
+            "matrix."
+
         connection_kwargs['signMode'] = 2
         self.net.createConnectionGroup(
             srcGrp=self.layers[-2], dstGrp=self.layers[-1],
@@ -305,10 +350,8 @@ class SNN(AbstractSNN):
         for i, node_id in enumerate(self.layers[0].nodeIds):
             _, chip_id, core_id, cx_id, _, _ = \
                 self.net.resourceMap.compartment(node_id)
-            cx_cfg = self.board.n2Chips[chip_id].n2Cores[core_id].cxCfg
-            # noinspection PyProtectedMember
-            cx_cfg.data[cx_id]._bias = inputs[i]
-            cx_cfg.pushModified()
+            self.board.n2Chips[chip_id].n2Cores[core_id].cxCfg[
+                int(cx_id)].bias = int(inputs[i])
 
 
 def get_shape_from_label(label):
