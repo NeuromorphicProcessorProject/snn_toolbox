@@ -192,7 +192,8 @@ def plot_layer_summaries(plot_vars, config, path=None, data_format=None):
             plot_layer_correlation(
                 plot_vars['spikerates_n_l'][i][0].flatten(),
                 plot_vars['activations_n_l'][i][0].flatten(),
-                str('ANN-SNN correlations\n of layer '+name), config, newpath)
+                str('ANN-SNN correlations\n of layer '+name), config, newpath,
+                True)
 
 
 def plot_layer_activity(layer, title, path=None, limits=None,
@@ -379,7 +380,8 @@ def plot_activations_minus_rates(activations, rates, label, path=None,
         str('Activations_minus_Spikerates'), path, (-1, 1), data_format)
 
 
-def plot_layer_correlation(rates, activations, title, config, path=None):
+def plot_layer_correlation(rates, activations, title, config, path=None,
+                           normalize=False):
     """
     Plot correlation between spikerates and activations of a specific layer,
     as 2D-dot-plot.
@@ -398,12 +400,19 @@ def plot_layer_correlation(rates, activations, title, config, path=None):
     path: Optional[str]
         If not ``None``, specifies where to save the resulting image. Else,
         display plots without saving.
+    normalize: Optional[bool]
+        Whether to normalize the ``rates`` and ``activations``.
+        Default: ``False``.
     """
 
     # Determine percentage of saturated neurons. Need to subtract one time step
     dt = config.getfloat('simulation', 'dt')
     duration = config.getint('simulation', 'duration')
     p = np.mean(np.greater_equal(rates, 1000 / dt - 1000 / duration / dt))
+
+    if normalize:
+        rates /= np.max(rates)
+        activations /= np.max(activations)
 
     plt.figure()
     plt.plot(activations, rates, '.')
@@ -425,7 +434,18 @@ def plot_layer_correlation(rates, activations, title, config, path=None):
     plt.close()
 
 
-def plot_correlations(spikerates, layer_activations):
+def plot_correlations(a, b, path=None, filename=None):
+    plt.figure()
+    plt.plot(a, b, '.')
+    if path is not None:
+        filename = filename if filename is not None else 'correlation'
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
+def plot_network_correlations(spikerates, layer_activations):
     """Plot the correlation between SNN spiketrains and ANN activations.
 
     For each layer, the method draws a scatter plot, showing the correlation
@@ -1106,7 +1126,7 @@ def plot_spikecount_vs_time(spiketrains_n_b_l_t, duration, dt, path=None):
     plt.close()
 
 
-def plot_input_image(x, label, path=None, data_format=None):
+def plot_input_image(x, label, path=None, data_format=None, filename=None):
     """Show an input image.
 
     Parameters
@@ -1119,6 +1139,8 @@ def plot_input_image(x, label, path=None, data_format=None):
         Where to save the image.
     data_format: Optional[str]
         One of 'channels_first' or 'channels_last'.
+    filename: Optional[str]
+        Name of file to save.
     """
 
     # In case an image was flattened for use in a fully-connected network, try
@@ -1140,7 +1162,7 @@ def plot_input_image(x, label, path=None, data_format=None):
     plt.title('Input image (class: {})'.format(label))
     plt.imshow(x)
     if path is not None:
-        filename = 'input_image'
+        filename = 'input_image' if filename is None else filename
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
     else:
         plt.show()
