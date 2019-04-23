@@ -179,22 +179,12 @@ class SNN(AbstractSNN):
             for i, node_id in enumerate(layer.nodeIds):
                 _, chip_id, core_id, cx_id, _, _ = \
                     self.net.resourceMap.compartment(node_id)
-                self.board.n2Chips[chip_id].n2Cores[core_id].cxState[
-                    int(cx_id)].v = 0
+                core = self.board.n2Chips[chip_id].n2Cores[core_id]
+                core.cxState[int(cx_id)].v = 0
+                setattr(core.cxMetaState[int(cx_id // 4)],
+                        'phase{}'.format(cx_id % 4), 2)
         self.board.sync = False
         print("Done.")
-
-        # a = []
-        # self.board.sync = True
-        # for i, node_id in enumerate(self.layers[0].nodeIds):
-        #     _, chip_id, core_id, cx_id, _, _ = \
-        #         self.net.resourceMap.compartment(node_id)
-        #     cxstate = self.board.n2Chips[chip_id].n2Cores[core_id].cxState[
-        #         int(cx_id)]
-        #     cxstate.fetch()
-        #     a.append(cxstate.v)
-        # print(np.sum(a))
-        # self.board.sync = False
 
     def end_sim(self):
 
@@ -347,6 +337,10 @@ class SNN(AbstractSNN):
             connectionMask=weights < 0, weight=weights)
 
     def set_inputs(self, inputs):
+        # Normalize inputs and scale up to threshold. The compartment parameter
+        # ``biasExp`` would have no effect because we overwrite the _bias here
+        # directly.
+        inputs = inputs / np.max(inputs) * 2 ** 10
         for i, node_id in enumerate(self.layers[0].nodeIds):
             _, chip_id, core_id, cx_id, _, _ = \
                 self.net.resourceMap.compartment(node_id)
