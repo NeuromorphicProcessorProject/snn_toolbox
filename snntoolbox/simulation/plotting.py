@@ -823,18 +823,17 @@ def plot_param_sweep(results, n, params, param_name, param_logscale):
 
     # Compute confidence intervals of the experiments
     ci = [wilson_score(q, n) for q in results]
-    ax = plt.subplot()
     if param_logscale:
-        ax.set_xscale('log', nonposx='clip')
-    ax.errorbar(params, results, yerr=ci, fmt='x-')
-    ax.set_title('Accuracy vs Hyperparameter')
-    ax.set_xlabel(param_name)
-    ax.set_ylabel('accuracy')
+        plt.xscale('log', nonposx='clip')
+    plt.errorbar(params, results, yerr=ci, fmt='x-')
+    plt.title('Accuracy vs Hyperparameter')
+    plt.xlabel(param_name)
+    plt.ylabel('accuracy')
     fac = 0.9
     if params[0] < 0:
         fac += 0.2
-    ax.set_xlim(fac * params[0], 1.1 * params[-1])
-    ax.set_ylim(0, 1)
+    plt.xlim(fac * params[0], 1.1 * params[-1])
+    plt.ylim(0, 1)
 
 
 def plot_spiketrains(layer, dt, path=None, data_format=None):
@@ -1200,3 +1199,10 @@ def plot_history(h):
 
     plt.xlabel('epoch')
     plt.show()
+
+
+def plot_probe(probe, path, filename):
+    plt.figure()
+    probe.plot()
+    plt.savefig(os.path.join(path, filename))
+    plt.close()

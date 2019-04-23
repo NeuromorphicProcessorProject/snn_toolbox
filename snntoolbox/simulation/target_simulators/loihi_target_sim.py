@@ -14,6 +14,7 @@ from future import standard_library
 
 from snntoolbox.simulation.utils import AbstractSNN
 from snntoolbox.utils.utils import to_integer
+from snntoolbox.simulation.plotting import plot_probe
 
 standard_library.install_aliases()
 
@@ -275,15 +276,10 @@ class SNN(AbstractSNN):
             # Need to skip input layer because the toolbox does not expect it
             # to record the membrane potentials.
             if i == 0:
-                import os
-                import matplotlib.pyplot as plt
-                fig = plt.figure()
-                self.probes[i][idx].plot()
-                fig.savefig(os.path.join(self.config.get(
-                    'paths', 'log_dir_of_current_run'), 'v_input.png'))
-                return
+                plot_probe(self.probes[i][idx],
+                           self.config.get('paths', 'log_dir_of_current_run'),
+                           'v_input.png')
             else:
-                idx = self.probe_idx_map['v_mem']
                 return self.probes[i][idx].data[:, -self._num_timesteps:]
 
     def set_spiketrain_stats_input(self):
