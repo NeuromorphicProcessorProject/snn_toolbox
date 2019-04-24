@@ -62,8 +62,8 @@ class SNN(AbstractSNN):
 
         compartment_kwargs = eval(self.config.get('loihi',
                                                   'compartment_kwargs'))
-        compartment_kwargs['vThMant'] = 2 ** 2
-        compartment_kwargs['biasExp'] = 0  # Bias is overwritten later.
+        compartment_kwargs['vThMant'] = 2 ** 8
+        compartment_kwargs['biasExp'] = 6
         prototypes, prototype_map = self.partition_layer(num_neurons,
                                                          compartment_kwargs)
 
@@ -154,7 +154,7 @@ class SNN(AbstractSNN):
         if 'spikes' not in self.probe_idx_map.keys():
             vars_to_record.append(self.sim.ProbeParameter.SPIKE)
             self.probes[-1] = self.layers[-1].probe(vars_to_record)
-            self.probe_idx_map['spikes'] = len(self.probes) - 1
+            self.probe_idx_map['spikes'] = len(vars_to_record) - 1
 
         self.board = self.sim.N2Compiler().compile(self.net)
 
@@ -163,8 +163,8 @@ class SNN(AbstractSNN):
         data = kwargs[str('x_b_l')]
         if self.data_format == 'channels_last' and data.ndim == 4:
             data = np.moveaxis(data, 3, 1)
-        self.reset(0)
         self.set_inputs(np.ravel(data).astype(int))
+
         self.board.run(self._duration)
 
         print("\nCollecting results...")
@@ -175,7 +175,6 @@ class SNN(AbstractSNN):
     def reset(self, sample_idx):
 
         print("Resetting membrane potentials...")
-        self.board.sync = True
         for layer in self.layers:
             for i, node_id in enumerate(layer.nodeIds):
                 _, chip_id, core_id, cx_id, _, _ = \
@@ -184,7 +183,6 @@ class SNN(AbstractSNN):
                 core.cxState[int(cx_id)].v = 0
                 setattr(core.cxMetaState[int(cx_id // 4)],
                         'phase{}'.format(cx_id % 4), 2)
-        self.board.sync = False
         print("Done.")
 
     def end_sim(self):
@@ -317,7 +315,7 @@ class SNN(AbstractSNN):
             "Compression mode must be SPARSE when splitting the weight " \
             "matrix into excitatory and inhibitory connections " \
             "(signMode 2, 3) via the connectionMask argument. (DENSE " \
-            "compression mode does not properly handle wholes in the weight " \
+            "compression mode does not properly handle holes in the weight " \
             "matrix."
 
         connection_kwargs['signMode'] = 2
@@ -333,10 +331,8 @@ class SNN(AbstractSNN):
             connectionMask=weights < 0, weight=weights)
 
     def set_inputs(self, inputs):
-        # Normalize inputs and scale up to threshold. The compartment parameter
-        # ``biasExp`` would have no effect because we overwrite the _bias here
-        # directly.
-        inputs = inputs / np.max(inputs) * 2 ** 10
+        # Normalize inputs and scale up to threshold.
+        inputs = inputs / np.max(inputs) * 2 ** 8
         for i, node_id in enumerate(self.layers[0].nodeIds):
             _, chip_id, core_id, cx_id, _, _ = \
                 self.net.resourceMap.compartment(node_id)
