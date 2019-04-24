@@ -117,7 +117,7 @@ def get_parameters_for_simtests():
     config_brian = {'simulation': {'simulator': 'brian', 'target_acc': 99.00,
                                    'num_to_test': 2},
                     'input': {'poisson_input': True}}
-    config_neuron = {'simulation': {'simulator': 'Neuron', 'target_acc': 99.00,
+    config_neuron = {'simulation': {'simulator': 'neuron', 'target_acc': 99.00,
                                     'num_to_test': 2},
                      'input': {'poisson_input': True}}
     config_megasim = {'simulation': {'simulator': 'MegaSim', 'batch_size': 1,
