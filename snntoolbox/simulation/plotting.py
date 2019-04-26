@@ -92,7 +92,7 @@ def output_graphs(plot_vars, config, path=None, idx=0, data_format=None):
                                 config.getfloat('simulation', 'dt'), path)
     if 'correlation' in plot_keys:
         plot_pearson_coefficients(plot_vars['spikerates_n_b_l'],
-                                  plot_vars['activations_n_b_l'], config, path, True)
+                                  plot_vars['activations_n_b_l'], config, path)
     if 'hist_spikerates_activations' in plot_keys:
         s = []
         a = []
