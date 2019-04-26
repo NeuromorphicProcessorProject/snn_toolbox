@@ -231,10 +231,10 @@ class SNN(PYSNN):
         with open(self.output_script_path, 'a') as f:
             f.writelines(lines)
 
-    def save(self, path, filename):
+    '''def save(self, path, filename):
         #Temporary fix to stop IsADirectory error 
         print("Not saving model to {}...".format(path))
-    
+    '''
     def save_connections(self, path):
         """Write parameters of a neural network to disk.
 
@@ -266,3 +266,27 @@ class SNN(PYSNN):
             if self.config.getboolean('output', 'overwrite') or \
                     confirm_overwrite(filepath):
                 projection.save('connections', filepath)
+
+    def simulate(self, **kwargs):
+
+        data = kwargs[str('x_b_l')]
+        if self.data_format == 'channels_last' and data.ndim == 4:
+            data = np.moveaxis(data, 3, 1)
+
+        x_flat = np.ravel(data)
+        if self._poisson_input:
+            self.layers[0].set(rate=list(x_flat / self.rescale_fac * 1000))
+        elif self._dataset_format == 'aedat':
+            raise NotImplementedError
+        else:
+            spike_times = \
+                [np.linspace(0, self._duration, self._duration * amplitude)
+                 for amplitude in x_flat]
+            self.layers[0].set(spike_times=spike_times)
+
+        self.sim.run(self._duration - self._dt)
+        print("\nCollecting results...")
+        output_b_l_t = self.get_recorded_vars(self.layers)
+
+        return output_b_l_t
+
