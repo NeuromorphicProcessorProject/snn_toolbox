@@ -92,7 +92,7 @@ def output_graphs(plot_vars, config, path=None, idx=0, data_format=None):
                                 config.getfloat('simulation', 'dt'), path)
     if 'correlation' in plot_keys:
         plot_pearson_coefficients(plot_vars['spikerates_n_b_l'],
-                                  plot_vars['activations_n_b_l'], config, path)
+                                  plot_vars['activations_n_b_l'], config, path, True)
     if 'hist_spikerates_activations' in plot_keys:
         s = []
         a = []
@@ -193,7 +193,7 @@ def plot_layer_summaries(plot_vars, config, path=None, data_format=None):
                 plot_vars['spikerates_n_l'][i][0].flatten(),
                 plot_vars['activations_n_l'][i][0].flatten(),
                 str('ANN-SNN correlations\n of layer '+name), config, newpath,
-                True)
+                False)
 
 
 def plot_layer_activity(layer, title, path=None, limits=None,
@@ -381,7 +381,7 @@ def plot_activations_minus_rates(activations, rates, label, path=None,
 
 
 def plot_layer_correlation(rates, activations, title, config, path=None,
-                           normalize=False):
+                           same_xylim=True):
     """
     Plot correlation between spikerates and activations of a specific layer,
     as 2D-dot-plot.
@@ -400,19 +400,15 @@ def plot_layer_correlation(rates, activations, title, config, path=None,
     path: Optional[str]
         If not ``None``, specifies where to save the resulting image. Else,
         display plots without saving.
-    normalize: Optional[bool]
-        Whether to normalize the ``rates`` and ``activations``.
-        Default: ``False``.
+    same_xylim: Optional[bool]
+        Whether to use the same axis limit on the ``rates`` and
+        ``activations``. If ``True``, the maximum is chosen. Default: ``True``.
     """
 
     # Determine percentage of saturated neurons. Need to subtract one time step
     dt = config.getfloat('simulation', 'dt')
     duration = config.getint('simulation', 'duration')
     p = np.mean(np.greater_equal(rates, 1000 / dt - 1000 / duration / dt))
-
-    if normalize:
-        rates /= np.max(rates)
-        activations /= np.max(activations)
 
     plt.figure()
     plt.plot(activations, rates, '.')
@@ -421,7 +417,7 @@ def plot_layer_correlation(rates, activations, title, config, path=None,
                  textcoords='offset points')
     plt.title(title, fontsize=20)
     plt.locator_params(nbins=4)
-    lim = max([1.1, max(activations), max(rates)])
+    lim = max([1.1, max(activations), max(rates)]) if same_xylim else None
     plt.xlim([0, lim])
     plt.ylim([0, lim])
     plt.xlabel('ANN activations', fontsize=16)
@@ -436,7 +432,7 @@ def plot_layer_correlation(rates, activations, title, config, path=None,
 
 def plot_correlations(a, b, path=None, filename=None):
     plt.figure()
-    plt.plot(a, b, '.')
+    plt.plot(a.flatten(), b.flatten(), '.')
     if path is not None:
         filename = filename if filename is not None else 'correlation'
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')

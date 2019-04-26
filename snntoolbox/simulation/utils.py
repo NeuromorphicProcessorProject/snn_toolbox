@@ -661,8 +661,8 @@ class AbstractSNN:
                     input_rates = np.count_nonzero(self.input_b_l_t[0], -1) / \
                         self._duration
                     snn_plt.plot_input_image(
-                        input_rates, int(truth_b[0]), log_dir, dataset_format,
-                        'input_rates')
+                        input_rates, int(truth_b[0]), log_dir,
+                        self.data_format, 'input_rates')
                     snn_plt.plot_correlations(x_b_l[0], input_rates, log_dir,
                                               'input_correlation')
 

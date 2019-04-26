@@ -42,6 +42,9 @@ x_train = \
 x_test = \
     block_reduce(x_test, (1, subsample_shift, subsample_shift, 1), np.mean)
 
+x_train /= 255.
+x_test /= 255.
+
 path = '/home/brueckau/Downloads'
 np.savez_compressed(path + '/x_test', x_test)
 np.savez_compressed(path + '/x_train', x_train)
@@ -52,25 +55,25 @@ img_cols = int(img_cols / subsample_shift)
 
 model = Sequential()
 
-model.add(Conv2D(200, (3, 3), input_shape=(img_rows, img_cols, chnls)))
+model.add(Conv2D(6, (3, 3), input_shape=(img_rows, img_cols, chnls)))
 model.add(BatchNormalization(axis=-1))
 model.add(Activation('relu'))
-model.add(Dropout(0.1))
+# model.add(Dropout(0.1))
 
-model.add(Conv2D(100, (3, 3)))
+model.add(Conv2D(6, (3, 3)))
 model.add(BatchNormalization(axis=-1))
 model.add(Activation('relu'))
-model.add(Dropout(0.1))
+# model.add(Dropout(0.1))
 
-model.add(Conv2D(100, (3, 3)))
+model.add(Conv2D(80, (3, 3)))
 model.add(BatchNormalization(axis=-1))
 model.add(Activation('relu'))
-model.add(Dropout(0.1))
+# model.add(Dropout(0.1))
 
 model.add(Flatten())
 
-model.add(Dense(100, activation='relu'))
-model.add(Dropout(0.1))
+model.add(Dense(50, activation='relu'))
+# model.add(Dropout(0.1))
 
 model.add(Dense(10, activation='softmax'))
 

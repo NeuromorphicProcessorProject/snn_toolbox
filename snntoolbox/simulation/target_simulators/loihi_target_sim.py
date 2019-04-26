@@ -62,8 +62,6 @@ class SNN(AbstractSNN):
 
         compartment_kwargs = eval(self.config.get('loihi',
                                                   'compartment_kwargs'))
-        compartment_kwargs['vThMant'] = 2 ** 8
-        compartment_kwargs['biasExp'] = 6
         prototypes, prototype_map = self.partition_layer(num_neurons,
                                                          compartment_kwargs)
 
@@ -163,7 +161,7 @@ class SNN(AbstractSNN):
         data = kwargs[str('x_b_l')]
         if self.data_format == 'channels_last' and data.ndim == 4:
             data = np.moveaxis(data, 3, 1)
-        self.set_inputs(np.ravel(data).astype(int))
+        self.set_inputs(np.ravel(data))
 
         self.board.run(self._duration)
 
@@ -332,7 +330,7 @@ class SNN(AbstractSNN):
 
     def set_inputs(self, inputs):
         # Normalize inputs and scale up to threshold.
-        inputs = inputs / np.max(inputs) * 2 ** 8
+        inputs = (inputs / np.max(inputs) * 2 ** 8).astype(int)
         for i, node_id in enumerate(self.layers[0].nodeIds):
             _, chip_id, core_id, cx_id, _, _ = \
                 self.net.resourceMap.compartment(node_id)

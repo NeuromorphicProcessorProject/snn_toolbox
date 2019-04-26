@@ -36,8 +36,8 @@ def main():
     args = parser.parse_args()
 
     # filepath = os.path.abspath(args.config_filepath)
-    # filepath = '/home/brueckau/Data/mnist/cnn/97.72/config'
-    filepath = '/home/brueckau/Data/mnist/fc/96.28/config'
+    filepath = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/cnn/96.12/config'
+    # filepath = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/fc/96.97/config'
     # filepath = '/home/rbodo/.snntoolbox/data/mnist/cnn/lenet5/keras/32bit/log/gui/14/config'
     args.terminal = True
     if filepath is not None:
