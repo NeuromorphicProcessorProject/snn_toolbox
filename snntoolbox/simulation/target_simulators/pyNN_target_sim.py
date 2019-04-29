@@ -324,7 +324,7 @@ class SNN(AbstractSNN):
 
         lines = [
             "\n",
-            "\tprint('Finished building pyNN model.\n')\n",
+            "\tprint('Finished building pyNN model.')\n",
             "\n",
             "\treturn sim, layers\n",
             "\n",

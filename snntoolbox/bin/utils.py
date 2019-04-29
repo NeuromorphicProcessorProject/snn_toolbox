@@ -329,6 +329,7 @@ def update_setup(config_filepath):
             config.get('restrictions', 'simulators_pyNN')):
         delay = config.getfloat('cell', 'delay')
         tau_refrac = config.getfloat('cell', 'tau_refrac')
+        v_thresh = config.getfloat('cell', 'v_thresh')
         dt = config.getfloat('simulation', 'dt')
         # We found that in some cases the refractory period can actually be
         # smaller than the time step.
@@ -342,17 +343,19 @@ def update_setup(config_filepath):
             print("\nSNN toolbox WARNING: We recommend to set the refractory "
                   "period ({}) to be as small as possible (one time step / {}"
                   ", {}).".format(tau_refrac, scale, dt / scale))
-        if delay != dt:
-            print("\nSNN toolbox WARNING: Delay ({}) should be equal to one "
+        if delay < dt:
+            print("\nSNN toolbox WARNING: Delay ({}) must be at least one "
                   "time step ({}). Setting delay = dt.".format(delay, dt))
             config.set('cell', 'delay', str(dt))
-        v_thresh = config.getfloat('cell', 'v_thresh')
+        elif delay > dt:
+            print("\nSNN toolbox WARNING: We recommend to set the delay ({}) "
+                  "to be as small as possible (one time step, {})."
+                  "".format(delay, dt))
         if v_thresh != 0.01:
             print("\nSNN toolbox WARNING: For optimal correspondence between "
                   "the original ANN and the converted SNN simulated on pyNN, "
-                  "the threshold should be 0.01. Overriding user-set value {}."
+                  "the threshold should be 0.01. Current value: {}."
                   "".format(v_thresh))
-            config.set('cell', 'v_thresh', '0.01')
 
     # Set default path if user did not specify it.
     if config.get('paths', 'path_wd') == '':
@@ -372,47 +375,53 @@ def update_setup(config_filepath):
 
     # Check input model is found and has the right format for the specified
     # model library.
-    if model_lib == 'caffe':
-        caffemodel_filepath = os.path.join(path_wd,
-                                           filename_ann + '.caffemodel')
-        caffemodel_h5_filepath = os.path.join(path_wd,
-                                              filename_ann + '.caffemodel.h5')
-        assert os.path.isfile(caffemodel_filepath) or os.path.isfile(
-            caffemodel_h5_filepath), "File {} or {} not found.".format(
-            caffemodel_filepath, caffemodel_h5_filepath)
-        prototxt_filepath = os.path.join(path_wd, filename_ann + '.prototxt')
-        assert os.path.isfile(prototxt_filepath), \
-            "File {} not found.".format(prototxt_filepath)
-    elif model_lib == 'keras':
-        h5_filepath = str(os.path.join(path_wd, filename_ann + '.h5'))
-        assert os.path.isfile(h5_filepath), \
-            "File {} not found.".format(h5_filepath)
-        json_file = filename_ann + '.json'
-        if not os.path.isfile(os.path.join(path_wd, json_file)):
-            import keras
-            import h5py
-            from snntoolbox.parsing.utils import get_custom_activations_dict
-            # Remove optimizer_weights here, because they may cause the
-            # load_model method to fail if the network was trained on a
-            # different platform or keras version
-            # (see https://github.com/fchollet/keras/issues/4044).
-            with h5py.File(h5_filepath, 'a') as f:
-                if 'optimizer_weights' in f.keys():
-                    del f['optimizer_weights']
-            # Try loading the model.
-            keras.models.load_model(h5_filepath, get_custom_activations_dict())
-    elif model_lib == 'lasagne':
-        h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
-        pkl_filepath = os.path.join(path_wd, filename_ann + '.pkl')
-        assert os.path.isfile(h5_filepath) or os.path.isfile(pkl_filepath), \
-            "File {} not found.".format('.h5 or .pkl')
-        py_filepath = os.path.join(path_wd, filename_ann + '.py')
-        assert os.path.isfile(py_filepath), \
-            "File {} not found.".format(py_filepath)
-    else:
-        print("For the specified input model library {}, ".format(model_lib) +
-              "no test is implemented to check if input model files exist in "
-              "the specified working directory!")
+    if config.getboolean('tools', 'evaluate_ann') \
+            or config.getboolean('tools', 'parse'):
+        if model_lib == 'caffe':
+            caffemodel_filepath = os.path.join(path_wd,
+                                               filename_ann + '.caffemodel')
+            caffemodel_h5_filepath = os.path.join(path_wd, filename_ann +
+                                                  '.caffemodel.h5')
+            assert os.path.isfile(caffemodel_filepath) or os.path.isfile(
+                caffemodel_h5_filepath), "File {} or {} not found.".format(
+                caffemodel_filepath, caffemodel_h5_filepath)
+            prototxt_filepath = os.path.join(path_wd, filename_ann +
+                                             '.prototxt')
+            assert os.path.isfile(prototxt_filepath), \
+                "File {} not found.".format(prototxt_filepath)
+        elif model_lib == 'keras':
+            h5_filepath = str(os.path.join(path_wd, filename_ann + '.h5'))
+            assert os.path.isfile(h5_filepath), \
+                "File {} not found.".format(h5_filepath)
+            json_file = filename_ann + '.json'
+            if not os.path.isfile(os.path.join(path_wd, json_file)):
+                import keras
+                import h5py
+                from snntoolbox.parsing.utils import get_custom_activations_dict
+                # Remove optimizer_weights here, because they may cause the
+                # load_model method to fail if the network was trained on a
+                # different platform or keras version
+                # (see https://github.com/fchollet/keras/issues/4044).
+                with h5py.File(h5_filepath, 'a') as f:
+                    if 'optimizer_weights' in f.keys():
+                        del f['optimizer_weights']
+                # Try loading the model.
+                keras.models.load_model(
+                    h5_filepath, get_custom_activations_dict(
+                        config.get('paths', 'filepath_custom_objects')))
+        elif model_lib == 'lasagne':
+            h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
+            pkl_filepath = os.path.join(path_wd, filename_ann + '.pkl')
+            assert os.path.isfile(h5_filepath) or \
+                os.path.isfile(pkl_filepath), \
+                "File {} not found.".format('.h5 or .pkl')
+            py_filepath = os.path.join(path_wd, filename_ann + '.py')
+            assert os.path.isfile(py_filepath), \
+                "File {} not found.".format(py_filepath)
+        else:
+            print("For the specified input model library {}, no test is "
+                  "implemented to check if input model files exist in the "
+                  "specified working directory!".format(model_lib))
 
     # Set default path if user did not specify it.
     if config.get('paths', 'dataset_path') == '':
