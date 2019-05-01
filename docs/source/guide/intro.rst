@@ -83,15 +83,17 @@ spiking neuron chips. Currently, the following output formats are supported (see
       `Brian <http://briansimulator.org/>`_,
       `Nest <http://www.nest-simulator.org/>`_,
       `Neuron <https://www.neuron.yale.edu/neuron/>`_, or by a custom simulator
-      that allows pyNN models as inputs.
+      that allows pyNN models as inputs. If you choose a pyNN simulator backend, 
+      we recommend Nest with version 2.14.
     - `Brian2 <http://brian2.readthedocs.io/en/latest/index.html#>`_.
     - The toolbox integrates MegaSim, an event-driven asynchronous spiking
       simulator developed at the University of Seville.
     - The toolbox provides a built-in simulator based on Keras, called INIsim.
-      This simulator features a very simple integrate-and-fire neuron. By
+      This simulator features a simple integrate-and-fire neuron. By
       dispensing with redundant parameters and implementing a highly parallel
       simulation, the run time is reduced by several orders of magnitude,
-      without compromising accuracy.
+      without compromising accuracy. This simulator backend is recommended
+      as it supports the most features and its integration is maintained best.
 
 The second column in the table below compares these different simulators with
 respect to the network features that can be implemented on them.
