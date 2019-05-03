@@ -44,12 +44,18 @@ class SNN(PYSNN):
         delay = self.config.getfloat('cell', 'delay')
 
         if len(self.flatten_shapes) == 1:
+
             print("Swapping data_format of Flatten layer.")
             flatten_name, shape = self.flatten_shapes.pop()
             if self.data_format == 'channels_last':
                 y_in, x_in, f_in = shape
             else:
                 f_in, y_in, x_in = shape
+                output_neurons = weights.shape[1]
+                weights = weights.reshape((y_in, x_in, f_in, output_neurons), order='F')
+                weights = np.rollaxis(weights, 2, 0)
+                weights = weights.reshape((y_in*x_in*f_in, output_neurons), order='F')
+                #import matplotlib.pyplot as plt; plt.imshow(weights[0].reshape(4,4)); plt.show()
             exc_connections = []
             inh_connections = []
             for i in range(weights.shape[0]):  # Input neurons
