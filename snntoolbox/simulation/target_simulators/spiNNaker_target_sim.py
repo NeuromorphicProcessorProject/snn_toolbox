@@ -40,7 +40,7 @@ class SNN(PYSNN):
 
         weights, biases = layer.get_weights()
 
-        #self.set_biases(np.array(biases, 'float64'))
+        self.set_biases(np.array(biases, 'float64'))
         delay = self.config.getfloat('cell', 'delay')
 
         if len(self.flatten_shapes) == 1:
@@ -146,8 +146,7 @@ class SNN(PYSNN):
         transpose_kernel = \
             self.config.get('simulation', 'keras_backend') == 'tensorflow'
         weights, biases = build_convolution(layer, delay, transpose_kernel)
-        #self.set_biases(biases)
-        import pdb; pdb.set_trace()
+        self.set_biases(biases)
 
         exc_connections = [c for c in weights if c[2] > 0]
         inh_connections = [c for c in weights if c[2] <= 0]
