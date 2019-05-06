@@ -13,7 +13,7 @@ from __future__ import print_function
 from keras.callbacks import ModelCheckpoint
 from keras.datasets import mnist as dataset
 from keras.layers import BatchNormalization, Activation
-from keras.layers import Dense, Dropout, Flatten, Conv2D
+from keras.layers import Dense, Flatten, Conv2D
 from keras.models import Sequential
 from keras.utils.np_utils import to_categorical
 
@@ -23,7 +23,10 @@ import numpy as np
 
 batch_size = 128
 nb_classes = 10
-nb_epoch = 10
+nb_epoch = 20
+
+use_bias = False
+save_dataset = False
 
 # input image dimensions
 img_rows, img_cols = 28, 28
@@ -46,36 +49,41 @@ x_train /= 255.
 x_test /= 255.
 
 path = '/home/brueckau/Downloads'
-np.savez_compressed(path + '/x_test', x_test)
-np.savez_compressed(path + '/x_train', x_train)
-np.savez_compressed(path + '/y_test', y_test)
+if save_dataset:
+    np.savez_compressed(path + '/x_test', x_test)
+    np.savez_compressed(path + '/x_train', x_train)
+    np.savez_compressed(path + '/y_test', y_test)
 
 img_rows = int(img_rows / subsample_shift)
 img_cols = int(img_cols / subsample_shift)
 
 model = Sequential()
 
-model.add(Conv2D(6, (3, 3), input_shape=(img_rows, img_cols, chnls)))
-model.add(BatchNormalization(axis=-1))
+model.add(Conv2D(6, (3, 3), input_shape=(img_rows, img_cols, chnls),
+                 use_bias=use_bias))
+if use_bias:
+    model.add(BatchNormalization(axis=-1))
 model.add(Activation('relu'))
 # model.add(Dropout(0.1))
 
-model.add(Conv2D(6, (3, 3)))
-model.add(BatchNormalization(axis=-1))
+model.add(Conv2D(6, (3, 3), use_bias=use_bias))
+if use_bias:
+    model.add(BatchNormalization(axis=-1))
 model.add(Activation('relu'))
 # model.add(Dropout(0.1))
 
-model.add(Conv2D(80, (3, 3)))
-model.add(BatchNormalization(axis=-1))
+model.add(Conv2D(80, (3, 3), use_bias=use_bias))
+if use_bias:
+    model.add(BatchNormalization(axis=-1))
 model.add(Activation('relu'))
 # model.add(Dropout(0.1))
 
 model.add(Flatten())
 
-model.add(Dense(50, activation='relu'))
+model.add(Dense(50, activation='relu', use_bias=use_bias))
 # model.add(Dropout(0.1))
 
-model.add(Dense(10, activation='softmax'))
+model.add(Dense(10, activation='softmax', use_bias=use_bias))
 
 model.compile('adam', 'categorical_crossentropy', metrics=['accuracy'])
 

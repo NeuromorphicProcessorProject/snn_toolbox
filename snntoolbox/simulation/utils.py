@@ -403,7 +403,7 @@ class AbstractSNN:
 
         pass
 
-    def build(self, parsed_model):
+    def build(self, parsed_model, **kwargs):
         """Assemble a spiking neural network to prepare for simulation.
 
         Parameters
@@ -425,6 +425,8 @@ class AbstractSNN:
         batch_shape[0] = self.batch_size
         if self.config.get('conversion', 'spike_code') == 'ttfs_dyn_thresh':
             batch_shape[0] *= 2
+
+        self.preprocessing(**kwargs)
 
         self.add_input_layer(batch_shape)
 
@@ -1117,6 +1119,9 @@ class AbstractSNN:
             self._num_timesteps
 
         return avg_rate
+
+    def preprocessing(self, **kwargs):
+        pass
 
 
 def get_samples_from_list(x_test, y_test, dataflow, config):

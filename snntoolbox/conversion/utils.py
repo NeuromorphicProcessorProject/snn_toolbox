@@ -100,6 +100,7 @@ def normalize_parameters(model, config, **kwargs):
             del activations
             perc = get_percentile(config, i)
             scale_facs[layer.name] = get_scale_fac(nonzero_activations, perc)
+            print("Scale factor: {:.2f}.".format(scale_facs[layer.name]))
             # Since we have calculated output activations here, check at this
             # point if the output is mostly negative, in which case we should
             # stick to softmax. Otherwise ReLU is preferred.
@@ -241,13 +242,10 @@ def get_scale_fac(activations, percentile):
         Parameters of the respective layer are scaled by this value.
     """
 
-    scale_fac = np.percentile(activations, percentile)
-    print("Scale factor: {:.2f}.".format(scale_fac))
-
-    return scale_fac
+    return np.percentile(activations, percentile)
 
 
-def get_percentile(config, layer_idx):
+def get_percentile(config, layer_idx=None):
     """Get percentile at which to draw the maximum activation of a layer.
 
     Parameters
@@ -256,7 +254,7 @@ def get_percentile(config, layer_idx):
     config: configparser.ConfigParser
         Settings.
 
-    layer_idx: int
+    layer_idx: Optional[int]
         Layer index.
 
     Returns
@@ -270,6 +268,7 @@ def get_percentile(config, layer_idx):
     perc = config.getfloat('normalization', 'percentile')
 
     if config.getboolean('normalization', 'normalization_schedule'):
+        assert layer_idx, "Layer index needed for normalization schedule."
         perc = apply_normalization_schedule(perc, layer_idx)
 
     return perc
@@ -394,3 +393,169 @@ def try_reload_activations(layer, model, x_norm, batch_size, activ_dir):
     else:
         print("Loading activations stored during a previous run.")
     return np.array(activations)
+
+
+def normalize_loihi_network(parsed_model, config, **kwargs):
+    from snntoolbox.utils.utils import to_integer
+    from snntoolbox.simulation.utils import is_spiking
+
+    x_norm = kwargs[str('x_test')]  # Values in range [0, 1]
+
+    batch_size = config.getint('simulation', 'batch_size')
+    # Weights have a maximum of 8 bits, used for biases as well.
+    num_weight_bits = eval(config.get('loihi', 'connection_kwargs'))[
+        'numWeightBits']
+    # 2**15
+    threshold_mant = \
+        eval(config.get('loihi', 'compartment_kwargs'))['vThMant']
+    # 7
+    weight_exponent = \
+        eval(config.get('loihi', 'connection_kwargs'))['weightExponent']
+    # 6
+    bias_exponent = \
+        eval(config.get('loihi', 'compartment_kwargs'))['biasExp']
+
+    _threshold_mant_lim = config.getint('loihi', 'threshold_mant_lim')
+    _weight_exponent_lim = config.getint('loihi', 'weight_exponent_lim')
+    _threshold_gain = config.getint('loihi', 'threshold_gain')
+    _weight_gain = config.getint('loihi', 'weight_gain')
+
+    # Values in range [0, 2**14]
+    x = x_norm * 2 ** (num_weight_bits + bias_exponent) / np.max(x_norm)
+
+    desired_threshold_to_input_ratio = \
+        eval(config.get('loihi', 'desired_threshold_to_input_ratio'))
+
+    scales = {}
+
+    model_copy = keras.models.clone_model(parsed_model)
+    model_copy.set_weights(parsed_model.get_weights())
+
+    # Want to optimize thr, while keeping weights and biases in right range.
+    for i, layer in enumerate(model_copy.layers):
+        if len(layer.weights) > 0:
+            scale = scales[model_copy.layers[i - 1].name]
+            # Unconstrained floats
+            weights, biases = layer.get_weights()
+            # Scale to 8 bit using a common factor for both weights and biases.
+            # The weights and biases variables represent mantissa values with
+            # zero exponent.
+            weights, biases = to_integer(weights, biases, num_weight_bits)
+            weights = weights * 2 ** scale
+            if scale > 0:
+                weights, overflowed = overflow_signed(weights, num_weight_bits)
+                print("{:.2%} of weights overflowed during threshold scaling."
+                      "".format(np.mean(overflowed)))
+            elif scale < 0:
+                print("Dropped {} bits of weights during threshold scaling."
+                      "".format(-scale))
+            layer.set_weights([weights * 2 ** weight_exponent * _weight_gain,
+                               biases * 2 ** bias_exponent])
+
+        # Need to remove softmax in output layer to get activations above 1.
+        # if i == len(model_copy.layers) - 1:
+        #     layer.activation = keras.activations.linear
+        # Get the excitatory post-synaptic potential for each neuron in layer.
+        y = keras.models.Sequential([layer]).predict(x, batch_size) if i else x
+
+        # Layers like Flatten do not have spiking neurons and therefore no
+        # threshold to tune. So we only need to update the input to the next
+        # layer, and propagate the scale. The input layer (i == 0) counts as
+        # spiking.
+        if i > 0 and not is_spiking(layer, config):
+            x = y
+            scales[layer.name] = scales[model_copy.layers[i - 1].name]
+            continue
+
+        # The highest EPSP determines whether to raise threshold.
+        y_max = get_scale_fac(y[np.nonzero(y)], 100)
+        print("Maximum increase in compartment voltage per timestep: {:.2f}."
+              "".format(y_max))
+
+        initial_threshold_to_input_ratio = \
+            threshold_mant * _threshold_gain / y_max
+        # The gain represents how many powers of 2 the spikerates currently
+        # differ from the desired spikerates.
+        gain = np.log2(initial_threshold_to_input_ratio /
+                       desired_threshold_to_input_ratio)
+        print("The ratio of threshold to activations is off by 2**{:.2f}"
+              "".format(gain))
+        scale = 0
+        # Want to find scale exponent for threshold such that
+        # -1 < gain + scale < 1. (By using the limits [-1, 1] we allow for a
+        # difference of up to a factor 2 in either direction.)
+        while gain + scale < -1:
+            # First case, gain < 0: Activations in layer are too high, which
+            # will result in information loss due to reset-to-zero. Increase
+            # threshold.
+            if weight_exponent + scale + 1 <= _weight_exponent_lim and \
+                    threshold_mant * 2 ** (scale + 1) <= _threshold_mant_lim:
+                scale += 1
+            else:
+                print("Reached upper limit of weight exponent or threshold.")
+                break
+        else:
+            while gain + scale > 1:
+                # Second case, gain > 0: Activations in layer are too low,
+                # which will result in low spike rates and thus quantization
+                # errors. Decrease threshold.
+                if weight_exponent + scale - 1 >= - _weight_exponent_lim - 1 \
+                        and threshold_mant * 2 ** (scale - 1) >= 1:
+                    scale -= 1
+                else:
+                    print("Reached lower limit of weight exponent or "
+                          "threshold.")
+                    break
+
+        print("Scaling thresholds of layer {} and weights of subsequent layer "
+              "by 2**{}.".format(layer.name, scale))
+        scales[layer.name] = scale
+
+        # Apply activation function (dividing by threshold) to obtain the
+        # output of the current layer, which will be used as input to the next.
+        x = y / (threshold_mant * _threshold_gain * 2 ** scale)
+
+    return scales
+
+
+def overflow_signed(x, num_bits):
+    """Compute overflow on an array of signed integers.
+
+    Parameters
+    ----------
+    x : ndarray
+        Integer values for which to compute values after overflow.
+    num_bits : int
+        Number of bits, not including sign, to compute overflow for.
+
+    Returns
+    -------
+    out : ndarray
+        Values of x overflowed as would happen with limited bit representation.
+    overflowed : ndarray
+        Boolean array indicating which values of ``x`` actually overflowed.
+    """
+
+    x = x.astype(int)
+
+    lim = 2 ** num_bits
+    smask = np.array(lim, int)  # mask for the sign bit
+    xmask = smask - 1  # mask for all bits <= `bits`
+
+    # Find where x overflowed
+    overflowed = (x < -lim) | (x >= lim)
+
+    zmask = x & smask  # if `out` has negative sign bit, == 2**bits
+    out = x & xmask  # mask out all bits > `bits`
+    out -= zmask  # subtract 2**bits if negative sign bit
+
+    return out, overflowed
+
+
+def to_mantexp(x, mant_max, exp_max):
+    r = np.maximum(np.abs(x) / mant_max, 1)
+    exp = np.ceil(np.log2(r)).astype(int)
+    assert np.all(exp <= exp_max)
+    man = np.round(x / 2 ** exp).astype(int)
+    assert np.all(np.abs(man) <= mant_max)
+    return man, exp

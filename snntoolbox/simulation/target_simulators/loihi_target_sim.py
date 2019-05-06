@@ -48,6 +48,9 @@ class SNN(AbstractSNN):
             eval(self.config.get('loihi', 'num_cores_per_layer'))
         self.num_weight_bits = eval(self.config.get(
             'loihi', 'connection_kwargs'))['numWeightBits']
+        self.threshold_scales = None
+        partition = self.config.get('loihi', 'partition', fallback='')
+        self.partition = None if partition == '' else partition
 
     @property
     def is_parallelizable(self):
@@ -62,11 +65,14 @@ class SNN(AbstractSNN):
 
         compartment_kwargs = eval(self.config.get('loihi',
                                                   'compartment_kwargs'))
+        scale = self.threshold_scales[self.parsed_model.layers[0].name]
+        compartment_kwargs['vThMant'] *= 2 ** scale
         prototypes, prototype_map = self.partition_layer(num_neurons,
                                                          compartment_kwargs)
 
         self.layers.append(self.net.createCompartmentGroup(
-            'InputLayer', num_neurons, prototypes, prototype_map))
+            self.parsed_model.layers[0].name, num_neurons, prototypes,
+            prototype_map))
 
     def add_layer(self, layer):
 
@@ -79,6 +85,8 @@ class SNN(AbstractSNN):
 
         compartment_kwargs = eval(self.config.get('loihi',
                                                   'compartment_kwargs'))
+        scale = self.threshold_scales[layer.name]
+        compartment_kwargs['vThMant'] *= 2 ** scale
         prototypes, prototype_map = self.partition_layer(num_neurons,
                                                          compartment_kwargs)
 
@@ -111,7 +119,8 @@ class SNN(AbstractSNN):
 
         self.set_biases(biases)
 
-        self.connect(weights)
+        scale = self.threshold_scales[self.layers[-2].name]
+        self.connect(weights, scale)
 
     def build_convolution(self, layer):
         from snntoolbox.simulation.utils import build_convolution
@@ -129,7 +138,8 @@ class SNN(AbstractSNN):
 
         self.set_biases(biases)
 
-        self.connect(weights)
+        scale = self.threshold_scales[self.layers[-2].name]
+        self.connect(weights, scale)
 
     def build_pooling(self, layer):
         from snntoolbox.simulation.utils import build_pooling
@@ -138,7 +148,8 @@ class SNN(AbstractSNN):
 
         weights = connection_list_to_matrix(connections, layer.output_shape)
 
-        self.connect(weights)
+        scale = self.threshold_scales[self.layers[-2].name]
+        self.connect(weights, scale)
 
     def compile(self):
 
@@ -163,7 +174,7 @@ class SNN(AbstractSNN):
             data = np.moveaxis(data, 3, 1)
         self.set_inputs(np.ravel(data))
 
-        self.board.run(self._duration)
+        self.board.run(self._duration, partition=self.partition)
 
         print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.layers)
@@ -206,6 +217,8 @@ class SNN(AbstractSNN):
             return
 
         self.layers[-1].setState('biasMant', biases.astype(int))
+        self.layers[-1].setState('biasExp', eval(self.config.get(
+            'loihi', 'compartment_kwargs'))['biasExp'])
 
     def get_vars_to_record(self):
         """Get variables to record during simulation.
@@ -299,7 +312,7 @@ class SNN(AbstractSNN):
 
         return prototypes, list(prototype_map)
 
-    def connect(self, weights):
+    def connect(self, weights, scale):
 
         # Even though we already converted the weights to integers during
         # parsing, they will have become float type again after compiling the
@@ -308,6 +321,8 @@ class SNN(AbstractSNN):
         weights = weights.transpose().astype(int)
 
         connection_kwargs = eval(self.config.get('loihi', 'connection_kwargs'))
+
+        connection_kwargs['weightExponent'] += scale
 
         assert connection_kwargs['compressionMode'] == 0, \
             "Compression mode must be SPARSE when splitting the weight " \
@@ -318,24 +333,30 @@ class SNN(AbstractSNN):
 
         connection_kwargs['signMode'] = 2
         self.net.createConnectionGroup(
-            srcGrp=self.layers[-2], dstGrp=self.layers[-1],
+            src=self.layers[-2], dst=self.layers[-1],
             prototype=self.sim.ConnectionPrototype(**connection_kwargs),
             connectionMask=weights > 0, weight=weights)
 
         connection_kwargs['signMode'] = 3
         self.net.createConnectionGroup(
-            srcGrp=self.layers[-2], dstGrp=self.layers[-1],
+            src=self.layers[-2], dst=self.layers[-1],
             prototype=self.sim.ConnectionPrototype(**connection_kwargs),
             connectionMask=weights < 0, weight=weights)
 
     def set_inputs(self, inputs):
-        # Normalize inputs and scale up to threshold.
+        # Normalize inputs and scale up to 8 bit.
         inputs = (inputs / np.max(inputs) * 2 ** 8).astype(int)
         for i, node_id in enumerate(self.layers[0].nodeIds):
             _, chip_id, core_id, cx_id, _, _ = \
                 self.net.resourceMap.compartment(node_id)
             self.board.n2Chips[chip_id].n2Cores[core_id].cxCfg[
                 int(cx_id)].bias = int(inputs[i])
+
+    def preprocessing(self, **kwargs):
+        print("Normalizing thresholds.")
+        from snntoolbox.conversion.utils import normalize_loihi_network
+        self.threshold_scales = normalize_loihi_network(self.parsed_model,
+                                                        self.config, **kwargs)
 
 
 def get_shape_from_label(label):
