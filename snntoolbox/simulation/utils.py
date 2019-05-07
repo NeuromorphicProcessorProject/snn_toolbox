@@ -1177,11 +1177,11 @@ def build_convolution(layer, delay, transpose_kernel=False):
     # Biases.
     n = int(np.prod(layer.output_shape[1:]) / len(biases))
     i_offset = np.repeat(biases, n).astype('float64')
+    
+    ii = 0 if layer.data_format == 'channels_first' else 1
 
-    ii = 1# if keras.backend.image_data_format() == 'channels_first' else 0
-
-    nx = layer.input_shape[2 + ii]  # Width of feature map
-    ny = layer.input_shape[1 + ii]  # Height of feature map
+    nx = layer.input_shape[-1 - ii]  # Width of feature map
+    ny = layer.input_shape[-2 - ii]  # Height of feature map
 
     # Assumes symmetric padding ((1, 1), (1, 1)). Need to reduce dimensions of
     # input here because the layer.input_shape refers to the ZeroPadding layer
