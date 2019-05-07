@@ -15,7 +15,7 @@ import os
 import warnings
 
 import numpy as np
-
+import keras
 from snntoolbox.utils.utils import confirm_overwrite
 from snntoolbox.simulation.target_simulators.pyNN_target_sim import SNN as PYSNN
 
@@ -149,8 +149,9 @@ class SNN(PYSNN):
                     "supported.".format(layer.padding))
 
         delay = self.config.getfloat('cell', 'delay')
+        # Check to see if data_formats match.
         transpose_kernel = \
-            self.config.get('simulation', 'keras_backend') == 'tensorflow'
+            layer.data_format != keras.backend.image_data_format()
         weights, biases = build_convolution(layer, delay, transpose_kernel)
         self.set_biases(biases)
 
@@ -212,8 +213,7 @@ class SNN(PYSNN):
         from snntoolbox.simulation.utils import build_pooling
 
         delay = self.config.getfloat('cell', 'delay')
-        transpose_kernel = \
-            self.config.get('simulation', 'keras_backend') == 'tensorflow'
+
         weights = build_pooling(layer, delay) 
         if self.config.getboolean('tools', 'simulate'):
             self.connections.append(self.sim.Projection(
