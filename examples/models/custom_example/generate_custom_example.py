@@ -24,10 +24,12 @@ Y_test = np_utils.to_categorical(y_test, 10)
      
 model = Sequential()
 
-model.add(Conv2D(1, (5, 5), activation='relu', input_shape=(28,28,1)))
-print(model.output_shape)
+#model.add(Conv2D(10, (5, 5), activation='relu', input_shape=(28,28,1)))
+#print(model.output_shape)
+
+model.add(DepthwiseConv2D((5,5), depth_multiplier=16, input_shape=(28,28,1)))
 model.add(Flatten())
-model.add(Dense(576, activation='relu'))
+#model.add(Dense(576, activation='relu'))
 model.add(Dense(10, activation='softmax'))
 
 model.summary()
@@ -35,13 +37,13 @@ model.summary()
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 model.fit(X_train, Y_train, batch_size=32, nb_epoch=5, verbose=1)
-
+'''
 filter = model.get_weights()[0]
 filter = np.reshape(filter, (5,5))
 
 plt.imshow(filter, cmap='gray_r')
 plt.colorbar()
-plt.show()
+plt.show()'''
 score = model.evaluate(X_test, Y_test, verbose=1)
 
 print(score)

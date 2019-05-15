@@ -47,7 +47,7 @@ class SNN(PYSNN):
             print("Building layer: {}".format(layer.name))
             if layer_type == 'Dense':
                 self.build_dense(layer)
-            elif layer_type in {'Conv2D', 'DepthwiseConv2D'}:
+            elif layer_type in {'Conv2D','DepthwiseConv2D'}:
                 self.build_convolution(layer)
                 self.data_format = layer.data_format
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
@@ -205,7 +205,8 @@ class SNN(PYSNN):
             f.writelines(lines)
 
     def build_convolution(self, layer):
-        from snntoolbox.simulation.utils import build_convolution
+        from snntoolbox.simulation.utils import build_convolution, build_depthwise_convolution
+        from snntoolbox.parsing.utils import get_type
 
         # If the parsed model contains a ZeroPadding layer, we need to tell the
         # Conv layer about it here, because ZeroPadding layers are removed when
@@ -223,7 +224,12 @@ class SNN(PYSNN):
         # Check to see if data_formats match.
         transpose_kernel = \
             layer.data_format != keras.backend.image_data_format()
-        weights, biases = build_convolution(layer, delay, transpose_kernel)
+        
+        if get_type(layer) == 'Conv2D':
+            weights, biases = build_convolution(layer, delay, transpose_kernel)
+        elif get_type(layer) == 'DepthwiseConv2D':
+            weights, biases = build_depthwise_convolution(layer, delay, transpose_kernel)
+        
         self.set_biases(biases)
 
         exc_connections = [c for c in weights if c[2] > 0]
