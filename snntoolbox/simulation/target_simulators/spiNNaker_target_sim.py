@@ -22,6 +22,77 @@ from snntoolbox.simulation.target_simulators.pyNN_target_sim import SNN as PYSNN
 
 class SNN(PYSNN):
 
+    def setup_layers(self, batch_shape):
+        '''Iterates over all layers to instantiate them in the simulator.
+        This is done in reverse for SpiNNaker because it changes
+         machine placement so larger layers are placed later.'''
+        from snntoolbox.parsing.utils import get_type
+        from snntoolbox.simulation.target_simulators.pyNN_target_sim import get_shape_from_label
+        for layer in reversed(self.parsed_model.layers[1:]):
+            print("Instantiating layer: {}".format(layer.name))
+            self.add_layer(layer)
+        
+        self.add_input_layer(batch_shape)
+        
+        temp_layers = self.layers
+        self.layers = []
+        "Adding the input layer"        
+        self.layers.append(temp_layers.pop())
+
+        for layer in self.parsed_model.layers[1:]:
+            if len(temp_layers) == 0:
+                continue
+            self.layers.append(temp_layers.pop())
+            layer_type = get_type(layer)
+            print("Building layer: {}".format(layer.name))
+            if layer_type == 'Dense':
+                self.build_dense(layer)
+            elif layer_type in {'Conv2D', 'DepthwiseConv2D'}:
+                self.build_convolution(layer)
+                self.data_format = layer.data_format
+            elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
+                self.build_pooling(layer)
+            elif layer_type == 'Flatten':
+                self.flatten_shapes.append(
+                (layer.name, get_shape_from_label(self.layers[-1].label)))
+                self.build_flatten(layer)
+            elif layer_type == 'ZeroPadding':
+                padding = layer.padding
+                if set(padding).issubset((1, (1, 1))):
+                    self.change_padding = True
+                    return
+                else:
+                    raise NotImplementedError(
+                        "Border_mode {} not supported.".format(padding))    
+
+    def add_layer(self, layer):
+        
+        # This implementation of ZeroPadding layers assumes symmetric single
+        # padding ((1, 1), (1, 1)).
+        # Todo: Generalize for asymmetric padding or arbitrary size.
+        if 'ZeroPadding' in layer.__class__.__name__:
+            return
+        if 'Flatten' in layer.__class__.__name__:
+            return
+
+        self.layers.append(self.sim.Population(
+            np.asscalar(np.prod(layer.output_shape[1:], dtype=np.int)),
+            self.sim.IF_curr_exp, self.cellparams, label=layer.name))
+
+        self.layers[-1].initialize(v=self.layers[-1].get('v_rest'))
+
+        lines = [
+            "\n",
+            "\t# Add layer {}.\n".format(layer.name),
+            "\tprint('Building layer {}.')\n".format(layer.name),
+            "\tlayers.append(sim.Population(np.asscalar(np.prod({}, "
+            "dtype=np.int)), sim.IF_curr_exp, cellparams, label='{}'))\n"
+            "".format(layer.output_shape[1:], layer.name),
+            "\tlayers[-1].initialize(v=layers[-1].get('v_rest'))\n"
+        ]
+        with open(self.output_script_path, 'a') as f:
+            f.writelines(lines)
+
     def build_dense(self, layer):
         """
 

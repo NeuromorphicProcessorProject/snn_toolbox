@@ -422,22 +422,9 @@ class AbstractSNN:
         if self.config.get('conversion', 'spike_code') == 'ttfs_dyn_thresh':
             batch_shape[0] *= 2
 
-        self.add_input_layer(batch_shape)
-
         # Iterate over layers to create spiking neurons and connections.
-        for layer in parsed_model.layers[1:]:
-            print("Building layer: {}".format(layer.name))
-            self.add_layer(layer)
-            layer_type = get_type(layer)
-            if layer_type == 'Dense':
-                self.build_dense(layer)
-            elif layer_type in {'Conv2D', 'DepthwiseConv2D'}:
-                self.build_convolution(layer)
-                self.data_format = layer.data_format
-            elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
-                self.build_pooling(layer)
-            elif layer_type == 'Flatten':
-                self.build_flatten(layer)
+        self.setup_layers(batch_shape)
+
 
         print("Compiling spiking model...\n")
         self.compile()
@@ -761,6 +748,24 @@ class AbstractSNN:
             self.config.set('simulation', 'batch_size', str(self._batch_size))
 
         return top1acc_total
+
+    def setup_layers(self, batch_shape):
+        "Iterates over all layers to instantiate them in the simulator"
+
+        self.add_input_layer(batch_shape)
+        for layer in self.parsed_model.layers[1:]:
+            print("Building layer: {}".format(layer.name))
+            self.add_layer(layer)
+            layer_type = get_type(layer)
+            if layer_type == 'Dense':
+                self.build_dense(layer)
+            elif layer_type in {'Conv2D', 'DepthwiseConv2D'}:
+                self.build_convolution(layer)
+                self.data_format = layer.data_format
+            elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
+                self.build_pooling(layer)
+            elif layer_type == 'Flatten':
+                self.build_flatten(layer)
 
     def adjust_batchsize(self):
         """Reduce batch size to single sample if necessary.
