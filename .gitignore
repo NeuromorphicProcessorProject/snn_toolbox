@@ -26,6 +26,10 @@ __pycache__
 /examples/models/**/*_parsed*
 /examples/models/lenet5/keras/MegaSim_98.96/
 
+
 /scripts/scotopic
 /.project
 /.pydevproject
+**/log
+**/reports
+**/application_generated_data_files
