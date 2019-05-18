@@ -217,6 +217,10 @@ class SNN(AbstractSNN):
             return
 
         self.layers[-1].setState('biasMant', biases.astype(int))
+        # It should not be necessary to set the biasExp here, because we set it
+        # from the config file already. But even though we can read the correct
+        # value via getState, it does not have any effect on the neuron. Only
+        # if we set it explicitly again here:
         self.layers[-1].setState('biasExp', eval(self.config.get(
             'loihi', 'compartment_kwargs'))['biasExp'])
 

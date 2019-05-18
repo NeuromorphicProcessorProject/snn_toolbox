@@ -1069,8 +1069,8 @@ def get_fanout_array(layer_pre, layer_post, is_depthwise_conv=False):
     ny = layer_post.output_shape[1 + ax]  # Height of feature map
     nz = layer_post.output_shape[ax]  # Number of channels
     kx, ky = layer_post.kernel_size  # Width and height of kernel
-    px = int((kx - 1) / 2) if layer_post.padding == 'valid' else 0
-    py = int((ky - 1) / 2) if layer_post.padding == 'valid' else 0
+    px = int((kx - 1) / 2) if layer_post.padding == 'same' else 0
+    py = int((ky - 1) / 2) if layer_post.padding == 'same' else 0
     sx = layer_post.strides[1]
     sy = layer_post.strides[0]
 
