@@ -33,29 +33,31 @@ class SNN(PYSNN):
             self.add_layer(layer)
         
         self.add_input_layer(batch_shape)
-        
         temp_layers = self.layers
         self.layers = []
-        "Adding the input layer"        
+        print("Adding the input layer")        
         self.layers.append(temp_layers.pop())
-
         for layer in self.parsed_model.layers[1:]:
             if len(temp_layers) == 0:
                 continue
-            self.layers.append(temp_layers.pop())
             layer_type = get_type(layer)
-            print("Building layer: {}".format(layer.name))
-            if layer_type == 'Dense':
-                self.build_dense(layer)
-            elif layer_type in {'Conv2D','DepthwiseConv2D'}:
-                self.build_convolution(layer)
-                self.data_format = layer.data_format
-            elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
-                self.build_pooling(layer)
-            elif layer_type == 'Flatten':
+            print("Building layer: {}".format(layer.name))            
+            if layer_type == 'Flatten':
                 self.flatten_shapes.append(
                 (layer.name, get_shape_from_label(self.layers[-1].label)))
                 self.build_flatten(layer)
+                continue
+            if layer_type == 'Dense':
+                self.layers.append(temp_layers.pop())
+                self.build_dense(layer)
+            elif layer_type in {'Conv2D','DepthwiseConv2D'}:
+                self.layers.append(temp_layers.pop())
+                self.build_convolution(layer)
+                self.data_format = layer.data_format
+            elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
+                self.layers.append(temp_layers.pop())
+                self.build_pooling(layer)
+                
             elif layer_type == 'ZeroPadding':
                 padding = layer.padding
                 if set(padding).issubset((1, (1, 1))):
@@ -64,7 +66,9 @@ class SNN(PYSNN):
                 else:
                     raise NotImplementedError(
                         "Border_mode {} not supported.".format(padding))    
-
+            
+            self.layers[-1].initialize(v=self.layers[-1].get('v_rest'))
+    
     def add_layer(self, layer):
         
         # This implementation of ZeroPadding layers assumes symmetric single
@@ -79,7 +83,7 @@ class SNN(PYSNN):
             np.asscalar(np.prod(layer.output_shape[1:], dtype=np.int)),
             self.sim.IF_curr_exp, self.cellparams, label=layer.name))
 
-        self.layers[-1].initialize(v=self.layers[-1].get('v_rest'))
+        
 
         lines = [
             "\n",
@@ -115,18 +119,23 @@ class SNN(PYSNN):
         delay = self.config.getfloat('cell', 'delay')
 
         if len(self.flatten_shapes) == 1:
-
-            print("Swapping data_format of Flatten layer.")
             flatten_name, shape = self.flatten_shapes.pop()
             if self.data_format == 'channels_last':
+                print("Not swapping data_format of Flatten layer.")
                 y_in, x_in, f_in = shape
+                #output_neurons = weights.shape[1]
+                #weights = weights.reshape((f_in, x_in*y_in, output_neurons), order ='F')
+                #weights = weights.reshape((y_in*x_in*f_in, output_neurons), order ='F')
+                
             else:
+                print("Swapping data_format of Flatten layer.")
                 f_in, y_in, x_in = shape
                 output_neurons = weights.shape[1]
                 weights = weights.reshape((y_in, x_in, f_in, output_neurons), order='F')
                 weights = np.rollaxis(weights, 2, 0)
                 weights = weights.reshape((y_in*x_in*f_in, output_neurons), order='F')
                 #import matplotlib.pyplot as plt; plt.imshow(weights[0].reshape(4,4)); plt.show()
+
             exc_connections = []
             inh_connections = []
             for i in range(weights.shape[0]):  # Input neurons
@@ -142,10 +151,11 @@ class SNN(PYSNN):
                 new_i = f * x_in * y_in + x_in * y + x
                 for j in range(weights.shape[1]):  # Output neurons
                     c = (new_i, j, weights[i, j], delay)
-                    if c[2] > 0:
+                    if c[2] > 0.0:
                         exc_connections.append(c)
                     else:
                         inh_connections.append(c)
+
         elif len(self.flatten_shapes) > 1:
             raise RuntimeWarning("Not all Flatten layers have been consumed.")
         else:
@@ -153,12 +163,13 @@ class SNN(PYSNN):
                                for i, j in zip(*np.nonzero(weights > 0))]
             inh_connections = [(i, j, weights[i, j], delay)
                                for i, j in zip(*np.nonzero(weights <= 0))]
-
+            
         if self.config.getboolean('tools', 'simulate'):
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
                 self.sim.FromListConnector(exc_connections,
                                            ['weight', 'delay']),
+                receptor_type='excitatory',
                 label=self.layers[-1].label+'_excitatory'))
 
             self.connections.append(self.sim.Projection(
@@ -234,21 +245,20 @@ class SNN(PYSNN):
 
         exc_connections = [c for c in weights if c[2] > 0]
         inh_connections = [c for c in weights if c[2] <= 0]
+        
 
         if self.config.getboolean('tools', 'simulate'):
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
-                self.sim.FromListConnector(exc_connections,
-                                           ['weight', 'delay']),
+                (self.sim.FromListConnector(exc_connections,['weight', 'delay'])),
                 receptor_type='excitatory',
-                label=self.layers[-1].label+'_excitatory'))
+                label=self.layers[-1].label +'_excitatory'))
 
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
-                self.sim.FromListConnector(inh_connections,
-                                           ['weight', 'delay']),
+                (self.sim.FromListConnector(inh_connections,['weight', 'delay'])),
                 receptor_type='inhibitory',
-                label=self.layers[-1].label+'_inhibitory'))
+                label=self.layers[-1].label +'_inhibitory'))
         else:
             # The spinnaker implementation of Projection.save() is not working
             # yet, so we do save the connections manually here.
@@ -357,6 +367,7 @@ class SNN(PYSNN):
                 projection.save('connections', filepath)
                 
     def simulate(self, **kwargs):
+        import pdb; pdb.set_trace()
         #sim.set_number_of_neurons_per_core
         data = kwargs[str('x_b_l')]
         if self.data_format == 'channels_last' and data.ndim == 4:

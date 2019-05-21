@@ -1,3 +1,7 @@
 /custom_example.h5
 /custom_example.json
 /custom_example_snn.py
+/*.json
+/*.h5
+/custom_example_conv2d_nobias_snn.py
+/custom_example_conv2d_snn.py

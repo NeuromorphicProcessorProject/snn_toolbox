@@ -1283,6 +1283,7 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
     
     ii = 0 if layer.data_format == 'channels_first' else 1
 
+    nc = layer.input_shape[0 - ii] # Number of input channels
     nx = layer.input_shape[-1 - ii]  # Width of feature map
     ny = layer.input_shape[-2 - ii]  # Height of feature map
 
@@ -1321,15 +1322,14 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
             layer.padding))
 
     connections = []
-
+    
     # Loop over output filters 'fout'
-    for fout in range(dm*weights.shape[2]):
+    for fout in range(weights.shape[3]*nc):
         for y in range(y0, ny - y0, sy):
             for x in range(x0, nx - x0, sx):
                 target = int((x - x0) / sx + (y - y0) / sy * mx +
                              fout * mx * my)
-                # Loop over input filters 'fin'
-                for fin in range(weights.shape[2]):
+                for fin in range(nc):
                     for k in range(-py, py + 1):
                         if not 0 <= y + k < ny:
                             continue

@@ -27,10 +27,10 @@ model = Sequential()
 #model.add(Conv2D(10, (5, 5), activation='relu', input_shape=(28,28,1)))
 #print(model.output_shape)
 
-model.add(DepthwiseConv2D((5,5), depth_multiplier=16, input_shape=(28,28,1)))
+model.add(Conv2D(16, (5,5), input_shape=(28,28,1), use_bias=False))
 model.add(Flatten())
 #model.add(Dense(576, activation='relu'))
-model.add(Dense(10, activation='softmax'))
+model.add(Dense(10, activation='softmax', use_bias=False))
 
 model.summary()
 
@@ -48,6 +48,6 @@ score = model.evaluate(X_test, Y_test, verbose=1)
 
 print(score)
 
-with open("custom_example.json", "w") as text_file:
+with open("custom_example_conv2d_nobias.json", "w") as text_file:
     text_file.write(model.to_json())
-model.save_weights("custom_example.h5")
+model.save_weights("custom_example_conv2d_nobias.h5")

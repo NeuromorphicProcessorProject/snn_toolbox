@@ -1,22 +1,26 @@
 [paths]
 dataset_path = %(path_wd)s/dataset
-filename_ann = custom_example
-filename_snn = custom_example_snn
+filename_ann = custom_example_conv2d_nobias
+filename_snn = custom_example_conv2d_nobias_snn
+runlabel = custom_example_conv2d_nobias
 
 [tools]
 parse = True
 evaluate_ann = True
+convert = True
 normalize = False
+simulate = True
 
 [simulation]
 simulator = spiNNaker
-duration = 300
+duration = 3000
 num_to_test = 1
 batch_size = 1
 keras_backend = tensorflow
 
 [input]
 poisson_input = True
+input_rate = 1000
 
 [output]
 log_vars = {'spiketrains_n_b_l_t'}
