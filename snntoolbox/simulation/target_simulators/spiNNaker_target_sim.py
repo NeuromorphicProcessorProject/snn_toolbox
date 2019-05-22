@@ -119,14 +119,15 @@ class SNN(PYSNN):
         delay = self.config.getfloat('cell', 'delay')
 
         if len(self.flatten_shapes) == 1:
-            flatten_name, shape = self.flatten_shapes.pop()
+            flatten_name, shape = self.flatten_shapes.pop() 
             if self.data_format == 'channels_last':
                 print("Not swapping data_format of Flatten layer.")
                 y_in, x_in, f_in = shape
-                #output_neurons = weights.shape[1]
-                #weights = weights.reshape((f_in, x_in*y_in, output_neurons), order ='F')
-                #weights = weights.reshape((y_in*x_in*f_in, output_neurons), order ='F')
-                
+                '''output_neurons = weights.shape[1]
+                weights = weights.reshape((x_in, y_in, f_in, output_neurons), order ='C')
+                weights = np.rollaxis(weights, 1, 0)
+                weights = weights.reshape((y_in*x_in*f_in, output_neurons), order ='C')
+                '''
             else:
                 print("Swapping data_format of Flatten layer.")
                 f_in, y_in, x_in = shape
@@ -134,7 +135,6 @@ class SNN(PYSNN):
                 weights = weights.reshape((y_in, x_in, f_in, output_neurons), order='F')
                 weights = np.rollaxis(weights, 2, 0)
                 weights = weights.reshape((y_in*x_in*f_in, output_neurons), order='F')
-                #import matplotlib.pyplot as plt; plt.imshow(weights[0].reshape(4,4)); plt.show()
 
             exc_connections = []
             inh_connections = []
@@ -153,7 +153,7 @@ class SNN(PYSNN):
                     c = (new_i, j, weights[i, j], delay)
                     if c[2] > 0.0:
                         exc_connections.append(c)
-                    else:
+                    elif c[2] < 0.0:
                         inh_connections.append(c)
 
         elif len(self.flatten_shapes) > 1:
@@ -162,8 +162,7 @@ class SNN(PYSNN):
             exc_connections = [(i, j, weights[i, j], delay)
                                for i, j in zip(*np.nonzero(weights > 0))]
             inh_connections = [(i, j, weights[i, j], delay)
-                               for i, j in zip(*np.nonzero(weights <= 0))]
-            
+                               for i, j in zip(*np.nonzero(weights < 0))]
         if self.config.getboolean('tools', 'simulate'):
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
@@ -232,9 +231,8 @@ class SNN(PYSNN):
                     "supported.".format(layer.padding))
 
         delay = self.config.getfloat('cell', 'delay')
-        # Check to see if data_formats match.
         transpose_kernel = \
-            layer.data_format != keras.backend.image_data_format()
+            self.config.get('simulation', 'keras_backend') == 'tensorflow'
         
         if get_type(layer) == 'Conv2D':
             weights, biases = build_convolution(layer, delay, transpose_kernel)
@@ -244,7 +242,7 @@ class SNN(PYSNN):
         self.set_biases(biases)
 
         exc_connections = [c for c in weights if c[2] > 0]
-        inh_connections = [c for c in weights if c[2] <= 0]
+        inh_connections = [c for c in weights if c[2] < 0]
         
 
         if self.config.getboolean('tools', 'simulate'):
@@ -367,15 +365,15 @@ class SNN(PYSNN):
                 projection.save('connections', filepath)
                 
     def simulate(self, **kwargs):
-        import pdb; pdb.set_trace()
         #sim.set_number_of_neurons_per_core
         data = kwargs[str('x_b_l')]
         if self.data_format == 'channels_last' and data.ndim == 4:
             data = np.moveaxis(data, 3, 1)
-
+        
         x_flat = np.ravel(data)
         if self._poisson_input:
-            self.layers[0].set(rate=list(x_flat / self.rescale_fac * 1000))
+            rates = list(1000 * x_flat / self.rescale_fac)
+            self.layers[0].set(rate=rates)
         elif self._dataset_format == 'aedat':
             raise NotImplementedError
         else:
@@ -384,7 +382,6 @@ class SNN(PYSNN):
                  for amplitude in x_flat]
             self.layers[0].set(spike_times=spike_times)
         self.sim.run(self._duration - self._dt)
-        
         print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.layers)
 
