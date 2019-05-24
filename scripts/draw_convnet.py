@@ -206,7 +206,7 @@ if __name__ == '__main__':
     for ind in range(len(size_list)):
         label(top_left_list[ind], text_list[ind], xy_off=[-10, -75])
 
-    ############################
+    ###########################
     colors += [0, 1]
     collection = PatchCollection(patches, cmap=plt.cm.gray)
     collection.set_array(np.array(colors))
