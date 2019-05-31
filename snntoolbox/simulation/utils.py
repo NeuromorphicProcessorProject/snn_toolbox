@@ -1393,7 +1393,7 @@ def build_pooling(layer, delay):
                 for k in range(dy):
                     source = x + (y + k) * nx + fout * nx * ny
                     for l in range(dx):
-                        connections.append((source + l, target, 1000 / (dx * dy),
+                        connections.append((source + l, target, 1 / (dx * dy),
                                             delay))
         echo('.')
     print('')

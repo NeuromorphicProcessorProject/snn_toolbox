@@ -28,6 +28,7 @@ model = Sequential()
 #print(model.output_shape)
 
 model.add(Conv2D(16, (5,5), input_shape=(28,28,1), use_bias=False))
+model.add(MaxPooling2D(10))
 model.add(Flatten())
 #model.add(Dense(576, activation='relu'))
 model.add(Dense(10, activation='softmax', use_bias=False))
@@ -48,6 +49,6 @@ score = model.evaluate(X_test, Y_test, verbose=1)
 
 print(score)
 
-with open("custom_example_conv2d_nobias.json", "w") as text_file:
+with open("custom_example_conv2d_nobias_avg_pool.json", "w") as text_file:
     text_file.write(model.to_json())
-model.save_weights("custom_example_conv2d_nobias.h5")
+model.save_weights("custom_example_conv2d_nobias_avg_pool.h5")
