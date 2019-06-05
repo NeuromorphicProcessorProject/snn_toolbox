@@ -561,7 +561,7 @@ def initialize_simulator(config):
             config.get('restrictions', 'simulators_pyNN')):
         try:
             sim = import_module('pyNN.' + simulator)
-        except ModuleNotFoundError as e:
+        except ImportError as e:
             sim = import_module('spynnaker8')
 
         # From the pyNN documentation:
