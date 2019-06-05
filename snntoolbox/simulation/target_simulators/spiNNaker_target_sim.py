@@ -28,21 +28,17 @@ class SNN(PYSNN):
          machine placement so larger layers are placed later.'''
         from snntoolbox.parsing.utils import get_type
         from snntoolbox.simulation.target_simulators.pyNN_target_sim import get_shape_from_label
-        for layer in reversed(self.parsed_model.layers[1:]):
-            print("Instantiating layer: {}".format(layer.name))
-            self.add_layer(layer)
-        
+
         self.add_input_layer(batch_shape)
-        
-        temp_layers = self.layers
-        self.layers = []
-        "Adding the input layer"        
-        self.layers.append(temp_layers.pop())
+
+        # temp_layers = self.layers
+        # self.layers = []
+        # "Adding the input layer"
+        # self.layers.append(temp_layers.pop())
 
         for layer in self.parsed_model.layers[1:]:
-            if len(temp_layers) == 0:
-                continue
-            self.layers.append(temp_layers.pop())
+            print("Instantiating layer: {}".format(layer.name))
+            self.add_layer(layer)
             layer_type = get_type(layer)
             print("Building layer: {}".format(layer.name))
             if layer_type == 'Dense':
@@ -366,6 +362,12 @@ class SNN(PYSNN):
                 [np.linspace(0, self._duration, self._duration * amplitude)
                  for amplitude in x_flat]
             self.layers[0].set(spike_times=spike_times)
+
+        from pynn_object_serialisation.functions import intercept_simulator
+        import pylab
+        current_time = pylab.datetime.datetime.now().strftime("_%H%M%S_%d%m%Y")
+        intercept_simulator(self.sim, "snn_toolbox_spinnaker_" + current_time,
+                            post_abort=True)
         self.sim.run(self._duration - self._dt)
         
         print("\nCollecting results...")

@@ -390,7 +390,7 @@ def update_setup(config_filepath):
             assert os.path.isfile(prototxt_filepath), \
                 "File {} not found.".format(prototxt_filepath)
         elif model_lib == 'keras':
-            h5_filepath = str(os.path.join(path_wd, filename_ann + '.h5'))
+            h5_filepath = str(os.path.join(path_wd, filename_ann))
             assert os.path.isfile(h5_filepath), \
                 "File {} not found.".format(h5_filepath)
             json_file = filename_ann + '.json'
@@ -559,7 +559,10 @@ def initialize_simulator(config):
     print("Initializing {} simulator...\n".format(simulator))
     if simulator in config_string_to_set_of_strings(
             config.get('restrictions', 'simulators_pyNN')):
-        sim = import_module('pyNN.' + simulator)
+        try:
+            sim = import_module('pyNN.' + simulator)
+        except ModuleNotFoundError as e:
+            sim = import_module('spynnaker8')
 
         # From the pyNN documentation:
         # "Before using any other functions or classes from PyNN, the user

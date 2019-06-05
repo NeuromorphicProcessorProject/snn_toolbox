@@ -350,6 +350,11 @@ class SNN(AbstractSNN):
                  for amplitude in x_flat]
             self.layers[0].set(spike_times=spike_times)
 
+        from pynn_object_serialisation.functions import intercept_simulator
+        import pylab
+        current_time = pylab.datetime.datetime.now().strftime("_%H%M%S_%d%m%Y")
+        intercept_simulator(self.sim, "snn_toolbox_pynn_" + current_time)
+
         self.sim.run(self._duration - self._dt,
                      callbacks=[MyProgressBar(self._dt, self._duration)])
         print("\nCollecting results...")

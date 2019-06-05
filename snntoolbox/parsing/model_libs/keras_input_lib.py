@@ -123,7 +123,10 @@ def load(path, filename, **kwargs):
 
     if os.path.exists(filepath + '.json'):
         model = models.model_from_json(open(filepath + '.json').read())
-        model.load_weights(filepath + '.h5')
+        try:
+            model.load_weights(filepath + '.h5')
+        except:
+            model.load_weights(filepath)
         # With this loading method, optimizer and loss cannot be recovered.
         # Could be specified by user, but since they are not really needed
         # at inference time, set them to the most common choice.
@@ -135,9 +138,14 @@ def load(path, filename, **kwargs):
         filepath_custom_objects = kwargs.get('filepath_custom_objects', None)
         if filepath_custom_objects is not None:
             filepath_custom_objects = str(filepath_custom_objects)  # python 2
-        model = models.load_model(
-            filepath + '.h5',
-            get_custom_activations_dict(filepath_custom_objects))
+        try:
+            model = models.load_model(
+                filepath + '.h5',
+                get_custom_activations_dict(filepath_custom_objects))
+        except:
+            model = models.load_model(
+                filepath,
+                get_custom_activations_dict(filepath_custom_objects))
         model.compile(model.optimizer, model.loss,
                       ['accuracy', metrics.top_k_categorical_accuracy])
 
