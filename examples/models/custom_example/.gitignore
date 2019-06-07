@@ -1,4 +1,18 @@
+<<<<<<< HEAD
 /*.h5
 /*.json
 /*_snn.py
 /*_spiNNaker.py
+=======
+/custom_example.h5
+/custom_example.json
+/custom_example_snn.py
+/*.json
+/*.h5
+/custom_example_conv2d_nobias_snn.py
+/custom_example_conv2d_snn.py
+/example.py
+/custom_example_dwconv2d_snn.py
+/custom_example_conv2d_nobias_avg_pool_snn.py
+/custom_example_dwconv2d_spiNNaker.py
+>>>>>>> refs/heads/depthwise_conv_fix

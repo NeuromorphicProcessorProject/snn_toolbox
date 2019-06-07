@@ -68,10 +68,9 @@ class ModelParser(AbstractModelParser):
             attributes['use_bias'] = True
 
     def parse_depthwiseconvolution(self, layer, attributes):
-        weights = layer.get_weights()[0]
-        attributes['parameters'] = [weights]
+        attributes['parameters'] = layer.get_weights()
         if layer.bias is None:
-            attributes['parameters'].append(np.zeros(weights.shape[2]))
+            attributes['parameters'].append(np.zeros(layer.get_weights.shape[2]))
             attributes['use_bias'] = True
 
     def parse_pooling(self, layer, attributes):

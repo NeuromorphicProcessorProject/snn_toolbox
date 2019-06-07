@@ -390,7 +390,7 @@ def update_setup(config_filepath):
             assert os.path.isfile(prototxt_filepath), \
                 "File {} not found.".format(prototxt_filepath)
         elif model_lib == 'keras':
-            h5_filepath = str(os.path.join(path_wd, filename_ann))
+            h5_filepath = str(os.path.join(path_wd, filename_ann + '.h5'))
             assert os.path.isfile(h5_filepath), \
                 "File {} not found.".format(h5_filepath)
             json_file = filename_ann + '.json'
