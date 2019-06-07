@@ -227,10 +227,9 @@ def plot_layer_activity(layer, title, path=None, limits=None, data_format=None):
     data_format: Optional[str]
         One of 'channels_first' or 'channels_last'.
     """
-
     data = layer[0]
     # Reshape data to our default format.
-    if data_format == 'channels_last' and data.ndim == 3:
+    if data_format != 'channels_first' and data.ndim == 3:
         data = np.moveaxis(data, -1, 0)
 
     # Highest possible spike rate, used to normalize image plots. Need to
@@ -247,7 +246,7 @@ def plot_layer_activity(layer, title, path=None, limits=None, data_format=None):
     num = shape[0]
     fac = 1  # Scales height of colorbar
     # Case: One-dimensional layer (e.g. Dense). If larger than 100 neurons,
-    # form a rectangle. Otherwise plot a 1d-image.
+    # form a rectangle. Otherwise plot a 1d-image.lay
     if len(shape) == 1:
         if num >= 100:
             n = int(np.sqrt(num))
@@ -1116,7 +1115,6 @@ def plot_input_image(x, label, path=None, data_format=None):
     data_format: Optional[str]
         One of 'channels_first' or 'channels_last'.
     """
-
     # In case an image was flattened for use in a fully-connected network, try
     # to reshape it to 2D:
     if x.ndim == 1:
@@ -1126,7 +1124,7 @@ def plot_input_image(x, label, path=None, data_format=None):
             return
 
     # Move channel axis to the last dimension.
-    if data_format != 'channels_last':
+    if data_format == 'channels_first':
         x = np.transpose(x, (1, 2, 0))
 
     if x.shape[-1] == 1:

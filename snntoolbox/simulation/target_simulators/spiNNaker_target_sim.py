@@ -36,18 +36,10 @@ class SNN(PYSNN):
         # "Adding the input layer"
         # self.layers.append(temp_layers.pop())
 
-        temp_layers = self.layers
-        self.layers = []
-        print("Adding the input layer")        
-        self.layers.append(temp_layers.pop())
-
         for layer in self.parsed_model.layers[1:]:
             print("Instantiating layer: {}".format(layer.name))
             self.add_layer(layer)
 
-
-            if len(temp_layers) == 0:
-                continue
             layer_type = get_type(layer)
             print("Building layer: {}".format(layer.name))            
             if layer_type == 'Flatten':
@@ -391,7 +383,7 @@ class SNN(PYSNN):
         import pylab
         current_time = pylab.datetime.datetime.now().strftime("_%H%M%S_%d%m%Y")
         intercept_simulator(self.sim, "snn_toolbox_spinnaker_" + current_time,
-                            post_abort=True)
+                            post_abort=False)
         self.sim.run(self._duration - self._dt)
         print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.layers)
