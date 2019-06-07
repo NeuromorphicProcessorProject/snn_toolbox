@@ -36,10 +36,18 @@ class SNN(PYSNN):
         # "Adding the input layer"
         # self.layers.append(temp_layers.pop())
 
+        temp_layers = self.layers
+        self.layers = []
+        print("Adding the input layer")        
+        self.layers.append(temp_layers.pop())
+
         for layer in self.parsed_model.layers[1:]:
             print("Instantiating layer: {}".format(layer.name))
             self.add_layer(layer)
 
+
+            if len(temp_layers) == 0:
+                continue
             layer_type = get_type(layer)
             print("Building layer: {}".format(layer.name))            
             if layer_type == 'Flatten':
