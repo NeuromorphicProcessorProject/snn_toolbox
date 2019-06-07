@@ -1,10 +1,10 @@
 [paths]
 dataset_path = %(path_wd)s/dataset
 filename_ann = custom_example
-filename_snn = custom_example_snn
 
 [tools]
 evaluate_ann = True
+convert = True
 normalize = False
 
 [simulation]
@@ -19,4 +19,4 @@ poisson_input = True
 
 [output]
 log_vars = {}
-plot_vars = {}
+plot_vars = {'input_image', 'spiketrains'}

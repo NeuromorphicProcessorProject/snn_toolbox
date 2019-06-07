@@ -1245,6 +1245,106 @@ def build_convolution(layer, delay, transpose_kernel=False):
 
     return connections, i_offset
 
+def build_depthwise_convolution(layer, delay, transpose_kernel=False):
+    """Build convolution layer.
+
+    Parameters
+    ----------
+
+    layer: keras.layers.DepthwiseConv2D
+        Parsed model layer.
+    delay: float
+        Synaptic delay.
+    transpose_kernel: bool
+        Whether or not to convert kernels from Tensorflow to Theano format
+        (correlation instead of convolution).
+
+    Returns
+    -------
+
+    connections: List[tuple]
+        A list where each entry is a tuple containing the source neuron index,
+        the target neuron index, the connection strength (weight), and the
+        synaptic ``delay``.
+    i_offset: ndarray
+        Flattened array containing the biases of all neurons in the ``layer``.
+    """
+
+    weights, biases = layer.get_weights()
+
+    if transpose_kernel:
+        from keras.utils.conv_utils import convert_kernel
+        print("Transposing kernels.")
+        weights = convert_kernel(weights)
+
+    # Biases.
+    n = int(np.prod(layer.output_shape[1:]) / len(biases))
+    i_offset = np.repeat(biases, n).astype('float64')
+    
+    ii = 0 if layer.data_format == 'channels_first' else 1
+
+    nc = layer.input_shape[0 - ii] # Number of input channels
+    nx = layer.input_shape[-1 - ii]  # Width of feature map
+    ny = layer.input_shape[-2 - ii]  # Height of feature map
+
+    # Assumes symmetric padding ((1, 1), (1, 1)). Need to reduce dimensions of
+    # input here because the layer.input_shape refers to the ZeroPadding layer
+    # contained in the parsed model, which is removed when building the SNN.
+    if layer.padding == 'ZeroPadding':
+        print("Applying ZeroPadding.")
+        nx -= 2
+        ny -= 2
+        layer.padding = 'same'
+
+    kx, ky = layer.kernel_size  # Width and height of kernel
+    px = int((kx - 1) / 2)  # Zero-padding columns
+    py = int((ky - 1) / 2)  # Zero-padding rows
+
+    sx = layer.strides[1]
+    sy = layer.strides[0]
+    
+    dm = layer.depth_multiplier
+    
+    if layer.padding == 'valid':
+        # In padding 'valid', the original sidelength is
+        # reduced by one less than the kernel size.
+        mx = (nx - kx + 1) // sx  # Number of columns in output filters
+        my = (ny - ky + 1) // sy  # Number of rows in output filters
+        x0 = px
+        y0 = py
+    elif layer.padding == 'same':
+        mx = nx // sx
+        my = ny // sy
+        x0 = 0
+        y0 = 0
+    else:
+        raise NotImplementedError("Border_mode {} not supported".format(
+            layer.padding))
+
+    connections = []
+    
+    # Loop over output filters 'fout'
+    for fout in range(weights.shape[3]*nc):
+        for y in range(y0, ny - y0, sy):
+            for x in range(x0, nx - x0, sx):
+                target = int((x - x0) / sx + (y - y0) / sy * mx +
+                             fout * mx * my)
+                for fin in range(nc):
+                    for k in range(-py, py + 1):
+                        if not 0 <= y + k < ny:
+                            continue
+                        source = x + (y + k) * nx + fin * nx * ny
+                        for l in range(-px, px + 1):
+                            if not 0 <= x + l < nx:
+                                continue
+                            connections.append((source + l, target,
+                                                weights[py - k, px - l,
+                                                        fout], delay))
+        echo('.')
+    print('')
+
+    return connections, i_offset
+
 
 def build_pooling(layer, delay):
     """Build average pooling layer.
@@ -1293,7 +1393,7 @@ def build_pooling(layer, delay):
                 for k in range(dy):
                     source = x + (y + k) * nx + fout * nx * ny
                     for l in range(dx):
-                        connections.append((source + l, target, 1000 / (dx * dy),
+                        connections.append((source + l, target, 1 / (dx * dy),
                                             delay))
         echo('.')
     print('')

@@ -6,16 +6,30 @@ from keras.datasets import mnist
 import keras.utils as utils
 import numpy as np
 from keras.utils import np_utils
-from snntoolbox.utils.utils import NoisySoftplus
+
+class NoisySoftplus():
+    ''' The Noisy Softplus activation function
+        Values of k and sigma taken from Liu et al. 2017
+    
+    '''
+    
+    def __init__(self, k=0.17, sigma=1):
+        self.k = k
+        self.sigma = sigma
+        self.__name__ = 'noisy_softplus_{}_{}'.format(self.k,
+                                                    self.sigma)
+                
+    def __call__ (self, *args, **kwargs):
+        return self.k*self.sigma*keras.backend.softplus(args[0]/(self.k*self.sigma))
 
 
-#loading model
+#loading model; stick h5 here.
 filename = "98.96.h5"
 
 model = load_model(filename)
 
-#model.summary()
-#generating testing and training data
+model.summary()
+#generating MNIST testing and training data
 (X_train, Y_train), (X_test, Y_test) = mnist.load_data()
 
 X_train = X_train.reshape(X_train.shape[0], 28, 28, 1).astype('float32')
@@ -77,16 +91,20 @@ model = load_model("modified_"+filename, custom_objects ={'NoisySoftplus': Noisy
 
 
 '''
+#Print activations (not shown in model.summary)
 for layer in model.layers:
     if hasattr(layer, 'activation'):
         print(layer.activation)
 '''
+
 score = model.evaluate(X_test, Y_test, batch_size = 1, verbose=0)
 print('NSP Test Loss:', score[0])
 print('NSP Test Accuracy:', score[1])
 
 
 epochs = 1
+
+#Fine tuning training
 print('Retraining network for %d epochs...' % epochs)
 model.compile(optimizer='adam',
               loss='categorical_crossentropy',
@@ -105,4 +123,4 @@ score = model.evaluate(X_test, Y_test, batch_size = 100, verbose=0)
 print('Retrained Test loss:', score[0])
 print('Retrained Test accuracy:', score[1])
 
-#model.save("lenet5_retrained.h5")
+#model.save("model_retrained.h5")

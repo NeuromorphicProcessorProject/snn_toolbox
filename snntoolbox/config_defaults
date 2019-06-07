@@ -64,7 +64,7 @@ keras_backend = theano
 early_stopping = False
 
 [cell]
-v_thresh = 1
+v_thresh = 0.01
 tau_refrac = 0
 v_reset = 0
 v_rest = 0
