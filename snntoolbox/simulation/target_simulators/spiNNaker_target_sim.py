@@ -78,7 +78,8 @@ class SNN(PYSNN):
             return
         if 'Flatten' in layer.__class__.__name__:
             return
-
+        if 'Reshape' in layer.__class__.__name__:
+            return
         self.layers.append(self.sim.Population(
             np.asscalar(np.prod(layer.output_shape[1:], dtype=np.int)),
             self.sim.IF_curr_exp, self.cellparams, label=layer.name))
@@ -238,7 +239,6 @@ class SNN(PYSNN):
             weights, biases = build_convolution(layer, delay, transpose_kernel)
         elif get_type(layer) == 'DepthwiseConv2D':
             weights, biases = build_depthwise_convolution(layer, delay, transpose_kernel)
-        
         self.set_biases(biases)
 
         exc_connections = [c for c in weights if c[2] > 0]

@@ -1338,7 +1338,7 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
                             if not 0 <= x + l < nx:
                                 continue
                             connections.append((source + l, target,
-                                                weights[py - k, px - l, fin,
+                                                weights[py - k, px - l,
                                                         fout], delay))
         echo('.')
     print('')
