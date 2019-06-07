@@ -365,7 +365,7 @@ class SNN(PYSNN):
                 projection.save('connections', filepath)
                 
     def simulate(self, **kwargs):
-        #sim.set_number_of_neurons_per_core
+        self.sim.set_number_of_neurons_per_core(self.sim.IF_curr_exp, 128)
         data = kwargs[str('x_b_l')]
         if self.data_format == 'channels_last' and data.ndim == 4:
             data = np.moveaxis(data, 3, 1)

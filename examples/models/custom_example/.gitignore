@@ -8,3 +8,4 @@
 /example.py
 /custom_example_dwconv2d_snn.py
 /custom_example_conv2d_nobias_avg_pool_snn.py
+/custom_example_dwconv2d_spiNNaker.py
