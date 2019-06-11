@@ -1322,27 +1322,24 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
             layer.padding))
 
     connections = []
-    
-    # Loop over output filters 'fout'
-    for fout in range(weights.shape[3]*nc):
-        for y in range(y0, ny - y0, sy):
-            for x in range(x0, nx - x0, sx):
-                target = int((x - x0) / sx + (y - y0) / sy * mx +
-                             fout * mx * my)
-                for fin in range(nc):
+    for d in range(weights.shape[-1]):
+        for fin in range(weights.shape[-2]):
+            for y in range(y0, ny - y0, sy):
+                for x in range(x0, nx - x0, sx):
+                    target = ((x - x0) // sx) + ((y - y0) // sy * mx) + (fin * mx *my) + (d * nc * mx * my)
                     for k in range(-py, py + 1):
                         if not 0 <= y + k < ny:
                             continue
-                        source = x + (y + k) * nx + fin * nx * ny
                         for l in range(-px, px + 1):
                             if not 0 <= x + l < nx:
                                 continue
-                            connections.append((source + l, target,
-                                                weights[py - k, px - l,
-                                                        fout], delay))
-        echo('.')
+                            source = x + l + ((y + k) * nx) + (fin * nx * ny)
+                            connections.append((source, target,
+                                                weights[py - k, px - l, fin,
+                                                        d], delay))
+            echo('.')        
     print('')
-
+    
     return connections, i_offset
 
 
