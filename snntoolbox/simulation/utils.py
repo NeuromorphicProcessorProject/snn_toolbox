@@ -1326,7 +1326,7 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
         for fin in range(weights.shape[-2]):
             for y in range(y0, ny - y0, sy):
                 for x in range(x0, nx - x0, sx):
-                    target = ((x - x0) // sx) + ((y - y0) // sy * mx) + (fin * mx *my) + (d * nc * mx * my)
+                    target = ((x - x0) // sx) + ((y - y0) // sy * mx) + (d * mx *my) + (fin * nc * mx * my)
                     for k in range(-py, py + 1):
                         if not 0 <= y + k < ny:
                             continue
