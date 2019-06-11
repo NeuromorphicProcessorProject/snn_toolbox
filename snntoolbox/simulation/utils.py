@@ -1318,13 +1318,13 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
         x0 = 0
         y0 = 0
     else:
-        raise NotImplementedError("Border_mode {} not supported".format(
+        raise NotImplementedError("Border_mode {} not shsupported".format(
             layer.padding))
 
     connections = []
-    
+    import pdb; pdb.set_trace()
     # Loop over output filters 'fout'
-    for fout in range(weights.shape[3]*nc):
+    for fout in range(weights.shape[-1]):
         for y in range(y0, ny - y0, sy):
             for x in range(x0, nx - x0, sx):
                 target = int((x - x0) / sx + (y - y0) / sy * mx +
@@ -1338,7 +1338,7 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
                             if not 0 <= x + l < nx:
                                 continue
                             connections.append((source + l, target,
-                                                weights[py - k, px - l,
+                                                weights[py - k, px - l, fin,
                                                         fout], delay))
         echo('.')
     print('')
