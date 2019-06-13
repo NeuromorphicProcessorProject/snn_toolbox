@@ -63,7 +63,7 @@ class SNN(AbstractSNN):
         self.connections = []  # Final container for all layers.
         self.threshold = 'v >= v_thresh'
         self.v_reset = 'v = v_reset'
-        self.eqs = 'v = 0 : 1'
+        self.eqs = 'v = : 1'
         self.spikemonitors = []
         self.statemonitors = []
         self.snn = None
