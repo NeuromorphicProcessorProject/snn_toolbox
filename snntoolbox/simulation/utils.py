@@ -1320,23 +1320,22 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
     else:
         raise NotImplementedError("Border_mode {} not supported".format(
             layer.padding))
-
     connections = []
-    for d in range(weights.shape[-1]):
-        for fin in range(weights.shape[-2]):
+    for fin in range(weights.shape[-1]):
+        for d in range(weights.shape[-2]):
             for y in range(y0, ny - y0, sy):
                 for x in range(x0, nx - x0, sx):
-                    target = ((x - x0) // sx) + ((y - y0) // sy * mx) + (d * mx *my) + (fin * nc * mx * my)
+                    target = ((x - x0) // sx) + ((y - y0) // sy * mx) + (fin * mx * my) + (d * nc * mx * my)
                     for k in range(-py, py + 1):
                         if not 0 <= y + k < ny:
                             continue
                         for l in range(-px, px + 1):
                             if not 0 <= x + l < nx:
                                 continue
-                            source = x + l + ((y + k) * nx) + (fin * nx * ny)
+                            source = x + l + ((y + k) * nx) + (d * nx * ny)
                             connections.append((source, target,
-                                                weights[py - k, px - l, fin,
-                                                        d], delay))
+                                                weights[py - k, px - l, d,
+                                                        fin], delay))
             echo('.')        
     print('')
     
