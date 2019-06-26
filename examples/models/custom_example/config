@@ -1,16 +1,20 @@
 [paths]
 dataset_path = %(path_wd)s/dataset
-filename_ann = custom_example
+filename_ann = custom_example_dw_nobias_4
+runlabel = custom_example_dw_nobias_normalisation_300ms_switch2
 
 [tools]
 evaluate_ann = True
 convert = True
-normalize = False
+normalize = True
+
+[normalization]
+percentile = 99.5
 
 [simulation]
 simulator = spiNNaker
 duration = 300
-num_to_test = 10
+num_to_test = 1
 batch_size = 1
 keras_backend = tensorflow
 
@@ -19,4 +23,4 @@ poisson_input = True
 
 [output]
 log_vars = {}
-plot_vars = {'input_image', 'spikerates'}
+plot_vars = {'activations', 'input_image', 'spikerates'}
