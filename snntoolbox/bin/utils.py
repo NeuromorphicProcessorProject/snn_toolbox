@@ -334,7 +334,7 @@ def update_setup(config_filepath):
         # We found that in some cases the refractory period can actually be
         # smaller than the time step.
         scale = 1e1 if dt == 0.1 else 1e3
-        if tau_refrac < dt / scale:
+        if tau_refrac < dt / scale and tau_refrac != 0:
             print("\nSNN toolbox WARNING: Refractory period ({}) must be at "
                   "least one time step / {} ({}). Setting tau_refrac = dt / "
                   "{}.".format(tau_refrac, scale, dt / scale, scale))
