@@ -27,8 +27,13 @@ model = Sequential()
 #model.add(Conv2D(10, (5, 5), activation='relu', input_shape=(28,28,1)))
 #print(model.output_shape)
 
-model.add(Conv2D(16, (5,5), input_shape=(28,28,1), use_bias=False))
-model.add(MaxPooling2D(10))
+model.add(Conv2D(16, (5,5), input_shape=(28,28,1), activation='relu', use_bias=False))
+model.add(DepthwiseConv2D((5,5), depth_multiplier = 4, activation='relu', use_bias=False))
+#model.add(DepthwiseConv2D((5,5), depth_multiplier = 2, activation='relu', use_bias=True))
+#model.add(DepthwiseConv2D((5,5), depth_multiplier = 2, activation='relu', use_bias=True))
+#model.add(DepthwiseConv2D((5,5), depth_multiplier = 2, activation='relu', use_bias=True))
+
+#model.add(MaxPooling2D(10))
 model.add(Flatten())
 #model.add(Dense(576, activation='relu'))
 model.add(Dense(10, activation='softmax', use_bias=False))
@@ -37,7 +42,7 @@ model.summary()
 
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-model.fit(X_train, Y_train, batch_size=32, nb_epoch=5, verbose=1)
+model.fit(X_train, Y_train, batch_size=32, nb_epoch=1, verbose=1)
 '''
 filter = model.get_weights()[0]
 filter = np.reshape(filter, (5,5))
@@ -49,6 +54,6 @@ score = model.evaluate(X_test, Y_test, verbose=1)
 
 print(score)
 
-with open("custom_example_conv2d_nobias_avg_pool.json", "w") as text_file:
+with open("custom_example_dw_nobias_4.json", "w") as text_file:
     text_file.write(model.to_json())
-model.save_weights("custom_example_conv2d_nobias_avg_pool.h5")
+model.save_weights("custom_example_dw_nobias_4.h5")

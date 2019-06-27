@@ -426,13 +426,19 @@ class SNN(AbstractSNN):
         Notes
         -----
 
-        This has not been tested yet.
+        This assumes no leak.
         """
 
         if not np.any(biases):
             return
-
-        self.layers[-1].set(i_offset=biases*self._dt/1e2)
+        
+        v_rest = self.config.getfloat('cell', 'v_rest')
+        v_thresh = self.config.getfloat('cell', 'v_thresh')
+        cm = self.config.getfloat('cell', 'cm')
+        
+        i_offset = biases * self.rescale_fac * cm * 1e-9 * ((v_thresh-v_rest)*1e-3)/self._duration*1e-3
+        
+        self.layers[-1].set(i_offset=i_offset)
 
     def get_vars_to_record(self):
         """Get variables to record during simulation.
