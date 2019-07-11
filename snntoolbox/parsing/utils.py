@@ -671,7 +671,6 @@ class AbstractModelParser:
             if len(inbound) == 1:
                 inbound = inbound[0]
             check_for_custom_activations(layer)
-            import pdb; pdb.set_trace()
             parsed_layers[layer['name']] = parsed_layer(**layer)(inbound)
 
         print("Compiling parsed model...\n")

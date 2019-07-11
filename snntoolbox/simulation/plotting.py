@@ -1119,7 +1119,7 @@ def plot_input_image(x, label, path=None, data_format=None):
     # to reshape it to 2D:
     if x.ndim == 1:
         try:
-            x = np.reshape(x, (1, int(np.sqrt(len(x))), -1))
+            x = np.reshape(x, (int(np.sqrt(len(x))), -1))
         except RuntimeError:
             return
 
