@@ -126,7 +126,7 @@ def test_full(config, queue=None):
                         config.get('paths', 'path_wd'),
                         config.get('paths', 'filename_parsed_model')))
 
-        spiking_model.build(parsed_model)
+        spiking_model.build(parsed_model, **testset)
 
         # Export network in a format specific to the simulator with which it
         # will be tested later.

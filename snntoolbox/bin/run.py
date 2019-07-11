@@ -36,8 +36,10 @@ def main():
     args = parser.parse_args()
 
     # filepath = os.path.abspath(args.config_filepath)
-    filepath = '/home/brueckau/Repositories/snn_toolbox_loihi/examples/models/loihi/config'
-    # filepath = '/home/rbodo/.snntoolbox/data/mnist/cnn/lenet5/keras/32bit/log/gui/14/config'
+    # filepath = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/cnn/96.12/log/gui/test/config'
+    filepath = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/cnn/95.41/log/gui/test/config'
+    # filepath = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/fc/96.97/config'
+    # filepath = '/home/brueckau/Repositories/snn_toolbox_loihi/examples/models/lenet5/keras/config'
     args.terminal = True
     if filepath is not None:
         assert os.path.isfile(filepath), \

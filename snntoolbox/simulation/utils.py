@@ -169,7 +169,6 @@ class AbstractSNN:
         self._poisson_input = self.config.getboolean('input', 'poisson_input')
         self._num_poisson_events_per_sample = \
             self.config.getint('input', 'num_poisson_events_per_sample')
-        self._input_spikecount = 0
 
         self._plot_keys = get_plot_keys(self.config)
         self._log_keys = get_log_keys(self.config)
@@ -206,7 +205,8 @@ class AbstractSNN:
 
     @abstractmethod
     def add_layer(self, layer):
-        """Do anything that concerns adding any layer independently of its type.
+        """Do anything that concerns adding any layer independently of its
+        type.
 
         Parameters
         ----------
@@ -403,7 +403,7 @@ class AbstractSNN:
 
         pass
 
-    def build(self, parsed_model):
+    def build(self, parsed_model, **kwargs):
         """Assemble a spiking neural network to prepare for simulation.
 
         Parameters
@@ -425,6 +425,8 @@ class AbstractSNN:
         batch_shape[0] = self.batch_size
         if self.config.get('conversion', 'spike_code') == 'ttfs_dyn_thresh':
             batch_shape[0] *= 2
+
+        self.preprocessing(**kwargs)
 
         self.add_input_layer(batch_shape)
 
@@ -602,19 +604,6 @@ class AbstractSNN:
             data_batch_kwargs['truth_b'] = truth_b
             data_batch_kwargs['x_b_l'] = x_b_l
 
-            # Using one batch of activations, estimate the expected number of
-            # synaptic operations of SNN. (ANN activation is a measure for the
-            # expected SNN spike count.)
-            # if batch_idx == 0:
-            #     activations_n_b_l = get_activations_batch(self.parsed_model,
-            #                                               x_b_l)
-            #     snn_ops_expected = estimate_snn_ops(activations_n_b_l,
-            #                                         self.fanout,
-            #                                         self._num_timesteps)
-            #     print("Expected number of operations of SNN after {} time "
-            #           "steps: {}.".format(self._num_timesteps,
-            #                               snn_ops_expected))
-
             # Main step: Run the network on a batch of samples for the duration
             # of the simulation.
             print("\nStarting new simulation...\n")
@@ -644,6 +633,9 @@ class AbstractSNN:
             # Print current accuracy.
             num_samples_seen = (batch_idx + 1) * self.batch_size
             top1acc_moving = np.mean(np.array(truth_d) == np.array(guesses_d))
+            # top5acc_moving = keras.backend.get_value(precision(
+            #     keras.backend.constant(truth_d),
+            #     keras.backend.constant(guesses_d)))
             top5score_moving += sum(in_top_k(output_b_l_t[:, :, -1], truth_b,
                                              self.top_k))
             top5acc_moving = top5score_moving / num_samples_seen
@@ -670,6 +662,14 @@ class AbstractSNN:
             if 'input_image' in self._plot_keys:
                 snn_plt.plot_input_image(x_b_l[0], int(truth_b[0]), log_dir,
                                          self.data_format)
+                if self.input_b_l_t is not None:
+                    input_rates = np.count_nonzero(self.input_b_l_t[0], -1) / \
+                        self._duration
+                    snn_plt.plot_input_image(
+                        input_rates, int(truth_b[0]), log_dir,
+                        self.data_format, 'input_rates')
+                    snn_plt.plot_correlations(x_b_l[0], input_rates, log_dir,
+                                              'input_correlation')
 
             # Plot error vs time.
             if 'error_t' in self._plot_keys:
@@ -1123,12 +1123,15 @@ class AbstractSNN:
 
         return avg_rate
 
+    def preprocessing(self, **kwargs):
+        pass
+
 
 def get_samples_from_list(x_test, y_test, dataflow, config):
     """
     If user specified a list of samples to test with
-    ``config.get('input', 'sample_idxs_to_test')``, this function extracts them
-    from the test set.
+    ``config.get('simulation', 'sample_idxs_to_test')``, this function extracts
+    them from the test set.
     """
 
     batch_size = config.getint('simulation', 'batch_size')

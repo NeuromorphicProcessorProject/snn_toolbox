@@ -192,7 +192,8 @@ def plot_layer_summaries(plot_vars, config, path=None, data_format=None):
             plot_layer_correlation(
                 plot_vars['spikerates_n_l'][i][0].flatten(),
                 plot_vars['activations_n_l'][i][0].flatten(),
-                str('ANN-SNN correlations\n of layer '+name), config, newpath)
+                str('ANN-SNN correlations\n of layer '+name), config, newpath,
+                False)
 
 
 def plot_layer_activity(layer, title, path=None, limits=None,
@@ -379,7 +380,8 @@ def plot_activations_minus_rates(activations, rates, label, path=None,
         str('Activations_minus_Spikerates'), path, (-1, 1), data_format)
 
 
-def plot_layer_correlation(rates, activations, title, config, path=None):
+def plot_layer_correlation(rates, activations, title, config, path=None,
+                           same_xylim=True):
     """
     Plot correlation between spikerates and activations of a specific layer,
     as 2D-dot-plot.
@@ -398,6 +400,9 @@ def plot_layer_correlation(rates, activations, title, config, path=None):
     path: Optional[str]
         If not ``None``, specifies where to save the resulting image. Else,
         display plots without saving.
+    same_xylim: Optional[bool]
+        Whether to use the same axis limit on the ``rates`` and
+        ``activations``. If ``True``, the maximum is chosen. Default: ``True``.
     """
 
     # Determine percentage of saturated neurons. Need to subtract one time step
@@ -412,7 +417,7 @@ def plot_layer_correlation(rates, activations, title, config, path=None):
                  textcoords='offset points')
     plt.title(title, fontsize=20)
     plt.locator_params(nbins=4)
-    lim = max([1.1, max(activations), max(rates)])
+    lim = max([1.1, max(activations), max(rates)]) if same_xylim else None
     plt.xlim([0, lim])
     plt.ylim([0, lim])
     plt.xlabel('ANN activations', fontsize=16)
@@ -425,7 +430,18 @@ def plot_layer_correlation(rates, activations, title, config, path=None):
     plt.close()
 
 
-def plot_correlations(spikerates, layer_activations):
+def plot_correlations(a, b, path=None, filename=None):
+    plt.figure()
+    plt.plot(a.flatten(), b.flatten(), '.')
+    if path is not None:
+        filename = filename if filename is not None else 'correlation'
+        plt.savefig(os.path.join(path, filename), bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
+
+def plot_network_correlations(spikerates, layer_activations):
     """Plot the correlation between SNN spiketrains and ANN activations.
 
     For each layer, the method draws a scatter plot, showing the correlation
@@ -803,18 +819,17 @@ def plot_param_sweep(results, n, params, param_name, param_logscale):
 
     # Compute confidence intervals of the experiments
     ci = [wilson_score(q, n) for q in results]
-    ax = plt.subplot()
     if param_logscale:
-        ax.set_xscale('log', nonposx='clip')
-    ax.errorbar(params, results, yerr=ci, fmt='x-')
-    ax.set_title('Accuracy vs Hyperparameter')
-    ax.set_xlabel(param_name)
-    ax.set_ylabel('accuracy')
+        plt.xscale('log', nonposx='clip')
+    plt.errorbar(params, results, yerr=ci, fmt='x-')
+    plt.title('Accuracy vs Hyperparameter')
+    plt.xlabel(param_name)
+    plt.ylabel('accuracy')
     fac = 0.9
     if params[0] < 0:
         fac += 0.2
-    ax.set_xlim(fac * params[0], 1.1 * params[-1])
-    ax.set_ylim(0, 1)
+    plt.xlim(fac * params[0], 1.1 * params[-1])
+    plt.ylim(0, 1)
 
 
 def plot_spiketrains(layer, dt, path=None, data_format=None):
@@ -1106,7 +1121,7 @@ def plot_spikecount_vs_time(spiketrains_n_b_l_t, duration, dt, path=None):
     plt.close()
 
 
-def plot_input_image(x, label, path=None, data_format=None):
+def plot_input_image(x, label, path=None, data_format=None, filename=None):
     """Show an input image.
 
     Parameters
@@ -1119,6 +1134,8 @@ def plot_input_image(x, label, path=None, data_format=None):
         Where to save the image.
     data_format: Optional[str]
         One of 'channels_first' or 'channels_last'.
+    filename: Optional[str]
+        Name of file to save.
     """
 
     # In case an image was flattened for use in a fully-connected network, try
@@ -1140,7 +1157,7 @@ def plot_input_image(x, label, path=None, data_format=None):
     plt.title('Input image (class: {})'.format(label))
     plt.imshow(x)
     if path is not None:
-        filename = 'input_image'
+        filename = 'input_image' if filename is None else filename
         plt.savefig(os.path.join(path, filename), bbox_inches='tight')
     else:
         plt.show()
@@ -1178,3 +1195,10 @@ def plot_history(h):
 
     plt.xlabel('epoch')
     plt.show()
+
+
+def plot_probe(probe, path, filename):
+    plt.figure()
+    probe.plot()
+    plt.savefig(os.path.join(path, filename))
+    plt.close()

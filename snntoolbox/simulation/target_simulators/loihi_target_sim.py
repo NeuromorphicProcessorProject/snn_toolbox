@@ -13,6 +13,8 @@ import numpy as np
 from future import standard_library
 
 from snntoolbox.simulation.utils import AbstractSNN
+from snntoolbox.utils.utils import to_integer
+from snntoolbox.simulation.plotting import plot_probe
 
 standard_library.install_aliases()
 
@@ -38,10 +40,17 @@ class SNN(AbstractSNN):
 
         self.layers = []
         self.probes = []
+        self.probe_idx_map = {}
         self.net = self.sim.NxNet()
         self.board = None
         self.core_counter = 0
-        self.num_cores_per_layer = [1, 10, 10, 1]
+        self.num_cores_per_layer = \
+            eval(self.config.get('loihi', 'num_cores_per_layer'))
+        self.num_weight_bits = eval(self.config.get(
+            'loihi', 'connection_kwargs'))['numWeightBits']
+        self.threshold_scales = None
+        partition = self.config.get('loihi', 'partition', fallback='')
+        self.partition = None if partition == '' else partition
 
     @property
     def is_parallelizable(self):
@@ -54,21 +63,32 @@ class SNN(AbstractSNN):
 
         num_neurons = np.prod(input_shape[1:], dtype=np.int).item()
 
-        prototypes, prototype_map = self.partition_layer(num_neurons)
+        compartment_kwargs = eval(self.config.get('loihi',
+                                                  'compartment_kwargs'))
+        scale = self.threshold_scales[self.parsed_model.layers[0].name]
+        compartment_kwargs['vThMant'] *= 2 ** scale
+        prototypes, prototype_map = self.partition_layer(num_neurons,
+                                                         compartment_kwargs)
 
         self.layers.append(self.net.createCompartmentGroup(
-            'InputLayer', num_neurons, prototypes, prototype_map))
+            self.parsed_model.layers[0].name, num_neurons, prototypes,
+            prototype_map))
 
     def add_layer(self, layer):
 
         if 'Flatten' in layer.__class__.__name__:
             self.flatten_shapes.append(
-                (layer.name, get_shape_from_label(self.layers[-1].label)))
+                (layer.name, get_shape_from_label(self.layers[-1].name)))
             return
 
         num_neurons = np.prod(layer.output_shape[1:], dtype=np.int).item()
 
-        prototypes, prototype_map = self.partition_layer(num_neurons)
+        compartment_kwargs = eval(self.config.get('loihi',
+                                                  'compartment_kwargs'))
+        scale = self.threshold_scales[layer.name]
+        compartment_kwargs['vThMant'] *= 2 ** scale
+        prototypes, prototype_map = self.partition_layer(num_neurons,
+                                                         compartment_kwargs)
 
         self.layers.append(self.net.createCompartmentGroup(
             layer.name, num_neurons, prototypes, prototype_map))
@@ -91,13 +111,16 @@ class SNN(AbstractSNN):
 
         weights, biases = layer.get_weights()
 
-        self.set_biases(biases)
-
         if len(self.flatten_shapes):
             _, shape = self.flatten_shapes.pop()
             weights = fix_flatten(weights, shape, self.data_format)
 
-        self.connect(weights)
+        weights, biases = to_integer(weights, biases, self.num_weight_bits)
+
+        self.set_biases(biases)
+
+        scale = self.threshold_scales[self.layers[-2].name]
+        self.connect(weights, scale)
 
     def build_convolution(self, layer):
         from snntoolbox.simulation.utils import build_convolution
@@ -107,11 +130,16 @@ class SNN(AbstractSNN):
 
         connections, biases = build_convolution(layer, 0, transpose_kernel)
 
+        shape = (np.prod(layer.input_shape[1:]),
+                 np.prod(layer.output_shape[1:]))
+        weights = connection_list_to_matrix(connections, shape)
+
+        weights, biases = to_integer(weights, biases, self.num_weight_bits)
+
         self.set_biases(biases)
 
-        weights = connection_list_to_matrix(connections, layer.get_)
-
-        self.connect(weights)
+        scale = self.threshold_scales[self.layers[-2].name]
+        self.connect(weights, scale)
 
     def build_pooling(self, layer):
         from snntoolbox.simulation.utils import build_pooling
@@ -120,20 +148,22 @@ class SNN(AbstractSNN):
 
         weights = connection_list_to_matrix(connections, layer.output_shape)
 
-        self.connect(weights)
+        scale = self.threshold_scales[self.layers[-2].name]
+        self.connect(weights, scale)
 
     def compile(self):
 
         vars_to_record = self.get_vars_to_record()
 
         for layer in self.layers:
-            self.probes.append(layer.probe(vars_to_record))  # , [self.sim.SpikeProbeCondition(), self.sim.IntervalProbeCondition()]))
+            self.probes.append(layer.probe(vars_to_record))
 
         # The spikes of the last layer are recorded by default because they
         # contain the networks output (classification guess).
-        if self.sim.ProbeParameter.SPIKE not in vars_to_record:  # This check won't work
+        if 'spikes' not in self.probe_idx_map.keys():
             vars_to_record.append(self.sim.ProbeParameter.SPIKE)
             self.probes[-1] = self.layers[-1].probe(vars_to_record)
+            self.probe_idx_map['spikes'] = len(vars_to_record) - 1
 
         self.board = self.sim.N2Compiler().compile(self.net)
 
@@ -142,11 +172,9 @@ class SNN(AbstractSNN):
         data = kwargs[str('x_b_l')]
         if self.data_format == 'channels_last' and data.ndim == 4:
             data = np.moveaxis(data, 3, 1)
+        self.set_inputs(np.ravel(data))
 
-        x_flat = np.ravel(data)
-        self.layers[0].setState('biasMant', x_flat, range(len(x_flat)))
-
-        self.board.run(self._duration)
+        self.board.run(self._duration, partition=self.partition)
 
         print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.layers)
@@ -155,7 +183,16 @@ class SNN(AbstractSNN):
 
     def reset(self, sample_idx):
 
-        print("Resetting between samples not yet implemented.")
+        print("Resetting membrane potentials...")
+        for layer in self.layers:
+            for i, node_id in enumerate(layer.nodeIds):
+                _, chip_id, core_id, cx_id, _, _ = \
+                    self.net.resourceMap.compartment(node_id)
+                core = self.board.n2Chips[chip_id].n2Cores[core_id]
+                core.cxState[int(cx_id)].v = 0
+                setattr(core.cxMetaState[int(cx_id // 4)],
+                        'phase{}'.format(cx_id % 4), 2)
+        print("Done.")
 
     def end_sim(self):
 
@@ -179,10 +216,13 @@ class SNN(AbstractSNN):
         if not np.any(biases):
             return
 
-        self.layers[-1].setState('biasMant', biases.astype(int),
-                                 range(len(biases)))
-        # It should not be necessary to set the `ids` argument above.
-        # A bug report was filed on 4/9/19. Should be fixed after next pull.......
+        self.layers[-1].setState('biasMant', biases.astype(int))
+        # It should not be necessary to set the biasExp here, because we set it
+        # from the config file already. But even though we can read the correct
+        # value via getState, it does not have any effect on the neuron. Only
+        # if we set it explicitly again here:
+        self.layers[-1].setState('biasExp', eval(self.config.get(
+            'loihi', 'compartment_kwargs'))['biasExp'])
 
     def get_vars_to_record(self):
         """Get variables to record during simulation.
@@ -195,14 +235,15 @@ class SNN(AbstractSNN):
         """
 
         vars_to_record = []
-
         if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
                 'hist_spikerates_activations'} & self._plot_keys) \
                 or 'spiketrains_n_b_l_t' in self._log_keys:
             vars_to_record.append(self.sim.ProbeParameter.SPIKE)
+            self.probe_idx_map['spikes'] = len(vars_to_record) - 1
 
         if 'mem_n_b_l_t' in self._log_keys or 'v_mem' in self._plot_keys:
             vars_to_record.append(self.sim.ProbeParameter.COMPARTMENT_VOLTAGE)
+            self.probe_idx_map['v_mem'] = len(vars_to_record) - 1
 
         return vars_to_record
 
@@ -219,35 +260,45 @@ class SNN(AbstractSNN):
         # by `get_spiketrains_input()`.
         i = len(self.layers) - 1 if kwargs[str('monitor_index')] == -1 else \
             kwargs[str('monitor_index')] + 1
-        spiketrains_flat = self.probes[i][0].data
+        idx = self.probe_idx_map['spikes']
+        spiketrains_flat = self.probes[i][idx].data[:, -self._num_timesteps:]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(
             spiketrains_flat, shape, False)
         return spiketrains_b_l_t
 
     def get_spiketrains_input(self):
         shape = list(self.parsed_model.input_shape) + [self._num_timesteps]
-        spiketrains_flat = self.probes[0][0].data
+        idx = self.probe_idx_map['spikes']
+        spiketrains_flat = self.probes[0][idx].data[:, -self._num_timesteps:]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(
             spiketrains_flat, shape, False)
         return spiketrains_b_l_t
 
     def get_spiketrains_output(self):
         shape = [self.batch_size, self.num_classes, self._num_timesteps]
-        spiketrains_flat = self.probes[-1][0].data
+        idx = self.probe_idx_map['spikes']
+        spiketrains_flat = self.probes[-1][idx].data[:, -self._num_timesteps:]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(
             spiketrains_flat, shape, False)
         return spiketrains_b_l_t
 
     def get_vmem(self, **kwargs):
         i = kwargs[str('monitor_index')]
-        # Need to skip input layer because the toolbox does not expect it to
-        # record the membrane potentials.
-        return None if i == 0 else self.probes[i][-1].data
+        if 'v_mem' in self.probe_idx_map.keys():
+            idx = self.probe_idx_map['v_mem']
+            # Need to skip input layer because the toolbox does not expect it
+            # to record the membrane potentials.
+            if i == 0:
+                plot_probe(self.probes[i][idx],
+                           self.config.get('paths', 'log_dir_of_current_run'),
+                           'v_input.png')
+            else:
+                return self.probes[i][idx].data[:, -self._num_timesteps:]
 
     def set_spiketrain_stats_input(self):
         AbstractSNN.set_spiketrain_stats_input(self)
 
-    def partition_layer(self, num_neurons):
+    def partition_layer(self, num_neurons, compartment_kwargs):
         num_cores = self.num_cores_per_layer.pop(0)
         num_neurons_per_core = \
             np.ones(num_cores, int) * int(num_neurons / num_cores)
@@ -255,8 +306,6 @@ class SNN(AbstractSNN):
         core_id_map = np.repeat(np.arange(self.core_counter,
                                           self.core_counter + num_cores),
                                 num_neurons_per_core)
-        compartment_kwargs = eval(self.config.get('loihi',
-                                                  'compartment_kwargs'))
         prototypes = []
         for core_id in core_id_map:
             compartment_kwargs['logicalCoreId'] = core_id
@@ -267,7 +316,7 @@ class SNN(AbstractSNN):
 
         return prototypes, list(prototype_map)
 
-    def connect(self, weights):
+    def connect(self, weights, scale):
 
         # Even though we already converted the weights to integers during
         # parsing, they will have become float type again after compiling the
@@ -277,17 +326,41 @@ class SNN(AbstractSNN):
 
         connection_kwargs = eval(self.config.get('loihi', 'connection_kwargs'))
 
+        connection_kwargs['weightExponent'] += scale
+
+        assert connection_kwargs['compressionMode'] == 0, \
+            "Compression mode must be SPARSE when splitting the weight " \
+            "matrix into excitatory and inhibitory connections " \
+            "(signMode 2, 3) via the connectionMask argument. (DENSE " \
+            "compression mode does not properly handle holes in the weight " \
+            "matrix."
+
         connection_kwargs['signMode'] = 2
         self.net.createConnectionGroup(
-            srcGrp=self.layers[-2], dstGrp=self.layers[-1],
+            src=self.layers[-2], dst=self.layers[-1],
             prototype=self.sim.ConnectionPrototype(**connection_kwargs),
-            connectionMask=weights >= 0, weight=weights)
+            connectionMask=weights > 0, weight=weights)
 
         connection_kwargs['signMode'] = 3
         self.net.createConnectionGroup(
-            srcGrp=self.layers[-2], dstGrp=self.layers[-1],
+            src=self.layers[-2], dst=self.layers[-1],
             prototype=self.sim.ConnectionPrototype(**connection_kwargs),
             connectionMask=weights < 0, weight=weights)
+
+    def set_inputs(self, inputs):
+        # Normalize inputs and scale up to 8 bit.
+        inputs = (inputs / np.max(inputs) * 2 ** 8).astype(int)
+        for i, node_id in enumerate(self.layers[0].nodeIds):
+            _, chip_id, core_id, cx_id, _, _ = \
+                self.net.resourceMap.compartment(node_id)
+            self.board.n2Chips[chip_id].n2Cores[core_id].cxCfg[
+                int(cx_id)].bias = int(inputs[i])
+
+    def preprocessing(self, **kwargs):
+        print("Normalizing thresholds.")
+        from snntoolbox.conversion.utils import normalize_loihi_network
+        self.threshold_scales = normalize_loihi_network(self.parsed_model,
+                                                        self.config, **kwargs)
 
 
 def get_shape_from_label(label):

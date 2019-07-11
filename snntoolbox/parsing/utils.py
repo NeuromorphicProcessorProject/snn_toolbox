@@ -746,11 +746,6 @@ def modify_parameter_precision(weights, biases, config, attributes):
         weights = reduce_precision(weights, m, f)
         if attributes.get('quantize_bias', False):
             biases = reduce_precision(biases, m, f)
-    elif config.get('simulation', 'simulator') == 'loihi':
-        from snntoolbox.utils.utils import to_integer
-        b = eval(config.get('loihi', 'connection_kwargs'))['numWeightBits']
-        weights, biases = to_integer(weights, biases, b)
-        print("Converted layer parameters to {} bit integers.".format(b))
 
     # These attributes are not needed any longer and would not be
     # understood by Keras when building the parsed model.
@@ -1074,8 +1069,8 @@ def get_fanout_array(layer_pre, layer_post, is_depthwise_conv=False):
     ny = layer_post.output_shape[1 + ax]  # Height of feature map
     nz = layer_post.output_shape[ax]  # Number of channels
     kx, ky = layer_post.kernel_size  # Width and height of kernel
-    px = int((kx - 1) / 2) if layer_post.padding == 'valid' else 0
-    py = int((ky - 1) / 2) if layer_post.padding == 'valid' else 0
+    px = int((kx - 1) / 2) if layer_post.padding == 'same' else 0
+    py = int((ky - 1) / 2) if layer_post.padding == 'same' else 0
     sx = layer_post.strides[1]
     sy = layer_post.strides[0]
 
@@ -1244,4 +1239,17 @@ def get_custom_activations_dict(filepath=None):
     return {'binary_sigmoid': binary_sigmoid,
             'binary_tanh': binary_tanh,
             'clamped_relu': ClampedReLU(),  # Todo: This should work regardless of the specific attributes of the ClampedReLU class used during training.
-            activation_str: activation}
+            activation_str: activation,
+            'precision': precision}
+
+def precision(y_true, y_pred):
+    """Precision metric.
+     Only computes a batch-wise average of precision.
+     Computes the precision, a metric for multi-label classification of
+    how many selected items are relevant.
+    """
+    import keras.backend as k
+    true_positives = k.sum(k.round(k.clip(y_true * y_pred, 0, 1)))
+    predicted_positives = k.sum(k.round(k.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + k.epsilon())
+    return precision
