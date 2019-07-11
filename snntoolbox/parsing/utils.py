@@ -435,13 +435,12 @@ class AbstractModelParser:
             layer_type = self.get_type(layer)
 
         output_shape = self.get_output_shape(layer)
-        if len(output_shape) == 2:
-            shape_string = '_{}'.format(output_shape[1])
-        else:
-            shape_string = '_{}x{}x{}'.format(output_shape[1],
-                                              output_shape[2],
-                                              output_shape[3])
-
+        
+        
+        shape_string = ["{}x".format(x) for x in output_shape[1:]]
+        shape_string[0] = "_" + shape_string[0]
+        shape_string[-1] = shape_string[-1][:-1]
+        shape_string = "".join(shape_string)
         num_str = str(idx) if idx > 9 else '0' + str(idx)
 
         return num_str + layer_type + shape_string
@@ -672,6 +671,7 @@ class AbstractModelParser:
             if len(inbound) == 1:
                 inbound = inbound[0]
             check_for_custom_activations(layer)
+            import pdb; pdb.set_trace()
             parsed_layers[layer['name']] = parsed_layer(**layer)(inbound)
 
         print("Compiling parsed model...\n")
