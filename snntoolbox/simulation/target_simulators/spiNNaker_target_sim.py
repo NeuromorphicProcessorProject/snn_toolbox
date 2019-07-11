@@ -369,7 +369,7 @@ class SNN(PYSNN):
         
         x_flat = np.ravel(data)
         if self._poisson_input:
-            rates = list(1000 * x_flat / self.rescale_fac)
+            rates = 1000 * x_flat / self.rescale_fac
             self.layers[0].set(rate=rates)
         elif self._dataset_format == 'aedat':
             raise NotImplementedError
@@ -379,11 +379,11 @@ class SNN(PYSNN):
                  for amplitude in x_flat]
             self.layers[0].set(spike_times=spike_times)
 
-        #from pynn_object_serialisation.functions import intercept_simulator
-        #import pylab
-        #current_time = pylab.datetime.datetime.now().strftime("_%H%M%S_%d%m%Y")
-        #intercept_simulator(self.sim, "snn_toolbox_spinnaker_" + current_time,
-        #                    post_abort=False)
+        from pynn_object_serialisation.functions import intercept_simulator
+        import pylab
+        current_time = pylab.datetime.datetime.now().strftime("_%H%M%S_%d%m%Y")
+        intercept_simulator(self.sim, "snn_toolbox_spinnaker_" + current_time,
+                            post_abort=False)
         self.sim.run(self._duration - self._dt)
         print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.layers)

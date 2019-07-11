@@ -1,12 +1,12 @@
 [paths]
 dataset_path = %(path_wd)s/dataset
-filename_ann = custom_example_dw_nobias_4
-runlabel = custom_example_dw_nobias_normalisation_300ms_switch2
+filename_ann = mnist_test_bias
+runlabel = mnist_test_bias
 
 [tools]
 evaluate_ann = True
 convert = True
-normalize = True
+normalize = False
 
 [normalization]
 percentile = 99.5
@@ -19,7 +19,7 @@ batch_size = 1
 keras_backend = tensorflow
 
 [input]
-poisson_input = True
+poisson_input = False
 
 [output]
 log_vars = {}
