@@ -1,15 +1,15 @@
 [paths]
-path_wd = /home/brueckau/Downloads
-dataset_path = %(path_wd)s/mnist_7x7_flat
+path_wd = /home/brueckau/Data/mnist/fc/96.28
+dataset_path = /home/brueckau/Datasets/mnist/7x7_flat
 filename_ann = fc_96.28
 
 [tools]
 evaluate_ann = True
-normalize = False
+normalize = True
 
 [simulation]
 simulator = loihi
-duration = 100
+duration = 1000
 num_to_test = 1
 batch_size = 1
 keras_backend = tensorflow
