@@ -649,6 +649,7 @@ class AbstractModelParser:
         self.parsed_model.compile(
             'sgd', 'categorical_crossentropy',
             ['accuracy', keras.metrics.top_k_categorical_accuracy])
+        # Todo: Enable adding custom metric via self.input_model.metrics.
 
         return self.parsed_model
 
