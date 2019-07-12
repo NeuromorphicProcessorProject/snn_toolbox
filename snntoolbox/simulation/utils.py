@@ -601,6 +601,13 @@ class AbstractSNN:
 
             truth_b = np.argmax(y_b_l, axis=1)
 
+            # x_b_l = np.ones_like(x_b_l) * 255
+            # xx = np.arange(x_b_l.size)
+            # xx[4:] = 0
+            # xx = np.zeros(x_b_l.size)
+            # b = 8
+            # xx[:b] = [2 ** i for i in range(b)]
+            # x_b_l = np.reshape(xx, x_b_l.shape)
             data_batch_kwargs['truth_b'] = truth_b
             data_batch_kwargs['x_b_l'] = x_b_l
 

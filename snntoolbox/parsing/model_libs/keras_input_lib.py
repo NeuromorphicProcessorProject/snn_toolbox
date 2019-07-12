@@ -60,12 +60,27 @@ class ModelParser(AbstractModelParser):
         if layer.bias is None:
             attributes['parameters'].append(np.zeros(layer.output_shape[1]))
             attributes['use_bias'] = True
+        # weights = attributes['parameters'][0]
+        # weights[:, 10:] = 0
+        # weights = np.zeros_like(attributes['parameters'][0])
+        # for i in range(min(weights.shape)):
+        #     weights[:i+1, i] = 1
+        # max_val = np.min(weights.shape)
+        # for i in np.arange(max_val):
+        #     weights[i, i] = i - int(max_val / 2)
+        # biases = attributes['parameters'][1]
+        # biases = np.zeros(len(attributes['parameters'][1]))
+        # biases = np.arange(len(attributes['parameters'][1]))
+        # attributes['parameters'] = [weights, biases]
 
     def parse_convolution(self, layer, attributes):
         attributes['parameters'] = layer.get_weights()
         if layer.bias is None:
             attributes['parameters'].append(np.zeros(layer.filters))
             attributes['use_bias'] = True
+        # weights = attributes['parameters'][0]
+        # biases = np.zeros(len(attributes['parameters'][1]))
+        # attributes['parameters'] = [weights, biases]
 
     def parse_pooling(self, layer, attributes):
         pass

@@ -43,6 +43,7 @@ class SNN(AbstractSNN):
         self.threshold_scales = None
         partition = self.config.get('loihi', 'partition', fallback='')
         self.partition = None if partition == '' else partition
+        self._previous_layer_name = None
 
     @property
     def is_parallelizable(self):
@@ -65,9 +66,11 @@ class SNN(AbstractSNN):
 
     def add_layer(self, layer):
 
-        if 'Flatten' in layer.__class__.__name__:
+        layer_name = layer.name
+
+        if 'Flatten' in layer_name:
             self.flatten_shapes.append(get_shape_from_label(
-                self._spiking_layers[-1].name))
+                self._previous_layer_name))
             return
 
         from snntoolbox.parsing.utils import get_type
@@ -82,13 +85,14 @@ class SNN(AbstractSNN):
         layer_kwargs = layer.get_config()
         compartment_kwargs = eval(self.config.get('loihi',
                                                   'compartment_kwargs'))
-        scale = self.threshold_scales[layer.name]
+        scale = self.threshold_scales[layer_name]
         compartment_kwargs['vThMant'] *= 2 ** scale
         layer_kwargs.update(compartment_kwargs)
 
         connection_kwargs = eval(self.config.get('loihi', 'connection_kwargs'))
-        scale = self.threshold_scales[self._spiking_layers[-1].name]
-        connection_kwargs['weightExponent'] += scale
+        if self._previous_layer_name is not None:
+            connection_kwargs['weightExponent'] += \
+                self.threshold_scales[self._previous_layer_name]
         layer_kwargs.update(connection_kwargs)
 
         vp = self.config.getboolean('loihi', 'visualize_partitions',
@@ -99,7 +103,7 @@ class SNN(AbstractSNN):
 
         spike_layer = spike_layer_name(**layer_kwargs)
 
-        if 'Pool' in layer.__class__.__name__:
+        if 'Pool' in layer_name:
             weights, biases = spike_layer.get_weights()
             weights = np.ones_like(weights) / np.prod(spike_layer.pool_size)
             biases = np.zeros_like(biases)
@@ -110,9 +114,9 @@ class SNN(AbstractSNN):
             'loihi', 'connection_kwargs'))['numWeightBits']
         weights, biases = to_integer(weights, biases, num_weight_bits)
 
+        self._spiking_layers[layer_name] = spike_layer(inbound)
         spike_layer.set_weights([weights, biases])
-
-        self._spiking_layers[layer.name] = spike_layer(inbound)
+        self._previous_layer_name = layer_name
 
     def build_dense(self, layer):
         """
@@ -131,10 +135,11 @@ class SNN(AbstractSNN):
                           "activation instead.", RuntimeWarning)
 
         if len(self.flatten_shapes):
-            weights, biases = self._spiking_layers[-1].get_weights()
+            _layer = self._spiking_layers[self._previous_layer_name]
+            weights, biases = _layer.get_weights()
             weights = fix_flatten(weights, self.flatten_shapes.pop(),
                                   self.data_format)
-            self._spiking_layers[-1].set_weights([weights, biases])
+            _layer.set_weights([weights, biases])
 
     def build_convolution(self, layer):
         pass
