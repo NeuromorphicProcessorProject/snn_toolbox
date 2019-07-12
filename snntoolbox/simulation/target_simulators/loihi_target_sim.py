@@ -152,7 +152,7 @@ class SNN(AbstractSNN):
     def compile(self):
 
         input_layer = self._spiking_layers[self.parsed_model.layers[0].name]
-        output_layer = self._spiking_layers[self.parsed_model.layers[-1].name]
+        output_layer = self._spiking_layers[self._previous_layer_name]
         self.snn = LoihiModel(input_layer, output_layer)
 
         self.snn.compileModel()
