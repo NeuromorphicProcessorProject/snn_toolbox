@@ -369,7 +369,7 @@ class SNN(PYSNN):
         
         x_flat = np.ravel(data)
         if self._poisson_input:
-            rates = np.expand_dims(1000 * x_flat / self.rescale_fac, axis=1)
+            rates = 1000 * x_flat / self.rescale_fac, axis=1
             self.layers[0].set(rate=rates)
         elif self._dataset_format == 'aedat':
             raise NotImplementedError
