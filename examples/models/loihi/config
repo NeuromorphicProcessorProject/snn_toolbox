@@ -37,6 +37,9 @@ connection_kwargs = {
     'compressionMode': 3,
     'weightExponent': 0}
 
+visualize_partitions = False
+synapse_encoding = None
+
 [input]
 poisson_input = False
 

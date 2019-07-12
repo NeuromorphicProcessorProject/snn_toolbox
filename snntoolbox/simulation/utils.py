@@ -1286,6 +1286,8 @@ def build_pooling(layer, delay):
     sx = layer.strides[1]
     sy = layer.strides[0]
 
+    weight = 1 / (dx * dy)
+
     connections = []
 
     for fout in range(nz):
@@ -1296,8 +1298,7 @@ def build_pooling(layer, delay):
                 for k in range(dy):
                     source = x + (y + k) * nx + fout * nx * ny
                     for l in range(dx):
-                        connections.append((source + l, target, 1 / (dx * dy),
-                                            delay))
+                        connections.append((source + l, target, weight, delay))
         echo('.')
     print('')
 

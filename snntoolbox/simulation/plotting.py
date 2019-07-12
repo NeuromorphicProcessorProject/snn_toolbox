@@ -1199,6 +1199,10 @@ def plot_history(h):
 
 def plot_probe(probe, path, filename):
     plt.figure()
-    probe.plot()
+    if isinstance(probe, list):
+        for p in probe:
+            p.plot()
+    else:
+        probe.plot()
     plt.savefig(os.path.join(path, filename))
     plt.close()
