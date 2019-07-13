@@ -178,7 +178,7 @@ class SNN(AbstractSNN):
 
         print("Resetting membrane potentials...")
         for layer in self.snn.layers:
-            for i in range(len(layer)):
+            for i in range(int(np.prod(layer.output_shape[1:]))):
                 layer[i].voltage = 0
                 layer[i].phase = 2
         print("Done.")
@@ -255,30 +255,30 @@ class SNN(AbstractSNN):
         i = len(self.snn.layers) - 1 if kwargs[str('monitor_index')] == -1 \
             else kwargs[str('monitor_index')] + 1
         layer = self.snn.layers[i]
-        probes = self.stack_layer_probes(self.spike_probes[layer.name])
+        probes = self.stack_layer_probes(self.voltage_probes[layer.name])
         shape = self.spiketrains_n_b_l_t[j][0].shape
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(probes, shape)
-        return spiketrains_b_l_t / layer.compartmentKwargs['vThMant'] / 2 ** 6
+        return spiketrains_b_l_t >= layer.compartmentKwargs['vThMant'] * 2 ** 6
 
     def get_spiketrains_input(self):
         if self.spike_probes is None:
             return
-
-        layer = self.snn.layers[-1]
-        probes = self.stack_layer_probes(self.spike_probes[layer.name])
+        # Todo: Enable soma-probes (current probes are zero in input)
+        layer = self.snn.layers[0]
+        probes = self.stack_layer_probes(self.voltage_probes[layer.name])
         shape = list(self.parsed_model.input_shape) + [self._num_timesteps]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(probes, shape)
-        return spiketrains_b_l_t / layer.compartmentKwargs['vThMant'] / 2 ** 6
+        return spiketrains_b_l_t >= layer.compartmentKwargs['vThMant'] * 2 ** 6
 
     def get_spiketrains_output(self):
         if self.spike_probes is None:
             return
 
         layer = self.snn.layers[-1]
-        probes = self.stack_layer_probes(self.spike_probes[layer.name])
+        probes = self.stack_layer_probes(self.voltage_probes[layer.name])
         shape = [self.batch_size, self.num_classes, self._num_timesteps]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(probes, shape)
-        return spiketrains_b_l_t / layer.compartmentKwargs['vThMant'] / 2 ** 6
+        return spiketrains_b_l_t >= layer.compartmentKwargs['vThMant'] * 2 ** 6
 
     def get_vmem(self, **kwargs):
         if self.voltage_probes is None:
@@ -286,7 +286,7 @@ class SNN(AbstractSNN):
 
         i = kwargs[str('monitor_index')]
         name = self.snn.layers[i].name
-        probes = self.stack_layer_probes(self.voltage_probes[name])
+        probes = self.voltage_probes[name]
         # Plot instead of returning input layer probes because the toolbox
         # does not expect input to record the membrane potentials.
         if i == 0:
@@ -294,7 +294,7 @@ class SNN(AbstractSNN):
                        self.config.get('paths', 'log_dir_of_current_run'),
                        'v_input.png')
         else:
-            return probes
+            return self.stack_layer_probes(probes)
 
     def stack_layer_probes(self, probes):
 
@@ -303,9 +303,8 @@ class SNN(AbstractSNN):
     def reshape_flattened_spiketrains(self, spiketrains, shape, is_list=True):
 
         # Temporarily move time axis so we can reshape in Fortran style.
-        new_shape = np.copy(shape)
-        new_shape[-1] = shape[1]
-        new_shape[1] = shape[-1]
+        new_shape = shape[:-1]
+        new_shape = np.insert(new_shape, 1, shape[-1])
 
         # Need to flatten in 'C' mode first to stack the timevectors together,
         # then reshape in 'F' style.
