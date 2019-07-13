@@ -86,7 +86,8 @@ class SNN(AbstractSNN):
         compartment_kwargs = eval(self.config.get('loihi',
                                                   'compartment_kwargs'))
         scale = self.threshold_scales[layer_name]
-        compartment_kwargs['vThMant'] *= 2 ** scale
+        compartment_kwargs['vThMant'] = \
+            int(compartment_kwargs['vThMant'] * 2 ** scale)
         layer_kwargs.update(compartment_kwargs)
 
         connection_kwargs = eval(self.config.get('loihi', 'connection_kwargs'))
@@ -99,7 +100,8 @@ class SNN(AbstractSNN):
                                     fallback='')
         layer_kwargs['visualizePartitions'] = None if vp == '' else vp
         encoding = self.config.get('loihi', 'synapse_encoding', fallback='')
-        layer_kwargs['synapseEncoding'] = None if encoding == '' else encoding
+        if encoding != '':
+            layer_kwargs['synapseEncoding'] = encoding
 
         spike_layer = spike_layer_name(**layer_kwargs)
 
@@ -256,7 +258,7 @@ class SNN(AbstractSNN):
         probes = self.stack_layer_probes(self.spike_probes[layer.name])
         shape = self.spiketrains_n_b_l_t[j][0].shape
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(probes, shape)
-        return spiketrains_b_l_t / layer.vTh / 2 ** 6
+        return spiketrains_b_l_t / layer.compartmentKwargs['vThMant'] / 2 ** 6
 
     def get_spiketrains_input(self):
         if self.spike_probes is None:
@@ -266,7 +268,7 @@ class SNN(AbstractSNN):
         probes = self.stack_layer_probes(self.spike_probes[layer.name])
         shape = list(self.parsed_model.input_shape) + [self._num_timesteps]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(probes, shape)
-        return spiketrains_b_l_t / layer.vTh / 2 ** 6
+        return spiketrains_b_l_t / layer.compartmentKwargs['vThMant'] / 2 ** 6
 
     def get_spiketrains_output(self):
         if self.spike_probes is None:
@@ -276,7 +278,7 @@ class SNN(AbstractSNN):
         probes = self.stack_layer_probes(self.spike_probes[layer.name])
         shape = [self.batch_size, self.num_classes, self._num_timesteps]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(probes, shape)
-        return spiketrains_b_l_t / layer.vTh / 2 ** 6
+        return spiketrains_b_l_t / layer.compartmentKwargs['vThMant'] / 2 ** 6
 
     def get_vmem(self, **kwargs):
         if self.voltage_probes is None:
@@ -300,9 +302,17 @@ class SNN(AbstractSNN):
 
     def reshape_flattened_spiketrains(self, spiketrains, shape, is_list=True):
 
+        # Temporarily move time axis so we can reshape in Fortran style.
+        new_shape = np.copy(shape)
+        new_shape[-1] = shape[1]
+        new_shape[1] = shape[-1]
+
         # Need to flatten in 'C' mode first to stack the timevectors together,
         # then reshape in 'F' style.
-        return np.reshape(np.ravel(spiketrains), shape, 'F')
+        arr = np.reshape(np.ravel(spiketrains), new_shape, 'F')
+
+        # Finally, move the time axis back again.
+        return np.moveaxis(arr, 1, -1)
 
     def set_spiketrain_stats_input(self):
         AbstractSNN.set_spiketrain_stats_input(self)

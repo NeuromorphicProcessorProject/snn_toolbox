@@ -453,8 +453,10 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
                                biases * 2 ** bias_exponent])
 
         # Need to remove softmax in output layer to get activations above 1.
-        # if i == len(model_copy.layers) - 1:
-        #     layer.activation = keras.activations.linear
+        if hasattr(layer, 'activation') and \
+                layer.activation.__name__ == 'softmax':
+            layer.activation = keras.activations.linear
+
         # Get the excitatory post-synaptic potential for each neuron in layer.
         y = keras.models.Sequential([layer]).predict(x, batch_size) if i else x
 
@@ -470,7 +472,7 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
         # The highest EPSP determines whether to raise threshold.
         y_max = get_scale_fac(y[np.nonzero(y)], 100)
         print("Maximum increase in compartment voltage per timestep: {:.2f}."
-              "".format(y_max))
+              "".format(int(y_max)))
 
         initial_threshold_to_input_ratio = \
             threshold_mant * _threshold_gain / y_max
@@ -480,6 +482,7 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
                        desired_threshold_to_input_ratio)
         print("The ratio of threshold to activations is off by 2**{:.2f}"
               "".format(gain))
+
         scale = 0
         # Want to find scale exponent for threshold such that
         # -1 < gain + scale < 1. (By using the limits [-1, 1] we allow for a
