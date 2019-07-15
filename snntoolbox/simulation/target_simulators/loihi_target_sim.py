@@ -44,6 +44,10 @@ class SNN(AbstractSNN):
         partition = self.config.get('loihi', 'partition', fallback='')
         self.partition = None if partition == '' else partition
         self._previous_layer_name = None
+        self.do_probe_spikes = \
+            any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
+                 'hist_spikerates_activations'} & self._plot_keys) \
+            or 'spiketrains_n_b_l_t' in self._log_keys
 
     @property
     def is_parallelizable(self):
@@ -60,6 +64,8 @@ class SNN(AbstractSNN):
                                                   'compartment_kwargs'))
         scale = self.threshold_scales[name]
         compartment_kwargs['vThMant'] *= 2 ** scale
+        if self.do_probe_spikes:
+            compartment_kwargs['probeSpikes'] = True
         input_layer = LoihiInputLayer(input_shape[1:], input_shape[0],
                                       **compartment_kwargs)
         self._spiking_layers[name] = input_layer.input
@@ -88,6 +94,8 @@ class SNN(AbstractSNN):
         scale = self.threshold_scales[layer_name]
         compartment_kwargs['vThMant'] = \
             int(compartment_kwargs['vThMant'] * 2 ** scale)
+        if self.do_probe_spikes:
+            compartment_kwargs['probeSpikes'] = True
         layer_kwargs.update(compartment_kwargs)
 
         connection_kwargs = eval(self.config.get('loihi', 'connection_kwargs'))
@@ -202,47 +210,40 @@ class SNN(AbstractSNN):
     def set_vars_to_record(self):
         """Set variables to record during simulation."""
 
-        u = ProbableStates.CURRENT
+        a = ProbableStates.ACTIVITY
         v = ProbableStates.VOLTAGE
-
-        do_probe_u = \
-            any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
-                 'hist_spikerates_activations'} & self._plot_keys) \
-            or 'spiketrains_n_b_l_t' in self._log_keys
+        s = ProbableStates.SPIKE
 
         do_probe_v = \
             'mem_n_b_l_t' in self._log_keys or 'v_mem' in self._plot_keys
 
-        if do_probe_u:
-            self.spike_probes = {}
+        self.spike_probes = {}
         if do_probe_v:
             self.voltage_probes = {}
 
         for layer in self.snn.layers:
-            if do_probe_u:
+            if self.do_probe_spikes:
                 self.spike_probes[layer.name] = []
             if do_probe_v:
                 self.voltage_probes[layer.name] = []
 
             num_neurons = int(np.prod(layer.output_shape[1:]))
             for i in range(num_neurons):
-                if do_probe_u:
-                    self.spike_probes[layer.name].append(layer[i].probe(u))
+                if self.do_probe_spikes:
+                    self.spike_probes[layer.name].append(layer[i].probe(a))
                 if do_probe_v:
                     self.voltage_probes[layer.name].append(layer[i].probe(v))
 
         # The spikes of the last layer are recorded by default because they
-        # contain the networks output (classification guess).
-        if not do_probe_u:
-            output_layer = self.snn.layers[-1]
-            num_neurons = int(np.prod(output_layer.output_shape[1:]))
-            self.spike_probes = {output_layer.name:
-                                 [output_layer[i].probe(u)
-                                  for i in range(num_neurons)]}
+        # contain the networks output (classification guess). We can use spike
+        # probes here instead of activity traces because the output layer has
+        # no shared output axons.
+        output_layer = self.snn.layers[-1]
+        num_neurons = int(np.prod(output_layer.output_shape[1:]))
+        self.spike_probes[output_layer.name] = [output_layer[i].probe(s)
+                                                for i in range(num_neurons)]
 
     def get_spiketrains(self, **kwargs):
-        if self.spike_probes is None:
-            return
 
         j = self._spiketrains_container_counter
         if self.spiketrains_n_b_l_t is None \
@@ -255,30 +256,29 @@ class SNN(AbstractSNN):
         i = len(self.snn.layers) - 1 if kwargs[str('monitor_index')] == -1 \
             else kwargs[str('monitor_index')] + 1
         layer = self.snn.layers[i]
-        probes = self.stack_layer_probes(self.voltage_probes[layer.name])
+        probes = self.stack_layer_probes(self.spike_probes[layer.name])
         shape = self.spiketrains_n_b_l_t[j][0].shape
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(probes, shape)
-        return spiketrains_b_l_t >= layer.compartmentKwargs['vThMant'] * 2 ** 6
+        return spiketrains_b_l_t
 
     def get_spiketrains_input(self):
-        if self.spike_probes is None:
-            return
-        # Todo: Enable soma-probes (current probes are zero in input)
+
         layer = self.snn.layers[0]
-        probes = self.stack_layer_probes(self.voltage_probes[layer.name])
+        if layer.name not in self.spike_probes:
+            return
+
+        probes = self.stack_layer_probes(self.spike_probes[layer.name])
         shape = list(self.parsed_model.input_shape) + [self._num_timesteps]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(probes, shape)
-        return spiketrains_b_l_t >= layer.compartmentKwargs['vThMant'] * 2 ** 6
+        return spiketrains_b_l_t
 
     def get_spiketrains_output(self):
-        if self.spike_probes is None:
-            return
 
         layer = self.snn.layers[-1]
-        probes = self.stack_layer_probes(self.voltage_probes[layer.name])
+        probes = self.stack_layer_probes(self.spike_probes[layer.name])
         shape = [self.batch_size, self.num_classes, self._num_timesteps]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(probes, shape)
-        return spiketrains_b_l_t >= layer.compartmentKwargs['vThMant'] * 2 ** 6
+        return spiketrains_b_l_t
 
     def get_vmem(self, **kwargs):
         if self.voltage_probes is None:
