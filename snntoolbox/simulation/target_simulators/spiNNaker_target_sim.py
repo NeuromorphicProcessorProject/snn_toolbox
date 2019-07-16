@@ -128,12 +128,18 @@ class SNN(PYSNN):
                 '''
             else:
                 print("Swapping data_format of Flatten layer.")
-                f_in, y_in, x_in = shape
-                output_neurons = weights.shape[1]
-                weights = weights.reshape((y_in, x_in, f_in, output_neurons), order='F')
-                weights = np.rollaxis(weights, 2, 0)
-                weights = weights.reshape((y_in*x_in*f_in, output_neurons), order='F')
-
+                if len(shape) == 3:
+                    f_in, y_in, x_in = shape
+                    output_neurons = weights.shape[1]
+                    weights = weights.reshape((y_in, x_in, f_in, output_neurons), order='F')
+                    weights = np.rollaxis(weights, 2, 0)
+                    weights = weights.reshape((y_in*x_in*f_in, output_neurons), order='F')
+                elif len(shape) == 2:
+                    f_in, x_in = shape
+                    weights = np.rollaxis(weights, 1, 0)
+                    y_in = 1
+                else:
+                    print("The input weight matrix did not have the expected dimesnions")
             exc_connections = []
             inh_connections = []
             for i in range(weights.shape[0]):  # Input neurons

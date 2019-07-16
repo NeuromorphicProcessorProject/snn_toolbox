@@ -58,7 +58,7 @@ class ModelParser(AbstractModelParser):
     def parse_dense(self, layer, attributes):
         attributes['parameters'] = layer.get_weights()
         if layer.bias is None:
-            attributes['parameters'].append(np.zeros(layer.output_shape[1]))
+            attributes['parameters'].append(np.zeros(layer.output_shape[-1]))
             attributes['use_bias'] = True
 
     def parse_convolution(self, layer, attributes):
