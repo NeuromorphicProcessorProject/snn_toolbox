@@ -63,12 +63,14 @@ class SNN(AbstractSNN):
         compartment_kwargs = eval(self.config.get('loihi',
                                                   'compartment_kwargs'))
         scale = self.threshold_scales[name]
-        compartment_kwargs['vThMant'] *= 2 ** scale
+        compartment_kwargs['vThMant'] = \
+            int(compartment_kwargs['vThMant'] * 2 ** scale)
         if self.do_probe_spikes:
             compartment_kwargs['probeSpikes'] = True
         input_layer = LoihiInputLayer(input_shape[1:], input_shape[0],
                                       **compartment_kwargs)
         self._spiking_layers[name] = input_layer.input
+        self._previous_layer_name = name
 
     def add_layer(self, layer):
 
@@ -99,9 +101,8 @@ class SNN(AbstractSNN):
         layer_kwargs.update(compartment_kwargs)
 
         connection_kwargs = eval(self.config.get('loihi', 'connection_kwargs'))
-        if self._previous_layer_name is not None:
-            connection_kwargs['weightExponent'] += \
-                self.threshold_scales[self._previous_layer_name]
+        connection_kwargs['weightExponent'] += \
+            self.threshold_scales[self._previous_layer_name]
         layer_kwargs.update(connection_kwargs)
 
         vp = self.config.getboolean('loihi', 'visualize_partitions',
@@ -188,7 +189,6 @@ class SNN(AbstractSNN):
         for layer in self.snn.layers:
             for i in range(int(np.prod(layer.output_shape[1:]))):
                 layer[i].voltage = 0
-                layer[i].phase = 2
         print("Done.")
 
     def end_sim(self):
@@ -259,7 +259,13 @@ class SNN(AbstractSNN):
         probes = self.stack_layer_probes(self.spike_probes[layer.name])
         shape = self.spiketrains_n_b_l_t[j][0].shape
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(probes, shape)
-        return spiketrains_b_l_t
+        # Need to integer divide by max value that soma traces assume, to get
+        # rid of the decay tail of the soma trace. The peak value (marking a
+        # spike) is defined as 127 in probe creation and will be mapped to 1.
+        # (If this is the output layer, we are probing the spikes directly and
+        # do not need to scale.)
+        scale = 1 if i == len(self.snn.layers) - 1 else 127
+        return spiketrains_b_l_t // scale
 
     def get_spiketrains_input(self):
 
@@ -270,7 +276,7 @@ class SNN(AbstractSNN):
         probes = self.stack_layer_probes(self.spike_probes[layer.name])
         shape = list(self.parsed_model.input_shape) + [self._num_timesteps]
         spiketrains_b_l_t = self.reshape_flattened_spiketrains(probes, shape)
-        return spiketrains_b_l_t
+        return spiketrains_b_l_t // 127
 
     def get_spiketrains_output(self):
 

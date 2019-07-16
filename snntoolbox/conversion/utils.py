@@ -471,7 +471,7 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
 
         # The highest EPSP determines whether to raise threshold.
         y_max = get_scale_fac(y[np.nonzero(y)], 100)
-        print("Maximum increase in compartment voltage per timestep: {:.2f}."
+        print("Maximum increase in compartment voltage per timestep: {}."
               "".format(int(y_max)))
 
         initial_threshold_to_input_ratio = \

@@ -79,6 +79,7 @@ class ModelParser(AbstractModelParser):
             attributes['parameters'].append(np.zeros(layer.filters))
             attributes['use_bias'] = True
         # weights = attributes['parameters'][0]
+        # np.clip(weights, -1, None, weights)
         # biases = np.zeros(len(attributes['parameters'][1]))
         # attributes['parameters'] = [weights, biases]
 
