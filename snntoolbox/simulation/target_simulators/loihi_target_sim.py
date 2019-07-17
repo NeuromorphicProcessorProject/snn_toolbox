@@ -444,7 +444,7 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
         # Need to remove softmax in output layer to get activations above 1.
         if hasattr(layer, 'activation') and \
                 layer.activation.__name__ == 'softmax':
-            layer.activation = keras.activations.linear
+            layer.activation = keras.activations.relu
 
         # Get the excitatory post-synaptic potential for each neuron in layer.
         y = keras.models.Sequential([layer]).predict(x, batch_size) if i else x
@@ -505,7 +505,15 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
 
         # Apply activation function (dividing by threshold) to obtain the
         # output of the current layer, which will be used as input to the next.
-        x = y / (threshold_mant * _threshold_gain * 2 ** scale)
+        beta = threshold_mant * _threshold_gain * 2 ** scale
+        x = y / beta
+        # Apply the same scaling to the weights of current layer, which does
+        # not affect the subsequent iterations in this loop, but which scales
+        # the activations of the parsed layer later when plotting against the
+        # spike rates.
+        if len(layer.weights) > 0:
+            weights, biases = layer.get_weights()
+            layer.set_weights([weights / beta, biases / beta])
 
     parsed_model.set_weights(model_copy.get_weights())
 

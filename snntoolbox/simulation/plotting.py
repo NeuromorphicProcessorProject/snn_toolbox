@@ -881,7 +881,8 @@ def plot_spiketrains(layer, dt, path=None, data_format=None):
     plt.close()
 
 
-def plot_potential(times, layer, config, show_legend=False, path=None):
+def plot_potential(times, layer, config, v_thresh=None, show_legend=False,
+                   path=None):
     """Plot the membrane potential of a layer.
 
     Parameters
@@ -903,6 +904,9 @@ def plot_potential(times, layer, config, show_legend=False, path=None):
     config: configparser.ConfigParser
         Settings.
 
+    v_thresh: float
+        Threshold.
+
     show_legend: bool
         If ``True``, shows the legend indicating the neuron indices and lines
         like ``v_thresh``, ``v_rest``, ``v_reset``. Recommended only for layers
@@ -913,7 +917,8 @@ def plot_potential(times, layer, config, show_legend=False, path=None):
         display plots without saving.
     """
 
-    v_thresh = config.getfloat('cell', 'v_thresh')
+    if v_thresh is None:
+        v_thresh = config.getfloat('cell', 'v_thresh')
     v_reset = config.getfloat('cell', 'v_reset')
 
     plt.figure()

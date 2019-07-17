@@ -952,15 +952,17 @@ class AbstractSNN:
 
         self.reset_container_counters()
 
-        for i in range(len(layers)):
-            kwargs = {'layer': layers[i], 'monitor_index': i}
+        for i, layer in enumerate(layers):
+            kwargs = {'layer': layer, 'monitor_index': i}
             spiketrains_b_l_t = self.get_spiketrains(**kwargs)
             if spiketrains_b_l_t is not None:
                 self.set_spiketrain_stats(spiketrains_b_l_t)
 
             mem = self.get_vmem(**kwargs)
             if mem is not None:
-                self.set_mem_stats(mem)
+                v_thresh = layer.compartmentKwargs['vThMant'] * 2 ** 6 \
+                    if hasattr(layer, 'compartmentKwargs') else None
+                self.set_mem_stats(mem, v_thresh)
 
         # For each time step, get number of spikes of all neurons in the output
         # layer.
@@ -978,7 +980,7 @@ class AbstractSNN:
         self._mem_container_counter = 0
         self._spiketrains_container_counter = 0
 
-    def set_mem_stats(self, mem):
+    def set_mem_stats(self, mem, v_thresh):
         """Write recorded membrane potential out and plot it."""
 
         # Reshape flat array to original layer shape.
@@ -994,8 +996,9 @@ class AbstractSNN:
         from snntoolbox.simulation.plotting import plot_potential
         times = self._dt * np.arange(self._num_timesteps)
         show_legend = True if i >= len(self.mem_n_b_l_t) - 2 else False
-        plot_potential(times, self.mem_n_b_l_t[i], self.config, show_legend,
-                       self.config.get('paths', 'log_dir_of_current_run'))
+        plot_potential(times, self.mem_n_b_l_t[i], self.config, v_thresh,
+                       show_legend, self.config.get('paths',
+                                                    'log_dir_of_current_run'))
 
     def set_spiketrain_stats_input(self):
         """
