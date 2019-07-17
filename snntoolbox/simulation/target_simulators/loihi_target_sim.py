@@ -400,20 +400,22 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
     x_norm = kwargs[str('x_test')]  # Values in range [0, 1]
 
     batch_size = config.getint('simulation', 'batch_size')
-    # Weights have a maximum of 8 bits, used for biases as well.
-    num_weight_bits = eval(config.get('loihi', 'connection_kwargs'))[
-        'numWeightBits']
-    threshold_mant = \
-        eval(config.get('loihi', 'compartment_kwargs'))['vThMant']
-    weight_exponent = \
-        eval(config.get('loihi', 'connection_kwargs'))['weightExponent']
-    bias_exponent = \
-        eval(config.get('loihi', 'compartment_kwargs'))['biasExp']
 
-    _threshold_mant_lim = config.getint('loihi', 'threshold_mant_lim')
-    _weight_exponent_lim = config.getint('loihi', 'weight_exponent_lim')
-    _threshold_gain = config.getint('loihi', 'threshold_gain')
-    _weight_gain = config.getint('loihi', 'weight_gain')
+    connection_kwargs = eval(config.get('loihi', 'connection_kwargs'))
+    compartment_kwargs = eval(config.get('loihi', 'compartment_kwargs'))
+    # Weights have a maximum of 8 bits, used for biases as well.
+    num_weight_bits = connection_kwargs['numWeightBits']
+    threshold_mant = compartment_kwargs['vThMant']
+    weight_exponent = connection_kwargs['weightExponent']
+    bias_exponent = compartment_kwargs['biasExp']
+
+    # Loihi limits on weights and thresholds.
+    _weight_exponent_lim = 2 ** 3 - 1
+    _threshold_mant_lim = 2 ** 17 - 1
+
+    # Loihi applies a fix scaling on weights and thresholds.
+    _weight_gain = 2 ** 6
+    _threshold_gain = 2 ** 6
 
     # Input should already be normalized, but do it again just for safety.
     x = x_norm / np.max(x_norm)
