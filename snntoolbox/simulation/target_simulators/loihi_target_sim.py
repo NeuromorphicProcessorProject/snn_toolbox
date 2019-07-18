@@ -441,6 +441,7 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
             # zero exponent.
             weights, biases = to_integer(weights, biases, num_weight_bits)
             weights = weights * _weight_gain * 2 ** (weight_exponent + scale)
+            check_q_overflow(weights, 1 / desired_threshold_to_input_ratio)
             layer.set_weights([weights, biases * 2 ** bias_exponent])
 
         # Need to remove softmax in output layer to get activations above 1.
@@ -520,6 +521,32 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
     parsed_model.set_weights(model_copy.get_weights())
 
     return scales
+
+
+def check_q_overflow(weights, p):
+    num_channels = weights.shape[-1]
+    weights_flat = np.reshape(weights, (-1, num_channels))
+    q_min = - 2 ** 15
+    q_max = - q_min - 1
+    weighted_fanin = np.sum(weights_flat, 0)
+    neg = np.mean(weighted_fanin < q_min)
+    pos = np.mean(weighted_fanin > q_max)
+    if neg or pos:
+        print("In the worst case of all pre-synaptic neurons firing "
+              "simultaneously, the dendritic accumulator will overflow in "
+              "{:.2%} and underflow in {:.2%} of neurons.".format(pos, neg))
+        print("Estimating averages...")
+        neg = []
+        pos = []
+        num_fanin = len(weights_flat)
+        for i in range(2 ** min(num_fanin, 16)):
+            spikes = np.random.binomial(1, p, num_fanin)
+            weighted_fanin = np.sum(weights_flat[spikes > 0], 0)
+            neg.append(np.mean(weighted_fanin < q_min) * 100)
+            pos.append(np.mean(weighted_fanin > q_max) * 100)
+        print("On average, the dendritic accumulator will overflow in {:.2f} "
+              "+/- {:.2f} % and underflow in {:.2f} +/- {:.2f} % of neurons."
+              "".format(np.mean(pos), np.std(pos), np.mean(neg), np.std(neg)))
 
 
 def overflow_signed(x, num_bits):
