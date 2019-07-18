@@ -12,7 +12,7 @@ import warnings
 import numpy as np
 from future import standard_library
 
-from scratch.cnn_mode.cnn_mode import LoihiInputLayer, LoihiModel, \
+from scratch.dnn_mode.dnn_mode import LoihiInputLayer, LoihiModel, \
     ProbableStates
 from snntoolbox.simulation.utils import AbstractSNN
 from snntoolbox.utils.utils import to_integer
@@ -82,7 +82,7 @@ class SNN(AbstractSNN):
             return
 
         from snntoolbox.parsing.utils import get_type
-        import scratch.cnn_mode.cnn_mode as loihi_snn
+        import scratch.dnn_mode.dnn_mode as loihi_snn
         spike_layer_name = getattr(loihi_snn, 'Loihi' + get_type(layer))
         # noinspection PyProtectedMember
         inbound = [self._spiking_layers[inb.name] for inb in
