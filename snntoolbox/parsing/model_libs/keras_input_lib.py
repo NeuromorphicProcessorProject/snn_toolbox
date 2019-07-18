@@ -126,7 +126,7 @@ def load(path, filename):
                       ['accuracy', metrics.top_k_categorical_accuracy])
     else:
         from snntoolbox.parsing.utils import get_custom_activations_dict
-        model = models.load_model(filepath + '.h5',
+        model = models.load_model(str(filepath + '.h5'),
                                   get_custom_activations_dict())
         model.compile(model.optimizer, model.loss,
                       ['accuracy', metrics.top_k_categorical_accuracy])
