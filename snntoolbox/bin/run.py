@@ -14,7 +14,7 @@ import argparse
 import os
 
 
-def main():
+def main(filepath=None):
     """Entry point for running the toolbox.
 
     Note
@@ -24,6 +24,12 @@ def main():
     executable during :ref:`installation` that can be called from terminal.
 
     """
+    from snntoolbox.bin.utils import update_setup, test_full
+
+    if filepath is not None:
+        config = update_setup(filepath)
+        test_full(config)
+        return
 
     parser = argparse.ArgumentParser(
         description='Run SNN toolbox to convert an analog neural network into '
@@ -35,23 +41,13 @@ def main():
                              'Omit this flag to open GUI.')
     args = parser.parse_args()
 
-    # filepath = os.path.abspath(args.config_filepath)
-    # filepath = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/cnn/95.41/log/gui/01/config'
-    filepath = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/' \
-        'fully_convolutional_7x7/97.09/log/gui/01/config'
-    # filepath = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/' \
-    #     'fully_convolutional/99.29/log/gui/01/config'
-    # filepath = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/fc/96.97/config'
-    # filepath = '/home/brueckau/Repositories/snn_toolbox_loihi/examples/models/lenet5/keras/config'
-    args.terminal = True
-    if filepath is not None:
-        assert os.path.isfile(filepath), \
-            "Configuration file not found at {}.".format(filepath)
-        from snntoolbox.bin.utils import update_setup
-        config = update_setup(filepath)
+    _filepath = os.path.abspath(args.config_filepath)
+    if _filepath is not None:
+        assert os.path.isfile(_filepath), \
+            "Configuration file not found at {}.".format(_filepath)
+        config = update_setup(_filepath)
 
         if args.terminal:
-            from snntoolbox.bin.utils import test_full
             test_full(config)
         else:
             from snntoolbox.bin.gui import gui
@@ -67,4 +63,15 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # fp = None
+    # fp = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/' \
+    #    'cnn/95.41/log/gui/01/config'
+    fp = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/' \
+        'fully_convolutional_7x7/97.09/log/gui/01/config'
+    # fp = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/' \
+    #     'fully_convolutional/99.29/log/gui/01/config'
+    # fp = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/' \
+    #    'fc/96.97/config'
+    # fp = '/home/brueckau/Repositories/snn_toolbox_loihi/examples/' \
+    #    'models/lenet5/keras/config'
+    main(fp)
