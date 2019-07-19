@@ -40,7 +40,7 @@ if save_dataset:
     np.savez_compressed(path + '/y_test', y_test)
 
 nonlinearity = 'relu'
-use_bias = False
+use_bias = True
 
 model = Sequential()
 
