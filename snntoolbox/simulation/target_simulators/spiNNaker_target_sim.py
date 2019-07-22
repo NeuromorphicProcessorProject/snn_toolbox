@@ -21,7 +21,10 @@ from snntoolbox.simulation.target_simulators.pyNN_target_sim import SNN as PYSNN
 
 
 class SNN(PYSNN):
-
+    
+    def scale_weights(self, weights):
+        return weights * 5 
+    
     def setup_layers(self, batch_shape):
         '''Iterates over all layers to instantiate them in the simulator.
         This is done in reverse for SpiNNaker because it changes
@@ -112,7 +115,7 @@ class SNN(PYSNN):
                           "activation instead.", RuntimeWarning)
 
         weights, biases = layer.get_weights()
-
+        weights = self.scale_weights(weights)
         self.set_biases(np.array(biases, 'float64'))
         delay = self.config.getfloat('cell', 'delay')
 
@@ -243,6 +246,7 @@ class SNN(PYSNN):
         elif get_type(layer) == 'DepthwiseConv2D':
             weights, biases = build_depthwise_convolution(layer, delay, transpose_kernel)
         self.set_biases(biases)
+        weights = self.scale_weights(weights)
 
         exc_connections = [c for c in weights if c[2] > 0]
         inh_connections = [c for c in weights if c[2] < 0]
@@ -303,6 +307,7 @@ class SNN(PYSNN):
         delay = self.config.getfloat('cell', 'delay')
 
         weights = build_pooling(layer, delay) 
+        weights = self.scale_weights(weights)
         if self.config.getboolean('tools', 'simulate'):
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
