@@ -131,6 +131,7 @@ class SNN(AbstractSNN):
         self.set_biases()
 
         print("Connecting layer...")
+        # Todo: Can be vectorized. Will speed up compilation significantly!
         for conn in self._conns:
             i = conn[0]
             j = conn[1]
