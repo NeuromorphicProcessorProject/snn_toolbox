@@ -438,7 +438,7 @@ class SNN(AbstractSNN):
         
         #i_offset = biases * self.rescale_fac * cm * 1e-9 * ((v_thresh-v_rest)*1e-3)/self._duration*1e-3
        
-        i_offset = biases  / (self._duration*1e-3 * self._dt * 1e-3) 
+        i_offset = biases  / self._duration 
         self.layers[-1].set(i_offset=i_offset)
 
     def get_vars_to_record(self):

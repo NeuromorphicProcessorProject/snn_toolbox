@@ -1,7 +1,7 @@
 [paths]
 dataset_path = %(path_wd)s/dataset
 filename_ann = mnist_test_bias
-runlabel = mnist_test_bias
+runlabel = mnist_test_bias_test_cell_params_long_run
 
 [tools]
 evaluate_ann = True
@@ -13,13 +13,19 @@ percentile = 99.5
 
 [simulation]
 simulator = spiNNaker
-duration = 300
+duration = 3000
 num_to_test = 1
 batch_size = 1
 keras_backend = tensorflow
 
 [input]
-poisson_input = False
+poisson_input = True
+v_thresh = 1 
+tau_syn_E = 0.2
+tau_syn_I = 0.2
+
+
+
 
 [output]
 log_vars = {}

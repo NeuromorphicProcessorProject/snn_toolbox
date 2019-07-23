@@ -23,7 +23,15 @@ from snntoolbox.simulation.target_simulators.pyNN_target_sim import SNN as PYSNN
 class SNN(PYSNN):
     
     def scale_weights(self, weights):
-        return weights * 5 
+        import pdb; pdb.set_trace()
+        scale = 4.9
+        if type(weights) == list:
+            weights = [(i, j, weight*scale, delay) for (i, j, weight, delay) in weights]
+        elif type(weights) == np.ndarray:
+            weights = weights*scale
+        else:
+            raise Exception("Not a valid weight type")
+        return weights
     
     def setup_layers(self, batch_shape):
         '''Iterates over all layers to instantiate them in the simulator.
@@ -373,7 +381,7 @@ class SNN(PYSNN):
                 projection.save('connections', filepath)
                 
     def simulate(self, **kwargs):
-        self.sim.set_number_of_neurons_per_core(self.sim.IF_curr_exp, 128)
+        self.sim.set_number_of_neurons_per_core(self.sim.IF_curr_exp, 64)
         data = kwargs[str('x_b_l')]
         if self.data_format == 'channels_last' and data.ndim == 4:
             data = np.moveaxis(data, 3, 1)
