@@ -66,7 +66,7 @@ class SNN(PYSNN):
                 continue
             if layer_type == 'Dense':
                 self.build_dense(layer)
-            elif layer_type in {'Conv2D','DepthwiseConv2D'}:
+            elif layer_type in {'Conv1D', 'Conv2D','DepthwiseConv2D'}:
                 self.build_convolution(layer)
                 self.data_format = layer.data_format
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
@@ -137,7 +137,11 @@ class SNN(PYSNN):
             flatten_name, shape = self.flatten_shapes.pop() 
             if self.data_format == 'channels_last':
                 print("Not swapping data_format of Flatten layer.")
-                y_in, x_in, f_in = shape
+                if len(shape) == 2:
+                    x_in, f_in = shape
+                    y_in = 1
+                else:
+                    y_in, x_in, f_in = shape
                 '''output_neurons = weights.shape[1]
                 weights = weights.reshape((x_in, y_in, f_in, output_neurons), order ='C')
                 weights = np.rollaxis(weights, 1, 0)
@@ -236,7 +240,7 @@ class SNN(PYSNN):
             f.writelines(lines)
 
     def build_convolution(self, layer):
-        from snntoolbox.simulation.utils import build_convolution, build_depthwise_convolution
+        from snntoolbox.simulation.utils import build_convolution, build_depthwise_convolution, build_1D_convolution
         from snntoolbox.parsing.utils import get_type
 
         # If the parsed model contains a ZeroPadding layer, we need to tell the
@@ -259,6 +263,8 @@ class SNN(PYSNN):
             weights, biases = build_convolution(layer, delay, transpose_kernel)
         elif get_type(layer) == 'DepthwiseConv2D':
             weights, biases = build_depthwise_convolution(layer, delay, transpose_kernel)
+        if get_type(layer) == 'Conv1D':
+            weights, biases = build_1D_convolution(layer, delay, transpose_kernel)
         self.set_biases(biases)
         weights = self.scale_weights(weights)
 
