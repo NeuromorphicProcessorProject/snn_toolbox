@@ -1,7 +1,7 @@
 [paths]
 dataset_path = %(path_wd)s/dataset
-filename_ann = mnist_test_bias
-runlabel = mnist_test_bias_test_cell_params_long_run
+filename_ann = bias_example
+runlabel = bias_example
 
 [tools]
 evaluate_ann = True
@@ -20,12 +20,11 @@ keras_backend = tensorflow
 
 [input]
 poisson_input = True
+
+[cell]
 v_thresh = 1 
 tau_syn_E = 0.2
 tau_syn_I = 0.2
-
-
-
 
 [output]
 log_vars = {}

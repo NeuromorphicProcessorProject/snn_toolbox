@@ -23,8 +23,14 @@ from snntoolbox.simulation.target_simulators.pyNN_target_sim import SNN as PYSNN
 class SNN(PYSNN):
     
     def scale_weights(self, weights):
-        import pdb; pdb.set_trace()
-        scale = 4.9
+        from math import exp
+        #This ignores the leak term
+        tau_syn_E = self.config.getfloat('cell', 'tau_syn_E')
+        tau_syn_I = self.config.getfloat('cell', 'tau_syn_I')
+        #just to give a sensible answer if tau_syn_E and I are different
+        t = self._dt
+        tau = (tau_syn_E + tau_syn_I) /2
+        scale = t / (tau* (exp(-(t/tau)) + 1))
         if type(weights) == list:
             weights = [(i, j, weight*scale, delay) for (i, j, weight, delay) in weights]
         elif type(weights) == np.ndarray:
