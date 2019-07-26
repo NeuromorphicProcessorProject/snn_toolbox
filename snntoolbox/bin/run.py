@@ -43,8 +43,6 @@ def main(filepath=None):
 
     _filepath = os.path.abspath(args.config_filepath)
     if _filepath is not None:
-        assert os.path.isfile(_filepath), \
-            "Configuration file not found at {}.".format(_filepath)
         config = update_setup(_filepath)
 
         if args.terminal:
