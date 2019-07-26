@@ -63,13 +63,13 @@ def main(filepath=None):
 
 
 if __name__ == '__main__':
-    # fp = None
+    fp = None
     # fp = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/' \
     #    'cnn/95.41/log/gui/01/config'
     # fp = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/' \
     #     'fully_convolutional_7x7/97.09/log/gui/01/config'
-    fp = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/' \
-        'fully_convolutional/99.22/log/gui/01/config'
+    # fp = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/' \
+    #     'fully_convolutional/99.22/log/gui/01/config'
     # fp = '/home/brueckau/Repositories/snntoolbox_experiments/mnist/' \
     #    'fc/96.97/config'
     # fp = '/home/brueckau/Repositories/snn_toolbox_loihi/examples/' \

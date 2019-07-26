@@ -279,6 +279,11 @@ def update_setup(config_filepath):
 
     from textwrap import dedent
 
+    # config.read will not thow an error if the filepath does not exist, and
+    # user values will not override defaults. So check here:
+    assert os.path.isfile(config_filepath), \
+        "Config filepath {} does not exist.".format(config_filepath)
+
     # Load defaults.
     config = load_config(os.path.abspath(os.path.join(
         os.path.dirname(__file__), '..', 'config_defaults')))
