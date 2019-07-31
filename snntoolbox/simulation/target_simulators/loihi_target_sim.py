@@ -12,7 +12,7 @@ import warnings
 import numpy as np
 from future import standard_library
 
-from nxsdk_modules.dnn.src.dnn_layers import LoihiInputLayer, LoihiModel, \
+from nxsdk_modules.dnn.src.dnn_layers import NxInputLayer, LoihiModel, \
     ProbableStates
 from snntoolbox.simulation.utils import AbstractSNN
 from snntoolbox.utils.utils import to_integer
@@ -67,8 +67,8 @@ class SNN(AbstractSNN):
             int(compartment_kwargs['vThMant'] * 2 ** scale)
         if self.do_probe_spikes:
             compartment_kwargs['probeSpikes'] = True
-        input_layer = LoihiInputLayer(input_shape[1:], input_shape[0],
-                                      **compartment_kwargs)
+        input_layer = NxInputLayer(input_shape[1:], input_shape[0],
+                                   **compartment_kwargs)
         self._spiking_layers[name] = input_layer.input
         self._previous_layer_name = name
 
