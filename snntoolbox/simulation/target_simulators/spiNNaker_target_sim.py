@@ -130,7 +130,13 @@ class SNN(PYSNN):
 
         weights, biases = layer.get_weights()
         weights = self.scale_weights(weights)
-        self.set_biases(np.array(biases, 'float64'))
+
+        # Biases.
+        n = int(np.prod(layer.output_shape[1:]) / len(biases))
+        i_offset = np.repeat(biases, n).astype('float64')
+
+        self.set_biases(i_offset)
+        # self.set_biases(biases)
         delay = self.config.getfloat('cell', 'delay')
 
         if len(self.flatten_shapes) == 1:
@@ -405,12 +411,12 @@ class SNN(PYSNN):
             self.layers[0].set(spike_times=spike_times)
         import pylab
         current_time = pylab.datetime.datetime.now().strftime("_%H%M%S_%d%m%Y")
-        try:
-            from pynn_object_serialisation.functions import intercept_simulator
-            intercept_simulator(self.sim, "snn_toolbox_spinnaker_" + current_time,
-                                post_abort=False)
-        except:
-            print("There was a problem with serialisation.")
+        # try:
+        from pynn_object_serialisation.functions import intercept_simulator
+        intercept_simulator(self.sim, "snn_toolbox_spinnaker_" + current_time,
+                            post_abort=True)
+        # except:
+        #     print("There was a problem with serialisation.")
         self.sim.run(self._duration - self._dt)
         print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.layers)
