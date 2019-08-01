@@ -23,6 +23,7 @@ from snntoolbox.simulation.target_simulators.pyNN_target_sim import SNN as PYSNN
 class SNN(PYSNN):
     
     def scale_weights(self, weights):
+        return weights
         from math import exp
         #This ignores the leak term
         tau_syn_E = self.config.getfloat('cell', 'tau_syn_E')
@@ -130,6 +131,10 @@ class SNN(PYSNN):
 
         weights, biases = layer.get_weights()
         weights = self.scale_weights(weights)
+        
+        n = int(np.prod(layer.output_shape[1:]) / len(biases))
+        biases = np.repeat(biases, n).astype('float64')
+   
         self.set_biases(np.array(biases, 'float64'))
         delay = self.config.getfloat('cell', 'delay')
 
@@ -139,7 +144,7 @@ class SNN(PYSNN):
                 print("Not swapping data_format of Flatten layer.")
                 if len(shape) == 2:
                     x_in, f_in = shape
-                    y_in = 1
+                    #weights = weights.flatten()
                 else:
                     y_in, x_in, f_in = shape
                 '''output_neurons = weights.shape[1]
@@ -158,36 +163,39 @@ class SNN(PYSNN):
                 elif len(shape) == 2:
                     f_in, x_in = shape
                     weights = np.rollaxis(weights, 1, 0)
-                    y_in = 1
+                    #weights = np.flatten(weights)
                 else:
                     print("The input weight matrix did not have the expected dimesnions")
             exc_connections = []
             inh_connections = []
-            for i in range(weights.shape[0]):  # Input neurons
-                # Sweep across channel axis of feature map. Assumes that each
-                # consecutive input neuron lies in a different channel. This is
-                # the case for channels_last, but not for channels_first.
-                f = i % f_in
-                # Sweep across height of feature map. Increase y by one if all
-                # rows along the channel axis were seen.
-                y = i // (f_in * x_in)
-                # Sweep across width of feature map.
-                x = (i // f_in) % x_in
-                new_i = f * x_in * y_in + x_in * y + x
-                for j in range(weights.shape[1]):  # Output neurons
-                    c = (new_i, j, weights[i, j], delay)
-                    if c[2] > 0.0:
-                        exc_connections.append(c)
-                    elif c[2] < 0.0:
-                        inh_connections.append(c)
-
-        elif len(self.flatten_shapes) > 1:
-            raise RuntimeWarning("Not all Flatten layers have been consumed.")
+   
+            if len(shape) == 3:
+                for i in range(weights.shape[0]):  # Input neurons
+                    # Sweep across channel axis of feature map. Assumes that each
+                    # consecutive input neuron lies in a different channel. This is
+                    # the case for channels_last, but not for channels_first.
+                    f = i % f_in
+                    # Sweep across height of feature map. Increase y by one if all
+                    # rows along the channel axis were seen.
+                    y = i // (f_in * x_in)
+                    # Sweep across width of feature map.
+                    x = (i // f_in) % x_in
+                    new_i = f * x_in * y_in + x_in * y + x
+                    for j in range(weights.shape[1]):  # Output neurons
+                        c = (new_i, j, weights[i, j], delay)
+                        if c[2] > 0.0:
+                            exc_connections.append(c)
+                        elif c[2] < 0.0:
+                            inh_connections.append(c)
         else:
             exc_connections = [(i, j, weights[i, j], delay)
                                for i, j in zip(*np.nonzero(weights > 0))]
             inh_connections = [(i, j, weights[i, j], delay)
                                for i, j in zip(*np.nonzero(weights < 0))]
+            
+        if len(self.flatten_shapes) > 1:
+            raise RuntimeWarning("Not all Flatten layers have been consumed.")
+        
         if self.config.getboolean('tools', 'simulate'):
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],

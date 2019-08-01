@@ -1127,8 +1127,8 @@ def plot_input_image(x, label, path=None, data_format=None):
     if data_format == 'channels_first':
         x = np.transpose(x, (1, 2, 0))
 
-    if x.shape[-1] == 1:
-        x = x[:, :, 0]
+    if x.shape[-1] == 1 and x.ndim >2:
+        x = x[..., 0]
 
     plt.figure()
     plt.title('Input image (class: {})'.format(label))

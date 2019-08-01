@@ -186,7 +186,7 @@ class AbstractModelParser:
             if layer_type == 'Dense':
                 self.parse_dense(layer, attributes)
 
-            if layer_type == ('Conv1D' or 'Conv2D'):
+            if layer_type in {'Conv1D', 'Conv2D'}:
                 self.parse_convolution(layer, attributes)
 
             if layer_type == 'DepthwiseConv2D':
