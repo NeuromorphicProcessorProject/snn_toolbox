@@ -469,7 +469,8 @@ class AbstractModelParser:
         previous_layers = self.get_inbound_layers(layer)
         prev_layer_output_shape = self.get_output_shape(previous_layers[0])
         if len(output_shape) < len(prev_layer_output_shape) and \
-                self.get_type(layer) != 'Flatten':
+                self.get_type(layer) != 'Flatten' and \
+                self.get_type(previous_layers[0]) != 'InputLayer':
             assert len(previous_layers) == 1, "Layer to flatten must be unique."
             print("Inserting layer Flatten.")
             num_str = str(idx) if idx > 9 else '0' + str(idx)
@@ -680,7 +681,7 @@ class AbstractModelParser:
         self.parsed_model.compile(
             'sgd', 'categorical_crossentropy',
             ['accuracy', keras.metrics.top_k_categorical_accuracy])
-
+        self.parsed_model.summary()
         return self.parsed_model
 
     def evaluate(self, batch_size, num_to_test, x_test=None, y_test=None,

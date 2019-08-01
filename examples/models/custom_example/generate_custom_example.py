@@ -34,9 +34,9 @@ model.add(Conv2D(16, (5,5), input_shape=(28,28,1), activation='relu', use_bias=T
 #model.add(DepthwiseConv2D((5,5), depth_multiplier = 2, activation='relu', use_bias=True))
 
 #model.add(MaxPooling2D(10))
-
-model.add(Dense(576, activation='relu', use_bias=True))
 model.add(Flatten())
+model.add(Dense(384, activation='relu', use_bias=True))
+#model.add(Flatten())
 model.add(Dense(10, activation='softmax', use_bias=True))
 
 model.summary()
@@ -55,6 +55,6 @@ score = model.evaluate(X_test, Y_test, verbose=1)
 
 print(score)
 
-with open("PB_bias_test.json", "w") as text_file:
+with open("PB_bias_test_2.json", "w") as text_file:
     text_file.write(model.to_json())
-model.save_weights("PB_bias_test.h5")
+model.save_weights("PB_bias_test_2.h5")
