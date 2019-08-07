@@ -41,18 +41,11 @@ class SNN(PYSNN):
         return weights
     
     def setup_layers(self, batch_shape):
-        '''Iterates over all layers to instantiate them in the simulator.
-        This is done in reverse for SpiNNaker because it changes
-         machine placement so larger layers are placed later.'''
+        '''Iterates over all layers to instantiate them in the simulator.'''
         from snntoolbox.parsing.utils import get_type
         from snntoolbox.simulation.target_simulators.pyNN_target_sim import get_shape_from_label
 
         self.add_input_layer(batch_shape)
-
-        # temp_layers = self.layers
-        # self.layers = []
-        # "Adding the input layer"
-        # self.layers.append(temp_layers.pop())
 
         for layer in self.parsed_model.layers[1:]:
             print("Instantiating layer: {}".format(layer.name))
@@ -418,13 +411,15 @@ class SNN(PYSNN):
             self.layers[0].set(spike_times=spike_times)
         import pylab
         current_time = pylab.datetime.datetime.now().strftime("_%H%M%S_%d%m%Y")
+        
+        runtime = self._duration - self._dt
         try:
             from pynn_object_serialisation.functions import intercept_simulator
             intercept_simulator(self.sim, "snn_toolbox_spinnaker_" + current_time,
-                                post_abort=False)
+                                post_abort=False, {'runtime':runtime})
         except:
             print("There was a problem with serialisation.")
-        self.sim.run(self._duration - self._dt)
+        self.sim.run(runtime)
         print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.layers)
 
