@@ -36,6 +36,7 @@ from abc import abstractmethod
 
 import keras
 import numpy as np
+import sys
 
 
 class AbstractModelParser:
@@ -128,7 +129,9 @@ class AbstractModelParser:
                 prev_layer_type = self.get_type(prev_layer)
                 print("Absorbing batch-normalization parameters into " +
                       "parameters of previous {}.".format(prev_layer_type))
-                axis = -2 if prev_layer_type == 'DepthwiseConv2D' else axis
+                _depthwise_conv_names = ['DepthwiseConv2D',
+                                         'SparseDepthwiseConv2D']
+                axis = -2 if prev_layer_type in _depthwise_conv_names else axis
                 args = parameters + parameters_bn
                 kwargs = {'axis': axis, 'image_data_format':
                     keras.backend.image_data_format()}
@@ -675,7 +678,13 @@ class AbstractModelParser:
                 layer['weights'] = layer.pop('parameters')
 
             # Add layer
-            parsed_layer = getattr(keras.layers, layer.pop('layer_type'))
+            try:
+                _x = layer.pop('layer_type')
+                parsed_layer = getattr(keras.layers, _x)
+            except AttributeError as e:
+                print(e, file=sys.stderr)
+                import dnns
+                parsed_layer = getattr(dnns, _x)
 
             inbound = [parsed_layers[inb] for inb in layer.pop('inbound')]
             if len(inbound) == 1:
