@@ -36,6 +36,7 @@ from abc import abstractmethod
 
 import keras
 import numpy as np
+import sys
 
 
 class AbstractModelParser:
@@ -138,12 +139,14 @@ class AbstractModelParser:
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
                       "plus Flatten.")
-                pool_size = [layer.input_shape[-2], layer.input_shape[-1]]
+                # TODO Check how broken this is ... how did this even work in the first place?
+                pool_size = [layer.input_shape[-3], layer.input_shape[-2]]
                 self._layer_list.append(
                     {'layer_type': 'AveragePooling2D',
                      'name': self.get_name(layer, idx, 'AveragePooling2D'),
                      'input_shape': layer.input_shape, 'pool_size': pool_size,
-                     'inbound': self.get_inbound_names(layer, name_map)})
+                     'inbound': self.get_inbound_names(layer, name_map),
+                     'strides': [1, 1]})
                 name_map['AveragePooling2D' + str(idx)] = idx
                 idx += 1
                 num_str = str(idx) if idx > 9 else '0' + str(idx)
@@ -435,8 +438,7 @@ class AbstractModelParser:
             layer_type = self.get_type(layer)
 
         output_shape = self.get_output_shape(layer)
-        
-        
+
         shape_string = ["{}x".format(x) for x in output_shape[1:]]
         shape_string[0] = "_" + shape_string[0]
         shape_string[-1] = shape_string[-1][:-1]
@@ -733,19 +735,21 @@ def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
 
     print("Using BatchNorm axis {}.".format(axis))
 
-    # Map batch norm axis from layer dimension space to kernel dimension space.
-    # kernel_axes tells where to map each axis of a layer. Assumes that kernels
-    # are shaped like [height, width, num_input_channels, num_output_channels],
-    # and layers like [batch_size, channels, height, width] or
-    # [batch_size, height, width, channels].
-    if weight.ndim == 4:
-        kernel_axes = [None, 3, 0, 1] if image_data_format == 'channels_first' \
-            else [None, 0, 1, 3]
-        layer2kernel_axes_map = {layer_axis: kernel_axis for layer_axis,
-                                 kernel_axis in enumerate(kernel_axes)}
-        # Read: batch axis is mapped nowhere, channel axis is mapped from 1 or
-        # 3 to 3, etc.
-        axis = layer2kernel_axes_map[axis]
+    # TODO Check how broken this is ... how did this even work in the first place?
+
+    # # Map batch norm axis from layer dimension space to kernel dimension space.
+    # # kernel_axes tells where to map each axis of a layer. Assumes that kernels
+    # # are shaped like [height, width, num_input_channels, num_output_channels],
+    # # and layers like [batch_size, channels, height, width] or
+    # # [batch_size, height, width, channels].
+    # if weight.ndim == 4:
+    #     kernel_axes = [None, 3, 0, 1] if image_data_format == 'channels_first' \
+    #         else [None, 0, 1, 3]
+    #     layer2kernel_axes_map = {layer_axis: kernel_axis for layer_axis,
+    #                              kernel_axis in enumerate(kernel_axes)}
+    #     # Read: batch axis is mapped nowhere, channel axis is mapped from 1 or
+    #     # 3 to 3, etc.
+    #     axis = layer2kernel_axes_map[axis]
 
     broadcast_shape = [1] * weight.ndim
     broadcast_shape[axis] = weight.shape[axis]
@@ -1178,7 +1182,6 @@ def get_quantized_activation_function_from_string(activation_str):
 
 
 def get_clamped_relu_from_string(activation_str):
-
     from snntoolbox.utils.utils import ClampedReLU
 
     threshold, max_value = map(eval, activation_str.split('_')[-2:])
@@ -1187,8 +1190,8 @@ def get_clamped_relu_from_string(activation_str):
 
     return activation
 
-def get_noisy_softplus_from_string(activation_str):
 
+def get_noisy_softplus_from_string(activation_str):
     from snntoolbox.utils.utils import NoisySoftplus
 
     k, sigma = map(eval, activation_str.split('_')[-2:])
@@ -1238,6 +1241,40 @@ def get_custom_activation(activation_str):
         activation = activation_str
 
     return activation, activation_str
+
+
+def assemble_custom_dict(*args):
+    assembly = []
+    for arg in args:
+        assembly += arg.items()
+    return dict(assembly)
+
+
+def get_custom_layers_dict(filepath=None):
+    """
+        Import all implemented custom layers so they can be used when
+        loading a Keras model.
+
+        Parameters
+        ----------
+
+        filepath : Optional[str]
+            Path to json file containing additional custom objects.
+        """
+    from dnns import Sparse, SparseConv2D, \
+        SparseDepthwiseConv2D, NoisySGD
+    custom_obj = {'Sparse': Sparse,
+                  'SparseConv2D': SparseConv2D,
+                  'SparseDepthwiseConv2D': SparseDepthwiseConv2D,
+                  'NoisySGD': NoisySGD
+                  }
+    if filepath is not None and filepath != '':
+        import json
+        with open(filepath) as f:
+            kwargs = json.load(f)
+            custom_obj.update(kwargs)
+
+    return custom_obj
 
 
 def get_custom_activations_dict(filepath=None):
