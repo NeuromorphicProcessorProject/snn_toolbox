@@ -7,6 +7,7 @@
 import numpy as np
 
 from snntoolbox.parsing.utils import AbstractModelParser
+import keras.backend as K
 
 
 class ModelParser(AbstractModelParser):
@@ -54,6 +55,10 @@ class ModelParser(AbstractModelParser):
 
     def get_output_shape(self, layer):
         return layer.output_shape
+
+    def parse_sparse(self, layer, attributes):
+        attributes['mask'] = K.get_value(layer.mask)
+        return self.parse_dense(layer, attributes)
 
     def parse_dense(self, layer, attributes):
         attributes['parameters'] = layer.get_weights()
