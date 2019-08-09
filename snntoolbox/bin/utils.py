@@ -397,7 +397,9 @@ def update_setup(config_filepath):
             if not os.path.isfile(os.path.join(path_wd, json_file)):
                 import keras
                 import h5py
-                from snntoolbox.parsing.utils import get_custom_activations_dict
+                from snntoolbox.parsing.utils import \
+                    get_custom_activations_dict, get_custom_layers_dict,\
+                    assemble_custom_dict
                 # Remove optimizer_weights here, because they may cause the
                 # load_model method to fail if the network was trained on a
                 # different platform or keras version
@@ -406,9 +408,13 @@ def update_setup(config_filepath):
                     if 'optimizer_weights' in f.keys():
                         del f['optimizer_weights']
                 # Try loading the model.
+                custom_dicts = assemble_custom_dict(
+                        get_custom_activations_dict(
+                            config.get('paths', 'filepath_custom_objects')),
+                get_custom_layers_dict())
                 keras.models.load_model(
-                    h5_filepath, get_custom_activations_dict(
-                        config.get('paths', 'filepath_custom_objects')))
+                    h5_filepath, custom_dicts)
+
         elif model_lib == 'lasagne':
             h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
             pkl_filepath = os.path.join(path_wd, filename_ann + '.pkl')

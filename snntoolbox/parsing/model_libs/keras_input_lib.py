@@ -135,18 +135,24 @@ def load(path, filename, **kwargs):
         model.compile('sgd', 'categorical_crossentropy',
                       ['accuracy', metrics.top_k_categorical_accuracy])
     else:
-        from snntoolbox.parsing.utils import get_custom_activations_dict
+        from snntoolbox.parsing.utils import get_custom_activations_dict, \
+            assemble_custom_dict, get_custom_layers_dict
         filepath_custom_objects = kwargs.get('filepath_custom_objects', None)
         if filepath_custom_objects is not None:
             filepath_custom_objects = str(filepath_custom_objects)  # python 2
+
+        custom_dicts = assemble_custom_dict(
+            get_custom_activations_dict(filepath_custom_objects),
+            get_custom_layers_dict())
         try:
             model = models.load_model(
                 filepath + '.h5',
-                get_custom_activations_dict(filepath_custom_objects))
-        except:
+                custom_dicts)
+        except OSError as e:
+            print(e)
             model = models.load_model(
                 filepath,
-                get_custom_activations_dict(filepath_custom_objects))
+                custom_dicts)
         model.compile(model.optimizer, model.loss,
                       ['accuracy', metrics.top_k_categorical_accuracy])
     

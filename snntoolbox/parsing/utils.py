@@ -186,10 +186,19 @@ class AbstractModelParser:
             if layer_type == 'Dense':
                 self.parse_dense(layer, attributes)
 
+            if layer_type == 'Sparse':
+                self.parse_dense(layer, attributes)
+
             if layer_type == 'Conv2D':
                 self.parse_convolution(layer, attributes)
 
+            if layer_type == 'SparseConv2D':
+                self.parse_convolution(layer, attributes)
+
             if layer_type == 'DepthwiseConv2D':
+                self.parse_depthwiseconvolution(layer, attributes)
+
+            if layer_type == 'SparseDepthwiseConv2D':
                 self.parse_depthwiseconvolution(layer, attributes)
 
             if layer_type in {'Dense', 'Conv2D', 'DepthwiseConv2D'}:
@@ -1239,6 +1248,39 @@ def get_custom_activation(activation_str):
 
     return activation, activation_str
 
+
+def assemble_custom_dict(*args):
+    assembly = []
+    for arg in args:
+        assembly += arg.items()
+    return dict(assembly)
+
+
+def get_custom_layers_dict(filepath=None):
+    """
+        Import all implemented custom layers so they can be used when
+        loading a Keras model.
+
+        Parameters
+        ----------
+
+        filepath : Optional[str]
+            Path to json file containing additional custom objects.
+        """
+    from dnns import Sparse, SparseConv2D, \
+        SparseDepthwiseConv2D, NoisySGD
+    custom_obj = {'Sparse': Sparse,
+                  'SparseConv2D': SparseConv2D,
+                  'SparseDepthwiseConv2D': SparseDepthwiseConv2D,
+                  'NoisySGD': NoisySGD
+                  }
+    if filepath is not None and filepath != '':
+        import json
+        with open(filepath) as f:
+            kwargs = json.load(f)
+            custom_obj.update(kwargs)
+
+    return custom_obj
 
 def get_custom_activations_dict(filepath=None):
     """
