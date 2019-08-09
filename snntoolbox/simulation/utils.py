@@ -1146,6 +1146,86 @@ def get_samples_from_list(x_test, y_test, dataflow, config):
 
     return x_test, y_test
 
+def build_1D_convolution(layer, delay, transpose_kernel=False):
+    """Build convolution layer.
+
+    Parameters
+    ----------
+
+    layer: keras.layers.Conv1D
+        Parsed model layer.
+    delay: float
+        Synaptic delay.
+    transpose_kernel: bool
+        Whether or not to convert kernels from Tensorflow to Theano format
+        (correlation instead of convolution).
+
+    Returns
+    -------
+
+    connections: List[tuple]
+        A list where each entry is a tuple containing the source neuron index,
+        the target neuron index, the connection strength (weight), and the
+        synaptic ``delay``.
+    i_offset: ndarray
+        Flattened array containing the biases of all neurons in the ``layer``.
+    """
+
+    weights, biases = layer.get_weights()
+
+    # Biases.
+    
+    n = int(np.prod(layer.output_shape[1:]) / len(biases))
+    i_offset = np.repeat(biases, n).astype('float64')
+    
+    ii = 0 if layer.data_format == 'channels_first' else 1
+
+    nx = layer.input_shape[-1 - ii]  # Width of feature map
+
+    # Assumes symmetric padding ((1, 1), (1, 1)). Need to reduce dimensions of
+    # input here because the layer.input_shape refers to the ZeroPadding layer
+    # contained in the parsed model, which is removed when building the SNN.
+    
+    if layer.padding == 'ZeroPadding':
+        print("Applying ZeroPadding.")
+        nx -= 2
+        layer.padding = 'same'
+
+    kx = layer.kernel_size[0]  # Width of kernel
+    px = int((kx - 1) / 2)  # Zero-padding
+    
+    sx = layer.strides[0]
+
+    if layer.padding == 'valid':
+        # In padding 'valid', the original sidelength is
+        # reduced by one less than the kernel size.
+        mx = (nx - kx + 1) // sx  # Number of output filters
+        x0 = px
+    elif layer.padding == 'same':
+        mx = nx // sx
+        x0 = 0
+    else:
+        raise NotImplementedError("Border_mode {} not supported".format(
+            layer.padding))
+
+    connections = []
+    # Loop over output filters 'fout'
+    for fout in range(weights.shape[2]):
+        for x in range(x0, nx - x0, sx):
+            target = int((x - x0) / sx  +
+                     fout * mx)
+            for fin in range(weights.shape[1]):
+                source = x + (fin * nx) 
+                for l in range(-px, px + 1):
+                    if not 0 <= x + l < nx:
+                        continue
+                    connections.append((source + l, target,
+                                        weights[px - l, fin, fout], delay))
+        echo('.')
+    print('')
+
+    return connections, i_offset
+
 
 def build_convolution(layer, delay, transpose_kernel=False):
     """Build convolution layer.

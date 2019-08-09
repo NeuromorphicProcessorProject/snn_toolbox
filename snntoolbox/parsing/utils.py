@@ -189,13 +189,13 @@ class AbstractModelParser:
             if layer_type == 'Dense':
                 self.parse_dense(layer, attributes)
 
-            if layer_type == 'Conv2D':
+            if layer_type in {'Conv1D', 'Conv2D'}:
                 self.parse_convolution(layer, attributes)
 
             if layer_type == 'DepthwiseConv2D':
                 self.parse_depthwiseconvolution(layer, attributes)
 
-            if layer_type in {'Dense', 'Conv2D', 'DepthwiseConv2D'}:
+            if layer_type in {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D'}:
                 weights, bias = attributes['parameters']
                 if self.config.getboolean('cell', 'binarize_weights'):
                     from snntoolbox.utils.utils import binarize
@@ -471,7 +471,8 @@ class AbstractModelParser:
         previous_layers = self.get_inbound_layers(layer)
         prev_layer_output_shape = self.get_output_shape(previous_layers[0])
         if len(output_shape) < len(prev_layer_output_shape) and \
-                self.get_type(layer) != 'Flatten':
+                self.get_type(layer) != 'Flatten' and \
+                self.get_type(previous_layers[0]) != 'InputLayer':
             assert len(previous_layers) == 1, "Layer to flatten must be unique."
             print("Inserting layer Flatten.")
             num_str = str(idx) if idx > 9 else '0' + str(idx)
@@ -682,7 +683,7 @@ class AbstractModelParser:
         self.parsed_model.compile(
             'sgd', 'categorical_crossentropy',
             ['accuracy', keras.metrics.top_k_categorical_accuracy])
-
+        self.parsed_model.summary()
         return self.parsed_model
 
     def evaluate(self, batch_size, num_to_test, x_test=None, y_test=None,

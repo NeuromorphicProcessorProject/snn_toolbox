@@ -23,6 +23,7 @@ from snntoolbox.simulation.target_simulators.pyNN_target_sim import SNN as PYSNN
 class SNN(PYSNN):
     
     def scale_weights(self, weights):
+
         from math import exp
         #This ignores the leak term
         tau_syn_E = self.config.getfloat('cell', 'tau_syn_E')
@@ -40,18 +41,11 @@ class SNN(PYSNN):
         return weights
     
     def setup_layers(self, batch_shape):
-        '''Iterates over all layers to instantiate them in the simulator.
-        This is done in reverse for SpiNNaker because it changes
-         machine placement so larger layers are placed later.'''
+        '''Iterates over all layers to instantiate them in the simulator.'''
         from snntoolbox.parsing.utils import get_type
         from snntoolbox.simulation.target_simulators.pyNN_target_sim import get_shape_from_label
 
         self.add_input_layer(batch_shape)
-
-        # temp_layers = self.layers
-        # self.layers = []
-        # "Adding the input layer"
-        # self.layers.append(temp_layers.pop())
 
         for layer in self.parsed_model.layers[1:]:
             print("Instantiating layer: {}".format(layer.name))
@@ -66,7 +60,7 @@ class SNN(PYSNN):
                 continue
             if layer_type == 'Dense':
                 self.build_dense(layer)
-            elif layer_type in {'Conv2D','DepthwiseConv2D'}:
+            elif layer_type in {'Conv1D', 'Conv2D','DepthwiseConv2D'}:
                 self.build_convolution(layer)
                 self.data_format = layer.data_format
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
@@ -130,6 +124,13 @@ class SNN(PYSNN):
 
         weights, biases = layer.get_weights()
         weights = self.scale_weights(weights)
+        
+        exc_connections = []
+        inh_connections = []
+        
+        n = int(np.prod(layer.output_shape[1:]) / len(biases))
+        biases = np.repeat(biases, n).astype('float64')
+   
         self.set_biases(np.array(biases, 'float64'))
         delay = self.config.getfloat('cell', 'delay')
 
@@ -137,7 +138,11 @@ class SNN(PYSNN):
             flatten_name, shape = self.flatten_shapes.pop() 
             if self.data_format == 'channels_last':
                 print("Not swapping data_format of Flatten layer.")
-                y_in, x_in, f_in = shape
+                if len(shape) == 2:
+                    x_in, f_in = shape
+                    #weights = weights.flatten()
+                else:
+                    y_in, x_in, f_in = shape
                 '''output_neurons = weights.shape[1]
                 weights = weights.reshape((x_in, y_in, f_in, output_neurons), order ='C')
                 weights = np.rollaxis(weights, 1, 0)
@@ -154,11 +159,10 @@ class SNN(PYSNN):
                 elif len(shape) == 2:
                     f_in, x_in = shape
                     weights = np.rollaxis(weights, 1, 0)
-                    y_in = 1
+                    #weights = np.flatten(weights)
                 else:
-                    print("The input weight matrix did not have the expected dimesnions")
-            exc_connections = []
-            inh_connections = []
+                    print("The input weight matrix did not have the expected dimensions")
+            
             for i in range(weights.shape[0]):  # Input neurons
                 # Sweep across channel axis of feature map. Assumes that each
                 # consecutive input neuron lies in a different channel. This is
@@ -176,7 +180,6 @@ class SNN(PYSNN):
                         exc_connections.append(c)
                     elif c[2] < 0.0:
                         inh_connections.append(c)
-
         elif len(self.flatten_shapes) > 1:
             raise RuntimeWarning("Not all Flatten layers have been consumed.")
         else:
@@ -184,6 +187,7 @@ class SNN(PYSNN):
                                for i, j in zip(*np.nonzero(weights > 0))]
             inh_connections = [(i, j, weights[i, j], delay)
                                for i, j in zip(*np.nonzero(weights < 0))]
+                
         if self.config.getboolean('tools', 'simulate'):
             self.connections.append(self.sim.Projection(
                 self.layers[-2], self.layers[-1],
@@ -236,7 +240,7 @@ class SNN(PYSNN):
             f.writelines(lines)
 
     def build_convolution(self, layer):
-        from snntoolbox.simulation.utils import build_convolution, build_depthwise_convolution
+        from snntoolbox.simulation.utils import build_convolution, build_depthwise_convolution, build_1D_convolution
         from snntoolbox.parsing.utils import get_type
 
         # If the parsed model contains a ZeroPadding layer, we need to tell the
@@ -259,6 +263,8 @@ class SNN(PYSNN):
             weights, biases = build_convolution(layer, delay, transpose_kernel)
         elif get_type(layer) == 'DepthwiseConv2D':
             weights, biases = build_depthwise_convolution(layer, delay, transpose_kernel)
+        if get_type(layer) == 'Conv1D':
+            weights, biases = build_1D_convolution(layer, delay, transpose_kernel)
         self.set_biases(biases)
         weights = self.scale_weights(weights)
 
@@ -405,13 +411,15 @@ class SNN(PYSNN):
             self.layers[0].set(spike_times=spike_times)
         import pylab
         current_time = pylab.datetime.datetime.now().strftime("_%H%M%S_%d%m%Y")
+        
+        runtime = self._duration - self._dt
         try:
             from pynn_object_serialisation.functions import intercept_simulator
             intercept_simulator(self.sim, "snn_toolbox_spinnaker_" + current_time,
-                                post_abort=False)
+                                post_abort=False, {'runtime':runtime})
         except:
             print("There was a problem with serialisation.")
-        self.sim.run(self._duration - self._dt)
+        self.sim.run(runtime)
         print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.layers)
 
