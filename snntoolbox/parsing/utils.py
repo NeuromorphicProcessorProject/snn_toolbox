@@ -723,9 +723,6 @@ class AbstractModelParser:
             if len(inbound) == 1:
                 inbound = inbound[0]
             check_for_custom_activations(layer)
-            if "mask" in layer.keys():
-                print("I have a mask! GET IT OFF!!!", file=sys.stderr)
-                layer.pop('mask', None)
             parsed_layers[layer['name']] = parsed_layer(**layer)(inbound)
 
         print("Compiling parsed model...\n")

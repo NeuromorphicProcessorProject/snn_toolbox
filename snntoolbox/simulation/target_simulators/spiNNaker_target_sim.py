@@ -64,9 +64,10 @@ class SNN(PYSNN):
                 (layer.name, get_shape_from_label(self.layers[-1].label)))
                 self.build_flatten(layer)
                 continue
-            if layer_type == 'Dense':
+            if layer_type == ['Dense', 'Sparse']:
                 self.build_dense(layer)
-            elif layer_type in {'Conv2D','DepthwiseConv2D'}:
+            elif layer_type in {'Conv2D','DepthwiseConv2D',
+                                'SparseConv2D', 'SparseDepthwiseConv2D'}:
                 self.build_convolution(layer)
                 self.data_format = layer.data_format
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
@@ -127,8 +128,16 @@ class SNN(PYSNN):
         if layer.activation.__name__ == 'softmax':
             warnings.warn("Activation 'softmax' not implemented. Using 'relu' "
                           "activation instead.", RuntimeWarning)
-
-        weights, biases = layer.get_weights()
+        all_weights = layer.get_weights()
+        if len(all_weights) == 2:
+            weights, biases = all_weights
+        elif len(all_weights) == 3:
+            weights, biases, masks = all_weights
+            weights = weights * masks
+        else:
+            raise ValueError("Layer {} was expected to contain "
+                             "weights, biases and, in rare cases,"
+                             "masks.".format(layer.name))
         weights = self.scale_weights(weights)
 
         # Biases.
@@ -261,9 +270,9 @@ class SNN(PYSNN):
         transpose_kernel = \
             self.config.get('simulation', 'keras_backend') == 'tensorflow'
         
-        if get_type(layer) == 'Conv2D':
+        if get_type(layer) in ['Conv2D', 'SparseConv2D']:
             weights, biases = build_convolution(layer, delay, transpose_kernel)
-        elif get_type(layer) == 'DepthwiseConv2D':
+        elif get_type(layer) in ['DepthwiseConv2D', 'SparseDepthwiseConv2D']:
             weights, biases = build_depthwise_convolution(layer, delay, transpose_kernel)
         self.set_biases(biases)
         weights = self.scale_weights(weights)
