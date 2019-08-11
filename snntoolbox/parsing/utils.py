@@ -132,11 +132,18 @@ class AbstractModelParser:
                 _depthwise_conv_names = ['DepthwiseConv2D',
                                          'SparseDepthwiseConv2D']
                 axis = -2 if prev_layer_type in _depthwise_conv_names else axis
-                args = parameters + parameters_bn
+                args = parameters[:2] + parameters_bn
                 kwargs = {'axis': axis, 'image_data_format':
                     keras.backend.image_data_format()}
-                self._layer_list[prev_layer_idx]['parameters'] = \
-                    absorb_bn_parameters(*args, **kwargs)
+
+                if (self._layer_list[prev_layer_idx]['layer_type'] in
+                    ['Sparse', 'SparseConv2D', 'SparseDepthwiseConv2D']):
+                    x = self._layer_list[prev_layer_idx]['parameters']
+                    self._layer_list[prev_layer_idx]['parameters'] = \
+                        list(absorb_bn_parameters(*args, **kwargs)).append(x[2])
+                else:
+                    self._layer_list[prev_layer_idx]['parameters'] = \
+                        absorb_bn_parameters(*args, **kwargs)
 
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
@@ -147,8 +154,7 @@ class AbstractModelParser:
                     {'layer_type': 'AveragePooling2D',
                      'name': self.get_name(layer, idx, 'AveragePooling2D'),
                      'input_shape': layer.input_shape, 'pool_size': pool_size,
-                     'inbound': self.get_inbound_names(layer, name_map),
-                     'strides': [1, 1]})
+                     'inbound': self.get_inbound_names(layer, name_map)})
                 name_map['AveragePooling2D' + str(idx)] = idx
                 idx += 1
                 num_str = str(idx) if idx > 9 else '0' + str(idx)
@@ -198,13 +204,40 @@ class AbstractModelParser:
                 self.parse_convolution(layer, attributes)
 
             if layer_type == 'SparseConv2D':
-                self.parse_convolution(layer, attributes)
+                self.parse_sparse_convolution(layer, attributes)
 
             if layer_type == 'DepthwiseConv2D':
                 self.parse_depthwiseconvolution(layer, attributes)
 
             if layer_type == 'SparseDepthwiseConv2D':
-                self.parse_depthwiseconvolution(layer, attributes)
+                self.parse_sparse_depthwiseconvolution(layer, attributes)
+
+            if layer_type in ['Sparse', 'SparseConv2D', 'SparseDepthwiseConv2D']:
+                weights, bias, mask = attributes['parameters']
+                if self.config.getboolean('cell', 'binarize_weights'):
+                    from snntoolbox.utils.utils import binarize
+                    print("Binarizing weights.")
+                    weights = binarize(weights)
+                elif self.config.getboolean('cell', 'quantize_weights'):
+                    assert 'Qm.f' in attributes, \
+                        "In the [cell] section of the configuration file, " \
+                        "'quantize_weights' was set to True. For this to " \
+                        "work, the layer needs to specify the fixed point " \
+                        "number format 'Qm.f'."
+                    from snntoolbox.utils.utils import reduce_precision
+                    m, f = attributes.get('Qm.f')
+                    print("Quantizing weights to Q{}.{}.".format(m, f))
+                    weights = reduce_precision(weights, m, f)
+                    if attributes.get('quantize_bias', False):
+                        bias = reduce_precision(bias, m, f)
+                attributes['parameters'] = (weights, bias, mask)
+                # These attributes are not needed any longer and would not be
+                # understood by Keras when building the parsed model.
+                attributes.pop('quantize_bias', None)
+                attributes.pop('Qm.f', None)
+
+                self.absorb_activation(layer, attributes)
+
 
             if layer_type in {'Dense', 'Conv2D', 'DepthwiseConv2D'}:
                 weights, bias = attributes['parameters']
@@ -690,6 +723,9 @@ class AbstractModelParser:
             if len(inbound) == 1:
                 inbound = inbound[0]
             check_for_custom_activations(layer)
+            if "mask" in layer.keys():
+                print("I have a mask! GET IT OFF!!!", file=sys.stderr)
+                layer.pop('mask', None)
             parsed_layers[layer['name']] = parsed_layer(**layer)(inbound)
 
         print("Compiling parsed model...\n")

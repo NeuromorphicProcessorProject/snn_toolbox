@@ -57,7 +57,7 @@ class ModelParser(AbstractModelParser):
         return layer.output_shape
 
     def parse_sparse(self, layer, attributes):
-        attributes['mask'] = K.get_value(layer.mask)
+        # attributes['mask'] = K.get_value(layer.mask)
         return self.parse_dense(layer, attributes)
 
     def parse_dense(self, layer, attributes):
@@ -66,11 +66,21 @@ class ModelParser(AbstractModelParser):
             attributes['parameters'].append(np.zeros(layer.output_shape[-1]))
             attributes['use_bias'] = True
 
+    def parse_sparse_convolution(self, layer, attributes):
+        # attributes['mask'] = K.get_value(layer.mask)
+        return self.parse_convolution(layer, attributes)
+
     def parse_convolution(self, layer, attributes):
         attributes['parameters'] = layer.get_weights()
         if layer.bias is None:
             attributes['parameters'].append(np.zeros(layer.filters))
             attributes['use_bias'] = True
+
+
+    def parse_sparse_depthwiseconvolution(self, layer, attributes):
+        # attributes['mask'] = K.get_value(layer.mask)
+        return self.parse_depthwiseconvolution(layer, attributes)
+
 
     def parse_depthwiseconvolution(self, layer, attributes):
         #Assumes channels last
