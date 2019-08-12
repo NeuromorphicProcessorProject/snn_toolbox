@@ -14,6 +14,36 @@ import argparse
 import os
 
 
+def run_toolbox(config_filepath, terminal):
+
+    # filepath = '/mnt/2646BAF446BAC3B9/Data/snn_conversion/mobilenet/v2/log/gui/no_clamp/config'
+    # filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/lenet5/keras/config'
+    # filepath = '/mnt/2646BAF446BAC3B9/Data/snn_conversion/mnist/cnn/lenet5/keras/pyNN/channels_first/log/gui/01/config'
+    # args.terminal = True
+    filepath = os.path.abspath(config_filepath)
+
+    if filepath is not None:
+        assert os.path.isfile(filepath), \
+            "Configuration file not found at {}.".format(filepath)
+        from snntoolbox.bin.utils import update_setup
+        config = update_setup(filepath)
+
+        if terminal:
+            from snntoolbox.bin.utils import test_full
+            test_full(config)
+        else:
+            from snntoolbox.bin.gui import gui
+            gui.main()
+    else:
+        if terminal:
+            parser.error("When using the SNN toolbox from terminal, a "
+                         "config_filepath argument must be provided.")
+            return
+        else:
+            from snntoolbox.bin.gui import gui
+            gui.main()
+
+
 def main():
     """Entry point for running the toolbox.
 
@@ -34,32 +64,8 @@ def main():
                         help='Set this flag to run the toolbox from terminal. '
                              'Omit this flag to open GUI.')
     args = parser.parse_args()
-
-    filepath = os.path.abspath(args.config_filepath)
-    # filepath = '/mnt/2646BAF446BAC3B9/Data/snn_conversion/mobilenet/v2/log/gui/no_clamp/config'
-    # filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/lenet5/keras/config'
-    # filepath = '/mnt/2646BAF446BAC3B9/Data/snn_conversion/mnist/cnn/lenet5/keras/pyNN/channels_first/log/gui/01/config'
-    # args.terminal = True
-    if filepath is not None:
-        assert os.path.isfile(filepath), \
-            "Configuration file not found at {}.".format(filepath)
-        from snntoolbox.bin.utils import update_setup
-        config = update_setup(filepath)
-
-        if args.terminal:
-            from snntoolbox.bin.utils import test_full
-            test_full(config)
-        else:
-            from snntoolbox.bin.gui import gui
-            gui.main()
-    else:
-        if args.terminal:
-            parser.error("When using the SNN toolbox from terminal, a "
-                         "config_filepath argument must be provided.")
-            return
-        else:
-            from snntoolbox.bin.gui import gui
-            gui.main()
+    arguments = vars(args)
+    run_toolbox(**arguments)
 
 
 if __name__ == '__main__':
