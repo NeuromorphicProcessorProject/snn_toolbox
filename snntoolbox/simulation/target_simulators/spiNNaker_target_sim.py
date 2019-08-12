@@ -136,6 +136,7 @@ class SNN(PYSNN):
 
         if len(self.flatten_shapes) == 1:
             flatten_name, shape = self.flatten_shapes.pop() 
+            y_in = 1
             if self.data_format == 'channels_last':
                 print("Not swapping data_format of Flatten layer.")
                 if len(shape) == 2:
@@ -416,7 +417,7 @@ class SNN(PYSNN):
         try:
             from pynn_object_serialisation.functions import intercept_simulator
             intercept_simulator(self.sim, "snn_toolbox_spinnaker_" + current_time,
-                                post_abort=False, {'runtime':runtime})
+                                post_abort=False, custom_params={'runtime':runtime})
         except:
             print("There was a problem with serialisation.")
         self.sim.run(runtime)
