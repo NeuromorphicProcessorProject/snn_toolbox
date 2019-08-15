@@ -211,7 +211,7 @@ class AbstractSNN:
         Parameters
         ----------
 
-        layer: keras.layers.Layer
+        layer: keras.layers.Layer | keras.layers.Conv
             Layer
         """
 
@@ -1533,5 +1533,5 @@ def is_spiking(layer, config):
         ``True`` if converted layer will have spiking neurons.
     """
 
-    return get_type(layer) in eval(config.get('restrictions',
-                                              'spiking_layers'))
+    return np.any([s in get_type(layer) for s in
+                   eval(config.get('restrictions', 'spiking_layers'))])

@@ -242,7 +242,7 @@ def get_scale_fac(activations, percentile):
         Parameters of the respective layer are scaled by this value.
     """
 
-    return np.percentile(activations, percentile)
+    return np.percentile(activations, percentile) if activations.size else 1
 
 
 def get_percentile(config, layer_idx=None):
