@@ -176,7 +176,7 @@ class SNN(AbstractSNN):
         self.set_inputs(data)
 
         lenInterval = 1000
-        if self._duration < lenInterval:
+        if self._duration <= lenInterval:
             self.snn.run(self._duration, partition=self.partition)
         else:
             numIntervals = self._duration // lenInterval
@@ -354,9 +354,15 @@ class SNN(AbstractSNN):
             self.snn.layers[0][i].phase = 2
 
     def preprocessing(self, **kwargs):
-        print("Normalizing thresholds.")
-        self.threshold_scales = normalize_loihi_network(self.parsed_model,
-                                                        self.config, **kwargs)
+        do_process = True
+        if do_process:
+            print("Normalizing thresholds.")
+            self.threshold_scales = normalize_loihi_network(
+                self.parsed_model, self.config, **kwargs)
+        else:
+            print("Skipping threshold normalization.")
+            self.threshold_scales = {layer.name: 1
+                                     for layer in self.parsed_model.layers}
 
 
 def get_shape_from_label(label):
@@ -390,6 +396,8 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
 
     if 'x_norm' in kwargs:
         x_norm = kwargs[str('x_norm')]  # Values in range [0, 1]
+    elif 'x_test' in kwargs:
+        x_norm = kwargs[str('x_test')]
     elif 'dataflow' in kwargs:
         x_norm, y = kwargs[str('dataflow')].next()
     else:

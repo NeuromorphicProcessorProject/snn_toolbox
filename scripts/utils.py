@@ -1,8 +1,8 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import moviepy.editor as mpy
-from moviepy.video.io.bindings import mplfig_to_npimage
+# import moviepy.editor as mpy
+# from moviepy.video.io.bindings import mplfig_to_npimage
 
 
 def load_data_for_video(path, classification_duration, simulation_duration,
