@@ -11,6 +11,7 @@ import warnings
 
 import numpy as np
 from future import standard_library
+import keras
 
 import nxsdk_modules.dnn.src.dnn_layers as loihi_snn
 from snntoolbox.parsing.utils import get_type
@@ -49,6 +50,8 @@ class SNN(AbstractSNN):
             any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
                  'hist_spikerates_activations'} & self._plot_keys) \
             or 'spiketrains_n_b_l_t' in self._log_keys
+        self.num_weight_bits = eval(self.config.get(
+            'loihi', 'connection_kwargs'))['numWeightBits']
 
     @property
     def is_parallelizable(self):
@@ -121,9 +124,20 @@ class SNN(AbstractSNN):
         # Convert weights to integers.
         if len(layer.weights):
             weights, biases = layer.get_weights()
-            num_weight_bits = eval(self.config.get(
-                'loihi', 'connection_kwargs'))['numWeightBits']
-            weights, biases = to_integer(weights, biases, num_weight_bits)
+            weights, biases = to_integer(weights, biases, self.num_weight_bits)
+
+            if 'Flatten' in self._previous_layer_name:
+                pl = self.parsed_model.get_layer(self._previous_layer_name)
+                shape = pl.input_shape[1:]
+                permutation = np.ravel(np.reshape(
+                    np.arange(int(np.prod(shape))), shape, 'F'), 'C')
+                weights = weights[permutation]
+
+            spike_layer.set_weights([weights, biases])
+
+        elif 'AveragePooling' in get_type(layer):
+            weights, biases = spike_layer.get_weights()
+            weights, biases = to_integer(weights, biases, self.num_weight_bits)
             spike_layer.set_weights([weights, biases])
 
         self._previous_layer_name = layer.name
@@ -392,7 +406,6 @@ def get_shape_from_label(label):
 
 
 def normalize_loihi_network(parsed_model, config, **kwargs):
-    import keras
 
     if 'x_norm' in kwargs:
         x_norm = kwargs[str('x_norm')]  # Values in range [0, 1]
@@ -407,8 +420,7 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
         len(x_norm) * np.array(layer.output_shape[1:]).prod() * 32 /
         (8 * 1e9) for layer in parsed_model.layers if len(layer.weights) > 0]
     size_str = ['{:.2f}'.format(s) for s in sizes]
-    print("INFO: Need {} GB for layer activations.\n".format(size_str) +
-          "May have to reduce size of data set used for normalization.")
+    print("INFO: Need {} GB for layer activations.\n".format(size_str))
 
     batch_size = config.getint('simulation', 'batch_size')
 
@@ -443,15 +455,20 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
 
     # Want to optimize thr, while keeping weights and biases in right range.
     for i, layer in enumerate(model_copy.layers):
+
+        print(layer.name)
+
+        prev_scale = scales.get(model_copy.layers[i - 1].name, None)
+
         if len(layer.weights) > 0:
-            scale = scales[model_copy.layers[i - 1].name]
             # Unconstrained floats
             weights, biases = layer.get_weights()
             # Scale to 8 bit using a common factor for both weights and biases.
             # The weights and biases variables represent mantissa values with
             # zero exponent.
             weights, biases = to_integer(weights, biases, num_weight_bits)
-            weights = weights * _weight_gain * 2 ** (weight_exponent + scale)
+            weights = \
+                weights * _weight_gain * 2 ** (weight_exponent + prev_scale)
             check_q_overflow(weights, 1 / desired_threshold_to_input_ratio)
             layer.set_weights([weights, biases * 2 ** bias_exponent])
 
@@ -463,14 +480,21 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
         # Get the excitatory post-synaptic potential for each neuron in layer.
         y = keras.models.Sequential([layer]).predict(x, batch_size) if i else x
 
-        # Layers like Flatten do not have spiking neurons and therefore no
-        # threshold to tune. So we only need to update the input to the next
-        # layer, and propagate the scale. The input layer (i == 0) counts as
-        # spiking.
-        if i > 0 and not is_spiking(layer, config):
-            x = y
-            scales[layer.name] = scales[model_copy.layers[i - 1].name]
-            continue
+        if i > 0:
+            # Layers like Flatten do not have spiking neurons and therefore no
+            # threshold to tune. So we only need to update the input to the
+            # next layer, and propagate the scale. The input layer (i == 0)
+            # counts as spiking.
+            if not is_spiking(layer, config):
+                x = y
+                scales[layer.name] = prev_scale
+                continue
+            # Loihi AveragePooling layers get weights of ones. To reproduce
+            # this in our Keras model, we need to apply the same
+            # transformations as for a regular layer that has weights.
+            elif 'AveragePooling' in get_type(layer):
+                a = np.prod(layer.pool_size) * (2 ** num_weight_bits - 1)
+                y = y * _weight_gain * 2 ** (weight_exponent + prev_scale) * a
 
         # The highest EPSP determines whether to raise threshold.
         y_max = get_scale_fac(y[np.nonzero(y)], 100)
@@ -514,7 +538,7 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
                     break
 
         print("Scaling thresholds of layer {} and weights of subsequent layer "
-              "by 2**{}.".format(layer.name, scale))
+              "by 2**{}.\n".format(layer.name, scale))
         scales[layer.name] = scale
 
         # Apply activation function (dividing by threshold) to obtain the
