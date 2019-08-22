@@ -174,12 +174,14 @@ class SNN(AbstractSNN):
         self.snn = loihi_snn.NxModel(input_layer, output_layer, verbose=True,
                                      logdir=logdir)
 
-        if self.config.getboolean('loihi', 'save_output', fallback=''):
-            path = logdir
-        else:
-            path = None
+        save_output_to = logdir if self.config.getboolean(
+            'loihi', 'save_output', fallback=False) else None
 
-        self.snn.compileModel(saveOutputTo=path)
+        load_partitions_from = self.config.get('loihi', 'load_partitions_from',
+                                               fallback=None)
+
+        self.snn.compileModel(loadPartitionFrom=load_partitions_from,
+                              saveOutputTo=save_output_to)
 
         self.set_vars_to_record()
 
@@ -368,13 +370,13 @@ class SNN(AbstractSNN):
             self.snn.layers[0][i].phase = 2
 
     def preprocessing(self, **kwargs):
-        do_process = True
-        if do_process:
-            print("Normalizing thresholds.")
+        if self.config.getboolean('loihi', 'threshold_normalization',
+                                  fallback=True):
+            print("\nNormalizing thresholds.")
             self.threshold_scales = normalize_loihi_network(
                 self.parsed_model, self.config, **kwargs)
         else:
-            print("Skipping threshold normalization.")
+            print("\nSkipping threshold normalization.\n")
             self.threshold_scales = {layer.name: 1
                                      for layer in self.parsed_model.layers}
 
