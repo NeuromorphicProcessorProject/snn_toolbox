@@ -362,7 +362,7 @@ class AbstractModelParser:
         self._layers_to_skip: List[str]
         """
 
-        return ['BatchNormalization', 'Activation', 'Dropout']
+        return ['BatchNormalization', 'Activation', 'ReLU', 'Dropout']
 
     @abstractmethod
     def has_weights(self, layer):
