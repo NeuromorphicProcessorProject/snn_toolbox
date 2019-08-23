@@ -1343,8 +1343,3 @@ def check_for_custom_activations(layer_attributes):
         kwargs = {key: float(arg) for key, arg in
                   zip(['negative_slope', 'max_value', 'threshold'], args)}
         layer_attributes['activation'] = LimitedReLU(kwargs)
-
-        raise NotImplementedError("The parsing of MobileNet (with "
-                                  "DepthwiseConv2D and ReLU6 layers) is not "
-                                  "fully implemented yet in this version of "
-                                  "the toolbox.")
