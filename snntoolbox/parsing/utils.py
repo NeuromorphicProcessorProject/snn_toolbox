@@ -111,7 +111,7 @@ class AbstractModelParser:
         name_map = {}
         idx = 0
         inserted_flatten = False
-        for layer in layers:
+        for lid, layer in enumerate(layers):
             layer_type = self.get_type(layer)
 
             # Absorb BatchNormalization layer into parameters of previous layer
@@ -132,18 +132,27 @@ class AbstractModelParser:
                 _depthwise_conv_names = ['DepthwiseConv2D',
                                          'SparseDepthwiseConv2D']
                 axis = -2 if prev_layer_type in _depthwise_conv_names else axis
-                args = parameters[:2] + parameters_bn
+                if (self._layer_list[prev_layer_idx]['layer_type'] in
+                        ['Sparse', 'SparseConv2D', 'SparseDepthwiseConv2D']):
+                    args = [parameters[0], parameters[2]] + parameters_bn
+                else:
+                    args = parameters[:2] + parameters_bn
                 kwargs = {'axis': axis, 'image_data_format':
                     keras.backend.image_data_format()}
 
+
+                params_to_absorb = absorb_bn_parameters(*args, **kwargs)
+                # is the layer in questions sparse?
                 if (self._layer_list[prev_layer_idx]['layer_type'] in
-                    ['Sparse', 'SparseConv2D', 'SparseDepthwiseConv2D']):
-                    x = self._layer_list[prev_layer_idx]['parameters']
-                    self._layer_list[prev_layer_idx]['parameters'] = \
-                        list(absorb_bn_parameters(*args, **kwargs)).append(x[2])
-                else:
-                    self._layer_list[prev_layer_idx]['parameters'] = \
-                        absorb_bn_parameters(*args, **kwargs)
+                        ['Sparse', 'SparseConv2D', 'SparseDepthwiseConv2D']):
+                    # then you also need to save the mask associated with it
+                    params_to_absorb = (params_to_absorb[0],
+                                        params_to_absorb[1],
+                                        parameters[1]
+                                        )
+
+                self._layer_list[prev_layer_idx]['parameters'] = params_to_absorb
+
 
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
@@ -406,7 +415,7 @@ class AbstractModelParser:
         self._layers_to_skip: List[str]
         """
 
-        return ['BatchNormalization', 'Activation', 'Dropout']
+        return ['BatchNormalization', 'Activation', 'Dropout', 'ReLU']
 
     @abstractmethod
     def has_weights(self, layer):
