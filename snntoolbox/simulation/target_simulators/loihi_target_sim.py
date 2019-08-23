@@ -7,6 +7,7 @@ Building and running spiking neural networks using Intel's Loihi platform.
 from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
+import os
 import warnings
 
 import numpy as np
@@ -14,6 +15,7 @@ from future import standard_library
 import keras
 
 import nxsdk_modules.dnn.src.dnn_layers as loihi_snn
+from nxsdk.graph.processes.phase_enums import Phase
 from snntoolbox.parsing.utils import get_type
 from snntoolbox.conversion.utils import get_scale_fac
 from snntoolbox.simulation.utils import AbstractSNN, is_spiking
@@ -52,6 +54,7 @@ class SNN(AbstractSNN):
             or 'spiketrains_n_b_l_t' in self._log_keys
         self.num_weight_bits = eval(self.config.get(
             'loihi', 'connection_kwargs'))['numWeightBits']
+        self._has_reset_snip = False
 
     @property
     def is_parallelizable(self):
@@ -178,6 +181,12 @@ class SNN(AbstractSNN):
 
         self.set_vars_to_record()
 
+        try:
+            self.setup_snips()
+            self._has_reset_snip = True
+        except FileNotFoundError:
+            self._has_reset_snip = False
+
     def simulate(self, **kwargs):
 
         data = kwargs[str('x_b_l')]
@@ -198,6 +207,9 @@ class SNN(AbstractSNN):
         return output_b_l_t
 
     def reset(self, sample_idx):
+
+        if self._has_reset_snip:
+            return
 
         print("Resetting membrane potentials...")
         for layer in self.snn.layers:
@@ -373,6 +385,56 @@ class SNN(AbstractSNN):
             self.threshold_scales = {layer.name: 1
                                      for layer in self.parsed_model.layers}
 
+    def setup_snips(self):
+        snip_dir = self.config.get('loihi', 'snip_dir', fallback='')
+
+        if snip_dir == '':
+            snip_dir = os.path.abspath(os.path.join(os.path.dirname(
+                loihi_snn.__file__), '..', 'appss'))
+
+        if not os.path.exists(snip_dir):
+            raise FileNotFoundError
+
+        board = self.snn.board
+
+        # Init SNIP for LMT1 (reset injection).
+        snip_init_1 = board.createSnip(
+            name='init',
+            cFilePath=os.path.join(snip_dir, 'snip_init.c'),
+            includeDir=snip_dir,
+            funcName='init_1',
+            phase=Phase.EMBEDDED_INIT,
+            lmtId=1,
+            chipId=0)
+
+        # Reset SNIP
+        board.createProcess(
+            name='reset',
+            cFilePath=os.path.join(snip_dir, 'snip_reset.c'),
+            includeDir=snip_dir,
+            guardName='do_reset',
+            funcName='reset',
+            phase='mgmt',
+            lmtId=1,
+            chipId=0)
+
+        # Configure channels.
+        channel_init_ch0_1 = board.createChannel(
+            bytes('channel_init_ch0_1', 'utf-8'), 'int', 3)
+        channel_init_ch0_1.connect(None, snip_init_1)
+
+        board.start()
+
+        num_cores = sum([board.n2Chips[i].numCores
+                         for i in range(board.numChips)])
+
+        channel_init_ch0_1.write(3, [num_cores, self._num_timesteps, 1])
+
+        board.sync = False
+
+        # from nxsdk.logutils.nxlogging import set_verbosity, LoggingLevel
+        # set_verbosity(LoggingLevel.ERROR)
+
 
 def get_shape_from_label(label):
     """
@@ -416,6 +478,9 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
         (8 * 1e9) for layer in parsed_model.layers if len(layer.weights) > 0]
     size_str = ['{:.2f}'.format(s) for s in sizes]
     print("INFO: Need {} GB for layer activations.\n".format(size_str))
+
+    do_overflow_estimate = config.getboolean('loihi', 'do_overflow_estimate',
+                                             fallback=True)
 
     batch_size = config.getint('simulation', 'batch_size')
 
@@ -464,7 +529,8 @@ def normalize_loihi_network(parsed_model, config, **kwargs):
             weights, biases = to_integer(weights, biases, num_weight_bits)
             weights = \
                 weights * _weight_gain * 2 ** (weight_exponent + prev_scale)
-            check_q_overflow(weights, 1 / desired_threshold_to_input_ratio)
+            if do_overflow_estimate:
+                check_q_overflow(weights, 1 / desired_threshold_to_input_ratio)
             layer.set_weights([weights, biases * 2 ** bias_exponent])
 
         # Need to remove softmax in output layer to get activations above 1.
