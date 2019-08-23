@@ -126,13 +126,6 @@ class SNN(AbstractSNN):
             weights, biases = layer.get_weights()
             weights, biases = to_integer(weights, biases, self.num_weight_bits)
 
-            if 'Flatten' in self._previous_layer_name:
-                pl = self.parsed_model.get_layer(self._previous_layer_name)
-                shape = pl.input_shape[1:]
-                permutation = np.ravel(np.reshape(
-                    np.arange(int(np.prod(shape))), shape, 'F'), 'C')
-                weights = weights[permutation]
-
             spike_layer.set_weights([weights, biases])
 
         elif 'AveragePooling' in get_type(layer):
