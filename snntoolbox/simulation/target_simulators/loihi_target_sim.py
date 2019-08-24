@@ -82,6 +82,11 @@ class SNN(AbstractSNN):
         if vp != '':
             layer_kwargs['visualizePartitions'] = vp
 
+        vp = self.config.getboolean('loihi', 'validate_partitions',
+                                    fallback='')
+        if vp != '':
+            layer_kwargs['validatePartitions'] = vp
+
         encoding = self.config.get('loihi', 'synapse_encoding', fallback='')
         if encoding != '':
             layer_kwargs['synapseEncoding'] = encoding
@@ -390,7 +395,7 @@ class SNN(AbstractSNN):
 
         if snip_dir == '':
             snip_dir = os.path.abspath(os.path.join(os.path.dirname(
-                loihi_snn.__file__), '..', 'appss'))
+                loihi_snn.__file__), '..', 'apps'))
 
         if not os.path.exists(snip_dir):
             raise FileNotFoundError
