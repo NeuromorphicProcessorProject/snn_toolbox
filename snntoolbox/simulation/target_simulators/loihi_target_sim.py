@@ -181,8 +181,11 @@ class SNN(AbstractSNN):
         load_partitions_from = self.config.get('loihi', 'load_partitions_from',
                                                fallback=None)
 
-        self.snn.compileModel(loadPartitionFrom=load_partitions_from,
-                              saveOutputTo=save_output_to)
+        load_compiled_partitions_from = self.config.get(
+            'loihi', 'load_compiled_partitions_from', fallback=None)
+
+        self.snn.compileModel(None, load_partitions_from,
+                              load_compiled_partitions_from, save_output_to)
 
         self.set_vars_to_record()
 
