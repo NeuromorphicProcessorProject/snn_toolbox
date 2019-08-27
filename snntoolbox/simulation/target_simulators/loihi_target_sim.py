@@ -185,7 +185,8 @@ class SNN(AbstractSNN):
             'loihi', 'load_compiled_partitions_from', fallback=None)
 
         self.snn.compileModel(None, load_partitions_from,
-                              load_compiled_partitions_from, save_output_to)
+                              load_compiled_partitions_from, save_output_to,
+                              self.partition)
 
         self.set_vars_to_record()
 
@@ -203,11 +204,11 @@ class SNN(AbstractSNN):
 
         lenInterval = 1000
         if self._duration <= lenInterval:
-            self.snn.run(self._duration, partition=self.partition)
+            self.snn.run(self._duration)
         else:
             numIntervals = self._duration // lenInterval
             for _ in range(numIntervals):
-                self.snn.run(lenInterval, partition=self.partition)
+                self.snn.run(lenInterval)
 
         print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.snn.layers)
