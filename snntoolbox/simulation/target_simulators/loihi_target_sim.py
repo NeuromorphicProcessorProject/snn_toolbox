@@ -170,23 +170,19 @@ class SNN(AbstractSNN):
     def compile(self):
 
         logdir = self.config.get('paths', 'log_dir_of_current_run')
+        save_output = self.config.getboolean('loihi', 'save_output',
+                                             fallback=None)
+        try_load_partitions = self.config.getboolean(
+            'loihi', 'try_load_partitions', fallback=None)
+
         input_layer = self._spiking_layers[self.parsed_model.layers[0].name]
         output_layer = self._spiking_layers[self._previous_layer_name]
+
         self.snn = loihi_snn.NxModel(input_layer, output_layer, verbose=True,
-                                     logdir=logdir)
+                                     logdir=logdir, saveOutput=save_output,
+                                     tryLoadPartitions=try_load_partitions)
 
-        save_output_to = logdir if self.config.getboolean(
-            'loihi', 'save_output', fallback=False) else None
-
-        load_partitions_from = self.config.get('loihi', 'load_partitions_from',
-                                               fallback=None)
-
-        load_compiled_partitions_from = self.config.get(
-            'loihi', 'load_compiled_partitions_from', fallback=None)
-
-        self.snn.compileModel(None, load_partitions_from,
-                              load_compiled_partitions_from, save_output_to,
-                              self.partition)
+        self.snn.compileModel(None, self.partition)
 
         self.set_vars_to_record()
 
@@ -384,7 +380,7 @@ class SNN(AbstractSNN):
             self.snn.layers[0][i].phase = 2
 
     def preprocessing(self, **kwargs):
-        if self.config.getboolean('loihi', 'threshold_normalization',
+        if self.config.getboolean('loihi', 'normalize_thresholds',
                                   fallback=True):
             print("\nNormalizing thresholds.")
             self.threshold_scales = normalize_loihi_network(
@@ -440,9 +436,6 @@ class SNN(AbstractSNN):
         channel_init_ch0_1.write(3, [num_cores, self._num_timesteps, 1])
 
         board.sync = False
-
-        # from nxsdk.logutils.nxlogging import set_verbosity, LoggingLevel
-        # set_verbosity(LoggingLevel.ERROR)
 
 
 def get_shape_from_label(label):
