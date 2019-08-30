@@ -40,6 +40,8 @@ class SNN(AbstractSNN):
 
         AbstractSNN.__init__(self, config, queue)
 
+        os.environ['SLURM'] = '1'
+
         self.snn = None
         self._spiking_layers = {}
         self.spike_probes = None
@@ -174,13 +176,19 @@ class SNN(AbstractSNN):
                                              fallback=None)
         try_load_partitions = self.config.getboolean(
             'loihi', 'try_load_partitions', fallback=None)
+        store_all_candidates = self.config.getboolean(
+            'loihi', 'store_all_candidates', fallback=None)
+        num_candidates_to_compute = self.config.getint(
+            'loihi', 'num_candidates_to_compute', fallback=None)
 
         input_layer = self._spiking_layers[self.parsed_model.layers[0].name]
         output_layer = self._spiking_layers[self._previous_layer_name]
 
-        self.snn = loihi_snn.NxModel(input_layer, output_layer, verbose=True,
-                                     logdir=logdir, saveOutput=save_output,
-                                     tryLoadPartitions=try_load_partitions)
+        self.snn = loihi_snn.NxModel(
+            input_layer, output_layer, verbose=True, logdir=logdir,
+            saveOutput=save_output, tryLoadPartitions=try_load_partitions,
+            storeAllCandidates=store_all_candidates,
+            numCandidatesToCompute=num_candidates_to_compute)
 
         self.snn.compileModel(None, self.partition)
 
