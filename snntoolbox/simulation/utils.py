@@ -1134,6 +1134,11 @@ class AbstractSNN:
         return avg_rate
 
     def preprocessing(self, **kwargs):
+        """
+
+        :param kwargs:
+        """
+
         pass
 
 
