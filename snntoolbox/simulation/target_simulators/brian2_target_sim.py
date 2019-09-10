@@ -64,7 +64,7 @@ class SNN(AbstractSNN):
         self.connections = []  # Final container for all layers.
         self.threshold = 'v >= v_thresh'
         self.v_reset = 'v = v_reset'
-        self.eqs = 'v = : 1'
+        self.eqs = 'v : 1'
         self.spikemonitors = []
         self.statemonitors = []
         self.snn = None
@@ -97,8 +97,8 @@ class SNN(AbstractSNN):
 
         self._conns = []
         self.layers.append(self.sim.NeuronGroup(
-            np.prod(layer.output_shape[1:]), self.eqs, 'linear', self.threshold,
-            self.v_reset, dt=self._dt*self.sim.ms))
+            np.prod(layer.output_shape[1:]), model=self.eqs, method='linear',
+            reset=self.v_reset, threshold=self.threshold, dt=self._dt * self.sim.ms))
         self.connections.append(self.sim.Synapses(
             self.layers[-2], self.layers[-1], 'w:1', on_pre='v+=w',
             dt=self._dt*self.sim.ms))
@@ -207,7 +207,7 @@ class SNN(AbstractSNN):
 
     def save(self, path, filename):
         from snntoolbox.utils.utils import confirm_overwrite
-        
+
         print("Saving weights ...")
         for i,  connection in enumerate(self.connections):
             filepath = os.path.join(path, self.config.get('paths', 'filename_snn'), 'brian2-model', self.layers[i+1].label + '.npz')
@@ -222,7 +222,7 @@ class SNN(AbstractSNN):
         import keras
         from snntoolbox.parsing.utils import get_type
         from snntoolbox.simulation.utils import get_ann_ops
-        
+
         dirpath = os.path.join(path, filename, 'brian2-model')
         npz_files = [f for f in sorted(os.listdir(dirpath)) if os.path.isfile(os.path.join(dirpath, f))]
         print("Loading spiking model...")
@@ -251,7 +251,7 @@ class SNN(AbstractSNN):
             print("Using layer-weights stored in: {}".format(filepath))
             print("Loading stored weights...")
             input_file = np.load(filepath)
-            input_weight = input_file['arr_0'] 
+            input_weight = input_file['arr_0']
             if layer_type == 'Dense':
                 self.build_dense(layer, input_weight=input_weight)
             elif layer_type == 'Conv2D':
