@@ -1252,7 +1252,16 @@ def build_convolution(layer, delay, transpose_kernel=False):
         Flattened array containing the biases of all neurons in the ``layer``.
     """
 
-    weights, biases = layer.get_weights()
+    all_weights = layer.get_weights()
+    if len(all_weights) == 2:
+        weights, biases = all_weights
+    elif len(all_weights) == 3:
+        weights, biases, masks = all_weights
+        weights = weights * masks
+    else:
+        raise ValueError("Layer {} was expected to contain "
+                         "weights, biases and, in rare cases,"
+                         "masks.".format(layer.name))
 
     if transpose_kernel:
         from keras.utils.conv_utils import convert_kernel
@@ -1350,7 +1359,16 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
         Flattened array containing the biases of all neurons in the ``layer``.
     """
 
-    weights, biases = layer.get_weights()
+    all_weights = layer.get_weights()
+    if len(all_weights) == 2:
+        weights, biases = all_weights
+    elif len(all_weights) == 3:
+        weights, biases, masks = all_weights
+        weights = weights * masks
+    else:
+        raise ValueError("Layer {} was expected to contain "
+                         "weights, biases and, in rare cases,"
+                         "masks.".format(layer.name))
 
     if transpose_kernel:
         from keras.utils.conv_utils import convert_kernel

@@ -59,9 +59,10 @@ class SNN(PYSNN):
                     (layer.name, get_shape_from_label(self.layers[-1].label)))
                 self.build_flatten(layer)
                 continue
-            if layer_type == 'Dense':
+            if layer_type == ['Dense', 'Sparse']:
                 self.build_dense(layer)
-            elif layer_type in {'Conv1D', 'Conv2D', 'DepthwiseConv2D'}:
+            elif layer_type in {'Conv1D', 'Conv2D', 'DepthwiseConv2D',
+                                'SparseConv2D', 'SparseDepthwiseConv2D'}:
                 self.build_convolution(layer)
                 self.data_format = layer.data_format
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
@@ -120,12 +121,17 @@ class SNN(PYSNN):
         if layer.activation.__name__ == 'softmax':
             warnings.warn("Activation 'softmax' not implemented. Using 'relu' "
                           "activation instead.", RuntimeWarning)
-
-        weights, biases = layer.get_weights()
+        all_weights = layer.get_weights()
+        if len(all_weights) == 2:
+            weights, biases = all_weights
+        elif len(all_weights) == 3:
+            weights, biases, masks = all_weights
+            weights = weights * masks
+        else:
+            raise ValueError("Layer {} was expected to contain "
+                             "weights, biases and, in rare cases,"
+                             "masks.".format(layer.name))
         weights = self.scale_weights(weights)
-
-        exc_connections = []
-        inh_connections = []
 
         n = int(np.prod(layer.output_shape[1:]) / len(biases))
         biases = np.repeat(biases, n).astype('float64')
@@ -164,8 +170,9 @@ class SNN(PYSNN):
                     #weights = np.flatten(weights)
                 else:
                     print(
-                        "The input weight matrix did not have the expected dimensions")
-
+                        "The input weight matrix did not have the expected dimesnions")
+            exc_connections = []
+            inh_connections = []
             for i in range(weights.shape[0]):  # Input neurons
                 # Sweep across channel axis of feature map. Assumes that each
                 # consecutive input neuron lies in a different channel. This is
@@ -262,14 +269,20 @@ class SNN(PYSNN):
         transpose_kernel = \
             self.config.get('simulation', 'keras_backend') == 'tensorflow'
 
-        if get_type(layer) == 'Conv2D':
+        if get_type(layer) in ['Conv2D', 'SparseConv2D']:
             weights, biases = build_convolution(layer, delay, transpose_kernel)
-        elif get_type(layer) == 'DepthwiseConv2D':
+        elif get_type(layer) in ['DepthwiseConv2D', 'SparseDepthwiseConv2D']:
             weights, biases = build_depthwise_convolution(
                 layer, delay, transpose_kernel)
-        if get_type(layer) == 'Conv1D':
+        elif get_type(layer) == 'Conv1D':
             weights, biases = build_1D_convolution(
                 layer, delay, transpose_kernel)
+        else:
+            ValueError("Layer {} of type {} unrecognised here. "
+                       "How did you get into this function?".format(
+                           layer.name, get_type(layer)
+                       ))
+
         self.set_biases(biases)
         weights = self.scale_weights(weights)
 
@@ -430,6 +443,6 @@ class SNN(PYSNN):
             print("There was a problem with serialisation.")
         self.sim.run(runtime)
         print("\nCollecting results...")
-        output_b_l_t = self(self.layers)
+        output_b_l_t = self.get_recorded_vars(self.layers)
 
         return output_b_l_t

@@ -111,7 +111,7 @@ class AbstractModelParser:
         name_map = {}
         idx = 0
         inserted_flatten = False
-        for layer in layers:
+        for lid, layer in enumerate(layers):
             layer_type = self.get_type(layer)
 
             # Absorb BatchNormalization layer into parameters of previous layer
@@ -129,12 +129,30 @@ class AbstractModelParser:
                 prev_layer_type = self.get_type(prev_layer)
                 print("Absorbing batch-normalization parameters into " +
                       "parameters of previous {}.".format(prev_layer_type))
-                axis = -2 if prev_layer_type == 'DepthwiseConv2D' else axis
-                args = parameters + parameters_bn
+                _depthwise_conv_names = ['DepthwiseConv2D',
+                                         'SparseDepthwiseConv2D']
+                axis = -2 if prev_layer_type in _depthwise_conv_names else axis
+                if (self._layer_list[prev_layer_idx]['layer_type'] in
+                        ['Sparse', 'SparseConv2D', 'SparseDepthwiseConv2D']):
+                    args = [parameters[0], parameters[2]] + parameters_bn
+                else:
+                    args = parameters[:2] + parameters_bn
                 kwargs = {'axis': axis, 'image_data_format':
                     keras.backend.image_data_format()}
-                self._layer_list[prev_layer_idx]['parameters'] = \
-                    absorb_bn_parameters(*args, **kwargs)
+
+
+                params_to_absorb = absorb_bn_parameters(*args, **kwargs)
+                # is the layer in questions sparse?
+                if (self._layer_list[prev_layer_idx]['layer_type'] in
+                        ['Sparse', 'SparseConv2D', 'SparseDepthwiseConv2D']):
+                    # then you also need to save the mask associated with it
+                    params_to_absorb = (params_to_absorb[0],
+                                        params_to_absorb[1],
+                                        parameters[1]
+                                        )
+
+                self._layer_list[prev_layer_idx]['parameters'] = params_to_absorb
+
 
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
@@ -189,11 +207,47 @@ class AbstractModelParser:
             if layer_type == 'Dense':
                 self.parse_dense(layer, attributes)
 
+            if layer_type == 'Sparse':
+                self.parse_sparse(layer, attributes)
+
             if layer_type in {'Conv1D', 'Conv2D'}:
                 self.parse_convolution(layer, attributes)
 
+            if layer_type == 'SparseConv2D':
+                self.parse_sparse_convolution(layer, attributes)
+
             if layer_type == 'DepthwiseConv2D':
                 self.parse_depthwiseconvolution(layer, attributes)
+
+            if layer_type == 'SparseDepthwiseConv2D':
+                self.parse_sparse_depthwiseconvolution(layer, attributes)
+
+            if layer_type in ['Sparse', 'SparseConv2D', 'SparseDepthwiseConv2D']:
+                weights, bias, mask = attributes['parameters']
+                if self.config.getboolean('cell', 'binarize_weights'):
+                    from snntoolbox.utils.utils import binarize
+                    print("Binarizing weights.")
+                    weights = binarize(weights)
+                elif self.config.getboolean('cell', 'quantize_weights'):
+                    assert 'Qm.f' in attributes, \
+                        "In the [cell] section of the configuration file, " \
+                        "'quantize_weights' was set to True. For this to " \
+                        "work, the layer needs to specify the fixed point " \
+                        "number format 'Qm.f'."
+                    from snntoolbox.utils.utils import reduce_precision
+                    m, f = attributes.get('Qm.f')
+                    print("Quantizing weights to Q{}.{}.".format(m, f))
+                    weights = reduce_precision(weights, m, f)
+                    if attributes.get('quantize_bias', False):
+                        bias = reduce_precision(bias, m, f)
+                attributes['parameters'] = (weights, bias, mask)
+                # These attributes are not needed any longer and would not be
+                # understood by Keras when building the parsed model.
+                attributes.pop('quantize_bias', None)
+                attributes.pop('Qm.f', None)
+
+                self.absorb_activation(layer, attributes)
+
 
             if layer_type in {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D'}:
                 weights, bias = attributes['parameters']
@@ -362,7 +416,7 @@ class AbstractModelParser:
         self._layers_to_skip: List[str]
         """
 
-        return ['BatchNormalization', 'Activation', 'ReLU', 'Dropout']
+        return ['BatchNormalization', 'Activation', 'Dropout', 'ReLU']
 
     @abstractmethod
     def has_weights(self, layer):
@@ -668,7 +722,13 @@ class AbstractModelParser:
                 layer['weights'] = layer.pop('parameters')
 
             # Add layer
-            parsed_layer = getattr(keras.layers, layer.pop('layer_type'))
+            try:
+                _x = layer.pop('layer_type')
+                parsed_layer = getattr(keras.layers, _x)
+            except AttributeError as e:
+                print(e, file=sys.stderr)
+                import dnns
+                parsed_layer = getattr(dnns, _x)
 
             inbound = [parsed_layers[inb] for inb in layer.pop('inbound')]
             if len(inbound) == 1:

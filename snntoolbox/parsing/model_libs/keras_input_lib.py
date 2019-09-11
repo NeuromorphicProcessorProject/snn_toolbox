@@ -7,6 +7,7 @@
 import numpy as np
 
 from snntoolbox.parsing.utils import AbstractModelParser
+import keras.backend as K
 
 
 class ModelParser(AbstractModelParser):
@@ -55,17 +56,31 @@ class ModelParser(AbstractModelParser):
     def get_output_shape(self, layer):
         return layer.output_shape
 
+    def parse_sparse(self, layer, attributes):
+        # attributes['mask'] = K.get_value(layer.mask)
+        return self.parse_dense(layer, attributes)
+
     def parse_dense(self, layer, attributes):
         attributes['parameters'] = layer.get_weights()
         if layer.bias is None:
             attributes['parameters'].append(np.zeros(layer.output_shape[-1]))
             attributes['use_bias'] = True
 
+    def parse_sparse_convolution(self, layer, attributes):
+        # attributes['mask'] = K.get_value(layer.mask)
+        return self.parse_convolution(layer, attributes)
+
     def parse_convolution(self, layer, attributes):
         attributes['parameters'] = layer.get_weights()
         if layer.bias is None:
             attributes['parameters'].append(np.zeros(layer.filters))
             attributes['use_bias'] = True
+
+
+    def parse_sparse_depthwiseconvolution(self, layer, attributes):
+        # attributes['mask'] = K.get_value(layer.mask)
+        return self.parse_depthwiseconvolution(layer, attributes)
+
 
     def parse_depthwiseconvolution(self, layer, attributes):
         #Assumes channels last
@@ -135,18 +150,24 @@ def load(path, filename, **kwargs):
         model.compile('sgd', 'categorical_crossentropy',
                       ['accuracy', metrics.top_k_categorical_accuracy])
     else:
-        from snntoolbox.parsing.utils import get_custom_activations_dict
+        from snntoolbox.parsing.utils import get_custom_activations_dict, \
+            assemble_custom_dict, get_custom_layers_dict
         filepath_custom_objects = kwargs.get('filepath_custom_objects', None)
         if filepath_custom_objects is not None:
             filepath_custom_objects = str(filepath_custom_objects)  # python 2
+
+        custom_dicts = assemble_custom_dict(
+            get_custom_activations_dict(filepath_custom_objects),
+            get_custom_layers_dict())
         try:
             model = models.load_model(
                 filepath + '.h5',
-                get_custom_activations_dict(filepath_custom_objects))
-        except:
+                custom_dicts)
+        except OSError as e:
+            print(e)
             model = models.load_model(
                 filepath,
-                get_custom_activations_dict(filepath_custom_objects))
+                custom_dicts)
         model.compile(model.optimizer, model.loss,
                       ['accuracy', metrics.top_k_categorical_accuracy])
     
