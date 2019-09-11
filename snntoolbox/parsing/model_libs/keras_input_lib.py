@@ -168,8 +168,8 @@ def load(path, filename, **kwargs):
             model = models.load_model(
                 filepath,
                 custom_dicts)
-        model.compile(model.optimizer, model.loss,
-                      ['accuracy', metrics.top_k_categorical_accuracy])
+        # model.compile(model.optimizer, model.loss,
+        #               ['accuracy', metrics.top_k_categorical_accuracy])
     
     model.summary()
     return {'model': model, 'val_fn': model.evaluate}
