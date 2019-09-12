@@ -74,7 +74,8 @@ def test_full(config, queue=None):
                                   config.get('input', 'model_lib') +
                                   '_input_lib')
         input_model = model_lib.load(config.get('paths', 'path_wd'),
-                                     config.get('paths', 'filename_ann'))
+                                     config.get('paths', 'filename_ann'),
+                                     config=config)
 
         # Evaluate input model.
         if config.getboolean('tools', 'evaluate_ann') and not is_stop(queue):

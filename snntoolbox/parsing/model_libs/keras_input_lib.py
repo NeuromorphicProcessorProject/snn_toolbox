@@ -76,17 +76,15 @@ class ModelParser(AbstractModelParser):
             attributes['parameters'].append(np.zeros(layer.filters))
             attributes['use_bias'] = True
 
-
     def parse_sparse_depthwiseconvolution(self, layer, attributes):
         # attributes['mask'] = K.get_value(layer.mask)
         return self.parse_depthwiseconvolution(layer, attributes)
 
-
     def parse_depthwiseconvolution(self, layer, attributes):
-        #Assumes channels last
+        # Assumes channels last
         attributes['parameters'] = layer.get_weights()
         if layer.bias is None:
-            attributes['parameters'].append(np.zeros(layer.depth_multiplier*
+            attributes['parameters'].append(np.zeros(layer.depth_multiplier *
                                                      layer.input_shape[-1]))
             attributes['use_bias'] = True
 
@@ -159,6 +157,11 @@ def load(path, filename, **kwargs):
         custom_dicts = assemble_custom_dict(
             get_custom_activations_dict(filepath_custom_objects),
             get_custom_layers_dict())
+        if "config" in kwargs.keys():
+            custom_dicts_path = kwargs['config'].get('paths', 'filepath_custom_objects')
+            custom_dicts = assemble_custom_dict(
+                custom_dicts,
+                get_custom_activations_dict(custom_dicts_path))
         try:
             model = models.load_model(
                 filepath + '.h5',
@@ -170,7 +173,7 @@ def load(path, filename, **kwargs):
                 custom_dicts)
         # model.compile(model.optimizer, model.loss,
         #               ['accuracy', metrics.top_k_categorical_accuracy])
-    
+
     model.summary()
     return {'model': model, 'val_fn': model.evaluate}
 
