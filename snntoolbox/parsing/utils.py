@@ -679,8 +679,8 @@ class AbstractModelParser:
             self._layer_list[-1]['name']])
         # Optimizer and loss do not matter because we only do inference.
         self.parsed_model.compile(
-            'sgd', 'categorical_crossentropy',
-            ['accuracy', keras.metrics.top_k_categorical_accuracy])
+            'sgd', 'categorical_crossentropy', self.input_model.metrics)
+            # ['accuracy', keras.metrics.top_k_categorical_accuracy])
         # Todo: Enable adding custom metric via self.input_model.metrics.
 
         return self.parsed_model
