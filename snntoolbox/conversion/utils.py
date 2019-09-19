@@ -169,6 +169,10 @@ def normalize_parameters(model, config, **kwargs):
                 offset += f_out
             parameters_norm.append(parameters[1] / scale_fac)  # Append bias
 
+        # Check if the layer happens to be Sparse
+        # if the layer is sparse, add the mask to the list of parameters
+        if len(parameters) == 3:
+            parameters_norm.append(parameters[-1])
         # Update model with modified parameters
         layer.set_weights(parameters_norm)
 
