@@ -299,10 +299,11 @@ def update_setup(config_filepath):
         "appropriately in the keras config file.".format(keras_backend,
                                                          k.backend())
     if keras_backend == 'tensorflow':
+        import tensorflow as tf
         # Limit GPU usage of tensorflow.
-        tf_config = k.tf.ConfigProto()
+        tf_config =tf.ConfigProto()
         tf_config.gpu_options.allow_growth = True
-        k.tensorflow_backend.set_session(k.tf.Session(config=tf_config))
+        k.tensorflow_backend.set_session(tf.Session(config=tf_config))
 
     # Name of input file must be given.
     filename_ann = config.get('paths', 'filename_ann')
