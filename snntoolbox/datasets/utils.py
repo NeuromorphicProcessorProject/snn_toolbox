@@ -18,6 +18,7 @@ from __future__ import print_function, unicode_literals
 
 import json
 import os
+from configparser import NoOptionError
 
 import numpy as np
 from future import standard_library
@@ -69,8 +70,8 @@ def get_dataset(config):
                 'x_test': x_test[:num_to_test],
                 'y_test': y_test[:num_to_test]}
             return None, testset
-    except:
-        pass
+    except NoOptionError as e:
+        print("Warning:", e)
     # ________________________________ npz ____________________________________#
     if config.get('input', 'dataset_format') == 'npz':
         print("Loading data set from '.npz' files in {}.\n".format(

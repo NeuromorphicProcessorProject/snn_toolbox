@@ -132,6 +132,8 @@ def normalize_parameters(model, config, **kwargs):
         if len(layer.weights) == 0:
             continue
 
+        print("="*50)
+        print("Looking at layer ", layer.name)
         # Scale parameters
         parameters = layer.get_weights()
         if layer.activation.__name__ == 'softmax':

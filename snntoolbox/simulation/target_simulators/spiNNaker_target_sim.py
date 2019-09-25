@@ -64,7 +64,7 @@ class SNN(PYSNN):
                     (layer.name, get_shape_from_label(self.layers[-1].label)))
                 self.build_flatten(layer)
                 continue
-            if layer_type == ['Dense', 'Sparse']:
+            if layer_type in {'Dense', 'Sparse'}:
                 self.build_dense(layer)
             elif layer_type in {'Conv2D', 'DepthwiseConv2D',
                                 'SparseConv2D', 'SparseDepthwiseConv2D'}:
@@ -132,6 +132,8 @@ class SNN(PYSNN):
         elif len(all_weights) == 3:
             weights, biases, masks = all_weights
             weights = weights * masks
+            print("Building a Sparse layer having", np.count_nonzero(masks),
+                  "non-zero entries in its mask")
         else:
             raise ValueError("Layer {} was expected to contain "
                              "weights, biases and, in rare cases,"
