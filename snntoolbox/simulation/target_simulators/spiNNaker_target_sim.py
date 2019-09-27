@@ -430,19 +430,20 @@ class SNN(PYSNN):
         current_time = pylab.datetime.datetime.now().strftime("_%H%M%S_%d%m%Y")
 
         runtime = self._duration - self._dt
+        runlabel = self.config.get("paths", "runlabel")
+        
         try:
             from pynn_object_serialisation.functions import intercept_simulator
             intercept_simulator(
                 self.sim,
-                "snn_toolbox_spinnaker_" +
-                current_time,
+                runlabel + "_serialised",
                 post_abort=False,
                 custom_params={
                     'runtime': runtime})
         except Exception:
             print("There was a problem with serialisation.")
-        self.sim.run(runtime)
-        print("\nCollecting results...")
-        output_b_l_t = self.get_recorded_vars(self.layers)
+        #self.sim.run(runtime)
+        #print("\nCollecting results...")
+        #output_b_l_t = self.get_recorded_vars(self.layers)
 
-        return output_b_l_t
+        return #output_b_l_t
