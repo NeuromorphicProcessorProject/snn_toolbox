@@ -173,7 +173,7 @@ class AbstractSNN:
         self._mem_container_counter = None
         self._spiketrains_container_counter = None
 
-        self.data_format = None
+        self.data_format = "channels_last"
 
         self.flatten_shapes = []
 
@@ -601,7 +601,9 @@ class AbstractSNN:
             # of the simulation.
             print("\nStarting new simulation...\n")
             output_b_l_t = self.simulate(**data_batch_kwargs)
-
+            if self.config.getboolean('tools', 'serialise_only'):
+                import sys
+                sys.exit()
             # Get classification result by comparing the guessed class (i.e. the
             # index of the neuron in the last layer which spiked most) to the
             # ground truth.
