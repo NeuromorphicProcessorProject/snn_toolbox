@@ -136,14 +136,16 @@ class SNN(AbstractSNN):
         self.set_biases()
 
         print("Connecting layer...")
-        for conn in self._conns:
-            i = conn[0]
-            j = conn[1]
-            self.connections[-1].connect(i=i, j=j)
-        if input_weight is not None:
-            self.connections[-1].w = input_weight.flatten()
+	
+        np_conns = np.array(self._conns)
+
+        self.connections[-1].connect(i=np_conns[:, 0].astype('int64'),
+	j=np_conns[:, 1].astype('int64'))
+	
+        if input_weight is None:
+            self.connections[-1].w = np_conns[:, 2]
         else:
-            self.connections[-1].w[i, j] = conn[2]
+            self.connections[-1].w = input_weight.flatten()
 
     def build_pooling(self, layer, input_weight=None):
         from snntoolbox.simulation.utils import build_pooling
