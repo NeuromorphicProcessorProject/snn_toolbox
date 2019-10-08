@@ -4,10 +4,12 @@
 @author: rbodo
 """
 
+import os
 import lasagne
 import numpy as np
 
 from snntoolbox.parsing.utils import AbstractModelParser, padding_string
+from snntoolbox.utils.utils import import_script
 
 
 class ModelParser(AbstractModelParser):
@@ -90,12 +92,11 @@ class ModelParser(AbstractModelParser):
         attributes['units'] = layer.num_units
 
     def parse_convolution(self, layer, attributes):
-        from keras.utils.conv_utils import convert_kernel
         weights = layer.W.get_value()
         weights = np.transpose(weights, (2, 3, 1, 0))
         import keras
         if keras.backend.backend() != 'theano':  # Assumes lasagne uses theano.
-            weights = convert_kernel(weights)
+            weights = keras.utils.conv_utils.convert_kernel(weights)
         bias = layer.b.get_value()
         if bias is None:
             bias = np.zeros(layer.num_filters)
@@ -156,9 +157,6 @@ def load(path, filename):
             Function that allows evaluating the original model.
     """
 
-    import os
-    from snntoolbox.utils.utils import import_script
-
     filepath = os.path.join(path, filename)
 
     mod = import_script(path, filename)
@@ -170,7 +168,6 @@ def load(path, filename):
                              encoding='latin1')['param values']
     else:
         print("Loading parameters from .h5 file.")
-        from snntoolbox.parsing.utils import load_parameters
         params = load_parameters(filepath + '.h5')
     lasagne.layers.set_all_param_values(model['model'], params)
 
@@ -227,3 +224,38 @@ def evaluate(val_fn, batch_size, num_to_test, x_test=None, y_test=None,
     print("Test accuracy: {:.2%}\n".format(acc))
 
     return acc
+
+
+def load_parameters(filepath):
+    """Load all layer parameters from an HDF5 file."""
+
+    import h5py
+
+    f = h5py.File(filepath, 'r')
+
+    params = []
+    for k in sorted(f.keys()):
+        params.append(np.array(f.get(k)))
+
+    f.close()
+
+    return params
+
+
+def save_parameters(params, filepath, fileformat='h5'):
+    """Save all layer parameters to an HDF5 file."""
+
+    if fileformat == 'pkl':
+        import pickle
+        pickle.dump(params, open(filepath + '.pkl', str('wb')))
+    else:
+        import h5py
+        with h5py.File(filepath, mode='w') as f:
+            for i, p in enumerate(params):
+                if i < 10:
+                    j = '00' + str(i)
+                elif i < 100:
+                    j = '0' + str(i)
+                else:
+                    j = str(i)
+                f.create_dataset('param_'+j, data=p)

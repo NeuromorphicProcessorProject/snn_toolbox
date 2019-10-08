@@ -75,8 +75,8 @@ setup(
 
     install_requires=[
         'future',
-        'keras',
-        'h5py'
+        'numpy',
+        'keras'
     ],
 
     setup_requires=['pytest-runner'],

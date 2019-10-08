@@ -571,3 +571,13 @@ def apply_modifications(model, custom_objects=None):
         return keras.models.load_model(model_path, custom_objects)
     finally:
         os.remove(model_path)
+
+
+def import_configparser():
+    try:
+        import configparser
+    except ImportError:
+        # noinspection PyPep8Naming
+        import ConfigParser as configparser
+
+    return configparser

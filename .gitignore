@@ -1,6 +1,7 @@
 # Logs and databases #
 ######################
 examples/models/**/log
+temp
 
 # Builds #
 ##########

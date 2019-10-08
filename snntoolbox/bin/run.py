@@ -14,7 +14,7 @@ import argparse
 import os
 
 
-def main():
+def main(filepath):
     """Entry point for running the toolbox.
 
     Note
@@ -35,10 +35,11 @@ def main():
                              'Omit this flag to open GUI.')
     args = parser.parse_args()
 
-    filepath = os.path.abspath(args.config_filepath)
-    #filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/lenet5/keras/config'
+    # filepath = os.path.abspath(args.config_filepath)
+    # filepath = 'C:/Users/bodor/PycharmProjects/snn_toolbox/examples/models/lenet5/keras/config'
+    # filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/lenet5/keras/config'
     #filepath = '/home/rbodo/.snntoolbox/data/mnist/cnn/lenet5/keras/32bit/log/gui/14/config'
-    #args.terminal = True
+    args.terminal = True
     if filepath is not None:
         assert os.path.isfile(filepath), \
             "Configuration file not found at {}.".format(filepath)

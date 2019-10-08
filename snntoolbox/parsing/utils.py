@@ -770,41 +770,6 @@ def padding_string(pad, pool_size):
     return padding
 
 
-def load_parameters(filepath):
-    """Load all layer parameters from an HDF5 file."""
-
-    import h5py
-
-    f = h5py.File(filepath, 'r')
-
-    params = []
-    for k in sorted(f.keys()):
-        params.append(np.array(f.get(k)))
-
-    f.close()
-
-    return params
-
-
-def save_parameters(params, filepath, fileformat='h5'):
-    """Save all layer parameters to an HDF5 file."""
-
-    if fileformat == 'pkl':
-        import pickle
-        pickle.dump(params, open(filepath + '.pkl', str('wb')))
-    else:
-        import h5py
-        with h5py.File(filepath, mode='w') as f:
-            for i, p in enumerate(params):
-                if i < 10:
-                    j = '00' + str(i)
-                elif i < 100:
-                    j = '0' + str(i)
-                else:
-                    j = str(i)
-                f.create_dataset('param_'+j, data=p)
-
-
 def has_weights(layer):
     """Return ``True`` if layer has weights.
 

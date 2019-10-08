@@ -231,13 +231,8 @@ def load_config(filepath):
     Load a config file from ``filepath``.
     """
 
-    try:
-        import configparser
-    except ImportError:
-        # noinspection PyPep8Naming
-        import ConfigParser as configparser
-        # noinspection PyUnboundLocalVariable
-        configparser = configparser
+    from snntoolbox.utils.utils import import_configparser
+    configparser = import_configparser()
 
     assert os.path.isfile(filepath), \
         "Configuration file not found at {}.".format(filepath)
@@ -341,20 +336,6 @@ def update_setup(config_filepath):
         h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
         assert os.path.isfile(h5_filepath), \
             "File {} not found.".format(h5_filepath)
-        json_file = filename_ann + '.json'
-        if not os.path.isfile(os.path.join(path_wd, json_file)):
-            import keras
-            import h5py
-            from snntoolbox.parsing.utils import get_custom_activations_dict
-            # Remove optimizer_weights here, because they may cause the
-            # load_model method to fail if the network was trained on a
-            # different platform or keras version
-            # (see https://github.com/fchollet/keras/issues/4044).
-            with h5py.File(h5_filepath, 'a') as f:
-                if 'optimizer_weights' in f.keys():
-                    del f['optimizer_weights']
-            # Try loading the model.
-            keras.models.load_model(str(h5_filepath), get_custom_activations_dict())
     elif model_lib == 'lasagne':
         h5_filepath = os.path.join(path_wd, filename_ann + '.h5')
         pkl_filepath = os.path.join(path_wd, filename_ann + '.pkl')
