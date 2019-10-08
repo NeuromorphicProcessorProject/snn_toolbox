@@ -1,15 +1,15 @@
 [paths]
 dataset_path = %(path_wd)s/../../../datasets/mnist
-filename_ann = 98.96
+filename_ann = 98.43
 
 [tools]
 evaluate_ann = True
 
 [simulation]
 simulator = INI
-duration = 30
-num_to_test = 10
-batch_size = 1
+duration = 100
+num_to_test = 100
+batch_size = 10
 keras_backend = tensorflow
 
 [input]

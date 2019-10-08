@@ -112,8 +112,8 @@ class SNN(AbstractSNN):
                 bias = keras.backend.get_value(layer.bias) * self._dt
                 keras.backend.set_value(layer.bias, bias)
                 if self.config.getboolean('cell', 'bias_relaxation'):
-                    keras.backend.set_value(layer.b0,
-                                            keras.backend.get_value(layer.bias))
+                    keras.backend.set_value(
+                        layer.b0, keras.backend.get_value(layer.bias))
 
     def simulate(self, **kwargs):
 
@@ -124,6 +124,8 @@ class SNN(AbstractSNN):
 
         output_b_l_t = np.zeros((self.batch_size, self.num_classes,
                                  self._num_timesteps))
+
+        print("Current accuracy of batch:")
 
         # Loop through simulation time.
         self.avg_rate = 0
@@ -186,7 +188,8 @@ class SNN(AbstractSNN):
             if self._poisson_input or self._dataset_format == 'aedat':
                 if self.synaptic_operations_b_t is not None:
                     self.synaptic_operations_b_t[:, sim_step_int] += \
-                        get_layer_synaptic_operations(input_b_l, self.fanout[0])
+                        get_layer_synaptic_operations(input_b_l,
+                                                      self.fanout[0])
             else:
                 if self.neuron_operations_b_t is not None:
                     if sim_step_int == 0:
@@ -207,7 +210,8 @@ class SNN(AbstractSNN):
                 sys.stdout.flush()
 
         if self._dataset_format == 'aedat':
-            remaining_events = len(kwargs[str('dvs_gen')].event_deques_batch[0])
+            remaining_events = \
+                len(kwargs[str('dvs_gen')].event_deques_batch[0])
         elif self._poisson_input and self._num_poisson_events_per_sample > 0:
             remaining_events = self._num_poisson_events_per_sample - \
                 self._input_spikecount
@@ -215,8 +219,8 @@ class SNN(AbstractSNN):
             remaining_events = 0
         if remaining_events > 0:
             print("SNN Toolbox WARNING: Simulation of current batch finished, "
-                  "but {} input events were not processed. Consider increasing "
-                  "the simulation time.".format(remaining_events))
+                  "but {} input events were not processed. Consider "
+                  "increasing the simulation time.".format(remaining_events))
 
         self.avg_rate /= self.batch_size * np.sum(self.num_neurons) * \
             actual_num_timesteps
@@ -237,7 +241,7 @@ class SNN(AbstractSNN):
 
     def save(self, path, filename):
 
-        filepath = os.path.join(path, filename + '.h5')
+        filepath = str(os.path.join(path, filename + '.h5'))
         print("Saving model to {}...\n".format(filepath))
         self.snn.save(filepath, self.config.getboolean('output', 'overwrite'))
 
@@ -255,9 +259,9 @@ class SNN(AbstractSNN):
                 "Loading SNN for INIsim is not supported yet.")
             # Loading does not work anymore because the configparser object
             # needed by the custom layers is not stored when saving the model.
-            # Could be implemented by overriding Keras' save / load methods, but
-            # since converting even large Keras models from scratch is so fast,
-            # there's really no need.
+            # Could be implemented by overriding Keras' save / load methods,
+            # but since converting even large Keras models from scratch is so
+            # fast, there's really no need.
 
     def get_poisson_frame_batch(self, x_b_l):
         """Get a batch of Poisson input spikes.

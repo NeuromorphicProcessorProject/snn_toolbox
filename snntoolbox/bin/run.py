@@ -14,7 +14,7 @@ import argparse
 import os
 
 
-def main(filepath):
+def main(filepath=None):
     """Entry point for running the toolbox.
 
     Note
@@ -24,6 +24,12 @@ def main(filepath):
     executable during :ref:`installation` that can be called from terminal.
 
     """
+    from snntoolbox.bin.utils import update_setup, test_full
+
+    if filepath is not None:
+        config = update_setup(filepath)
+        test_full(config)
+        return
 
     parser = argparse.ArgumentParser(
         description='Run SNN toolbox to convert an analog neural network into '
@@ -35,19 +41,11 @@ def main(filepath):
                              'Omit this flag to open GUI.')
     args = parser.parse_args()
 
-    # filepath = os.path.abspath(args.config_filepath)
-    # filepath = 'C:/Users/bodor/PycharmProjects/snn_toolbox/examples/models/lenet5/keras/config'
-    # filepath = '/mnt/2646BAF446BAC3B9/Repositories/NPP/snn_toolbox/examples/models/lenet5/keras/config'
-    #filepath = '/home/rbodo/.snntoolbox/data/mnist/cnn/lenet5/keras/32bit/log/gui/14/config'
-    args.terminal = True
-    if filepath is not None:
-        assert os.path.isfile(filepath), \
-            "Configuration file not found at {}.".format(filepath)
-        from snntoolbox.bin.utils import update_setup
-        config = update_setup(filepath)
+    _filepath = os.path.abspath(args.config_filepath)
+    if _filepath is not None:
+        config = update_setup(_filepath)
 
         if args.terminal:
-            from snntoolbox.bin.utils import test_full
             test_full(config)
         else:
             from snntoolbox.bin.gui import gui

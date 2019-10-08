@@ -52,6 +52,7 @@ class ModelParser(AbstractModelParser):
             if ax != a:
                 axis = ax
                 break
+        print("Using BatchNorm axis {}.".format(axis))
         return [mean, var_eps_sqrt_inv, gamma, beta, axis]
 
     def get_inbound_layers(self, layer):

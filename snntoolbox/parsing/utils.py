@@ -2,8 +2,8 @@
 """Functions common to input model parsers.
 
 The core of this module is an abstract base class extracts an input model
-written in some neural network library and prepares it for further processing in
-the SNN toolbox.
+written in some neural network library and prepares it for further processing
+in the SNN toolbox.
 
 .. autosummary::
     :nosignatures:
@@ -61,8 +61,8 @@ class AbstractModelParser:
         specifications. Obtained by calling `parse`. Used to build new, parsed
         Keras model.
     _layer_dict: dict
-        Maps the layer names of the specific input model library to our standard
-        names (currently Keras).
+        Maps the layer names of the specific input model library to our
+        standard names (currently Keras).
     parsed_model: keras.models.Model
         The parsed model.
     """
@@ -86,18 +86,19 @@ class AbstractModelParser:
         instantiation of a new, parsed Keras model (done in a later step by
         `build_parsed_model`).
 
-        This function applies several simplifications and adaptations to prepare
-        the model for conversion to spiking. These modifications include:
+        This function applies several simplifications and adaptations to
+        prepare the model for conversion to spiking. These modifications
+        include:
 
         - Removing layers only used during training (Dropout,
           BatchNormalization, ...)
         - Absorbing the parameters of BatchNormalization layers into the
           parameters of the preceeding layer. This does not affect performance
           because batch-norm-parameters are constant at inference time.
-        - Removing ReLU activation layers, because their function is inherent to
-          the spike generation mechanism. The information which nonlinearity was
-          used in the original model is preserved in the ``activation`` key in
-          `_layer_list`. If the output layer employs the softmax function, a
+        - Removing ReLU activation layers, because their function is inherent
+          to the spike generation mechanism. The information which nonlinearity
+          was used in the original model is preserved in the ``activation`` key
+          in `_layer_list`. If the output layer employs the softmax function, a
           spiking version is used when testing the SNN in INIsim or MegaSim
           simulators.
         - Inserting a Flatten layer between Conv and FC layers, if the input
@@ -116,6 +117,7 @@ class AbstractModelParser:
             # Absorb BatchNormalization layer into parameters of previous layer
             if layer_type == 'BatchNormalization':
                 parameters_bn = list(self.get_batchnorm_parameters(layer))
+                parameters_bn, axis = parameters_bn[:-1], parameters_bn[-1]
                 inbound = self.get_inbound_layers_with_parameters(layer)
                 assert len(inbound) == 1, \
                     "Could not find unique layer with parameters " \
@@ -124,22 +126,25 @@ class AbstractModelParser:
                 prev_layer_idx = name_map[str(id(prev_layer))]
                 parameters = list(
                     self._layer_list[prev_layer_idx]['parameters'])
+                prev_layer_type = self.get_type(prev_layer)
                 print("Absorbing batch-normalization parameters into " +
-                      "parameters of previous {}.".format(self.get_type(
-                          prev_layer)))
-                args = parameters + parameters_bn + \
-                    [keras.backend.image_data_format()]
+                      "parameters of previous {}.".format(prev_layer_type))
+                args = parameters + parameters_bn
+                kwargs = {'axis': axis, 'image_data_format':
+                          keras.backend.image_data_format(),
+                          'is_depthwise': prev_layer_type == 'DepthwiseConv2D'}
                 self._layer_list[prev_layer_idx]['parameters'] = \
-                    absorb_bn_parameters(*args)
+                    absorb_bn_parameters(*args, **kwargs)
 
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
                       "plus Flatten.")
-                pool_size = [layer.input_shape[-2], layer.input_shape[-1]]
+                a = 1 if keras.backend.image_data_format() == 'channels_last' \
+                    else 2
                 self._layer_list.append(
                     {'layer_type': 'AveragePooling2D',
                      'name': self.get_name(layer, idx, 'AveragePooling2D'),
-                     'input_shape': layer.input_shape, 'pool_size': pool_size,
+                     'pool_size': (layer.input_shape[a: a + 2]),
                      'inbound': self.get_inbound_names(layer, name_map)})
                 name_map['AveragePooling2D' + str(idx)] = idx
                 idx += 1
@@ -158,7 +163,8 @@ class AbstractModelParser:
                 continue
 
             if not inserted_flatten:
-                inserted_flatten = self.try_insert_flatten(layer, idx, name_map)
+                inserted_flatten = self.try_insert_flatten(layer, idx,
+                                                           name_map)
                 idx += inserted_flatten
 
             print("Parsing layer {}.".format(layer_type))
@@ -186,29 +192,16 @@ class AbstractModelParser:
             if layer_type == 'Conv2D':
                 self.parse_convolution(layer, attributes)
 
-            if layer_type in {'Dense', 'Conv2D'}:
+            if layer_type == 'DepthwiseConv2D':
+                self.parse_depthwiseconvolution(layer, attributes)
+
+            if layer_type in {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D'}:
                 weights, bias = attributes['parameters']
-                if self.config.getboolean('cell', 'binarize_weights'):
-                    from snntoolbox.utils.utils import binarize
-                    print("Binarizing weights.")
-                    weights = binarize(weights)
-                elif self.config.getboolean('cell', 'quantize_weights'):
-                    assert 'Qm.f' in attributes, \
-                        "In the [cell] section of the configuration file, "\
-                        "'quantize_weights' was set to True. For this to " \
-                        "work, the layer needs to specify the fixed point " \
-                        "number format 'Qm.f'."
-                    from snntoolbox.utils.utils import reduce_precision
-                    m, f = attributes.get('Qm.f')
-                    print("Quantizing weights to Q{}.{}.".format(m, f))
-                    weights = reduce_precision(weights, m, f)
-                    if attributes.get('quantize_bias', False):
-                        bias = reduce_precision(bias, m, f)
+
+                weights, bias = modify_parameter_precision(
+                    weights, bias, self.config, attributes)
+
                 attributes['parameters'] = (weights, bias)
-                # These attributes are not needed any longer and would not be
-                # understood by Keras when building the parsed model.
-                attributes.pop('quantize_bias', None)
-                attributes.pop('Qm.f', None)
 
                 self.absorb_activation(layer, attributes)
 
@@ -353,7 +346,7 @@ class AbstractModelParser:
         self._layers_to_skip: List[str]
         """
 
-        return ['BatchNormalization', 'Activation', 'Dropout']
+        return ['BatchNormalization', 'Activation', 'Dropout', 'ReLU']
 
     @abstractmethod
     def has_weights(self, layer):
@@ -402,8 +395,8 @@ class AbstractModelParser:
 
         The format is <layer_num><layer_type>_<layer_shape>.
 
-        >>> # Name of first convolution layer with 32 feature maps and dimension
-        >>> # 64x64:
+        >>> # Name of first convolution layer with 32 feature maps and
+        >>> # dimension 64x64:
         "00Conv2D_32x64x64"
         >>> # Name of final dense layer with 100 units:
         "06Dense_100"
@@ -465,7 +458,8 @@ class AbstractModelParser:
         prev_layer_output_shape = self.get_output_shape(previous_layers[0])
         if len(output_shape) < len(prev_layer_output_shape) and \
                 self.get_type(layer) != 'Flatten':
-            assert len(previous_layers) == 1, "Layer to flatten must be unique."
+            assert len(previous_layers) == 1, \
+                "Layer to flatten must be unique."
             print("Inserting layer Flatten.")
             num_str = str(idx) if idx > 9 else '0' + str(idx)
             shape_string = str(np.prod(prev_layer_output_shape[1:]))
@@ -496,6 +490,21 @@ class AbstractModelParser:
     @abstractmethod
     def parse_convolution(self, layer, attributes):
         """Parse a convolutional layer.
+
+        Parameters
+        ----------
+
+        layer:
+            Layer.
+        attributes: dict
+            The layer attributes as key-value pairs in a dict.
+        """
+
+        pass
+
+    @abstractmethod
+    def parse_depthwiseconvolution(self, layer, attributes):
+        """Parse a depthwise convolution layer.
 
         Parameters
         ----------
@@ -550,9 +559,22 @@ class AbstractModelParser:
                 break
             else:
                 outbound = outbound[0]
+
                 if self.get_type(outbound) == 'Activation':
                     activation_str = self.get_activation(outbound)
                     break
+
+                # Todo: Take into account relu parameters.
+                if self.get_type(outbound) == 'ReLU':
+                    print("Parsing ReLU parameters not yet implemented.")
+                    activation_str = 'relu'
+                    break
+
+                try:
+                    self.get_activation(outbound)
+                    break
+                except AttributeError:
+                    pass
 
         activation, activation_str = get_custom_activation(activation_str)
 
@@ -635,8 +657,8 @@ class AbstractModelParser:
             A Keras model, functionally equivalent to `input_model`.
         """
 
-        img_input = keras.layers.Input(batch_shape=self.get_batch_input_shape(),
-                                       name='input')
+        img_input = keras.layers.Input(
+            batch_shape=self.get_batch_input_shape(), name='input')
         parsed_layers = {'input': img_input}
         print("Building parsed model...\n")
         for layer in self._layer_list:
@@ -659,6 +681,7 @@ class AbstractModelParser:
         self.parsed_model.compile(
             'sgd', 'categorical_crossentropy',
             ['accuracy', keras.metrics.top_k_categorical_accuracy])
+        # Todo: Enable adding custom metric via self.input_model.metrics.
 
         return self.parsed_model
 
@@ -702,13 +725,13 @@ class AbstractModelParser:
 
 
 def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
-                         axis, image_data_format):
+                         axis, image_data_format, is_depthwise=False):
     """
     Absorb the parameters of a batch-normalization layer into the previous
     layer.
     """
 
-    axis = weight.ndim - 1 if axis == -1 else axis
+    axis = weight.ndim + axis if axis < 0 else axis
 
     print("Using BatchNorm axis {}.".format(axis))
 
@@ -718,12 +741,19 @@ def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
     # and layers like [batch_size, channels, height, width] or
     # [batch_size, height, width, channels].
     if weight.ndim == 4:
-        kernel_axes = [None, 3, 0, 1] if image_data_format == 'channels_first' \
-            else [None, 0, 1, 3]
-        layer2kernel_axes_map = {layer_axis: kernel_axis for layer_axis,
-                                 kernel_axis in enumerate(kernel_axes)}
+
+        channel_axis = 2 if is_depthwise else 3
+
+        if image_data_format == 'channels_first':
+            kernel_axes = [None, channel_axis, 0, 1]
+        else:
+            kernel_axes = [None, 0, 1, channel_axis]
+
         # Read: batch axis is mapped nowhere, channel axis is mapped from 1 or
         # 3 to 3, etc.
+        layer2kernel_axes_map = {layer_axis: kernel_axis for layer_axis,
+                                 kernel_axis in enumerate(kernel_axes)}
+
         axis = layer2kernel_axes_map[axis]
 
     broadcast_shape = [1] * weight.ndim
@@ -737,6 +767,32 @@ def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
     weight_bn = weight * gamma * var_eps_sqrt_inv
 
     return weight_bn, bias_bn
+
+
+def modify_parameter_precision(weights, biases, config, attributes):
+    if config.getboolean('cell', 'binarize_weights'):
+        from snntoolbox.utils.utils import binarize
+        print("Binarizing weights.")
+        weights = binarize(weights)
+    elif config.getboolean('cell', 'quantize_weights'):
+        assert 'Qm.f' in attributes, \
+            "In the [cell] section of the configuration file, " \
+            "'quantize_weights' was set to True. For this to " \
+            "work, the layer needs to specify the fixed point " \
+            "number format 'Qm.f'."
+        from snntoolbox.utils.utils import reduce_precision
+        m, f = attributes.get('Qm.f')
+        print("Quantizing weights to Q{}.{}.".format(m, f))
+        weights = reduce_precision(weights, m, f)
+        if attributes.get('quantize_bias', False):
+            biases = reduce_precision(biases, m, f)
+
+    # These attributes are not needed any longer and would not be
+    # understood by Keras when building the parsed model.
+    attributes.pop('quantize_bias', None)
+    attributes.pop('Qm.f', None)
+
+    return weights, biases
 
 
 def padding_string(pad, pool_size):
@@ -756,6 +812,9 @@ def padding_string(pad, pool_size):
     padding: str
         Border mode identifier.
     """
+
+    if isinstance(pad, str):
+        return pad
 
     if pad == (0, 0):
         padding = 'valid'
@@ -966,9 +1025,9 @@ def get_fanout(layer, config):
 
     fanout: Union[int, ndarray]
         Fan-out. The fan-out of a neuron projecting onto a convolution layer
-        varies between neurons in a feature map if the stride of the convolution
-        layer is greater than unity. In this case, return an array of the same
-        shape as the layer.
+        varies between neurons in a feature map if the stride of the
+        convolution layer is greater than unity. In this case, return an array
+        of the same shape as the layer.
     """
 
     from snntoolbox.simulation.utils import get_spiking_outbound_layers
@@ -987,6 +1046,11 @@ def get_fanout(layer, config):
             fanout += next_layer.units
         elif 'Pool' in next_layer.name:
             fanout += 1
+        elif 'DepthwiseConv' in next_layer.name:
+            if has_stride_unity(next_layer):
+                fanout += np.prod(next_layer.kernel_size)
+            else:
+                fanout += get_fanout_array(layer, next_layer, True)
         elif 'Conv' in next_layer.name:
             if has_stride_unity(next_layer):
                 fanout += np.prod(next_layer.kernel_size) * next_layer.filters
@@ -1002,43 +1066,52 @@ def has_stride_unity(layer):
     return all([s == 1 for s in layer.strides])
 
 
-def get_fanout_array(layer_pre, layer_post):
+def get_fanout_array(layer_pre, layer_post, is_depthwise_conv=False):
     """
     Return an array of the same shape as ``layer_pre``, where each entry gives
     the number of outgoing connections of a neuron. In convolution layers where
     the post-synaptic layer has stride > 1, the fan-out varies between neurons.
     """
 
-    nx = layer_post.output_shape[3]  # Width of feature map
-    ny = layer_post.output_shape[2]  # Height of feature map
+    ax = 1 if keras.backend.image_data_format() == 'channels_first' else 0
+
+    nx = layer_post.output_shape[2 + ax]  # Width of feature map
+    ny = layer_post.output_shape[1 + ax]  # Height of feature map
+    nz = layer_post.output_shape[ax]  # Number of channels
     kx, ky = layer_post.kernel_size  # Width and height of kernel
-    px = int((kx - 1) / 2) if layer_post.padding == 'valid' else 0
-    py = int((ky - 1) / 2) if layer_post.padding == 'valid' else 0
+    px = int((kx - 1) / 2) if layer_post.padding == 'same' else 0
+    py = int((ky - 1) / 2) if layer_post.padding == 'same' else 0
     sx = layer_post.strides[1]
     sy = layer_post.strides[0]
 
     fanout = np.zeros(layer_pre.output_shape[1:])
 
-    for x_pre in range(fanout.shape[1]):
-        for y_pre in range(fanout.shape[2]):
+    for y_pre in range(fanout.shape[0 + ax]):
+        y_post = [int((y_pre + py) / sy)]
+        wy = (y_pre + py) % sy
+        i = 1
+        while wy + i * sy < ky:
+            y = y_post[0] - i
+            if 0 <= y < ny:
+                y_post.append(y)
+            i += 1
+        for x_pre in range(fanout.shape[1 + ax]):
             x_post = [int((x_pre + px) / sx)]
-            y_post = [int((y_pre + py) / sy)]
-            wx = [(x_pre + px) % sx]
-            wy = [(y_pre + py) % sy]
+            wx = (x_pre + px) % sx
             i = 1
-            while wx[0] + i * sx < kx:
+            while wx + i * sx < kx:
                 x = x_post[0] - i
                 if 0 <= x < nx:
                     x_post.append(x)
                 i += 1
-            i = 1
-            while wy[0] + i * sy < ky:
-                y = y_post[0] - i
-                if 0 <= y < ny:
-                    y_post.append(y)
-                i += 1
 
-            fanout[:, x_pre, y_pre] = len(x_post) * len(y_post)
+            if ax:
+                fanout[:, y_pre, x_pre] = len(x_post) * len(y_post)
+            else:
+                fanout[y_pre, x_pre, :] = len(x_post) * len(y_post)
+
+    if not is_depthwise_conv:
+        fanout *= nz
 
     return fanout
 
@@ -1092,7 +1165,7 @@ def get_quantized_activation_function_from_string(activation_str):
     """
 
     # TODO: We implicitly assume relu activation function here. Change this to
-    # allow for general activation functions with reduced precision.
+    #       allow for general activation functions with reduced precision.
 
     from functools import partial
     from snntoolbox.utils.utils import quantized_relu
@@ -1119,8 +1192,8 @@ def get_custom_activation(activation_str):
     """
     If ``activation_str`` describes a custom activation function, import this
     function from `snntoolbox.utils.utils` and return it. If custom activation
-    function is not found or implemented, return the ``activation_str`` in place
-    of the activation function.
+    function is not found or implemented, return the ``activation_str`` in
+    place of the activation function.
 
     Parameters
     ----------
@@ -1154,13 +1227,20 @@ def get_custom_activation(activation_str):
     return activation, activation_str
 
 
-def get_custom_activations_dict():
+def get_custom_activations_dict(filepath=None):
     """
     Import all implemented custom activation functions so they can be used when
     loading a Keras model.
+
+    Parameters
+    ----------
+
+    filepath : Optional[str]
+        Path to json file containing additional custom objects.
     """
 
-    from snntoolbox.utils.utils import binary_sigmoid, binary_tanh, ClampedReLU
+    from snntoolbox.utils.utils import binary_sigmoid, binary_tanh, \
+        ClampedReLU
 
     # Todo: We should be able to load a different activation for each layer.
     # Need to remove this hack:
@@ -1169,5 +1249,23 @@ def get_custom_activations_dict():
 
     return {'binary_sigmoid': binary_sigmoid,
             'binary_tanh': binary_tanh,
-            'clamped_relu': ClampedReLU(),  # Todo: This should work regardless of the specific attributes of the ClampedReLU class used during training.
-            activation_str: activation}
+            # Todo: This should work regardless of the specific attributes of
+            #       the ClampedReLU class used during training.
+            'clamped_relu': ClampedReLU(),
+            activation_str: activation,
+            'precision': precision,
+            'activity_regularizer': keras.regularizers.l1}
+
+
+def precision(y_true, y_pred):
+    """Precision metric.
+
+    Computes the precision, a metric for multi-label classification of
+    how many selected items are relevant. Only computes a batch-wise average of
+    precision.
+    """
+
+    import keras.backend as k
+    true_positives = k.sum(k.round(k.clip(y_true * y_pred, 0, 1)))
+    predicted_positives = k.sum(k.round(k.clip(y_pred, 0, 1)))
+    return true_positives / (predicted_positives + k.epsilon())

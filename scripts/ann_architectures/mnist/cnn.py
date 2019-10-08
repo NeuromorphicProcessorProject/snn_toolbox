@@ -15,10 +15,11 @@ from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as k
 import numpy as np
+from snntoolbox.parsing.utils import precision
 
 batch_size = 128
 num_classes = 10
-epochs = 12
+epochs = 1
 
 # input image dimensions
 img_rows, img_cols = 28, 28
@@ -61,7 +62,7 @@ model.add(Dense(num_classes, activation='softmax'))
 
 model.compile(loss=keras.losses.categorical_crossentropy,
               optimizer=keras.optimizers.Adadelta(),
-              metrics=['accuracy'])
+              metrics=[precision])
 
 model.fit(x_train, y_train,
           batch_size=batch_size,

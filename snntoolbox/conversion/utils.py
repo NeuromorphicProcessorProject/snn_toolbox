@@ -100,6 +100,7 @@ def normalize_parameters(model, config, **kwargs):
             del activations
             perc = get_percentile(config, i)
             scale_facs[layer.name] = get_scale_fac(nonzero_activations, perc)
+            print("Scale factor: {:.2f}.".format(scale_facs[layer.name]))
             # Since we have calculated output activations here, check at this
             # point if the output is mostly negative, in which case we should
             # stick to softmax. Otherwise ReLU is preferred.
@@ -111,8 +112,8 @@ def normalize_parameters(model, config, **kwargs):
             #     if np.median(softmax_inputs) < 0:
             #         print("WARNING: You allowed the toolbox to replace "
             #               "softmax by ReLU activations. However, more than "
-            #               "half of the activations are negative, which could "
-            #               "reduce accuracy. Consider setting "
+            #               "half of the activations are negative, which "
+            #               "could reduce accuracy. Consider setting "
             #               "settings['softmax_to_relu'] = False.")
             #         settings['softmax_to_relu'] = False
             i += 1
@@ -147,10 +148,8 @@ def normalize_parameters(model, config, **kwargs):
             scale_fac = scale_facs[layer.name]
         inbound = get_inbound_layers_with_params(layer)
         if len(inbound) == 0:  # Input layer
-            # noinspection PyProtectedMember
-            input_layer = layer._inbound_nodes[0].inbound_layers[0].name
             parameters_norm = [
-                parameters[0] * scale_facs[input_layer] / scale_fac,
+                parameters[0] * scale_facs[model.layers[0].name] / scale_fac,
                 parameters[1] / scale_fac]
         elif len(inbound) == 1:
             parameters_norm = [
@@ -189,8 +188,9 @@ def normalize_parameters(model, config, **kwargs):
             if len(layer.weights) == 0:
                 continue
 
-            label = str(idx) + layer.__class__.__name__ if \
-                config.getboolean('output', 'use_simple_labels') else layer.name
+            label = str(idx) + layer.__class__.__name__ \
+                if config.getboolean('output', 'use_simple_labels') \
+                else layer.name
             parameters = weights[layer.name]
             parameters_norm = layer.get_weights()[0]
             weight_dict = {'weights': parameters.flatten(),
@@ -212,7 +212,8 @@ def normalize_parameters(model, config, **kwargs):
                                'Activations_norm':
                                activations_norm[np.nonzero(activations_norm)]}
             scale_fac = scale_facs[layer.name]
-            plot_hist(activation_dict, 'Activation', label, norm_dir, scale_fac)
+            plot_hist(activation_dict, 'Activation', label, norm_dir,
+                      scale_fac)
             ax = tuple(np.arange(len(layer.output_shape))[1:])
             plot_max_activ_hist(
                 {'Activations_max': np.max(activations, axis=ax)},
@@ -241,13 +242,10 @@ def get_scale_fac(activations, percentile):
         Parameters of the respective layer are scaled by this value.
     """
 
-    scale_fac = np.percentile(activations, percentile)
-    print("Scale factor: {:.2f}.".format(scale_fac))
-
-    return scale_fac
+    return np.percentile(activations, percentile) if activations.size else 1
 
 
-def get_percentile(config, layer_idx):
+def get_percentile(config, layer_idx=None):
     """Get percentile at which to draw the maximum activation of a layer.
 
     Parameters
@@ -256,7 +254,7 @@ def get_percentile(config, layer_idx):
     config: configparser.ConfigParser
         Settings.
 
-    layer_idx: int
+    layer_idx: Optional[int]
         Layer index.
 
     Returns
@@ -270,6 +268,7 @@ def get_percentile(config, layer_idx):
     perc = config.getfloat('normalization', 'percentile')
 
     if config.getboolean('normalization', 'normalization_schedule'):
+        assert layer_idx, "Layer index needed for normalization schedule."
         perc = apply_normalization_schedule(perc, layer_idx)
 
     return perc
@@ -372,8 +371,8 @@ def get_activations_batch(ann, x_batch):
         if layer.__class__.__name__ in ['Input', 'InputLayer', 'Flatten',
                                         'Concatenate']:
             continue
-        activations = keras.models.Model(ann.input,
-                                         layer.output).predict_on_batch(x_batch)
+        activations = keras.models.Model(
+            ann.input, layer.output).predict_on_batch(x_batch)
         activations_batch.append((activations, layer.name))
     return activations_batch
 
@@ -393,4 +392,4 @@ def try_reload_activations(layer, model, x_norm, batch_size, activ_dir):
         np.savez_compressed(os.path.join(activ_dir, layer.name), activations)
     else:
         print("Loading activations stored during a previous run.")
-    return activations
+    return np.array(activations)

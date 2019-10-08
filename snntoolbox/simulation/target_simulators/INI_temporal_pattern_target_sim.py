@@ -95,6 +95,7 @@ class SNN(SNN_):
             self.neuron_operations_b_t[:, 0] += self.fanin[1] * \
                 self.num_neurons[1] * np.ones(self.batch_size) * 2
 
+        print("Current accuracy of batch:")
         if self.config.getint('output', 'verbose') > 0:
             guesses_b = np.argmax(np.sum(output_b_l_t, 2), 1)
             echo('{:.2%}_'.format(np.mean(kwargs[str('truth_b')] == guesses_b)))

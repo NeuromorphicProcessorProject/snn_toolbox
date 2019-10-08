@@ -1,8 +1,8 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import moviepy.editor as mpy
-from moviepy.video.io.bindings import mplfig_to_npimage
+# import moviepy.editor as mpy
+# from moviepy.video.io.bindings import mplfig_to_npimage
 
 
 def load_data_for_video(path, classification_duration, simulation_duration,
@@ -292,11 +292,12 @@ class ExpResults:
         e5 = np.empty((self.num_samples, num_timesteps))
 
         # Load operation count
-        operations_d_t = np.empty((self.num_samples, num_timesteps))
-        for batch_idx in range(num_batches):
-            operations_d_t[batch_idx*batch_size:(batch_idx+1)*batch_size] = \
-                np.load(os.path.join(self.dirname, str(batch_idx) + '.npz'))[
-                    'synaptic_operations_b_t'] / self.scale
+        operations_d_t = np.expand_dims(np.arange(num_timesteps), 0) * 0.0001442
+        # operations_d_t = np.empty((self.num_samples, num_timesteps))
+        # for batch_idx in range(num_batches):
+        #     operations_d_t[batch_idx*batch_size:(batch_idx+1)*batch_size] = \
+        #         np.load(os.path.join(self.dirname, str(batch_idx) + '.npz'))[
+        #             'synaptic_operations_b_t'] / self.scale
         self.mean_computations_t = np.mean(operations_d_t, 0)
         self.std_computations_t = np.std(operations_d_t, 0)
 

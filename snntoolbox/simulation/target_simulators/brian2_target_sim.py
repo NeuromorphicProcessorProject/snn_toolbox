@@ -98,7 +98,8 @@ class SNN(AbstractSNN):
         self._conns = []
         self.layers.append(self.sim.NeuronGroup(
             np.prod(layer.output_shape[1:]), model=self.eqs, method='linear',
-            reset=self.v_reset, threshold=self.threshold, dt=self._dt * self.sim.ms))
+            reset=self.v_reset, threshold=self.threshold,
+            dt=self._dt * self.sim.ms))
         self.connections.append(self.sim.Synapses(
             self.layers[-2], self.layers[-1], 'w:1', on_pre='v+=w',
             dt=self._dt*self.sim.ms))
@@ -110,22 +111,23 @@ class SNN(AbstractSNN):
             self.statemonitors.append(self.sim.StateMonitor(self.layers[-1],
                                                             'v', True))
 
-    def build_dense(self, layer, input_weight=None):
+    def build_dense(self, layer, weights=None):
 
         if layer.activation == 'softmax':
             raise warnings.warn("Activation 'softmax' not implemented. Using "
                                 "'relu' activation instead.", RuntimeWarning)
 
-        weights, self._biases = layer.get_weights()
-        self.set_biases()
-        self.connections[-1].connect(True)
-        if input_weight is not None:
-            self.connections[-1].w = input_weight.flatten()
-        else:
-            self.connections[-1].w = weights.flatten()
-        print("Lenght of weights:{}".format(len(self.connections[-1].w)))
+        _weights, self._biases = layer.get_weights()
+        if weights is None:
+            weights = _weights
 
-    def build_convolution(self, layer, input_weight=None):
+        self.set_biases()
+
+        self.connections[-1].connect(True)
+        self.connections[-1].w = weights.flatten()
+        print("Lenght of weights: {}".format(len(self.connections[-1].w)))
+
+    def build_convolution(self, layer, weights=None):
         from snntoolbox.simulation.utils import build_convolution
 
         delay = self.config.getfloat('cell', 'delay')
@@ -137,28 +139,28 @@ class SNN(AbstractSNN):
 
         print("Connecting layer...")
 	
-        np_conns = np.array(self._conns)
+        connections = np.array(self._conns)
 
-        self.connections[-1].connect(i=np_conns[:, 0].astype('int64'),
-	                             j=np_conns[:, 1].astype('int64'))
-	
-        if input_weight is None:
-            self.connections[-1].w = np_conns[:, 2]
-        else:
-            self.connections[-1].w = input_weight.flatten()
+        self.connections[-1].connect(i=connections[:, 0].astype('int64'),
+	                                 j=connections[:, 1].astype('int64'))
 
-    def build_pooling(self, layer, input_weight=None):
+        w = connections[:, 2] if weights is None else weights.flatten()
+        self.connections[-1].w = w
+
+    def build_pooling(self, layer, weights=None):
         from snntoolbox.simulation.utils import build_pooling
 
         delay = self.config.getfloat('cell', 'delay')
         self._conns = build_pooling(layer, delay)
 
-        for conn in self._conns:
-            self.connections[-1].connect(i=conn[0], j=conn[1])
-            if input_weight is not None:
-                self.connections[-1].w = input_weight.flatten()
-            else:
-                self.connections[-1].w = 1 / np.prod(layer.pool_size)
+        connections = np.array(self._conns)
+
+        self.connections[-1].connect(i=connections[:, 0].astype('int64'),
+                                     j=connections[:, 1].astype('int64'))
+
+        w = 1 / np.prod(layer.pool_size) if weights is None \
+            else weights.flatten()
+        self.connections[-1].w = w
 
     def compile(self):
 
@@ -253,15 +255,15 @@ class SNN(AbstractSNN):
             print("Using layer-weights stored in: {}".format(filepath))
             print("Loading stored weights...")
             input_file = np.load(filepath)
-            input_weight = input_file['arr_0']
+            weights = input_file['arr_0']
             if layer_type == 'Dense':
-                self.build_dense(layer, input_weight=input_weight)
+                self.build_dense(layer, weights=weights)
             elif layer_type == 'Conv2D':
-                self.build_convolution(layer, input_weight=input_weight)
+                self.build_convolution(layer, weights=weights)
                 if layer.data_format == 'channels_last':
                     self.data_format = layer.data_format
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:
-                self.build_pooling(layer, input_weight=input_weight)
+                self.build_pooling(layer, weights=weights)
             elif layer_type == 'Flatten':
                 self.build_flatten(layer)
 
