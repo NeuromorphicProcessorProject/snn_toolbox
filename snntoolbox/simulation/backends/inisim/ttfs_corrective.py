@@ -21,6 +21,7 @@ from __future__ import print_function, unicode_literals
 
 import numpy as np
 from future import standard_library
+import tensorflow as tf
 from keras import backend as k
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
 from keras.layers import Layer, Concatenate
@@ -91,9 +92,9 @@ class SpikeLayer(Layer):
         """Linear activation."""
 
         thr = self._v_thresh
-        pos_spikes = k.cast(k.tf.logical_and(
+        pos_spikes = k.cast(tf.logical_and(
             k.less(self.mem, thr), k.greater_equal(new_mem, thr)), k.floatx())
-        neg_spikes = k.cast(k.tf.logical_and(
+        neg_spikes = k.cast(tf.logical_and(
             k.less(new_mem, thr), k.greater_equal(self.mem, thr)), k.floatx())
         return pos_spikes - neg_spikes
 
@@ -104,28 +105,28 @@ class SpikeLayer(Layer):
 
         if self.config.getboolean('cell', 'leak'):
             # Todo: Implement more flexible version of leak!
-            new_mem = k.tf.where(k.greater(new_mem, 0), new_mem - 0.1 * self.dt,
-                                 new_mem)
+            new_mem = tf.where(k.greater(new_mem, 0),
+                               new_mem - 0.1 * self.dt, new_mem)
 
         self.add_update([(self.mem, new_mem)])
 
         return new_mem
 
     def get_psp(self, output_spikes):
-        new_spiketimes = k.tf.where(k.greater(output_spikes, 0),
-                                    k.ones_like(output_spikes) * self.time,
-                                    self.last_spiketimes)
-        new_spiketimes = k.tf.where(k.less(output_spikes, 0),
-                                    k.zeros_like(output_spikes) * self.time,
-                                    new_spiketimes)
-        assign_new_spiketimes = k.tf.assign(self.last_spiketimes,
-                                            new_spiketimes)
-        with k.tf.control_dependencies([assign_new_spiketimes]):
+        new_spiketimes = tf.where(k.greater(output_spikes, 0),
+                                  k.ones_like(output_spikes) * self.time,
+                                  self.last_spiketimes)
+        new_spiketimes = tf.where(k.less(output_spikes, 0),
+                                  k.zeros_like(output_spikes) * self.time,
+                                  new_spiketimes)
+        assign_new_spiketimes = tf.assign(self.last_spiketimes,
+                                          new_spiketimes)
+        with tf.control_dependencies([assign_new_spiketimes]):
             last_spiketimes = self.last_spiketimes + 0  # Dummy op
-            # psp = k.maximum(0., k.tf.divide(self.dt, last_spiketimes))
-            psp = k.tf.where(k.greater(last_spiketimes, 0),
-                             k.ones_like(output_spikes) * self.dt,
-                             k.zeros_like(output_spikes))
+            # psp = k.maximum(0., tf.divide(self.dt, last_spiketimes))
+            psp = tf.where(k.greater(last_spiketimes, 0),
+                           k.ones_like(output_spikes) * self.dt,
+                           k.zeros_like(output_spikes))
         return psp
 
     def get_time(self):
@@ -244,9 +245,9 @@ def spike_call(call):
 
         # Only call layer if there are input spikes. This is to prevent
         # accumulation of bias.
-        self.impulse = k.tf.cond(k.any(k.not_equal(x, 0)),
-                                 lambda: call(self, x),
-                                 lambda: k.zeros_like(self.mem))
+        self.impulse = tf.cond(k.any(k.not_equal(x, 0)),
+                               lambda: call(self, x),
+                               lambda: k.zeros_like(self.mem))
         return self.update_neurons()
 
     return decorator

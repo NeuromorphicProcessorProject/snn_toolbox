@@ -224,7 +224,7 @@ class AbstractSNN:
         Parameters
         ----------
 
-        layer: keras.layers.Layer
+        layer: keras.layers.Dense
             Layer
         """
 
@@ -250,7 +250,7 @@ class AbstractSNN:
         Parameters
         ----------
 
-        layer: keras.layers.Layer
+        layer: keras.layers.pooling._Pooling2D
             Layer
         """
 
@@ -1206,18 +1206,16 @@ def build_convolution(layer, delay, transpose_kernel=False):
 
     ii = 1 if keras.backend.image_data_format() == 'channels_first' else 0
 
-    nx = layer.input_shape[2 + ii]  # Width of feature map
     ny = layer.input_shape[1 + ii]  # Height of feature map
-    kx, ky = layer.kernel_size  # Width and height of kernel
-    px = int((kx - 1) / 2)  # Zero-padding columns
-    py = int((ky - 1) / 2)  # Zero-padding rows
-
-    sx = layer.strides[1]
-    sy = layer.strides[0]
+    nx = layer.input_shape[2 + ii]  # Width of feature map
+    ky, kx = layer.kernel_size  # Width and height of kernel
+    sy, sx = layer.strides  # Convolution strides
+    py = (ky - 1) // 2  # Zero-padding rows
+    px = (kx - 1) // 2  # Zero-padding columns
 
     if layer.padding == 'valid':
-        # In padding 'valid', the original sidelength is
-        # reduced by one less than the kernel size.
+        # In padding 'valid', the original sidelength is reduced by one less
+        # than the kernel size.
         mx = (nx - kx + 1) // sx  # Number of columns in output filters
         my = (ny - ky + 1) // sy  # Number of rows in output filters
         x0 = px
@@ -1244,11 +1242,11 @@ def build_convolution(layer, delay, transpose_kernel=False):
                     for k in range(-py, py + 1):
                         if not 0 <= y + k < ny:
                             continue
-                        source = x + (y + k) * nx + fin * nx * ny
                         for l in range(-px, px + 1):
                             if not 0 <= x + l < nx:
                                 continue
-                            connections.append((source + l, target,
+                            source = l + x + (y + k) * nx + fin * nx * ny
+                            connections.append((source, target,
                                                 weights[py - k, px - l, fin,
                                                         fout], delay))
         echo('.')
@@ -1533,3 +1531,29 @@ def is_spiking(layer, config):
 
     return np.any([s in get_type(layer) for s in
                    eval(config.get('restrictions', 'spiking_layers'))])
+
+
+def get_shape_from_label(label):
+    """
+    Extract the output shape of a flattened pyNN layer from the layer name
+    generated during parsing.
+
+    Parameters
+    ----------
+
+    label: str
+        Layer name containing shape information after a '_' separator.
+
+    Returns
+    -------
+
+    : list
+        The layer shape.
+
+    Example
+    -------
+        >>> get_shape_from_label('02Conv2D_16x32x32')
+        [16, 32, 32]
+
+    """
+    return [int(i) for i in label.split('_')[1].split('x')]

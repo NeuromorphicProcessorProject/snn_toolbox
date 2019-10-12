@@ -7,7 +7,7 @@ Important functions:
 .. autosummary::
     :nosignatures:
 
-    test_full
+    run_pipeline
     update_setup
 
 @author: rbodo
@@ -24,7 +24,7 @@ from future import standard_library
 standard_library.install_aliases()
 
 
-def test_full(config, queue=None):
+def run_pipeline(config, queue=None):
     """Convert an analog network to a spiking network and simulate it.
 
     Complete pipeline of
@@ -506,7 +506,6 @@ def update_setup(config_filepath):
 
 def initialize_simulator(config):
     """Import a module that contains utility functions of spiking simulator."""
-    from importlib import import_module
 
     simulator = config.get('simulation', 'simulator')
     print("Initializing {} simulator...\n".format(simulator))

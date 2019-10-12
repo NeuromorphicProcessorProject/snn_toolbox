@@ -18,6 +18,7 @@ from __future__ import print_function, unicode_literals
 
 import numpy as np
 from future import standard_library
+import tensorflow as tf
 from keras import backend as k
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
 from keras.layers import Layer, Concatenate
@@ -75,7 +76,8 @@ class SpikeLayer(Layer):
         new_mem = self.get_new_mem()
 
         # Generate spikes.
-        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
+        if hasattr(self, 'activation_str') \
+                and self.activation_str == 'softmax':
             output_spikes = self.softmax_activation(new_mem)
         else:
             output_spikes = self.linear_activation(new_mem)
@@ -84,14 +86,15 @@ class SpikeLayer(Layer):
         self.set_reset_mem(new_mem, output_spikes)
 
         # Store refractory period after spikes.
-        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
+        if hasattr(self, 'activation_str') \
+                and self.activation_str == 'softmax':
             # We do not constrain softmax output neurons.
-            new_refrac = k.tf.identity(self.refrac_until)
+            new_refrac = tf.identity(self.refrac_until)
         else:
-            new_refrac = k.tf.where(k.not_equal(output_spikes, 0),
-                                    k.ones_like(output_spikes) *
-                                    (self.time + self.tau_refrac),
-                                    self.refrac_until)
+            new_refrac = tf.where(k.not_equal(output_spikes, 0),
+                                  k.ones_like(output_spikes) *
+                                  (self.time + self.tau_refrac),
+                                  self.refrac_until)
         self.add_update([(self.refrac_until, new_refrac)])
 
         if self.spiketrain is not None:
@@ -107,7 +110,8 @@ class SpikeLayer(Layer):
         """Linear activation."""
         return k.cast(k.greater_equal(mem, self.v_thresh), k.floatx())
 
-    def softmax_activation(self, mem):
+    @staticmethod
+    def softmax_activation(mem):
         """Softmax activation."""
 
         return k.cast(k.less_equal(k.random_uniform(k.shape(mem)),
@@ -118,15 +122,15 @@ class SpikeLayer(Layer):
 
         # Destroy impulse if in refractory period
         masked_impulse = self.impulse if self.tau_refrac == 0 else \
-            k.tf.where(k.greater(self.refrac_until, self.time),
-                       k.zeros_like(self.impulse), self.impulse)
+            tf.where(k.greater(self.refrac_until, self.time),
+                     k.zeros_like(self.impulse), self.impulse)
 
         new_mem = self.mem + masked_impulse
 
         if self.config.getboolean('cell', 'leak'):
             # Todo: Implement more flexible version of leak!
-            new_mem = k.tf.where(k.greater(new_mem, 0), new_mem - 0.1 * self.dt,
-                                 new_mem)
+            new_mem = tf.where(k.greater(new_mem, 0),
+                               new_mem - 0.1 * self.dt, new_mem)
 
         return new_mem
 
@@ -136,26 +140,28 @@ class SpikeLayer(Layer):
         nonzero.
         """
 
-        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
-            new = k.tf.identity(mem)
+        if hasattr(self, 'activation_str') \
+                and self.activation_str == 'softmax':
+            new = tf.identity(mem)
         else:
-            new = k.tf.where(k.not_equal(spikes, 0), k.zeros_like(mem), mem)
+            new = tf.where(k.not_equal(spikes, 0), k.zeros_like(mem), mem)
         self.add_update([(self.mem, new)])
 
     def get_psp(self, output_spikes):
-        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
-            psp = k.tf.identity(output_spikes)
+        if hasattr(self, 'activation_str') \
+                and self.activation_str == 'softmax':
+            psp = tf.identity(output_spikes)
         else:
-            new_spiketimes = k.tf.where(k.not_equal(output_spikes, 0),
-                                        k.ones_like(output_spikes) * self.time,
-                                        self.last_spiketimes)
-            assign_new_spiketimes = k.tf.assign(self.last_spiketimes,
-                                                new_spiketimes)
-            with k.tf.control_dependencies([assign_new_spiketimes]):
+            new_spiketimes = tf.where(k.not_equal(output_spikes, 0),
+                                      k.ones_like(output_spikes) * self.time,
+                                      self.last_spiketimes)
+            assign_new_spiketimes = tf.assign(self.last_spiketimes,
+                                              new_spiketimes)
+            with tf.control_dependencies([assign_new_spiketimes]):
                 last_spiketimes = self.last_spiketimes + 0  # Dummy op
-                psp = k.tf.where(k.greater(last_spiketimes, 0),
-                                 k.ones_like(output_spikes) * self.dt,
-                                 k.zeros_like(output_spikes))
+                psp = tf.where(k.greater(last_spiketimes, 0),
+                               k.ones_like(output_spikes) * self.dt,
+                               k.zeros_like(output_spikes))
         return psp
 
     def get_time(self):
@@ -282,9 +288,9 @@ def spike_call(call):
 
         # Only call layer if there are input spikes. This is to prevent
         # accumulation of bias.
-        self.impulse = k.tf.cond(k.any(k.not_equal(x, 0)),
-                                 lambda: call(self, x),
-                                 lambda: k.zeros_like(self.mem))
+        self.impulse = tf.cond(k.any(k.not_equal(x, 0)),
+                               lambda: call(self, x),
+                               lambda: k.zeros_like(self.mem))
         return self.update_neurons()
 
     return decorator
@@ -429,14 +435,14 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
     def call(self, x, mask=None):
         """Layer functionality."""
         # Skip integration of input spikes in membrane potential. Directly
-        # transmit new spikes. The output psp is nonzero wherever there has been
-        # an input spike at any time during simulation.
+        # transmit new spikes. The output psp is nonzero wherever there has
+        # been an input spike at any time during simulation.
 
         input_psp = MaxPooling2D.call(self, x)
 
         if self.spiketrain is not None:
-            new_spikes = k.tf.logical_xor(k.greater(input_psp, 0),
-                                          k.greater(self.last_spiketimes, 0))
+            new_spikes = tf.logical_xor(k.greater(input_psp, 0),
+                                        k.greater(self.last_spiketimes, 0))
             self.add_update([(self.spiketrain,
                               self.time * k.cast(new_spikes, k.floatx()))])
 

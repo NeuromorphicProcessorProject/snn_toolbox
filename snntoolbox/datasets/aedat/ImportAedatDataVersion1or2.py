@@ -83,9 +83,11 @@ def import_aedat_dataversion1or2(info):
     aps_or_imu_mask = int('80000000', 16)
     aps_or_imu_logical = np.bitwise_and(all_addr, aps_or_imu_mask)
     signal_or_special_mask = int('400', 16)
-    signal_or_special_logical = np.bitwise_and(all_addr, signal_or_special_mask)
-    polarity_logical = np.logical_and(np.logical_not(aps_or_imu_logical),
-                                      np.logical_not(signal_or_special_logical))
+    signal_or_special_logical = np.bitwise_and(all_addr,
+                                               signal_or_special_mask)
+    polarity_logical = \
+        np.logical_and(np.logical_not(aps_or_imu_logical),
+                       np.logical_not(signal_or_special_logical))
 
     # These masks are used for both frames and polarity events, so are defined
     # outside of the following if statement

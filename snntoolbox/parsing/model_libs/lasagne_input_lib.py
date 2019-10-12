@@ -14,6 +14,9 @@ from snntoolbox.utils.utils import import_script
 
 class ModelParser(AbstractModelParser):
 
+    def parse_depthwiseconvolution(self, layer, attributes):
+        raise NotImplementedError
+
     def __init__(self, input_model, config):
         AbstractModelParser.__init__(self, input_model, config)
         self._layer_dict = {'DenseLayer': 'Dense',

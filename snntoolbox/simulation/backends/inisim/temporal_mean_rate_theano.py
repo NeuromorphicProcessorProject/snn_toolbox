@@ -241,7 +241,8 @@ class SpikeLayer(Layer):
         """
 
         spike_idxs = k.T.nonzero(spikes)
-        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
+        if (hasattr(self, 'activation_str') and
+                self.activation_str == 'softmax'):
             new = mem.copy()  # k.T.set_subtensor(mem[spike_idxs], 0.)
         elif self.config.get('cell', 'reset') == 'Reset by subtraction':
             if self.payloads:  # Experimental.
@@ -268,7 +269,7 @@ class SpikeLayer(Layer):
 
         # return theano.ifelse.ifelse(
         #     k.equal(self.time / self.dt % settings['timestep_fraction'], 0) *
-        #     k.greater(self.max_spikerate, settings['diff_to_min_rate']/1000) *
+        #     k.greater(self.max_spikerate, settings['diff_to_min_rate']/1000)*
         #     k.greater(1 / self.dt - self.max_spikerate,
         #          settings['diff_to_max_rate'] / 1000),
         #     self.max_spikerate, self.v_thresh)
@@ -353,12 +354,14 @@ class SpikeLayer(Layer):
             self.mem.set_value(self.init_membrane_potential())
         self.time.set_value(np.float32(self.dt))
         if self.tau_refrac > 0:
-            self.refrac_until.set_value(np.zeros(self.output_shape, k.floatx()))
+            self.refrac_until.set_value(np.zeros(self.output_shape,
+                                                 k.floatx()))
         if self.spiketrain is not None:
             self.spiketrain.set_value(np.zeros(self.output_shape, k.floatx()))
         if self.payloads:
             self.payloads.set_value(np.zeros(self.output_shape, k.floatx()))
-            self.payloads_sum.set_value(np.zeros(self.output_shape, k.floatx()))
+            self.payloads_sum.set_value(np.zeros(self.output_shape,
+                                                 k.floatx()))
         if self.online_normalization and do_reset:
             self.spikecounts.set_value(np.zeros(self.output_shape, k.floatx()))
             self.max_spikerate.set_value(np.float32(0.))
@@ -681,7 +684,8 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
         mod = self.config.getint('simulation', 'reset_between_nth_sample')
         mod = mod if mod else sample_idx + 1
         if sample_idx % mod == 0:
-            self.spikerate_pre.set_value(np.zeros(self.input_shape, k.floatx()))
+            self.spikerate_pre.set_value(np.zeros(self.input_shape,
+                                                  k.floatx()))
 
     @property
     def class_name(self):
@@ -719,9 +723,11 @@ def spike_pool2d(inputs, pool_size, strides=(1, 1), padding='valid',
     y = inputs[1]  # Presynaptic spikes
 
     if padding == 'same':
-        w_pad = pool_size[0] - 2 if pool_size[0] > 2 and pool_size[0] % 2 == 1 \
+        w_pad = pool_size[0] - 2 if (pool_size[0] > 2 and
+                                     pool_size[0] % 2 == 1) \
             else pool_size[0] - 1
-        h_pad = pool_size[1] - 2 if pool_size[1] > 2 and pool_size[1] % 2 == 1 \
+        h_pad = pool_size[1] - 2 if (pool_size[1] > 2 and
+                                     pool_size[1] % 2 == 1) \
             else pool_size[1] - 1
         pad = (w_pad, h_pad)
     elif padding == 'valid':
@@ -908,7 +914,8 @@ class SpikePool(theano.Op):
             raise TypeError('Stride parameters must be ints.')
         if pad.dtype not in k.T.int_dtypes:
             raise TypeError('Padding parameters must be ints.')
-        # If the input shape are broadcastable we can have 0 in the output shape
+        # If the input shape are broadcastable we can have 0 in the output
+        # shape
         broad = x[0].broadcastable[:-nd] + (False,) * nd
         out = k.T.TensorType(x[0].dtype, broad)
         return theano.gof.Apply(self, x + [ws, stride, pad], [out()])
@@ -925,7 +932,8 @@ class SpikePool(theano.Op):
         node :
         """
 
-        # xr contains the presynaptic spike-rates, and xs the presynaptic spikes
+        # xr contains the presynaptic spike-rates, and xs the presynaptic
+        # spikes.
         xr, xs, ws, stride, pad = inp
         z, = out
         nd = self.ndim
@@ -987,8 +995,9 @@ class SpikePool(theano.Op):
                     # index 0 if all rates are equally zero.
                     continue
                 spike_patch = ysn[[region_slices[i][r[i]] for i in range(nd)]]
-                # The second condition is not completely equivalent to the first
-                # because the former has a higher chance of admitting spikes.
+                # The second condition is not completely equivalent to the
+                # first because the former has a higher chance of admitting
+                # spikes.
                 # if (spike_patch*(rate_patch == np.argmax(rate_patch))).any():
                 if spike_patch.flatten()[np.argmax(rate_patch)]:
                     zzn[r] = spike

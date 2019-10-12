@@ -18,5 +18,9 @@ name) to a plain text file containing the settings to be used. Refer to
 With ``-t``, we tell the program to stay in the terminal. Omitting this flag
 opens the GUI (not actively developed).
 
-See :doc:`examples` for typical usecases.
+Instead of using the terminal, you may also invoke the toolbox within a python
+script::
 
+   snntoolbox.bin.run.main(path_to_config_file)
+
+See :doc:`examples` for typical usecases.

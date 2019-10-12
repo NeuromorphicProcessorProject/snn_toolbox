@@ -28,7 +28,7 @@ snntoolbox\.target\_simulators\.MegaSim\_target\_sim module
     :undoc-members:
     :show-inheritance:
 
-snntoolbox\.target\_simulators\.Neuron\_target\_sim module
+snntoolbox\.target\_simulators\.neuron\_target\_sim module
 ----------------------------------------------------------
 
 .. automodule:: snntoolbox.target_simulators.Neuron_target_sim

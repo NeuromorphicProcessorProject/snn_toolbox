@@ -15,9 +15,10 @@ Features
 Note
 ----
 
-    Due to rapid extensions in the main toolbox, we have not always been able to
-    update the GUI to cover all functionality of the toolbox. We are currently
-    not maintaining the GUI and recommend using the terminal to run experiments.
+    Due to rapid extensions in the main toolbox, we have not always been able
+    to update the GUI to cover all functionality of the toolbox. We are
+    currently not maintaining the GUI and recommend using the terminal to run
+    experiments.
 
 @author: rbodo
 """
@@ -37,7 +38,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg
 
-from snntoolbox.bin.utils import test_full
+from snntoolbox.bin.utils import run_pipeline
 from snntoolbox.bin.gui.tooltip import ToolTip
 
 if sys.version_info[0] < 3:
@@ -103,12 +104,12 @@ class SNNToolboxGUI:
         # Create thread for performing the conversion in the background.
         # Make it a daemon so it is killed when the main application is closed.
         if sys.version_info[0] < 3:
-            self.process_thread = threading.Thread(target=test_full,
+            self.process_thread = threading.Thread(target=run_pipeline,
                                                    args=(self.res_queue,),
                                                    name='conversion process')
             self.process_thread.daemon = True
         else:
-            self.process_thread = threading.Thread(target=test_full,
+            self.process_thread = threading.Thread(target=run_pipeline,
                                                    args=(self.res_queue,),
                                                    name='conversion process',
                                                    daemon=True)
@@ -1327,9 +1328,6 @@ class SNNToolboxGUI:
         elif p == '':
             self.toggle_num_to_test_state(True)
             return True
-        elif False:
-            # Put some other tests here
-            return False
         else:
             samples = [int(i) for i in p.split() if i.isnumeric()]
             self.settings['num_to_test'].set(len(samples))
@@ -1457,7 +1455,8 @@ class SNNToolboxGUI:
 
     def toggle_state_pynn(self, val):
         """Toogle state for pyNN."""
-        simulators_pynn = eval(self.config.get('restrictions', 'simulators_pyNN'))
+        simulators_pynn = eval(self.config.get('restrictions',
+                                               'simulators_pyNN'))
         if val not in list(simulators_pynn) + ['brian2']:
             self.settings['state_pyNN'].set('disabled')
         else:
@@ -1508,9 +1507,8 @@ class SNNToolboxGUI:
 def main():
 
     from snntoolbox.bin.utils import load_config
-    config = load_config(os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                      '..', '..',
-                                                      'config_defaults')))
+    config = load_config(os.path.abspath(os.path.join(os.path.dirname(
+        __file__), '..', '..', 'config_defaults')))
 
     root = tk.Tk()
     root.title("SNN Toolbox")

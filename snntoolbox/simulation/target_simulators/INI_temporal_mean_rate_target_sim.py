@@ -8,6 +8,7 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 import os
+import re
 import sys
 
 import keras
@@ -48,6 +49,7 @@ class SNN(AbstractSNN):
         self._input_images = None
         self._binary_activation = None
         self.avg_rate = None
+        self._input_spikecount = None
 
     @property
     def is_parallelizable(self):
@@ -101,11 +103,28 @@ class SNN(AbstractSNN):
 
     def compile(self):
 
+        def remove_name_counter(name_in):
+            splits = str(name_in).split('_')
+            name_out = splits[0] + '_' + splits[1]
+            if len(splits) == 3:
+                name_out += re.sub('\d+/', '/', splits[2])
+            return name_out
+
         self.snn = keras.models.Model(
             self._input_images,
             self._spiking_layers[self.parsed_model.layers[-1].name])
         self.snn.compile('sgd', 'categorical_crossentropy', ['accuracy'])
-        self.snn.set_weights(self.parsed_model.get_weights())
+        parameter_map = {remove_name_counter(p.name): v for p, v in
+                         zip(self.parsed_model.weights,
+                             self.parsed_model.get_weights())}
+        count = 0
+        for p in self.snn.weights:
+            name = remove_name_counter(p.name)
+            if name in parameter_map:
+                keras.backend.set_value(p, parameter_map[name])
+                count += 1
+        assert count == len(parameter_map), "Not all weights have been " \
+                                            "transferred from ANN to SNN."
         for layer in self.snn.layers:
             if hasattr(layer, 'bias'):
                 # Adjust biases to time resolution of simulator.

@@ -11,10 +11,11 @@ from snntoolbox.datasets.utils import to_categorical
 
 
 class DVSIterator(object):
-    def __init__(self, dataset_path, batch_shape, data_format, frame_gen_method,
-                 is_x_first, is_x_flipped, is_y_flipped, frame_width,
-                 num_events_per_frame, maxpool_subsampling, do_clip_three_sigma,
-                 chip_size, target_shape=None, label_dict=None):
+    def __init__(self, dataset_path, batch_shape, data_format,
+                 frame_gen_method, is_x_first, is_x_flipped, is_y_flipped,
+                 frame_width, num_events_per_frame, maxpool_subsampling,
+                 do_clip_three_sigma, chip_size, target_shape=None,
+                 label_dict=None):
         self.dataset_path = dataset_path
         self.batch_shape = batch_shape
         self.batch_size = batch_shape[0]
@@ -54,7 +55,8 @@ class DVSIterator(object):
         labels = []
         self.num_samples = 0
         for subdir in classes:
-            for fname in sorted(os.listdir(os.path.join(dataset_path, subdir))):
+            for fname in sorted(os.listdir(os.path.join(dataset_path,
+                                                        subdir))):
                 is_valid = False
                 for extension in {'aedat'}:
                     if fname.lower().endswith('.' + extension):
@@ -127,8 +129,9 @@ class DVSIterator(object):
         # stack them as a batch of small sequences.
         self.event_deques_batch = extract_batch(
             self.event_sequence, self.frame_gen_method, self.batch_size,
-            self.batch_idx, self.num_events_per_frame, self.maxpool_subsampling,
-            self.do_clip_three_sigma, self.chip_size, self.target_shape)
+            self.batch_idx, self.num_events_per_frame,
+            self.maxpool_subsampling, self.do_clip_three_sigma, self.chip_size,
+            self.target_shape)
 
         self.batch_idx += 1
 
@@ -320,13 +323,13 @@ def load_event_list(filename, xyrange=None):
     return [(x, y, t, p) for x, y, t, p in zip(xaddr, yaddr, timestamps, pol)]
 
 
-def get_binary_frame(event_deque, is_x_first, is_x_flipped, is_y_flipped, shape,
-                     data_format, frame_width):
+def get_binary_frame(event_deque, is_x_first, is_x_flipped, is_y_flipped,
+                     shape, data_format, frame_width):
     """
-    Put events from event sequence into a shallow frame of at most one event per
-    pixel. Stop if the time between the current and the oldest event exceeds
-    ``frame_width``. Note that the events that have been added to the binary
-    frame are removed from the input sequence!
+    Put events from event sequence into a shallow frame of at most one event
+    per pixel. Stop if the time between the current and the oldest event
+    exceeds ``frame_width``. Note that the events that have been added to the
+    binary frame are removed from the input sequence!
 
     Parameters
     ----------
@@ -360,8 +363,8 @@ def get_binary_frame(event_deque, is_x_first, is_x_flipped, is_y_flipped, shape,
     # adding events.
     first_ts_of_frame = event_list[0][2] if event_list else 0
 
-    # Put events from event sequence buffer into frame, if pixel location is not
-    # occupied yet.
+    # Put events from event sequence buffer into frame, if pixel location is
+    # not occupied yet.
     x_max, y_max = binary_frame.shape
     for x, y, t, p in event_list:
         x_flipped = x_max - 1 - x if is_x_flipped else x
@@ -379,8 +382,8 @@ def get_binary_frame(event_deque, is_x_first, is_x_flipped, is_y_flipped, shape,
     return np.expand_dims(binary_frame, channel_axis)
 
 
-def get_eventframe_sequence(event_deque, is_x_first, is_x_flipped, is_y_flipped,
-                            shape, data_format, frame_width):
+def get_eventframe_sequence(event_deque, is_x_first, is_x_flipped,
+                            is_y_flipped, shape, data_format, frame_width):
     """
     Given a single sequence of x-y-ts events, generate a sequence of binary
     event frames.
@@ -418,7 +421,8 @@ def next_eventframe_batch(event_deques_batch, is_x_first, is_x_flipped,
 def get_frames_from_sequence(event_list, num_events_per_frame, data_format,
                              frame_gen_method, is_x_first, is_x_flipped,
                              is_y_flipped, maxpool_subsampling,
-                             do_clip_three_sigma, chip_size, target_shape=None):
+                             do_clip_three_sigma, chip_size,
+                             target_shape=None):
     """
     Extract ``num_events_per_frame`` events from a one-dimensional sequence of
     AER-events. The events are spatially subsampled to ``target_shape``, and
@@ -470,7 +474,7 @@ def get_frames_from_sequence(event_list, num_events_per_frame, data_format,
         else:
             frames[sample_idx] = sample
 
-    frames = scale_event_frames(frames, frame_gen_method)
+    frames = scale_event_frames(frames)
 
     channel_axis = 1 if data_format == 'channels_first' else -1
 
@@ -478,7 +482,8 @@ def get_frames_from_sequence(event_list, num_events_per_frame, data_format,
 
 
 def add_event_to_frame(frame, x, y, p, frame_gen_method='rectified_sum',
-                       is_x_first=True, is_x_flipped=False, is_y_flipped=False):
+                       is_x_first=True, is_x_flipped=False,
+                       is_y_flipped=False):
 
     x_max, y_max = frame.shape
 
@@ -518,7 +523,7 @@ def clip_three_sigma(frame, frame_gen_method):
     return frame.astype('int32')
 
 
-def scale_event_frames(frames, frame_gen_method):
+def scale_event_frames(frames):
     # Do not scale frames individually, as this would increase the power
     # contained in flatly-distributed images. The pure DVS data is never scaled
     # and would not be able to recover this difference in distribution.

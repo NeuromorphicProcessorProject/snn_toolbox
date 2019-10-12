@@ -21,6 +21,7 @@ from __future__ import print_function, unicode_literals
 
 import numpy as np
 from future import standard_library
+import tensorflow as tf
 from keras import backend as k
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
 from keras.layers import Layer, Concatenate
@@ -81,7 +82,8 @@ class SpikeLayer(Layer):
         new_mem = self.get_new_mem()
 
         # Generate spikes.
-        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
+        if hasattr(self, 'activation_str') \
+                and self.activation_str == 'softmax':
             output_spikes = self.softmax_activation(new_mem)
         else:
             output_spikes = self.linear_activation(new_mem)
@@ -90,36 +92,37 @@ class SpikeLayer(Layer):
         self.set_reset_mem(new_mem, output_spikes)
 
         # Store refractory period after spikes.
-        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
+        if hasattr(self, 'activation_str') \
+                and self.activation_str == 'softmax':
             # We do not constrain softmax output neurons.
-            new_refrac = k.tf.identity(self.refrac_until)
+            new_refrac = tf.identity(self.refrac_until)
         else:
-            new_refrac = k.tf.where(k.not_equal(output_spikes, 0),
-                                    k.ones_like(output_spikes) *
-                                    (self.time + self.tau_refrac),
-                                    self.refrac_until)
+            new_refrac = tf.where(k.not_equal(output_spikes, 0),
+                                  k.ones_like(output_spikes) *
+                                  (self.time + self.tau_refrac),
+                                  self.refrac_until)
         c = new_refrac[:self.batch_size]
         cc = k.concatenate([c, c], 0)
-        updates = [k.tf.assign(self.refrac_until, cc)]
+        updates = [tf.assign(self.refrac_until, cc)]
 
         if self.spiketrain is not None:
             c = self.time * k.cast(k.not_equal(output_spikes, 0),
                                    k.floatx())[:self.batch_size]
             cc = k.concatenate([c, c], 0)
-            updates += [k.tf.assign(self.spiketrain, cc)]
+            updates += [tf.assign(self.spiketrain, cc)]
 
-        with k.tf.control_dependencies(updates):
-            masked_impulse = k.tf.where(k.greater(self.refrac_until, self.time),
-                                        k.zeros_like(self.impulse),
-                                        self.impulse)
+        with tf.control_dependencies(updates):
+            masked_impulse = \
+                tf.where(k.greater(self.refrac_until, self.time),
+                         k.zeros_like(self.impulse), self.impulse)
             c = k.greater(masked_impulse, 0)[:self.batch_size]
             cc = k.cast(k.concatenate([c, c], 0), k.floatx())
-            updates = [k.tf.assign(self.prospective_spikes, cc)]
+            updates = [tf.assign(self.prospective_spikes, cc)]
             new_thresh = self._v_thresh * k.ones_like(self.v_thresh) + \
                 self.missing_impulse
-            updates += [k.tf.assign(self.v_thresh, new_thresh)]
+            updates += [tf.assign(self.v_thresh, new_thresh)]
 
-            with k.tf.control_dependencies(updates):
+            with tf.control_dependencies(updates):
                 # Compute post-synaptic potential.
                 psp = self.get_psp(output_spikes)
 
@@ -129,7 +132,8 @@ class SpikeLayer(Layer):
         """Linear activation."""
         return k.cast(k.greater_equal(mem, self.v_thresh), k.floatx())
 
-    def softmax_activation(self, mem):
+    @staticmethod
+    def softmax_activation(mem):
         """Softmax activation."""
 
         return k.cast(k.less_equal(k.random_uniform(k.shape(mem)),
@@ -140,15 +144,15 @@ class SpikeLayer(Layer):
 
         # Destroy impulse if in refractory period
         masked_impulse = self.impulse if self.tau_refrac == 0 else \
-            k.tf.where(k.greater(self.refrac_until, self.time),
-                       k.zeros_like(self.impulse), self.impulse)
+            tf.where(k.greater(self.refrac_until, self.time),
+                     k.zeros_like(self.impulse), self.impulse)
 
         new_mem = self.mem + masked_impulse
 
         if self.config.getboolean('cell', 'leak'):
             # Todo: Implement more flexible version of leak!
-            new_mem = k.tf.where(k.greater(new_mem, 0), new_mem - 0.1 * self.dt,
-                                 new_mem)
+            new_mem = tf.where(k.greater(new_mem, 0),
+                               new_mem - 0.1 * self.dt, new_mem)
 
         return new_mem
 
@@ -158,26 +162,28 @@ class SpikeLayer(Layer):
         nonzero.
         """
 
-        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
-            new = k.tf.identity(mem)
+        if hasattr(self, 'activation_str') \
+                and self.activation_str == 'softmax':
+            new = tf.identity(mem)
         else:
-            new = k.tf.where(k.not_equal(spikes, 0), k.zeros_like(mem), mem)
+            new = tf.where(k.not_equal(spikes, 0), k.zeros_like(mem), mem)
         self.add_update([(self.mem, new)])
 
     def get_psp(self, output_spikes):
-        if hasattr(self, 'activation_str') and self.activation_str == 'softmax':
-            psp = k.tf.identity(output_spikes)
+        if hasattr(self, 'activation_str') \
+                and self.activation_str == 'softmax':
+            psp = tf.identity(output_spikes)
         else:
-            new_spiketimes = k.tf.where(k.not_equal(output_spikes, 0),
-                                        k.ones_like(output_spikes) * self.time,
-                                        self.last_spiketimes)
-            assign_new_spiketimes = k.tf.assign(self.last_spiketimes,
-                                                new_spiketimes)
-            with k.tf.control_dependencies([assign_new_spiketimes]):
+            new_spiketimes = tf.where(k.not_equal(output_spikes, 0),
+                                      k.ones_like(output_spikes) * self.time,
+                                      self.last_spiketimes)
+            assign_new_spiketimes = tf.assign(self.last_spiketimes,
+                                              new_spiketimes)
+            with tf.control_dependencies([assign_new_spiketimes]):
                 last_spiketimes = self.last_spiketimes + 0  # Dummy op
-                psp = k.tf.where(k.greater(last_spiketimes, 0),
-                                 k.ones_like(output_spikes) * self.dt,
-                                 k.zeros_like(output_spikes))
+                psp = tf.where(k.greater(last_spiketimes, 0),
+                               k.ones_like(output_spikes) * self.dt,
+                               k.zeros_like(output_spikes))
         return psp
 
     def get_time(self):
@@ -308,35 +314,36 @@ def spike_call(call):
 
         updates = []
         if len(self.weights) > 0:
-            store_old_kernel = k.tf.assign(self._kernel, self.kernel)
-            store_old_bias = k.tf.assign(self._bias, self.bias)
+            store_old_kernel = tf.assign(self._kernel, self.kernel)
+            store_old_bias = tf.assign(self._bias, self.bias)
             updates += [store_old_kernel, store_old_bias]
-            with k.tf.control_dependencies(updates):
+            with tf.control_dependencies(updates):
                 new_kernel = k.abs(self.kernel)
                 new_bias = k.zeros_like(self.bias)
-                assign_new_kernel = k.tf.assign(self.kernel, new_kernel)
-                assign_new_bias = k.tf.assign(self.bias, new_bias)
+                assign_new_kernel = tf.assign(self.kernel, new_kernel)
+                assign_new_bias = tf.assign(self.bias, new_bias)
                 updates += [assign_new_kernel, assign_new_bias]
-            with k.tf.control_dependencies(updates):
+            with tf.control_dependencies(updates):
                 c = call(self, x)[self.batch_size:]
                 cc = k.concatenate([c, c], 0)
-                updates = [k.tf.assign(self.missing_impulse, cc)]
-                with k.tf.control_dependencies(updates):
-                    updates = [k.tf.assign(self.kernel, self._kernel),
-                               k.tf.assign(self.bias, self._bias)]
+                updates = [tf.assign(self.missing_impulse, cc)]
+                with tf.control_dependencies(updates):
+                    updates = [tf.assign(self.kernel, self._kernel),
+                               tf.assign(self.bias, self._bias)]
         elif 'AveragePooling' in self.name:
             c = call(self, x)[self.batch_size:]
             cc = k.concatenate([c, c], 0)
-            updates = [k.tf.assign(self.missing_impulse, cc)]
+            updates = [tf.assign(self.missing_impulse, cc)]
         else:
             updates = []
 
-        with k.tf.control_dependencies(updates):
+        with tf.control_dependencies(updates):
             # Only call layer if there are input spikes. This is to prevent
             # accumulation of bias.
-            self.impulse = k.tf.cond(k.any(k.not_equal(x[:self.batch_size], 0)),
-                                     lambda: call(self, x),
-                                     lambda: k.zeros_like(self.mem))
+            self.impulse = \
+                tf.cond(k.any(k.not_equal(x[:self.batch_size], 0)),
+                        lambda: call(self, x),
+                        lambda: k.zeros_like(self.mem))
             psp = self.update_neurons()[:self.batch_size]
 
         return k.concatenate([psp,
@@ -498,14 +505,14 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
     def call(self, x, mask=None):
         """Layer functionality."""
         # Skip integration of input spikes in membrane potential. Directly
-        # transmit new spikes. The output psp is nonzero wherever there has been
-        # an input spike at any time during simulation.
+        # transmit new spikes. The output psp is nonzero wherever there has
+        # been an input spike at any time during simulation.
 
         input_psp = MaxPooling2D.call(self, x)
 
         if self.spiketrain is not None:
-            new_spikes = k.tf.logical_xor(k.greater(input_psp, 0),
-                                          k.greater(self.last_spiketimes, 0))
+            new_spikes = tf.logical_xor(k.greater(input_psp, 0),
+                                        k.greater(self.last_spiketimes, 0))
             self.add_update([(self.spiketrain,
                               self.time * k.cast(new_spikes, k.floatx()))])
 

@@ -11,8 +11,8 @@ import keras
 import numpy as np
 from future import standard_library
 
-from snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim \
-    import SNN as SNN_
+from snntoolbox.simulation.target_simulators.\
+    INI_temporal_mean_rate_target_sim import SNN as SNN_
 from snntoolbox.simulation.utils import get_layer_synaptic_operations
 
 standard_library.install_aliases()
@@ -23,7 +23,8 @@ remove_classifier = False
 class SNN(SNN_):
     """
     The compiled spiking neural network, using layers derived from
-    Keras base classes (see `snntoolbox.simulation.backends.inisim.temporal_pattern`).
+    Keras base classes (see
+    `snntoolbox.simulation.backends.inisim.temporal_pattern`).
 
     Aims at simulating the network on a self-implemented Integrate-and-Fire
     simulator using a timestepped approach.
@@ -52,7 +53,8 @@ class SNN(SNN_):
         for layer in self.snn.layers:
             if hasattr(layer, 'bias'):
                 # Adjust biases to time resolution of simulator.
-                bias = keras.backend.get_value(layer.bias) / self._num_timesteps
+                bias = (keras.backend.get_value(layer.bias) /
+                        self._num_timesteps)
                 keras.backend.set_value(layer.bias, bias)
 
     def simulate(self, **kwargs):
@@ -98,7 +100,8 @@ class SNN(SNN_):
         print("Current accuracy of batch:")
         if self.config.getint('output', 'verbose') > 0:
             guesses_b = np.argmax(np.sum(output_b_l_t, 2), 1)
-            echo('{:.2%}_'.format(np.mean(kwargs[str('truth_b')] == guesses_b)))
+            echo('{:.2%}_'.format(np.mean(kwargs[str('truth_b')] ==
+                                          guesses_b)))
 
         return np.cumsum(output_b_l_t, 2)
 

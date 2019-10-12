@@ -55,12 +55,12 @@ num_bits = 32
 simulator = INI
 duration = 200
 dt = 1
-batch_size = 100
-num_to_test = 1000
+batch_size = 1
+num_to_test = 1
 sample_idxs_to_test = []
 reset_between_nth_sample = 1
 top_k = 1
-keras_backend = theano
+keras_backend = tensorflow
 early_stopping = False
 
 [cell]
@@ -115,7 +115,7 @@ model_libs = {'keras', 'lasagne', 'caffe'}
 dataset_formats = {'npz', 'jpg', 'aedat'}
 frame_gen_method = {'signed_sum', 'rectified_sum'}
 maxpool_types = {'fir_max', 'exp_max', 'avg_max'}
-simulators_pyNN = {'nest', 'brian', 'Neuron'}
+simulators_pyNN = {'nest', 'brian', 'neuron'}
 simulators_other = {'INI', 'brian2', 'MegaSim', 'loihi'}
 simulators = %(simulators_pyNN)s | %(simulators_other)s
 # Keras backends:

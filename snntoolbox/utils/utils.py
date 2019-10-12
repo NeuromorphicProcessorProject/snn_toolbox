@@ -392,16 +392,6 @@ def quantized_relu(x, m, f):
     return keras.backend.relu(reduce_precision_var(x, m, f))
 
 
-def to_integer(weights, biases, bitwidth, normalize=True):
-    max_val = np.max(np.abs(np.concatenate([weights, biases], None))) \
-        if normalize else 1
-    a_min = - 2 ** bitwidth
-    a_max = - a_min - 1
-    weights = np.clip(weights / max_val * a_max, a_min, a_max).astype(int)
-    biases = np.clip(biases / max_val * a_max, a_min, a_max).astype(int)
-    return weights, biases
-
-
 class ClampedReLU:
     """
     Rectified linear unit activation function where values in ``x`` below

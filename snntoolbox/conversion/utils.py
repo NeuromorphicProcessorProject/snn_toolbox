@@ -156,19 +156,25 @@ def normalize_parameters(model, config, **kwargs):
                 parameters[0] * scale_facs[inbound[0].name] / scale_fac,
                 parameters[1] / scale_fac]
         else:
-            parameters_norm = [parameters[0]]  # Consider only weights at first
-            offset = 0  # Index offset at input filter dimension
-            for inb in inbound:
-                f_out = inb.filters  # Num output features of inbound layer
-                f_in = range(offset, offset + f_out)
-                if parameters[0].ndim == 2:  # Fully-connected Layer
-                    parameters_norm[0][f_in, :] *= \
-                        scale_facs[inb.name] / scale_fac
-                else:
+            # In case of this layer receiving input from several layers, we can
+            # apply scale factor to bias as usual, but need to rescale weights
+            # according to their respective input.
+            parameters_norm = [parameters[0], parameters[1] / scale_fac]
+            if parameters[0].ndim == 4:
+                # In conv layers, just need to split up along channel dim.
+                offset = 0  # Index offset at input filter dimension
+                for inb in inbound:
+                    f_out = inb.filters  # Num output features of inbound layer
+                    f_in = range(offset, offset + f_out)
                     parameters_norm[0][:, :, f_in, :] *= \
                         scale_facs[inb.name] / scale_fac
-                offset += f_out
-            parameters_norm.append(parameters[1] / scale_fac)  # Append bias
+                    offset += f_out
+            else:
+                # Fully-connected layers need more consideration, because they
+                # could receive input from several conv layers that are
+                # concatenated and then flattened. The neuron position in the
+                # flattened layer depend on the image_data_format.
+                raise NotImplementedError
 
         # Update model with modified parameters
         layer.set_weights(parameters_norm)

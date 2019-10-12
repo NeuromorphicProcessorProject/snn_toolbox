@@ -3,49 +3,25 @@ Setup SNN toolbox
 
 """
 
-import os
-import sys
-from codecs import open
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
 
 
-with open('README.rst') as file:
-    long_description = file.read()
+with open('README.rst') as f:
+    long_description = f.read()
 
-
-# Tell setuptools to run 'tox' when calling 'python setup.py test'.
-class Tox(TestCommand):
-    user_options = [('tox-args=', 'a', "Arguments to pass to tox")]
-
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.tox_args = None
-
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        # import here, cause outside the eggs aren't loaded
-        import tox
-        import shlex
-        args = self.tox_args
-        if args:
-            args = shlex.split(self.tox_args)
-        errno = tox.cmdline(args=args)
-        sys.exit(errno)
+with open('requirements.txt') as f:
+    requirements = f.read().splitlines()
 
 setup(
     name='snntoolbox',
-    version='0.2.1',  # see https://www.python.org/dev/peps/pep-0440/
+    version='0.3.1',  # see https://www.python.org/dev/peps/pep-0440/
     description='Spiking neural network conversion toolbox',
     long_description=long_description,
     author='Bodo Rueckauer',
     author_email='bodo.rueckauer@gmail.com',
     url='https://github.com/NeuromorphicProcessorProject/snn_toolbox',
-    download_url='https://github.com/NeuromorphicProcessorProject/snn_toolbox.git',
+    download_url='https://github.com/NeuromorphicProcessorProject/snn_toolbox'
+                 '.git',
     license='MIT',
 
     classifiers=[
@@ -65,25 +41,19 @@ setup(
         # Supported Python versions
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
 
     keywords='neural networks, deep learning, spiking',
 
-    install_requires=[
-        'future',
-        'numpy',
-        'keras'
-    ],
+    install_requires=requirements,
 
     setup_requires=['pytest-runner'],
 
     tests_require=['tox', 'pytest'],
 
-    cmdclass={'test': Tox},  # , 'build_doc': BuildDoc},
+    # cmdclass={'test': Tox, 'build_doc': BuildDoc},
 
     # Additional groups of dependencies (e.g. development dependencies).
     # Install them with $ pip install -e .[dev,test]
@@ -92,7 +62,7 @@ setup(
     #     'test': ['bar']
     # },
 
-    packages=find_packages(exclude=['scripts']),
+    packages=find_packages(exclude=[]),
 
     package_data={
         'snntoolbox': ['config_defaults']

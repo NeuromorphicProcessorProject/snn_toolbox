@@ -6,19 +6,21 @@ Spiking neural network conversion toolbox
 Introduction
 ------------
 
-Artificial neural networks have been studied and used extensively to solve tasks
-from machine learning and artificial intelligence. *Deep Learning* has developed
-increasingly large neural networks, spanning up to thousands of layers and
-millions of neurons. These networks have proven to be very successful in solving
-challenging tasks like object detection and recognition, scene segmentation and
-parsing, video classification, etc. The downside is that running such large
-networks requires massive amounts of computational resources.
+Artificial neural networks have been studied and used extensively to solve
+tasks from machine learning and artificial intelligence. *Deep Learning* has
+developed increasingly large neural networks, spanning up to thousands of
+layers and millions of neurons. These networks have proven to be very
+successful in solving challenging tasks like object detection and recognition,
+scene segmentation and parsing, video classification, etc. The downside is that
+running such large networks requires massive amounts of computational
+resources.
 
 Our research group at the University of Zurich and ETH Zurich develops
-*Spiking Neural Networks* (SNNs) that perform the same task but with potentially
-less computations and energy consumption. The fundamental idea is that in a
-spiking network, all computation is *event-driven*, meaning that operations are
-sparse and occur only when significant changes in the input make them necessary.
+*Spiking Neural Networks* (SNNs) that perform the same task but with
+potentially less computations and energy consumption. The fundamental idea is
+that in a spiking network, all computation is *event-driven*, meaning that
+operations are sparse and occur only when significant changes in the input make
+them necessary.
 
 Training a deep spiking network (i.e. learning the synaptic weights) is
 difficult. An alternative approach is to take a pre-trained neural network and
@@ -28,8 +30,8 @@ representing spike-rates. In this ANN-to-SNN conversion, we use the weights of
 the ANN and replace the analog (rate) neurons of the ANN by simple
 Integrate-and-Fire spiking neurons. This works because over the course of the
 simulation, the average firing rate of the SNN neurons will approximate the
-activation of the corresponding neurons in the original ANN. See :doc:`citation`
-for details.
+activation of the corresponding neurons in the original ANN. See
+:doc:`citation` for details.
 
 This toolbox automates the conversion of pre-trained analog to spiking neural
 networks (ANN to SNN), and provides tools for testing the SNNs in a spiking
@@ -48,8 +50,8 @@ Parsing and converting
 Given a model written in some neural network library, the toolbox parses the
 provided network files by extracting the relevant information and creating an
 equivalent Keras model from it. This parsed model serves as common abstraction
-stage from the input and is internally used by the toolbox to perform the actual
-conversion to a spiking network.
+stage from the input and is internally used by the toolbox to perform the
+actual conversion to a spiking network.
 
 The conversion toolbox currently supports input networks generated with
 `Keras <https://keras.io/>`_,
@@ -74,17 +76,17 @@ Simulating
 
 After the input model has been converted, the resulting spiking network can be
 exported for simulation in a spiking simulator or deployment on dedicated
-spiking neuron chips. Currently, the following output formats are supported (see
-:doc:`extending` on how to add a simulator to the toolbox):
+spiking neuron chips. Currently, the following output formats are supported
+(see :doc:`extending` on how to add a simulator to the toolbox):
 
-    - `pyNN <http://neuralensemble.org/docs/PyNN/>`_ models. pyNN is a simulator
-      -independent language for building neural network
+    - `pyNN <http://neuralensemble.org/docs/PyNN/>`_ models. pyNN is a
+      simulator-independent language for building neural network
       models. It allows running the converted net in a spiking simulator like
       `Brian <http://briansimulator.org/>`_,
       `Nest <http://www.nest-simulator.org/>`_,
       `Neuron <https://www.neuron.yale.edu/neuron/>`_, or by a custom simulator
-      that allows pyNN models as inputs. If you choose a pyNN simulator backend, 
-      we recommend Nest with version 2.14.
+      that allows pyNN models as inputs. If you choose a pyNN
+      simulator backend, we recommend Nest with version 2.14.
     - `Brian2 <http://brian2.readthedocs.io/en/latest/index.html#>`_.
     - The toolbox integrates MegaSim, an event-driven asynchronous spiking
       simulator developed at the University of Seville.
@@ -123,23 +125,26 @@ include:
 GUI (beta)
 ----------
 
+.. note::
+   The GUI has not been maintained since 2017 and is most likely broken.
+
 .. figure:: ../images/gui_parameters.png
    :scale: 50 %
    :alt: Snapshot of the SNN toolbox GUI.
 
    **SNN toolbox GUI.** In the main window, the user can specify which tools to
    use during the experiment. Also, parameters of the neuron cells used during
-   simulation can be set. The GUI saves and reloads last settings automatically,
-   and allows saving and loading preferences manually. Tooltips explain all
-   functionality.
+   simulation can be set. The GUI saves and reloads last settings
+   automatically, and allows saving and loading preferences manually. Tooltips
+   explain all functionality.
 
 .. figure:: ../images/gui_plots.png
    :scale: 50 %
    :alt: Snapshot of the SNN toolbox GUI plot window.
 
-   **SNN toolbox GUI plot window.** The toolbox looks for plots in the specified
-   working directory. The user can select one or several layers, for which the
-   results of a test run will be displayed in a way that facilitates examining
-   and comparing results of each layer of the network. The example above
-   compares ANN activations to SNN spikerates for the first convolutional layer
-   on the MNIST dataset.
+   **SNN toolbox GUI plot window.** The toolbox looks for plots in the
+   specified working directory. The user can select one or several layers, for
+   which the results of a test run will be displayed in a way that facilitates
+   examining and comparing results of each layer of the network. The example
+   above compares ANN activations to SNN spikerates for the first convolutional
+   layer on the MNIST dataset.

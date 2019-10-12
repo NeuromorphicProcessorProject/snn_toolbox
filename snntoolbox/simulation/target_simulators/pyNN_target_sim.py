@@ -17,9 +17,8 @@ from future import standard_library
 from six.moves import cPickle
 
 from snntoolbox.utils.utils import confirm_overwrite
-from snntoolbox.simulation.utils import AbstractSNN
+from snntoolbox.simulation.utils import AbstractSNN, get_shape_from_label
 from snntoolbox.bin.utils import config_string_to_set_of_strings
-from pyNN.utility import ProgressBar
 
 standard_library.install_aliases()
 
@@ -74,7 +73,9 @@ class SNN(AbstractSNN):
 
     def add_layer(self, layer):
 
-        if 'Flatten' in layer.__class__.__name__:
+        # Latest Keras versions need special permutation after Flatten layers.
+        if 'Flatten' in layer.__class__.__name__ and \
+                self.config.get('input', 'model_lib') == 'keras':
             self.flatten_shapes.append(
                 (layer.name, get_shape_from_label(self.layers[-1].label)))
             return
@@ -484,34 +485,9 @@ class MyProgressBar(object):
     def __init__(self, interval, t_stop):
         self.interval = interval
         self.t_stop = t_stop
+        from pyNN.utility import ProgressBar
         self.pb = ProgressBar(width=int(t_stop / interval), char=".")
 
     def __call__(self, t):
         self.pb(t / self.t_stop)
         return t + self.interval
-
-
-def get_shape_from_label(label):
-    """
-    Extract the output shape of a flattened pyNN layer from the layer name
-    generated during parsing.
-
-    Parameters
-    ----------
-
-    label: str
-        Layer name containing shape information after a '_' separator.
-
-    Returns
-    -------
-
-    : list
-        The layer shape.
-
-    Example
-    -------
-        >>> get_shape_from_label('02Conv2D_16x32x32')
-        [16, 32, 32]
-
-    """
-    return [int(i) for i in label.split('_')[1].split('x')]

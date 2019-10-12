@@ -3,10 +3,11 @@
 
 This module defines the layer objects used to create a spiking neural network
 for our built-in INI simulator
-:py:mod:`~snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim`.
+:py:mod:
+`~snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim`.
 
-The coding scheme underlying this conversion is that the analog activation value
-is transformed into a binary representation of spikes.
+The coding scheme underlying this conversion is that the analog activation
+value is transformed into a binary representation of spikes.
 
 This simulator works only with Keras backend set to Tensorflow.
 
@@ -18,6 +19,7 @@ from __future__ import print_function, unicode_literals
 
 import numpy as np
 from future import standard_library
+import tensorflow as tf
 from keras import backend as k
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
 from keras.layers import Layer, Concatenate
@@ -73,7 +75,7 @@ class SpikeLayer(Layer):
         self.spikerates = k.zeros(output_shape)
 
     def update_spikevars(self, x):
-        return [k.tf.assign(self.spikerates, x)]
+        return [tf.assign(self.spikerates, x)]
 
 
 def spike_call(call):
@@ -94,7 +96,7 @@ def spike_call(call):
 
         updates = self.update_spikevars(x_activ)
 
-        with k.tf.control_dependencies(updates):
+        with tf.control_dependencies(updates):
             return x_activ + 0
 
     return decorator
@@ -121,7 +123,7 @@ def to_binary(x, num_bits):
         distributed across the first dimension of ``binary_array``.
     """
 
-    shape = k.get_variable_shape(x)
+    shape = k.shape(x)
 
     binary_array = k.zeros([num_bits] + list(shape[1:]), k.floatx())
 
@@ -151,40 +153,40 @@ def to_binary(x, num_bits):
             return k.less(idx_n, shape[3])
 
         def iterate_neurons_l(idx_p, idx_l, idx_m, idx_n):
-            idx_p, idx_l, idx_m, idx_n = k.tf.while_loop(
+            idx_p, idx_l, idx_m, idx_n = tf.while_loop(
                 is_iterate_neurons_m, iterate_neurons_m,
                 [idx_p, idx_l, idx_m, idx_n])
             return idx_p, idx_l + 1, 0, idx_n
 
         def iterate_neurons_m(idx_p, idx_l, idx_m, idx_n):
-            idx_p, idx_l, idx_m, idx_n = k.tf.while_loop(
+            idx_p, idx_l, idx_m, idx_n = tf.while_loop(
                 is_iterate_neurons_n, iterate_neurons_n,
                 [idx_p, idx_l, idx_m, idx_n])
             return idx_p, idx_l, idx_m + 1, 0
 
         def iterate_neurons_n(idx_p, idx_l, idx_m, idx_n):
             act_value = x[0, idx_l, idx_m, idx_n]
-            act_value, idx_p, idx_l, idx_m, idx_n = k.tf.while_loop(
+            act_value, idx_p, idx_l, idx_m, idx_n = tf.while_loop(
                 is_iterate_powers, iterate_powers,
                 [act_value, idx_p, idx_l, idx_m, idx_n])
-            with k.tf.control_dependencies(
+            with tf.control_dependencies(
                     [idx_p, act_value, idx_l, idx_m, idx_n]):
                 return 0, idx_l, idx_m, idx_n + 1
 
         def iterate_powers(act_value, idx_p, idx_l, idx_m, idx_n):
             p = powers[idx_p]
             c = k.greater_equal(act_value, p)
-            b = k.tf.cond(c, lambda: 1., lambda: 0.)
-            a = k.tf.assign(binary_array[idx_p, idx_l, idx_m, idx_n], b)
-            new_act_value = k.tf.cond(c, lambda: act_value - p,
-                                      lambda: act_value)
-            with k.tf.control_dependencies([a]):
+            b = tf.cond(c, lambda: 1., lambda: 0.)
+            a = tf.assign(binary_array[idx_p, idx_l, idx_m, idx_n], b)
+            new_act_value = tf.cond(c, lambda: act_value - p,
+                                    lambda: act_value)
+            with tf.control_dependencies([a]):
                 return new_act_value, idx_p + 1, idx_l, idx_m, idx_n
 
-        idx_p_, idx_l_, idx_m_, idx_n_ = k.tf.while_loop(
+        idx_p_, idx_l_, idx_m_, idx_n_ = tf.while_loop(
             is_iterate_neurons_l, iterate_neurons_l,
             [idx_p0, idx_l0, idx_m0, idx_n0])
-        with k.tf.control_dependencies([idx_p_, idx_l_, idx_m_, idx_n_]):
+        with tf.control_dependencies([idx_p_, idx_l_, idx_m_, idx_n_]):
             return binary_array + 0
     else:
         idx_l0 = k.constant(0, 'int32')
@@ -199,7 +201,7 @@ def to_binary(x, num_bits):
 
         def iterate_neurons_l(idx_p, idx_l):
             act_value = x[0, idx_l]
-            act_value, idx_p, idx_l = k.tf.while_loop(
+            act_value, idx_p, idx_l = tf.while_loop(
                 is_iterate_powers, iterate_powers,
                 [act_value, idx_p, idx_l])
             return 0, idx_l + 1
@@ -207,17 +209,17 @@ def to_binary(x, num_bits):
         def iterate_powers(act_value, idx_p, idx_l):
             p = powers[idx_p]
             c = k.greater_equal(act_value, p)
-            b = k.tf.cond(c, lambda: 1., lambda: 0.)
-            a = k.tf.assign(binary_array[idx_p, idx_l], b)
-            new_act_value = k.tf.cond(c, lambda: act_value - p,
-                                      lambda: act_value)
-            with k.tf.control_dependencies([a]):
+            b = tf.cond(c, lambda: 1., lambda: 0.)
+            a = tf.assign(binary_array[idx_p, idx_l], b)
+            new_act_value = tf.cond(c, lambda: act_value - p,
+                                    lambda: act_value)
+            with tf.control_dependencies([a]):
                 return new_act_value, idx_p + 1, idx_l
 
-        idx_p_, idx_l_ = k.tf.while_loop(
+        idx_p_, idx_l_ = tf.while_loop(
             is_iterate_neurons_l, iterate_neurons_l, [idx_p0, idx_l0])
 
-        with k.tf.control_dependencies([idx_p_, idx_l_]):
+        with tf.control_dependencies([idx_p_, idx_l_]):
             return binary_array + 0
 
 
@@ -388,7 +390,7 @@ class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
 
         updates = self.update_spikevars(activ)
 
-        with k.tf.control_dependencies(updates):
+        with tf.control_dependencies(updates):
             return activ + 0
 
 
@@ -417,7 +419,7 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
 
         updates = self.update_spikevars(activ)
 
-        with k.tf.control_dependencies(updates):
+        with tf.control_dependencies(updates):
             return activ + 0
 
 

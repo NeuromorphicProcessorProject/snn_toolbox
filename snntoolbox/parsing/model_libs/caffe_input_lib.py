@@ -11,6 +11,9 @@ from snntoolbox.parsing.utils import AbstractModelParser, padding_string
 
 class ModelParser(AbstractModelParser):
 
+    def parse_depthwiseconvolution(self, layer, attributes):
+        raise NotImplementedError
+
     def __init__(self, input_model, config):
         AbstractModelParser.__init__(self, input_model, config)
         self._layer_dict = {'InnerProduct': 'Dense',

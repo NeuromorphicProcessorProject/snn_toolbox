@@ -12,8 +12,8 @@ import keras
 import numpy as np
 from future import standard_library
 
-from snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim \
-    import SNN as SNN_
+from snntoolbox.simulation.target_simulators.\
+    INI_temporal_mean_rate_target_sim import SNN as SNN_
 standard_library.install_aliases()
 
 remove_classifier = False
@@ -56,6 +56,8 @@ class SNN(SNN_):
                 np.zeros(l.output_shape)[:self.batch_size] for l in
                 self.snn.layers if hasattr(l, 'spiketrain')
                 and l.spiketrain is not None]
+        else:
+            prospective_spikes = []
         for sim_step_int in range(self._num_timesteps):
             sim_step = (sim_step_int + 1) * self._dt
             self.set_time(sim_step)
@@ -116,7 +118,8 @@ class SNN(SNN_):
             if self._poisson_input or self._dataset_format == 'aedat':
                 if self.synaptic_operations_b_t is not None:
                     self.synaptic_operations_b_t[:, sim_step_int] += \
-                        get_layer_synaptic_operations(input_b_l, self.fanout[0])
+                        get_layer_synaptic_operations(input_b_l,
+                                                      self.fanout[0])
             else:
                 if self.neuron_operations_b_t is not None:
                     if sim_step_int == 0:

@@ -173,6 +173,12 @@ evaluateANN: bool, optional
 
     This ensures all operations on the ANN preserve the accuracy.
 
+parse: bool, optional
+    If enabled, the input ANN is parsed for further processing in the SNN
+    toolbox. Needs to be done the first time you run your model. The toolbox
+    then saves the parsed model and, if ``parse=False``, will load it the next
+    time.
+
 normalize: bool, optional
     If enabled, the parameters of each layer will be normalized by the highest
     activation value, or by the ``n``-th percentile (see parameter
@@ -310,12 +316,6 @@ v_reset: float, optional
 
 v_rest: float, optional
     Resting membrane potential in mV.
-
-e_rev_E: float, optional
-    Reversal potential for excitatory input in mV.
-
-e_rev_I: float, optional
-    Reversal potential for inhibitory input in mV.
 
 i_offset: float, optional
     Offset current in nA.

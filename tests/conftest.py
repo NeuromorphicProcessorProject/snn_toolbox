@@ -3,9 +3,18 @@
 """py.test fixtures with module-scope."""
 
 import os
-from importlib import import_module
 
+import keras
+import numpy as np
 import pytest
+from keras import Input, Model
+from keras.datasets import mnist
+from keras.layers import Conv2D, AveragePooling2D, Flatten, Dropout, Dense, \
+    Concatenate, Activation, BatchNormalization
+from keras.utils import np_utils
+
+from snntoolbox.bin.utils import update_setup
+from snntoolbox.utils.utils import import_configparser
 
 
 def is_module_installed(mod):
@@ -18,155 +27,181 @@ def is_module_installed(mod):
         return importlib.util.find_spec(mod) is not None
 
 
-@pytest.fixture(scope='module')
-def _config():
-    from snntoolbox.bin.utils import update_setup
-    return update_setup(os.path.join(os.path.dirname(__file__),
-                                     'configurations', 'config0'))
+@pytest.fixture(scope='function')
+def _config(_path_wd, _datapath):
+
+    path_wd = str(_path_wd)
+    datapath = str(_datapath)
+    filename_ann = 'mnist_cnn'
+    configparser = import_configparser()
+    config = configparser.ConfigParser()
+
+    config.read_dict({'paths': {'path_wd': path_wd,
+                                'dataset_path': datapath,
+                                'filename_ann': filename_ann}})
+
+    with open(os.path.join(path_wd, filename_ann + '.h5'), 'w'):
+        pass
+
+    config_filepath = os.path.join(path_wd, 'config')
+    with open(config_filepath, 'w') as configfile:
+        config.write(configfile)
+
+    config = update_setup(config_filepath)
+
+    return config
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def _path_wd(tmpdir_factory):
     return tmpdir_factory.mktemp('wd')
 
 
 @pytest.fixture(scope='session')
-def _datapath(_path_wd):
-    return _path_wd.mkdir('dataset')
+def _datapath(tmpdir_factory, _dataset):
+    datapath = tmpdir_factory.mktemp('dataset')
+    x_train, y_train, x_test, y_test = _dataset
+
+    np.savez_compressed(os.path.join(datapath, 'x_test'), x_test)
+    np.savez_compressed(os.path.join(datapath, 'y_test'), y_test)
+    np.savez_compressed(os.path.join(datapath, 'x_norm'), x_test)
+
+    return datapath
 
 
-@pytest.fixture(scope='module')
-def _dataset(_config):
-    from snntoolbox.datasets.utils import get_dataset
-    return get_dataset(_config)
+@pytest.fixture(scope='session')
+def _dataset():
+
+    (x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+    x_train = x_train / 255
+    x_test = x_test / 255
+
+    axis = 1 if keras.backend.image_data_format() == 'channels_first' else -1
+    x_train = np.expand_dims(x_train, axis)
+    x_test = np.expand_dims(x_test, axis)
+
+    y_train = np_utils.to_categorical(y_train, 10)
+    y_test = np_utils.to_categorical(y_test, 10)
+
+    return x_train, y_train, x_test, y_test
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def _normset(_dataset):
-    return _dataset[0]
+    return _dataset[2]
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def _testset(_dataset):
-    return _dataset[1]
+    return _dataset[2:]
 
 
-def get_input_libs():
-    ml = []
-    path_wd = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
-                                           'examples', 'models'))
-    if is_module_installed('keras'):
-        ml.append({'input': {'model_lib': 'keras'},
-                   'paths': {'filename_ann': '98.96', 'path_wd':
-                             os.path.join(path_wd, 'lenet5', 'keras')},
-                   'simulation': {'target_acc': '98.50'}})
-    if is_module_installed('caffe'):
-        ml.append({'input': {'model_lib': 'caffe'},
-                   'paths': {'filename_ann': '96.13', 'path_wd':
-                             os.path.join(path_wd, 'lenet5', 'caffe')},
-                   'simulation': {'target_acc': '95.10'}})
-    if is_module_installed('lasagne'):
-        ml.append({'input': {'model_lib': 'lasagne'},
-                   'paths': {'filename_ann': '99.02', 'path_wd':
-                             os.path.join(path_wd, 'lenet5', 'lasagne')},
-                   'simulation': {'target_acc': '98.00'}})
-    return ml
-
-_ml = get_input_libs()
+@pytest.fixture(scope='session')
+def _installed_input_libs(_config):
+    input_libs = _config.get('restrictions', 'model_libs')
+    return [lib for lib in input_libs if is_module_installed(lib)]
 
 
-@pytest.fixture(scope='module')
-def _parsed_model(_config, _normset):
-    from snntoolbox.conversion.utils import normalize_parameters
-    input_model_and_lib = _input_model_and_lib_single(_config, _ml[0])
-    model = input_model_and_lib['input_model']['model']
-    model_parser = input_model_and_lib['model_lib'].ModelParser(model, _config)
-    model_parser.parse()
-    parsed_model = model_parser.build_parsed_model()
-    normalize_parameters(parsed_model, _config, **_normset)
-    return parsed_model
+@pytest.fixture(scope='session')
+def _model_1(_dataset):
+
+    x_train, y_train, x_test, y_test = _dataset
+
+    input_shape = x_train.shape[1:]
+    input_layer = Input(input_shape)
+
+    layer = Conv2D(filters=16,
+                   kernel_size=(5, 5),
+                   strides=(2, 2),
+                   activation='relu',
+                   use_bias=False)(input_layer)
+    layer = Conv2D(filters=32,
+                   kernel_size=(3, 3),
+                   activation='relu',
+                   use_bias=False)(layer)
+    layer = AveragePooling2D()(layer)
+    layer = Conv2D(filters=8,
+                   kernel_size=(3, 3),
+                   padding='same',
+                   activation='relu',
+                   use_bias=False)(layer)
+    layer = Flatten()(layer)
+    layer = Dropout(0.01)(layer)
+    layer = Dense(units=10,
+                  activation='softmax',
+                  use_bias=False)(layer)
+
+    model = Model(input_layer, layer)
+
+    model.compile('adam', 'categorical_crossentropy', ['accuracy'])
+
+    history = model.fit(x_train, y_train, batch_size=64, epochs=1, verbose=2,
+                        validation_data=(x_test, y_test))
+
+    assert history.history['val_accuracy'][-1] > 0.95
+
+    return model
 
 
-@pytest.fixture(scope='module')
-def _input_model_and_lib_single(_config, p):
-    _config.read_dict(p)
-    model_lib = import_module('snntoolbox.parsing.model_libs.' +
-                              _config['input']['model_lib'] + '_input_lib')
-    input_model = model_lib.load(_config['paths']['path_wd'],
-                                 _config['paths']['filename_ann'])
-    return {'model_lib': model_lib, 'input_model': input_model,
-            'target_acc': _config.getfloat('simulation', 'target_acc')}
+@pytest.fixture(scope='session')
+def _model_2(_dataset):
+    x_train, y_train, x_test, y_test = _dataset
 
+    axis = 1 if keras.backend.image_data_format() == 'channels_first' else -1
 
-@pytest.fixture(scope='module', params=_ml)
-def _input_model_and_lib(_config, request):
-    return _input_model_and_lib_single(_config, request.param)
+    input_shape = x_train.shape[1:]
+    input_layer = Input(input_shape)
 
+    layer = Conv2D(filters=16,
+                   kernel_size=(5, 5),
+                   strides=(2, 2))(input_layer)
+    layer = BatchNormalization(axis=axis)(layer)
+    layer = Activation('relu')(layer)
+    layer = AveragePooling2D()(layer)
+    branch1 = Conv2D(filters=32,
+                     kernel_size=(3, 3),
+                     padding='same',
+                     activation='relu')(layer)
+    branch2 = Conv2D(filters=8,
+                     kernel_size=(1, 1),
+                     activation='relu')(layer)
+    layer = Concatenate(axis=axis)([branch1, branch2])
+    layer = Conv2D(filters=10,
+                   kernel_size=(3, 3),
+                   activation='relu')(layer)
+    layer = Flatten()(layer)
+    layer = Dropout(1e-5)(layer)
+    layer = Dense(units=10,
+                  activation='softmax')(layer)
 
-def get_parameters_for_simtests():
-    from snntoolbox.bin.utils import load_config, initialize_simulator
+    model = Model(input_layer, layer)
 
-    config_defaults = load_config(os.path.abspath(os.path.join(
-        os.path.dirname(__file__), '..', 'snntoolbox', 'config_defaults')))
+    model.compile('adam', 'categorical_crossentropy', ['accuracy'])
 
-    config_ini = {'simulation': {'simulator': 'INI', 'target_acc': 99.00,
-                                 'num_to_test': 200}}
-    config_nest = {'simulation': {'simulator': 'nest', 'target_acc': 99.00,
-                                  'num_to_test': 2},
-                   'input': {'poisson_input': True}}
-    config_brian = {'simulation': {'simulator': 'brian', 'target_acc': 99.00,
-                                   'num_to_test': 2},
-                    'input': {'poisson_input': True}}
-    config_neuron = {'simulation': {'simulator': 'neuron', 'target_acc': 99.00,
-                                    'num_to_test': 2},
-                     'input': {'poisson_input': True}}
-    config_megasim = {'simulation': {'simulator': 'MegaSim', 'batch_size': 1,
-                                     'target_acc': 99.00, 'num_to_test': 2},
-                      'input': {'poisson_input': True}}
-    configs_to_test = [config_ini, config_nest, config_brian, config_neuron,
-                       config_megasim]
-    _sm = []
-    for config_to_test in configs_to_test:
-        config_defaults.read_dict(config_to_test)
-        try:
-            initialize_simulator(config_defaults)
-        except (ImportError, KeyError, ValueError):
-            continue
-        config_defaults['restrictions']['is_installed'] = 'True'
-        _sm.append(config_defaults)
-    return _sm
+    # Train model with backprop.
+    history = model.fit(x_train, y_train, batch_size=64, epochs=1, verbose=2,
+                        validation_data=(x_test, y_test))
 
-sm = get_parameters_for_simtests()
+    assert history.history['val_accuracy'][-1] > 0.96
 
-
-@pytest.fixture(scope='module', params=sm)
-def _spiking_model_and_sim(_config, _path_wd, request):
-    _config.read_dict(request.param)
-    _config.set('paths', 'path_wd', str(_path_wd))
-    target_sim = import_module('snntoolbox.simulation.target_simulators.' +
-                               _config['simulation']['simulator'] +
-                               '_target_sim')
-    spiking_model = target_sim.SNN(_config)
-    return {'target_sim': target_sim, 'spiking_model': spiking_model,
-            'target_acc': request.param['simulation']['target_acc']}
+    return model
 
 
 def get_examples():
-    example_filepaths = []
-    path_wd = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
-                                           'examples', 'models'))
-    if is_module_installed('keras'):
-        example_filepaths.append(os.path.join(path_wd, 'inceptionV3', 'config'))
-    if is_module_installed('lasagne'):
-        example_filepaths.append(os.path.join(path_wd, 'binaryconnect',
-                                              'config'))
-        example_filepaths.append(os.path.join(path_wd, 'binarynet', 'config'))
+    path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+                                        'examples'))
+    files = ['mnist_keras_INI.py']
+    if is_module_installed('brian2'):
+        files.append('mnist_keras_brian2.py')
+    if is_module_installed('pyNN') and is_module_installed('nest'):
+        files.append('mnist_keras_nest.py')
+
+    example_filepaths = [os.path.join(path, f) for f in files]
+
     return example_filepaths
 
 
-_example_filepaths = get_examples()
-
-
-@pytest.fixture(scope='module', params=_example_filepaths)
+@pytest.fixture(scope='session', params=get_examples())
 def _example_filepath(request):
     return request.param

@@ -5,7 +5,7 @@
 """
 
 import numpy as np
-
+import keras.backend as k
 from snntoolbox.parsing.utils import AbstractModelParser
 
 
@@ -19,7 +19,6 @@ class ModelParser(AbstractModelParser):
         return get_type(layer)
 
     def get_batchnorm_parameters(self, layer):
-        import keras.backend as k
         mean = k.get_value(layer.moving_mean)
         var = k.get_value(layer.moving_variance)
         var_eps_sqrt_inv = 1 / np.sqrt(var + layer.epsilon)
@@ -66,6 +65,10 @@ class ModelParser(AbstractModelParser):
         if layer.bias is None:
             attributes['parameters'].append(np.zeros(layer.filters))
             attributes['use_bias'] = True
+        assert layer.data_format == k.image_data_format(), (
+            "THe input model was setup with image data format '{}', but your "
+            "keras config file expects '{}'.".format(layer.data_format,
+                                                     k.image_data_format()))
 
     def parse_depthwiseconvolution(self, layer, attributes):
         attributes['parameters'] = layer.get_weights()
@@ -133,8 +136,6 @@ def load(path, filename, **kwargs):
                       ['accuracy', metrics.top_k_categorical_accuracy])
     else:
         from snntoolbox.parsing.utils import get_custom_activations_dict
-        model = models.load_model(str(filepath + '.h5'),
-                                  get_custom_activations_dict())
         filepath_custom_objects = kwargs.get('filepath_custom_objects', None)
         if filepath_custom_objects is not None:
             filepath_custom_objects = str(filepath_custom_objects)  # python 2

@@ -969,6 +969,7 @@ def plot_confusion_matrix(y_test, y_pred, path=None, class_labels=None):
     if confusion_matrix is None:
         return
 
+    # noinspection PyCallingNonCallable
     cm = confusion_matrix(y_test, y_pred, class_labels)
     plt.figure()
     plt.imshow(cm, interpolation='nearest')

@@ -30,11 +30,11 @@ def import_aedat_headers(info):
     """
     info['fileHandle'].seek(0)
 
-    # From version 3.1 there is an unambiguous division between header and data:
-    # A line like this: '#!END-HEADER\r\n'
-    # However, for all older files there's no guarantee that the first character
-    # in the data would not be '#'. We ignore this - we look in the next 
-    # unread position and if it is not # we exit. 
+    # From version 3.1 there is an unambiguous division between header and
+    # data: A line like this: '#!END-HEADER\r\n'
+    # However, for all older files there's no guarantee that the first
+    # character in the data would not be '#'. We ignore this - we look in the
+    # next unread position and if it is not # we exit.
 
     info['xml'] = {}
 

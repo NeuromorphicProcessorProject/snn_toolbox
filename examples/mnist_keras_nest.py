@@ -3,7 +3,7 @@
 This script sets up a small CNN using Keras and tensorflow, trains it for one
 epoch on MNIST, stores model and dataset in a temporary folder on disk, creates
 a configuration file for SNN toolbox, and finally calls the main function of
-SNN toolbox to convert the trained ANN to an SNN and run it using INI
+SNN toolbox to convert the trained ANN to an SNN and run it using pyNN/nest
 simulator.
 """
 
@@ -13,9 +13,7 @@ import numpy as np
 
 import keras
 from keras import Input, Model
-from keras.layers import Conv2D, AveragePooling2D, Flatten, Dense, Dropout, \
-    Concatenate
-from keras.layers import BatchNormalization, Activation
+from keras.layers import Conv2D, AveragePooling2D, Flatten, Dense, Dropout
 from keras.datasets import mnist
 from keras.utils import np_utils
 
@@ -61,35 +59,32 @@ np.savez_compressed(os.path.join(path_wd, 'x_norm'), x_train[::10])
 # CREATE ANN #
 ##############
 
-# This section creates a CNN using Keras, and trains it with backpropagation.
-# There are no spikes involved at this point. The model is far more complicated
-# than necessary for MNIST, but serves the purpose to illustrate the kind of
-# layers and topologies supported (in particular branches).
+# This section creates a simple CNN using Keras, and trains it
+# with backpropagation. There are no spikes involved at this point.
 
 input_shape = x_train.shape[1:]
 input_layer = Input(input_shape)
 
 layer = Conv2D(filters=16,
                kernel_size=(5, 5),
-               strides=(2, 2))(input_layer)
-layer = BatchNormalization(axis=axis)(layer)
-layer = Activation('relu')(layer)
-layer = AveragePooling2D()(layer)
-branch1 = Conv2D(filters=32,
-                 kernel_size=(3, 3),
-                 padding='same',
-                 activation='relu')(layer)
-branch2 = Conv2D(filters=8,
-                 kernel_size=(1, 1),
-                 activation='relu')(layer)
-layer = Concatenate(axis=axis)([branch1, branch2])
-layer = Conv2D(filters=10,
+               strides=(2, 2),
+               activation='relu',
+               use_bias=False)(input_layer)
+layer = Conv2D(filters=32,
                kernel_size=(3, 3),
-               activation='relu')(layer)
+               activation='relu',
+               use_bias=False)(layer)
+layer = AveragePooling2D()(layer)
+layer = Conv2D(filters=8,
+               kernel_size=(3, 3),
+               padding='same',
+               activation='relu',
+               use_bias=False)(layer)
 layer = Flatten()(layer)
 layer = Dropout(0.01)(layer)
 layer = Dense(units=10,
-              activation='softmax')(layer)
+              activation='softmax',
+              use_bias=False)(layer)
 
 model = Model(input_layer, layer)
 
@@ -120,15 +115,18 @@ config['paths'] = {
 
 config['tools'] = {
     'evaluate_ann': True,           # Test ANN on dataset before conversion.
-    'normalize': True               # Normalize weights for full dynamic range.
+    'normalize': True,              # Normalize weights for full dynamic range.
 }
 
 config['simulation'] = {
-    'simulator': 'INI',             # Chooses execution backend of SNN toolbox.
+    'simulator': 'nest',            # Chooses execution backend of SNN toolbox.
     'duration': 50,                 # Number of time steps to run each sample.
-    'num_to_test': 100,             # How many test samples to run.
-    'batch_size': 50,               # Batch size for simulation.
-    'keras_backend': 'tensorflow'   # Which keras backend to use.
+    'num_to_test': 5,               # How many test samples to run.
+    'batch_size': 1,                # Batch size for simulation.
+}
+
+config['input'] = {
+    'poisson_input': True           # Images are encodes as spike trains.
 }
 
 config['output'] = {

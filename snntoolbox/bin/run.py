@@ -24,11 +24,11 @@ def main(filepath=None):
     executable during :ref:`installation` that can be called from terminal.
 
     """
-    from snntoolbox.bin.utils import update_setup, test_full
+    from snntoolbox.bin.utils import update_setup, run_pipeline
 
     if filepath is not None:
         config = update_setup(filepath)
-        test_full(config)
+        run_pipeline(config)
         return
 
     parser = argparse.ArgumentParser(
@@ -46,7 +46,7 @@ def main(filepath=None):
         config = update_setup(_filepath)
 
         if args.terminal:
-            test_full(config)
+            run_pipeline(config)
         else:
             from snntoolbox.bin.gui import gui
             gui.main()

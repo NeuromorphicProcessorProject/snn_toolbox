@@ -5,27 +5,27 @@
 Installation
 ============
 
-Requirements
-------------
-
-First, install `Theano <http://www.deeplearning.net/software/theano/install_ubuntu.html>`_
-or `Tensorflow <https://www.tensorflow.org/>`_.
-
-.. note:: The SNN toolbox provides a built-in simulator to run the converted
-   network. This simulator is Keras-based and will use either Theano or
-   Tensorflow as backend. Depending on the backend you choose, different
-   features are available in the toolbox simulator. You can install both
-   backends and switch between them simply by setting the corresponding
-   parameter in the :ref:`config file <configuration>`::
-   
-      [simulation]
-      keras_backend = tensorflow
-  
 Release version
 ---------------
 
-Run ``pip install snntoolbox``. This will install the other minimum dependencies
-(Keras, h5py) on the fly.
+Run ``pip install snntoolbox``. This will install the minimum dependencies
+needed to get started. Optional dependencies like matplotlib and scipy enable
+generating output plots.
+
+The toolbox relies on Keras internally, and by default installs
+`Tensorflow <https://www.tensorflow.org/>`_ as Keras backend. You may want to
+update this backend to optimally fit your system, e.g. to use the GPU.
+
+.. note:: The SNN toolbox provides a built-in simulator to run the converted
+   network. This simulator is Keras-based and will use either Tensorflow or
+   `Theano <http://www.deeplearning.net/software/theano/install_ubuntu.html>`_
+   as backend. Depending on the backend you choose, different features are
+   available in the toolbox simulator. You can install both backends and switch
+   between them simply by setting the corresponding parameter in the
+   :ref:`config file <configuration>`::
+
+      [simulation]
+      keras_backend = tensorflow
 
 Development version (recommended)
 ---------------------------------
@@ -33,8 +33,8 @@ Development version (recommended)
 To get the latest version, checkout the `repository <https://github.com/NeuromorphicProcessorProject/snn_toolbox>`_.
 In the toolbox root directory ``snn_toolbox/``, run ``pip install .``.
 
-.. note:: Do not use ``python setup.py install`` because easy_install caused the
-   installation to fail on some platforms due to dependency issues.
+.. note:: Using easy_install via ``python setup.py install`` has been reported
+   to fail on some platforms due to dependency issues.
 
 Additional tools
 ----------------
