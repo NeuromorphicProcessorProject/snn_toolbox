@@ -749,6 +749,10 @@ class AbstractSNN:
             count[gt] += 1
             if gt == p:
                 match[gt] += 1
+        # Avoid division by zero when a class was not tested.
+        not_seen = count == 0
+        match[not_seen] = 1
+        count[not_seen] = 1
         avg_acc = np.mean(np.true_divide(match, count))
         top1acc_total = np.mean(np.array(truth_d) == np.array(guesses_d))
 
@@ -758,7 +762,7 @@ class AbstractSNN:
             else 's'
         print("Total accuracy: {:.2%} on {} test sample{}.\n\n".format(
             top1acc_total, len(guesses_d), ss))
-        print("Accuracy averaged over classes: {:.2%}".format(avg_acc))
+        print("Accuracy averaged by class size: {:.2%}".format(avg_acc))
 
         # If batch_size was modified, change back to original value now.
         if self.batch_size != self._batch_size:
