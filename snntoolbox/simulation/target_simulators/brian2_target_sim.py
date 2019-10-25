@@ -61,8 +61,13 @@ class SNN(AbstractSNN):
         self.layers = []
         self.connections = []  # Final container for all layers.
         self.threshold = 'v >= v_thresh'
-        self.v_reset = 'v = v_reset'
-        self.eqs = 'v : 1'
+        if ('subtraction' in config.get('cell', 'reset')):
+            self.v_reset = 'v = v - v_thresh'
+        else:
+            self.v_reset = 'v = v_reset'
+        #self.eqs = 'v : 1'
+        self.eqs = ''' dv/dt = current : 1
+                       current : hertz'''
         self.spikemonitors = []
         self.statemonitors = []
         self.snn = None
@@ -78,9 +83,15 @@ class SNN(AbstractSNN):
 
     def add_input_layer(self, input_shape):
 
-        self.layers.append(self.sim.PoissonGroup(
-            np.prod(input_shape[1:]), rates=0 * self.sim.Hz,
-            dt=self._dt * self.sim.ms))
+        if self._poisson_input:
+            self.layers.append(self.sim.PoissonGroup(
+                np.prod(input_shape[1:]), rates=0*self.sim.Hz,
+                dt=self._dt*self.sim.ms))
+        else:
+            self.layers.append(self.sim.NeuronGroup(
+                np.prod(input_shape[1:]), model=self.eqs, method='exponential_euler',
+                reset=self.v_reset, threshold=self.threshold,
+                dt=self._dt * self.sim.ms))
         self.layers[0].add_attribute('label')
         self.layers[0].label = 'InputLayer'
         self.spikemonitors.append(self.sim.SpikeMonitor(self.layers[0]))
@@ -98,7 +109,7 @@ class SNN(AbstractSNN):
             return
 
         self.layers.append(self.sim.NeuronGroup(
-            np.prod(layer.output_shape[1:]), model=self.eqs, method='linear',
+            np.prod(layer.output_shape[1:]), model=self.eqs, method='exponential_euler',
             reset=self.v_reset, threshold=self.threshold,
             dt=self._dt * self.sim.ms))
         self.connections.append(self.sim.Synapses(
@@ -123,7 +134,7 @@ class SNN(AbstractSNN):
         if weights is None:
             weights = _weights
 
-        set_biases(biases)
+        self.set_biases(biases)
 
         delay = self.config.getfloat('cell', 'delay')
         connections = []
@@ -170,7 +181,7 @@ class SNN(AbstractSNN):
         conns, biases = build_convolution(layer, delay, transpose_kernel)
         connections = np.array(conns)
 
-        set_biases(biases)
+        self.set_biases(biases)
 
         print("Connecting layer...")
 
@@ -202,7 +213,7 @@ class SNN(AbstractSNN):
 
         # Set input layer
         for obj in self.snn.objects:
-            if 'poissongroup' in obj.name and 'thresholder' not in obj.name:
+            if hasattr(obj, 'label') and obj.label == 'InputLayer':
                 self._input_layer = obj
         assert self._input_layer, "No input layer found."
 
@@ -216,8 +227,7 @@ class SNN(AbstractSNN):
             raise NotImplementedError
         else:
             try:
-                # TODO: Implement constant input by using brian2.TimedArray.
-                self._input_layer.current = kwargs[str('x_b_l')].flatten()
+                self._input_layer.current = kwargs[str('x_b_l')].flatten() / self.sim.ms
             except AttributeError:
                 raise NotImplementedError
 
@@ -378,14 +388,11 @@ class SNN(AbstractSNN):
         AbstractSNN.set_spiketrain_stats_input(self)
 
 
-def set_biases(biases):
-    """Set biases.
+    def set_biases(self, biases):
+        """Set biases.
+        """
 
-    Notes
-    -----
-
-    This has not been tested yet.
-    """
-
-    if any(biases):  # TODO: Implement biases.
-        warnings.warn("Biases not implemented.", RuntimeWarning)
+        if any(biases):
+            if self.layers[-1].current.shape != biases.shape:
+                raise AttributeError
+            self.layers[-1].current = biases * self.sim.Hz
