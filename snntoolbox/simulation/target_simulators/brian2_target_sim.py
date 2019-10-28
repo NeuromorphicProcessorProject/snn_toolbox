@@ -65,7 +65,6 @@ class SNN(AbstractSNN):
             self.v_reset = 'v = v - v_thresh'
         else:
             self.v_reset = 'v = v_reset'
-        #self.eqs = 'v : 1'
         self.eqs = ''' dv/dt = bias : 1
                        bias : hertz'''
         self.spikemonitors = []
@@ -391,8 +390,6 @@ class SNN(AbstractSNN):
     def set_biases(self, biases):
         """Set biases.
         """
-
         if any(biases):
-            if self.layers[-1].bias.shape != biases.shape:
-                raise AttributeError
+            assert self.layers[-1].bias.shape == biases.shape, "Shape of biases and network do not match."
             self.layers[-1].bias = biases * self.sim.Hz
