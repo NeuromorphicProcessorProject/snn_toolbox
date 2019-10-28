@@ -61,7 +61,7 @@ class SNN(AbstractSNN):
         self.layers = []
         self.connections = []  # Final container for all layers.
         self.threshold = 'v >= v_thresh'
-        if ('subtraction' in config.get('cell', 'reset')):
+        if 'subtraction' in config.get('cell', 'reset'):
             self.v_reset = 'v = v - v_thresh'
         else:
             self.v_reset = 'v = v_reset'
