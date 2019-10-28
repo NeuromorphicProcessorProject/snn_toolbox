@@ -66,8 +66,8 @@ class SNN(AbstractSNN):
         else:
             self.v_reset = 'v = v_reset'
         #self.eqs = 'v : 1'
-        self.eqs = ''' dv/dt = current : 1
-                       current : hertz'''
+        self.eqs = ''' dv/dt = bias : 1
+                       bias : hertz'''
         self.spikemonitors = []
         self.statemonitors = []
         self.snn = None
@@ -227,7 +227,7 @@ class SNN(AbstractSNN):
             raise NotImplementedError
         else:
             try:
-                self._input_layer.current = kwargs[str('x_b_l')].flatten() / self.sim.ms
+                self._input_layer.bias = kwargs[str('x_b_l')].flatten() / self.sim.ms
             except AttributeError:
                 raise NotImplementedError
 
@@ -393,6 +393,6 @@ class SNN(AbstractSNN):
         """
 
         if any(biases):
-            if self.layers[-1].current.shape != biases.shape:
+            if self.layers[-1].bias.shape != biases.shape:
                 raise AttributeError
-            self.layers[-1].current = biases * self.sim.Hz
+            self.layers[-1].bias = biases * self.sim.Hz
