@@ -203,10 +203,7 @@ class SNN(AbstractSNN):
             # TODO: Implement by using brian2.SpikeGeneratorGroup.
             raise NotImplementedError
         else:
-            try:
-                self._input_layer.bias = kwargs[str('x_b_l')].flatten() / self.sim.ms
-            except AttributeError:
-                raise NotImplementedError
+            self._input_layer.bias = kwargs[str('x_b_l')].flatten() / self.sim.ms
 
         self.snn.run(self._duration * self.sim.ms, namespace=self._cell_params,
                      report='stdout', report_period=10 * self.sim.ms)
