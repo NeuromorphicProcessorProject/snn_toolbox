@@ -123,6 +123,7 @@ config['simulation'] = {
     'duration': 50,                 # Number of time steps to run each sample.
     'num_to_test': 5,               # How many test samples to run.
     'batch_size': 1,                # Batch size for simulation.
+    'dt': 0.1                       # Time interval for the differential equations to be solved over.
 }
 
 config['input'] = {
