@@ -364,7 +364,6 @@ class SNN(AbstractSNN):
     def set_spiketrain_stats_input(self):
         AbstractSNN.set_spiketrain_stats_input(self)
 
-
     def set_biases(self, biases):
         """Set biases.
         """
