@@ -168,7 +168,10 @@ def normalize_parameters(model, config, **kwargs):
                         scale_facs[inb.name] / scale_fac
                 offset += f_out
             parameters_norm.append(parameters[1] / scale_fac)  # Append bias
-
+        try:
+            parameters_norm.append(parameters[2])
+        except:
+            pass
         # Update model with modified parameters
         layer.set_weights(parameters_norm)
 
