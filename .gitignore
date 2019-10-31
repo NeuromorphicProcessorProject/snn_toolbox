@@ -33,3 +33,5 @@ __pycache__
 **/log
 **/reports
 **/application_generated_data_files
+*.npz
+*.json

@@ -64,6 +64,9 @@ top_k = 1
 keras_backend = theano
 early_stopping = False
 
+[spinnaker]
+number_of_neurons_per_core = 64
+
 [cell]
 v_thresh = 0.01
 tau_refrac = 0

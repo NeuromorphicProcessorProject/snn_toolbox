@@ -411,7 +411,7 @@ class SNN(PYSNN):
                 projection.save('connections', filepath)
 
     def simulate(self, **kwargs):
-        self.sim.set_number_of_neurons_per_core(self.sim.IF_curr_exp, 64)
+        self.sim.set_number_of_neurons_per_core(self.sim.IF_curr_exp, self.config.getfloat('spinnaker', 'number_of_neurons_per_core'))
         data = kwargs[str('x_b_l')]
         if self.data_format == 'channels_last' and data.ndim == 4:
             data = np.moveaxis(data, 3, 1)
