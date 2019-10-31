@@ -138,9 +138,32 @@ class SNN(AbstractSNN):
         delay = self.config.getfloat('cell', 'delay')
         connections = []
 
-        for i in range(weights.shape[0]):
-            for j in range(weights.shape[1]):
-                connections.append((i, j, weights[i, j], delay))
+        if len(self.flatten_shapes) == 1:
+            print("Swapping data_format of Flatten layer.")
+            flatten_name, shape = self.flatten_shapes.pop()
+            if self.data_format == 'channels_last':
+                y_in, x_in, f_in = shape
+            else:
+                f_in, y_in, x_in = shape
+            for i in range(weights.shape[0]):  # Input neurons
+                # Sweep across channel axis of feature map. Assumes that each
+                # consecutive input neuron lies in a different channel. This is
+                # the case for channels_last, but not for channels_first.
+                f = i % f_in
+                # Sweep across height of feature map. Increase y by one if all
+                # rows along the channel axis were seen.
+                y = i // (f_in * x_in)
+                # Sweep across width of feature map.
+                x = (i // f_in) % x_in
+                new_i = f * x_in * y_in + x_in * y + x
+                for j in range(weights.shape[1]):  # Output neurons
+                    connections.append((new_i, j, weights[i, j], delay))
+        elif len(self.flatten_shapes) > 1:
+            raise RuntimeWarning("Not all Flatten layers have been consumed.")
+        else:
+            for i in range(weights.shape[0]):
+                for j in range(weights.shape[1]):
+                    connections.append((i, j, weights[i, j], delay))
 
         connections = np.array(connections)
 
