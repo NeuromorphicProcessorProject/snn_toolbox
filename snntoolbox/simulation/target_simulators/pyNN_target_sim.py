@@ -431,7 +431,7 @@ class SNN(AbstractSNN):
 
         if not np.any(biases):
             return
-        return
+        
         v_rest = self.config.getfloat('cell', 'v_rest')
         v_thresh = self.config.getfloat('cell', 'v_thresh')
         cm = self.config.getfloat('cell', 'cm')

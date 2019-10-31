@@ -31,7 +31,8 @@ class SNN(PYSNN):
         # just to give a sensible answer if tau_syn_E and I are different
         t = self._dt
         tau = (tau_syn_E + tau_syn_I) / 2
-        scale = t / (tau * (exp(-(t / tau)) + 1))
+        scale = 10 *t / (tau * (exp(-(t / tau)) + 1))
+        print('Weights scaled by a factor of {0}'.format(scale,))
         if isinstance(weights, list):
             weights = [(i, j, weight * scale, delay)
                        for (i, j, weight, delay) in weights]
@@ -59,7 +60,7 @@ class SNN(PYSNN):
                     (layer.name, get_shape_from_label(self.layers[-1].label)))
                 self.build_flatten(layer)
                 continue
-            if layer_type == ['Dense', 'Sparse']:
+            if layer_type in {'Dense', 'Sparse'}:
                 self.build_dense(layer)
             elif layer_type in {'Conv1D', 'Conv2D', 'DepthwiseConv2D',
                                 'SparseConv2D', 'SparseDepthwiseConv2D'}:
@@ -132,13 +133,12 @@ class SNN(PYSNN):
                              "weights, biases and, in rare cases,"
                              "masks.".format(layer.name))
         weights = self.scale_weights(weights)
-
+        print(weights.shape)
         n = int(np.prod(layer.output_shape[1:]) / len(biases))
         biases = np.repeat(biases, n).astype('float64')
 
         self.set_biases(np.array(biases, 'float64'))
         delay = self.config.getfloat('cell', 'delay')
-
         if len(self.flatten_shapes) == 1:
             flatten_name, shape = self.flatten_shapes.pop()
             y_in = 1
@@ -165,6 +165,7 @@ class SNN(PYSNN):
                     weights = weights.reshape(
                         (y_in * x_in * f_in, output_neurons), order='F')
                 elif len(shape) == 2:
+                    import pdb; pdb.set_trace()
                     f_in, x_in = shape
                     weights = np.rollaxis(weights, 1, 0)
                     #weights = np.flatten(weights)
@@ -430,19 +431,23 @@ class SNN(PYSNN):
         current_time = pylab.datetime.datetime.now().strftime("_%H%M%S_%d%m%Y")
 
         runtime = self._duration - self._dt
+        runlabel = self.config.get("paths", "runlabel")
+        
         try:
             from pynn_object_serialisation.functions import intercept_simulator
             intercept_simulator(
                 self.sim,
-                "snn_toolbox_spinnaker_" +
-                current_time,
+                runlabel + "_serialised",
                 post_abort=False,
                 custom_params={
                     'runtime': runtime})
         except Exception:
             print("There was a problem with serialisation.")
+        if self.config.getboolean('tools', 'only_serialise'):
+            import sys
+            sys.exit('finished after serialisation') 
         self.sim.run(runtime)
         print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.layers)
 
-        return output_b_l_t
+        return #output_b_l_t

@@ -35,6 +35,7 @@ parse = True
 normalize = True
 convert = True
 simulate = True
+only_serialise = False
 
 [normalization]
 percentile = 99.9
