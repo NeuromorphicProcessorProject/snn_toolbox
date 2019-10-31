@@ -106,6 +106,15 @@ class ModelParser(AbstractModelParser):
     def parse_concatenate(self, layer, attributes):
         pass
 
+    def get_number_of_neurons(self):
+        count = 0
+        for layer in self.layers:
+            if layer.type in ['Flatten', 'Reshape', 'Padding']:
+                continue
+            if hasattr(layer, shape):
+                count += np.prod(*layer.shape)
+        return count
+
 
 def load(path, filename, **kwargs):
     """Load network from file.
