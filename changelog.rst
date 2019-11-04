@@ -1,6 +1,16 @@
 SNN Toolbox: Release Notes
 ==========================
 
+Version 0.3.2
+-------------
+
+Simulation with Brian2 backend now supports:
+    - Constant input currents (less noisy than Poisson input)
+    - Reset-by-subtraction (more accurate than reset-to-zero).
+    - Bias currents
+
+Thanks to wilkieolin for this contribution.
+
 Version 0.3.1
 -------------
 
