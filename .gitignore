@@ -35,3 +35,4 @@ __pycache__
 **/application_generated_data_files
 *.npz
 *.json
+*.h5
