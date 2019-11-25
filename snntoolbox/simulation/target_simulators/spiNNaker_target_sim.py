@@ -31,7 +31,7 @@ class SNN(PYSNN):
         # just to give a sensible answer if tau_syn_E and I are different
         t = self._dt
         tau = (tau_syn_E + tau_syn_I) / 2
-        scale = 10 *t / (tau * (exp(-(t / tau)) + 1))
+        scale = 10 * t / (tau * (exp(-(t / tau)) + 1))
         print('Weights scaled by a factor of {0}'.format(scale,))
         if isinstance(weights, list):
             weights = [(i, j, weight * scale, delay)
@@ -95,18 +95,6 @@ class SNN(PYSNN):
 
         self.layers[-1].initialize(v=self.layers[-1].get('v_rest'))
 
-        lines = [
-            "\n",
-            "\t# Add layer {}.\n".format(layer.name),
-            "\tprint('Building layer {}.')\n".format(layer.name),
-            "\tlayers.append(sim.Population(np.asscalar(np.prod({}, "
-            "dtype=np.int)), sim.IF_curr_exp, cellparams, label='{}'))\n"
-            "".format(layer.output_shape[1:], layer.name),
-            "\tlayers[-1].initialize(v=layers[-1].get('v_rest'))\n"
-        ]
-        with open(self.output_script_path, 'a') as f:
-            f.writelines(lines)
-
     def build_dense(self, layer):
         """
 
@@ -167,7 +155,6 @@ class SNN(PYSNN):
                     weights = weights.reshape(
                         (y_in * x_in * f_in, output_neurons), order='F')
                 elif len(shape) == 2:
-                    import pdb; pdb.set_trace()
                     f_in, x_in = shape
                     weights = np.rollaxis(weights, 1, 0)
                     #weights = np.flatten(weights)
@@ -228,29 +215,6 @@ class SNN(PYSNN):
             np.savetxt(filepath + '_inhibitory', np.array(inh_connections),
                        ['%d', '%d', '%.18f', '%.3f'],
                        header="columns = ['i', 'j', 'weight', 'delay']")
-
-        lines = [
-            "\n",
-            "\t# Load dense projections created by snntoolbox.\n",
-            "\tfilepath = os.path.join(path_wd, layers[-1].label + "
-            "'_excitatory')"
-            "\n",
-            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
-            "filepath))\n",
-            "\tfilepath = os.path.join(path_wd, layers[-1].label + "
-            "'_inhibitory')"
-            "\n",
-            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
-            "filepath), receptor_type='inhibitory')\n",
-            "\n",
-            "\t# Set biases.\n",
-            "\tfilepath = os.path.join(path_wd, layers[-1].label + '_biases')"
-            "\n",
-            "\tbiases = np.loadtxt(filepath)\n",
-            "\tlayers[-1].set(i_offset=biases*dt/1e2)\n"
-        ]
-        with open(self.output_script_path, 'a') as f:
-            f.writelines(lines)
 
     def build_convolution(self, layer):
         from snntoolbox.simulation.utils import build_convolution, build_depthwise_convolution, build_1D_convolution
@@ -318,29 +282,6 @@ class SNN(PYSNN):
                        ['%d', '%d', '%.18f', '%.3f'],
                        header="columns = ['i', 'j', 'weight', 'delay']")
 
-        lines = [
-            "\n",
-            "\t# Load convolution projections created by snntoolbox.\n",
-            "\tfilepath = os.path.join(path_wd, layers[-1].label + "
-            "'_excitatory')"
-            "\n",
-            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
-            "filepath))\n",
-            "\tfilepath = os.path.join(path_wd, layers[-1].label + "
-            "'_inhibitory')"
-            "\n",
-            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
-            "filepath), receptor_type='inhibitory')\n",
-            "\n",
-            "\t# Set biases.\n",
-            "\tfilepath = os.path.join(path_wd, layers[-1].label + '_biases')"
-            "\n",
-            "\tbiases = np.loadtxt(filepath)\n",
-            "\tlayers[-1].set(i_offset=biases*dt/1e2)\n"
-        ]
-        with open(self.output_script_path, 'a') as f:
-            f.writelines(lines)
-
     def build_pooling(self, layer):
         from snntoolbox.simulation.utils import build_pooling
 
@@ -364,16 +305,6 @@ class SNN(PYSNN):
             np.savetxt(filepath, np.array(connections),
                        ['%d', '%d', '%.18f', '%.3f'],
                        header="columns = ['i', 'j', 'weight', 'delay']")
-
-        lines = [
-            "\n",
-            "\t# Load pooling projections created by snntoolbox.\n",
-            "\tfilepath = os.path.join(path_wd, layers[-1].label)\n",
-            "\tsim.Projection(layers[-2], layers[-1], sim.FromFileConnector("
-            "filepath))\n"
-        ]
-        with open(self.output_script_path, 'a') as f:
-            f.writelines(lines)
 
     def save(self, path, filename):
 
@@ -413,7 +344,9 @@ class SNN(PYSNN):
                 projection.save('connections', filepath)
 
     def simulate(self, **kwargs):
-        self.sim.set_number_of_neurons_per_core(self.sim.IF_curr_exp, self.config.getfloat('spinnaker', 'number_of_neurons_per_core'))
+        self.sim.set_number_of_neurons_per_core(
+            self.sim.IF_curr_exp, self.config.getfloat(
+                'spinnaker', 'number_of_neurons_per_core'))
         data = kwargs[str('x_b_l')]
         if self.data_format == 'channels_last' and data.ndim == 4:
             data = np.moveaxis(data, 3, 1)
@@ -434,7 +367,7 @@ class SNN(PYSNN):
 
         runtime = self._duration - self._dt
         runlabel = self.config.get("paths", "runlabel")
-        
+
         try:
             from pynn_object_serialisation.functions import intercept_simulator
             intercept_simulator(
@@ -445,11 +378,11 @@ class SNN(PYSNN):
                     'runtime': runtime})
         except Exception:
             print("There was a problem with serialisation.")
-        if self.config.getboolean('tools', 'only_serialise'):
+        if self.config.getboolean('tools', 'serialise_only'):
             import sys
-            sys.exit('finished after serialisation') 
+            sys.exit('finished after serialisation')
         self.sim.run(runtime)
         print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.layers)
 
-        return #output_b_l_t
+        return output_b_l_t
