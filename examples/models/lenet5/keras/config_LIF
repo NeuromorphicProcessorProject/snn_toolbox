@@ -1,0 +1,30 @@
+[paths]
+dataset_path = %(path_wd)s/../../../datasets/mnist
+filename_ann = lenet5_retrained
+runlabel = test_retrained
+
+[tools]
+evaluate_ann = False
+convert = True
+normalize = True
+
+[simulation]
+simulator = spiNNaker
+duration = 300
+num_to_test = 1
+batch_size = 1
+keras_backend = theano
+
+[conversion]
+max2avg_pool = True
+
+[input]
+poisson_input = True
+input_rate = 1000
+
+[cell]
+v_thresh = 0.01
+
+[output]
+#log_vars = {'all'}
+plot_vars = {'input_image', 'spiketrains', 'spikerates'}

@@ -57,7 +57,20 @@ def get_dataset(config):
         config.getboolean('tools', 'simulate')
     is_normset_needed = config.getboolean('tools', 'normalize') and \
         normset is None
-
+    # check if dataset is defined in keras
+    try:
+        keras_dataset = config.get('input', 'keras_dataset')
+        if keras_dataset:
+            from dnns.load_dataset import load_and_preprocess_dataset
+            num_to_test = config.getint('simulation', 'num_to_test')
+            data = load_and_preprocess_dataset(keras_dataset)
+            x_test, y_test = data['test']
+            testset = {
+                'x_test': x_test[:num_to_test],
+                'y_test': y_test[:num_to_test]}
+            return None, testset
+    except NoOptionError as e:
+        print("Warning:", e)
     # ________________________________ npz ___________________________________#
     if config.get('input', 'dataset_format') == 'npz':
         print("Loading data set from '.npz' files in {}.\n".format(

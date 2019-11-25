@@ -1,0 +1,8 @@
+/reports/
+/application_generated_data_files/
+/98.96_spiNNaker.py
+/custom_objects.json
+/lenet5_retrained.h5
+/lenet5_retrained_spiNNaker.py
+/modified_98.96.h5
+/modified_config

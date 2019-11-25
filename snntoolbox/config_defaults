@@ -35,6 +35,7 @@ parse = True
 normalize = True
 convert = True
 simulate = True
+only_serialise = False
 
 [normalization]
 percentile = 99.9
@@ -63,8 +64,11 @@ top_k = 1
 keras_backend = tensorflow
 early_stopping = False
 
+[spinnaker]
+number_of_neurons_per_core = 64
+
 [cell]
-v_thresh = 1
+v_thresh = 0.01
 tau_refrac = 0
 v_reset = 0
 v_rest = 0
@@ -115,7 +119,7 @@ model_libs = {'keras', 'lasagne', 'caffe'}
 dataset_formats = {'npz', 'jpg', 'aedat'}
 frame_gen_method = {'signed_sum', 'rectified_sum'}
 maxpool_types = {'fir_max', 'exp_max', 'avg_max'}
-simulators_pyNN = {'nest', 'brian', 'neuron'}
+simulators_pyNN = {'nest', 'brian', 'neuron', 'spiNNaker'}
 simulators_other = {'INI', 'brian2', 'MegaSim', 'loihi'}
 simulators = %(simulators_pyNN)s | %(simulators_other)s
 # Keras backends:
@@ -124,11 +128,15 @@ keras_backends = {'theano', 'tensorflow'}
 spike_codes = {'temporal_mean_rate', 'temporal_pattern', 'ttfs',
                'ttfs_dyn_thresh', 'ttfs_corrective'}
 # Layers that have neurons with membrane potentials, from which we can measure spikes:
-spiking_layers = {'Dense', 'Conv2D', 'MaxPooling2D', 'AveragePooling2D', 'DepthwiseConv2D', 'Conv1D'}
+spiking_layers = {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D', 'MaxPooling2D',
+                  'AveragePooling2D', 'Sparse', 'SparseConv2D',
+                  'SparseDepthwiseConv2D'}
 # Layers that can be implemented by our spiking neuron simulators:
-snn_layers = %(spiking_layers)s | {'Reshape', 'Flatten', 'Concatenate', 'ZeroPadding2D'}
+snn_layers = %(spiking_layers)s | {'Reshape', 'Flatten', 'Concatenate',
+                                   'ZeroPadding2D'}
 cellparams_pyNN = {'v_thresh', 'v_reset', 'v_rest', 'cm', 'tau_refrac',
                    'tau_m', 'tau_syn_E', 'tau_syn_I'}
+
 log_vars = {'activations_n_b_l', 'spiketrains_n_b_l_t', 'input_b_l_t',
             'mem_n_b_l_t', 'synaptic_operations_b_t', 'neuron_operations_b_t',
             'all'}
