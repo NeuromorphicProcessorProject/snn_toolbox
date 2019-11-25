@@ -146,8 +146,7 @@ def load(path, filename, **kwargs):
         model = models.model_from_json(open(filepath + '.json').read())
         try:
             model.load_weights(filepath + '.h5')
-        except:
-            #Allows h5 files without a .h5 extension to be loaded
+        except Exception:            # Allows h5 files without a .h5 extension to be loaded
             model.load_weights(filepath)
         # With this loading method, optimizer and loss cannot be recovered.
         # Could be specified by user, but since they are not really needed
@@ -166,7 +165,8 @@ def load(path, filename, **kwargs):
             get_custom_activations_dict(filepath_custom_objects),
             get_custom_layers_dict())
         if "config" in kwargs.keys():
-            custom_dicts_path = kwargs['config'].get('paths', 'filepath_custom_objects')
+            custom_dicts_path = kwargs['config'].get(
+                'paths', 'filepath_custom_objects')
             custom_dicts = assemble_custom_dict(
                 custom_dicts,
                 get_custom_activations_dict(custom_dicts_path))
@@ -179,8 +179,8 @@ def load(path, filename, **kwargs):
             model = models.load_model(
                 filepath,
                 custom_dicts)
-        # model.compile(model.optimizer, model.loss,
-        #               ['accuracy', metrics.top_k_categorical_accuracy])
+        model.compile(model.optimizer, model.loss,
+                      ['accuracy', metrics.top_k_categorical_accuracy])
 
     model.summary()
     return {'model': model, 'val_fn': model.evaluate}

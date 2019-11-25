@@ -61,7 +61,7 @@ def get_dataset(config):
     try:
         keras_dataset = config.get('input', 'keras_dataset')
         if keras_dataset:
-            from dnns.load_dataset import load_and_preprocess_dataset
+            from keras_rewiring.utilities.load_dataset import load_and_preprocess_dataset
             num_to_test = config.getint('simulation', 'num_to_test')
             data = load_and_preprocess_dataset(keras_dataset)
             x_test, y_test = data['test']
