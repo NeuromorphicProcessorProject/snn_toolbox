@@ -132,18 +132,24 @@ class AbstractModelParser:
                       "parameters of previous {}.".format(prev_layer_type))
                 _depthwise_conv_names = ['DepthwiseConv2D',
                                          'SparseDepthwiseConv2D']
-                _sparse_names = ['Sparse', 'SparseConv2D', 'SparseDepthwiseConv2D']
+                _sparse_names = [
+                    'Sparse',
+                    'SparseConv2D',
+                    'SparseDepthwiseConv2D']
                 axis = -2 if prev_layer_type in _depthwise_conv_names else axis
-                if (self._layer_list[prev_layer_idx]['layer_type'] in _sparse_names):
+                if (self._layer_list[prev_layer_idx]
+                        ['layer_type'] in _sparse_names):
                     args = [parameters[0], parameters[2]] + parameters_bn
                 else:
                     args = parameters[:2] + parameters_bn
-                kwargs = {'axis': axis, 'image_data_format':
-                          keras.backend.image_data_format(),
-                          'is_depthwise': prev_layer_type in _depthwise_conv_names}
+                kwargs = {
+                    'axis': axis,
+                    'image_data_format': keras.backend.image_data_format(),
+                    'is_depthwise': prev_layer_type in _depthwise_conv_names}
                 params_to_absorb = absorb_bn_parameters(*args, **kwargs)
                 # is the layer in question sparse?
-                if (self._layer_list[prev_layer_idx]['layer_type'] in _sparse_names):
+                if (self._layer_list[prev_layer_idx]
+                        ['layer_type'] in _sparse_names):
                     # then you also need to save the mask associated with it
                     params_to_absorb = (params_to_absorb[0],
                                         params_to_absorb[1],
@@ -211,7 +217,7 @@ class AbstractModelParser:
 
             if layer_type in {'Conv1D', 'Conv2D'}:
                 self.parse_convolution(layer, attributes)
-                
+
             if layer_type == 'SparseConv2D':
                 self.parse_sparse_convolution(layer, attributes)
 
@@ -220,17 +226,20 @@ class AbstractModelParser:
 
             if layer_type == 'SparseDepthwiseConv2D':
                 self.parse_sparse_depthwiseconvolution(layer, attributes)
-                
-            if layer_type in ['Sparse', 'SparseConv2D', 'SparseDepthwiseConv2D']:
+
+            if layer_type in [
+                'Sparse',
+                'SparseConv2D',
+                    'SparseDepthwiseConv2D']:
                 weights, bias, mask = attributes['parameters']
-                
+
                 weights, bias = modify_parameter_precision(
                     weights, bias, self.config, attributes)
-                
+
                 attributes['parameters'] = (weights, bias, mask)
-                
+
                 self.absorb_activation(layer, attributes)
-                
+
             if layer_type in {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D'}:
                 weights, bias = attributes['parameters']
 
@@ -463,7 +472,7 @@ class AbstractModelParser:
         shape_string[0] = "_" + shape_string[0]
         shape_string[-1] = shape_string[-1][:-1]
         shape_string = "".join(shape_string)
-        
+
         num_str = str(idx) if idx > 9 else '0' + str(idx)
 
         return num_str + layer_type + shape_string
@@ -904,7 +913,7 @@ def save_parameters(params, filepath, fileformat='h5'):
                     j = '0' + str(i)
                 else:
                     j = str(i)
-                f.create_dataset('param_'+j, data=p)
+                f.create_dataset('param_' + j, data=p)
 
 
 def has_weights(layer):
@@ -1317,11 +1326,13 @@ def get_custom_activation(activation_str):
 
     return activation, activation_str
 
+
 def assemble_custom_dict(*args):
     assembly = []
     for arg in args:
         assembly += arg.items()
     return dict(assembly)
+
 
 def get_custom_layers_dict(filepath=None):
     """
@@ -1334,8 +1345,9 @@ def get_custom_layers_dict(filepath=None):
         filepath : Optional[str]
             Path to json file containing additional custom objects.
         """
-    from dnns import Sparse, SparseConv2D, \
-        SparseDepthwiseConv2D, NoisySGD
+    from keras_rewiring import Sparse, SparseConv2D, \
+        SparseDepthwiseConv2D
+    from keras_rewiring.optimizers import NoisySGD
     custom_obj = {'Sparse': Sparse,
                   'SparseConv2D': SparseConv2D,
                   'SparseDepthwiseConv2D': SparseDepthwiseConv2D,
@@ -1348,6 +1360,7 @@ def get_custom_layers_dict(filepath=None):
             custom_obj.update(kwargs)
 
     return custom_obj
+
 
 def get_custom_activations_dict(filepath=None):
     """
@@ -1380,7 +1393,7 @@ def get_custom_activations_dict(filepath=None):
             'Noisy_Softplus': NoisySoftplus,
             'precision': precision,
             'activity_regularizer': keras.regularizers.l1}
-    
+
     if filepath is not None and filepath != '':
         import json
         with open(filepath) as f:
@@ -1390,6 +1403,7 @@ def get_custom_activations_dict(filepath=None):
             if 'LimitedReLU' in key:
                 custom_objects[key] = LimitedReLU(kwargs[key])
     return custom_objects
+
 
 def check_for_custom_activations(layer_attributes):
     """
@@ -1405,6 +1419,7 @@ def check_for_custom_activations(layer_attributes):
 
     if 'activation' not in layer_attributes.keys():
         return
+
 
 def precision(y_true, y_pred):
     """Precision metric.
