@@ -28,7 +28,7 @@ is_x_flipped =
 is_y_flipped =
 maxpool_subsampling = True
 do_clip_three_sigma = True
-keras_dataset = False
+keras_dataset =
 
 [tools]
 evaluate_ann = True
