@@ -432,7 +432,6 @@ class AbstractSNN:
         # Iterate over layers to create spiking neurons and connections.
         self.setup_layers(batch_shape)
 
-
         print("Compiling spiking model...\n")
         self.compile()
 
@@ -596,7 +595,7 @@ class AbstractSNN:
             # of the simulation.
             print("\nStarting new simulation...\n")
             output_b_l_t = self.simulate(**data_batch_kwargs)
-            #Halt if model is to be serialised only
+            # Halt if model is to be serialised only
             if self.config.getboolean('tools', 'serialise_only'):
                 import sys
                 sys.exit()
@@ -975,7 +974,7 @@ class AbstractSNN:
             for l in range(shape[1]):
                 for t in range(shape[2]):
                     output_b_l_t[b, l, t] = np.count_nonzero(
-                        spiketrains_b_l_t[b, l, :t+1])
+                        spiketrains_b_l_t[b, l, :t + 1])
         return output_b_l_t
 
     def reset_container_counters(self):
@@ -1112,15 +1111,6 @@ class AbstractSNN:
                 spiketrains_flat, [shape[i] for i in [0, 3, 1, 2, 4]]), 1, 3),
                 (-1, shape[-1]))
 
-        # For Conv layers with 'channels_last', need to (1) reshape so that the
-        # channel comes first; (2) move the channel axis to the back again;
-        # (3) flatten the array, so it can be reshaped later according to the
-        # data_format. If this is not done, the spikerates plot is scrambled.
-        if self.data_format == 'channels_last' and len(shape) == 5:
-            spiketrains_flat = np.reshape(np.moveaxis(np.reshape(
-                spiketrains_flat, [shape[i] for i in [0, 3, 1, 2, 4]]), 1, 3),
-                (-1, shape[-1]))
-
         spiketrains_b_l_t = np.reshape(spiketrains_flat, shape)
 
         return spiketrains_b_l_t
@@ -1185,6 +1175,7 @@ def get_samples_from_list(x_test, y_test, dataflow, config):
 
     return x_test, y_test
 
+
 def build_1D_convolution(layer, delay, transpose_kernel=False):
     """Build convolution layer.
 
@@ -1213,10 +1204,10 @@ def build_1D_convolution(layer, delay, transpose_kernel=False):
     weights, biases = layer.get_weights()
 
     # Biases.
-    
+
     n = int(np.prod(layer.output_shape[1:]) / len(biases))
     i_offset = np.repeat(biases, n).astype('float64')
-    
+
     ii = 0 if layer.data_format == 'channels_first' else 1
 
     nx = layer.input_shape[-1 - ii]  # Width of feature map
@@ -1224,7 +1215,7 @@ def build_1D_convolution(layer, delay, transpose_kernel=False):
     # Assumes symmetric padding ((1, 1), (1, 1)). Need to reduce dimensions of
     # input here because the layer.input_shape refers to the ZeroPadding layer
     # contained in the parsed model, which is removed when building the SNN.
-    
+
     if layer.padding == 'ZeroPadding':
         print("Applying ZeroPadding.")
         nx -= 2
@@ -1232,7 +1223,7 @@ def build_1D_convolution(layer, delay, transpose_kernel=False):
 
     kx = layer.kernel_size[0]  # Width of kernel
     px = int((kx - 1) / 2)  # Zero-padding
-    
+
     sx = layer.strides[0]
 
     if layer.padding == 'valid':
@@ -1251,10 +1242,10 @@ def build_1D_convolution(layer, delay, transpose_kernel=False):
     # Loop over output filters 'fout'
     for fout in range(weights.shape[2]):
         for x in range(x0, nx - x0, sx):
-            target = int((x - x0) / sx  +
-                     fout * mx)
+            target = int((x - x0) / sx +
+                         fout * mx)
             for fin in range(weights.shape[1]):
-                source = x + (fin * nx) 
+                source = x + (fin * nx)
                 for l in range(-px, px + 1):
                     if not 0 <= x + l < nx:
                         continue
@@ -1290,7 +1281,6 @@ def build_convolution(layer, delay, transpose_kernel=False):
     i_offset: ndarray
         Flattened array containing the biases of all neurons in the ``layer``.
     """
-
 
     all_weights = layer.get_weights()
     if len(all_weights) == 2:
@@ -1362,6 +1352,7 @@ def build_convolution(layer, delay, transpose_kernel=False):
 
     return connections, i_offset
 
+
 def build_depthwise_convolution(layer, delay, transpose_kernel=False):
     """Build convolution layer.
 
@@ -1406,10 +1397,10 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
     # Biases.
     n = int(np.prod(layer.output_shape[1:]) / len(biases))
     i_offset = np.repeat(biases, n).astype('float64')
-    
+
     ii = 0 if layer.data_format == 'channels_first' else 1
 
-    nc = layer.input_shape[0 - ii] # Number of input channels
+    nc = layer.input_shape[0 - ii]  # Number of input channels
     nx = layer.input_shape[-1 - ii]  # Width of feature map
     ny = layer.input_shape[-2 - ii]  # Height of feature map
 
@@ -1428,9 +1419,9 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
 
     sx = layer.strides[1]
     sy = layer.strides[0]
-    
+
     dm = layer.depth_multiplier
-    
+
     if layer.padding == 'valid':
         # In padding 'valid', the original sidelength is
         # reduced by one less than the kernel size.
@@ -1451,7 +1442,8 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
         for d in range(weights.shape[-1]):
             for y in range(y0, ny - y0, sy):
                 for x in range(x0, nx - x0, sx):
-                    target = ((x - x0) // sx) + ((y - y0) // sy * mx) + (d *  mx * my) + (fin * dm * mx * my)
+                    target = ((x - x0) // sx) + ((y - y0) // sy * mx) + \
+                        (d * mx * my) + (fin * dm * mx * my)
                     for k in range(-py, py + 1):
                         if not 0 <= y + k < ny:
                             continue
@@ -1462,9 +1454,9 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
                             connections.append((source, target,
                                                 weights[py - k, px - l, fin,
                                                         d], delay))
-            echo('.')        
+            echo('.')
     print('')
-    
+
     return connections, i_offset
 
 

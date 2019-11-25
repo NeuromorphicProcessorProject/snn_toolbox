@@ -78,7 +78,7 @@ class SNN(AbstractSNN):
             label='InputLayer'))
 
     def add_layer(self, layer):
-        
+
         # This implementation of ZeroPadding layers assumes symmetric single
         # padding ((1, 1), (1, 1)).
         # Todo: Generalize for asymmetric padding or arbitrary size.
@@ -215,7 +215,7 @@ class SNN(AbstractSNN):
                 [np.linspace(0, self._duration, self._duration * amplitude)
                  for amplitude in x_flat]
             self.layers[0].set(spike_times=spike_times)
-        
+
         from pynn_object_serialisation.functions import intercept_simulator
         import pylab
         current_time = pylab.datetime.datetime.now().strftime("_%H%M%S_%d%m%Y")
@@ -290,16 +290,16 @@ class SNN(AbstractSNN):
 
         This assumes no leak.
         """
-        
+
         if not np.any(biases):
             return
-        
+
         v_rest = self.config.getfloat('cell', 'v_rest')
         v_thresh = self.config.getfloat('cell', 'v_thresh')
         cm = self.config.getfloat('cell', 'cm')
-        
-        i_offset = biases * cm * ((v_thresh-v_rest))/self._duration
-        
+
+        i_offset = biases * cm * ((v_thresh - v_rest)) / self._duration
+
         self.layers[-1].set(i_offset=i_offset)
 
     def get_vars_to_record(self):
