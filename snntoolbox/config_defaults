@@ -28,6 +28,7 @@ is_x_flipped =
 is_y_flipped =
 maxpool_subsampling = True
 do_clip_three_sigma = True
+keras_dataset = False
 
 [tools]
 evaluate_ann = True
@@ -35,7 +36,7 @@ parse = True
 normalize = True
 convert = True
 simulate = True
-only_serialise = False
+serialise_only = False
 
 [normalization]
 percentile = 99.9
