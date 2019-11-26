@@ -11,10 +11,10 @@ __pycache__
 .pytest_cache
 .project
 .pydevproject
-examples/*
 .settings/
 **/log/
 **/application_generated_data_files/
 **/reports/
 *.h5
 *.npz
+*.json

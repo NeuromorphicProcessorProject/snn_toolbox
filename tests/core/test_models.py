@@ -195,6 +195,39 @@ class TestOutputModel:
         assert np.all(corr[:-1] > 0.97)
         assert corr[-1] > 0.5
 
+    def test_spinnaker(self, _model_1, _config):
+
+        path_wd = _config.get('paths', 'path_wd')
+        model_name = _config.get('paths', 'filename_ann')
+        keras.models.save_model(_model_1,
+                                os.path.join(path_wd, model_name + '.h5'))
+
+        updates = {
+            'tools': {'evaluate_ann': False},
+            'input': {'poisson_input': True},
+            'simulation': {
+                'simulator': 'spiNNaker',
+                'duration': 100,
+                'num_to_test': 10,  # smaller to make more feasible
+                'batch_size': 1},
+            'output': {
+                'log_vars': {'activations_n_b_l', 'spiketrains_n_b_l_t'}}}
+
+        _config.read_dict(updates)
+
+        try:
+            initialize_simulator(_config)
+        except (ImportError, KeyError, ValueError):
+            return
+
+        acc = run_pipeline(_config)
+
+        assert acc[0] >= 0.95
+
+        corr = get_correlations(_config)
+        assert np.all(corr[:-1] > 0.97)
+        assert corr[-1] > 0.5
+
 
 class TestPipeline:
     """Test complete pipeline for a number of examples."""

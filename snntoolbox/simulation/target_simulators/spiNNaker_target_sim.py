@@ -365,7 +365,6 @@ class SNN(PYSNN):
         import pylab
         current_time = pylab.datetime.datetime.now().strftime("_%H%M%S_%d%m%Y")
 
-        runtime = self._duration - self._dt
         runlabel = self.config.get("paths", "runlabel")
 
         try:
@@ -375,14 +374,64 @@ class SNN(PYSNN):
                 runlabel + "_serialised",
                 post_abort=False,
                 custom_params={
-                    'runtime': runtime})
+                    'runtime': self._duration})
         except Exception:
             print("There was a problem with serialisation.")
         if self.config.getboolean('tools', 'serialise_only'):
             import sys
             sys.exit('finished after serialisation')
-        self.sim.run(runtime)
+        self.sim.run(self._duration)
         print("\nCollecting results...")
         output_b_l_t = self.get_recorded_vars(self.layers)
 
         return output_b_l_t
+
+    def get_spiketrains_input(self):
+        shape = list(self.parsed_model.input_shape) + [self._num_timesteps]
+        spiketrains_flat = self.layers[0].get_data(
+            'spikes').segments[-1].spiketrains
+        spiketrains_b_l_t = self.reshape_flattened_spiketrains(
+            spiketrains_flat, shape)
+        return spiketrains_b_l_t
+
+    def get_spiketrains_output(self):
+        shape = [self.batch_size, self.num_classes, self._num_timesteps]
+        spiketrains_flat = self.layers[-1].get_data(
+            'spikes').segments[-1].spiketrains
+        spiketrains_b_l_t = self.reshape_flattened_spiketrains(
+            spiketrains_flat, shape)
+        return spiketrains_b_l_t
+
+    def get_spiketrains(self, **kwargs):
+        # There is an overhead associated with retrieving data on SpiNNaker
+        # and so here only the spikes are got
+        j = self._spiketrains_container_counter
+        if self.spiketrains_n_b_l_t is None \
+                or j >= len(self.spiketrains_n_b_l_t):
+            return None
+
+        shape = self.spiketrains_n_b_l_t[j][0].shape
+
+        # Outer for-loop that calls this function starts with
+        # 'monitor_index' = 0, but this is reserved for the input and handled
+        # by `get_spiketrains_input()`.
+        i = kwargs[str('monitor_index')]
+        if i == 0:
+            return
+        spiketrains_flat = self.layers[i].get_data(
+            'spikes').segments[-1].spiketrains
+        spiketrains_b_l_t = self.reshape_flattened_spiketrains(
+            spiketrains_flat, shape)
+        return spiketrains_b_l_t
+
+    def get_vmem(self, **kwargs):
+        # There is an overhead associated with retrieving data on SpiNNaker
+        # and so here only the membrane voltages are got
+        i = kwargs[str('monitor_index')]
+        try:
+            vs = self.layers[i].get_data('v').segments[-1].analogsignals
+        except Exception:
+            return None
+
+        if len(vs) > 0:
+            return np.array([np.swapaxes(v, 0, 1) for v in vs])
