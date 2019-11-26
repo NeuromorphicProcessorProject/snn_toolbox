@@ -208,7 +208,7 @@ class TestOutputModel:
             'simulation': {
                 'simulator': 'spiNNaker',
                 'duration': 100,
-                'num_to_test': 10,  # smaller to make more feasible
+                'num_to_test': 1,  # smaller to make more feasible
                 'batch_size': 1},
             'output': {
                 'log_vars': {'activations_n_b_l', 'spiketrains_n_b_l_t'}}}

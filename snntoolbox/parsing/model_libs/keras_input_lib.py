@@ -55,35 +55,39 @@ class ModelParser(AbstractModelParser):
         return layer.output_shape
 
     def parse_sparse(self, layer, attributes):
-        # attributes['mask'] = K.get_value(layer.mask)
+        #attributes['mask'] = K.get_value(layer.mask)
         return self.parse_dense(layer, attributes)
 
     def parse_dense(self, layer, attributes):
-        attributes['parameters'] = layer.get_weights()
+        attributes['parameters'] = list(layer.get_weights())
         if layer.bias is None:
-            attributes['parameters'].append(np.zeros(layer.output_shape[1]))
+            attributes['parameters'].insert(
+                1, np.zeros(layer.output_shape[1]))
+            attributes['parameters'] = tuple(attributes['parameters'])
             attributes['use_bias'] = True
 
     def parse_sparse_convolution(self, layer, attributes):
-        # attributes['mask'] = K.get_value(layer.mask)
+        #attributes['mask'] = K.get_value(layer.mask)
         return self.parse_convolution(layer, attributes)
 
     def parse_convolution(self, layer, attributes):
-        attributes['parameters'] = layer.get_weights()
+        attributes['parameters'] = list(layer.get_weights())
         if layer.bias is None:
-            attributes['parameters'].append(np.zeros(layer.filters))
+            attributes['parameters'].insert(1, np.zeros(layer.filters))
+            attributes['parameters'] = tuple(attributes['parameters'])
             attributes['use_bias'] = True
         assert layer.data_format == k.image_data_format(), (
-            "THh input model was setup with image data format '{}', but your "
+            "The input model was setup with image data format '{}', but your "
             "keras config file expects '{}'.".format(layer.data_format,
                                                      k.image_data_format()))
 
     def parse_depthwiseconvolution(self, layer, attributes):
-        attributes['parameters'] = layer.get_weights()
+        attributes['parameters'] = list(layer.get_weights())
         if layer.bias is None:
             a = 1 if layer.data_format == 'channels_first' else -1
-            attributes['parameters'].append(np.zeros(layer.depth_multiplier *
-                                                     layer.input_shape[a]))
+            attributes['parameters'].insert(1, np.zeros(
+                layer.depth_multiplier * layer.input_shape[a]))
+            attributes['parameters'] = tuple(attributes['parameters'])
             attributes['use_bias'] = True
 
     def parse_pooling(self, layer, attributes):

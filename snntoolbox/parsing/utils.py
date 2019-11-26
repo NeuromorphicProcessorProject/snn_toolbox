@@ -37,6 +37,7 @@ from abc import abstractmethod
 import keras
 import numpy as np
 import sys
+import keras_rewiring
 
 
 class AbstractModelParser:
@@ -717,8 +718,8 @@ class AbstractModelParser:
                 parsed_layer = getattr(keras.layers, _x)
             except AttributeError as e:
                 print(e, file=sys.stderr)
-                import dnns
-                parsed_layer = getattr(dnns, _x)
+                import keras_rewiring
+                parsed_layer = getattr(keras_rewiring.sparse_layer, _x)
 
             inbound = [parsed_layers[inb] for inb in layer.pop('inbound')]
             if len(inbound) == 1:
