@@ -155,7 +155,7 @@ config['tools'] = {
 config['simulation'] = {
     # Chooses execution backend of SNN toolbox.
     'simulator': 'spiNNaker',
-    'duration': 50,                 # Number of time steps to run each sample.
+    'duration': 100,                 # Number of time steps to run each sample.
     'num_to_test': 5,               # How many test samples to run.
     'batch_size': 1,                # Batch size for simulation.
     # SpiNNaker seems to require 0.1 for comparable results.
@@ -164,7 +164,7 @@ config['simulation'] = {
 
 config['input'] = {
     'poisson_input': True,           # Images are encodes as spike trains.
-    'input_rate': 1000
+    'input_rate': 10
 }
 
 config['cell'] = {

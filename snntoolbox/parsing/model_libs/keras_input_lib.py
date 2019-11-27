@@ -81,6 +81,10 @@ class ModelParser(AbstractModelParser):
             "keras config file expects '{}'.".format(layer.data_format,
                                                      k.image_data_format()))
 
+    def parse_sparse_depthwiseconvolution(self, layer, attributes):
+        #attributes['mask'] = K.get_value(layer.mask)
+        return self.parse_depthwiseconvolution(layer, attributes)
+
     def parse_depthwiseconvolution(self, layer, attributes):
         attributes['parameters'] = list(layer.get_weights())
         if layer.bias is None:
