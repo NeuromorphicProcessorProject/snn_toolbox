@@ -231,11 +231,12 @@ timestep_fraction: int, optional
 ------------
 
 softmax_to_relu: bool, optional
-    If ``True``, replace softmax by ReLU activation function. This is
-    recommended (default), because the spiking softmax implementation tends to
-    reduce accuracy, especially top-5. It is safe to do this replacement as long
-    as the input to the activation function is not all negative. In that case,
-    the ReLU would not be able to determine the winner.
+    If ``True``, replace softmax by ReLU activation function, which is
+    the default for most simulator backends. The ``INI`` simulator by default 
+    approximates the softmax in a spiking implementation. This approximation may
+    reduce accuracy. It is safe to replace softmax by ReLU as long as the inputs 
+    to the activation function are not all negative for a sample. In that case, 
+    the spiking ReLU neurons would not be able to determine a winner.
 
 maxpool_type: str, optional
     Implementation variants of spiking MaxPooling layers, based on

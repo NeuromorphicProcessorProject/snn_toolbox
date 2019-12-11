@@ -68,23 +68,19 @@ input_layer = Input(input_shape)
 layer = Conv2D(filters=16,
                kernel_size=(5, 5),
                strides=(2, 2),
-               activation='relu',
-               use_bias=False)(input_layer)
+               activation='relu')(input_layer)
 layer = Conv2D(filters=32,
                kernel_size=(3, 3),
-               activation='relu',
-               use_bias=False)(layer)
+               activation='relu')(layer)
 layer = AveragePooling2D()(layer)
 layer = Conv2D(filters=8,
                kernel_size=(3, 3),
                padding='same',
-               activation='relu',
-               use_bias=False)(layer)
+               activation='relu')(layer)
 layer = Flatten()(layer)
 layer = Dropout(0.01)(layer)
 layer = Dense(units=10,
-              activation='softmax',
-              use_bias=False)(layer)
+              activation='softmax')(layer)
 
 model = Model(input_layer, layer)
 
@@ -123,10 +119,6 @@ config['simulation'] = {
     'duration': 50,                 # Number of time steps to run each sample.
     'num_to_test': 5,               # How many test samples to run.
     'batch_size': 1,                # Batch size for simulation.
-}
-
-config['input'] = {
-    'poisson_input': True           # Images are encodes as spike trains.
 }
 
 config['output'] = {

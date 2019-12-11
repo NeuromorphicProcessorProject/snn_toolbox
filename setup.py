@@ -14,7 +14,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='snntoolbox',
-    version='0.3.1',  # see https://www.python.org/dev/peps/pep-0440/
+    version='0.3.2',  # see https://www.python.org/dev/peps/pep-0440/
     description='Spiking neural network conversion toolbox',
     long_description=long_description,
     author='Bodo Rueckauer',
