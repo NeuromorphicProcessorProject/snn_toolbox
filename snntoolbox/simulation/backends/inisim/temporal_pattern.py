@@ -75,7 +75,7 @@ class SpikeLayer(Layer):
         self.spikerates = k.zeros(output_shape)
 
     def update_spikevars(self, x):
-        return [tf.assign(self.spikerates, x)]
+        return [self.spikerates.assign(x)]
 
 
 def spike_call(call):
@@ -123,7 +123,7 @@ def to_binary(x, num_bits):
         distributed across the first dimension of ``binary_array``.
     """
 
-    shape = k.shape(x)
+    shape = k.int_shape(x)
 
     binary_array = k.zeros([num_bits] + list(shape[1:]), k.floatx())
 
@@ -177,7 +177,7 @@ def to_binary(x, num_bits):
             p = powers[idx_p]
             c = k.greater_equal(act_value, p)
             b = tf.cond(c, lambda: 1., lambda: 0.)
-            a = tf.assign(binary_array[idx_p, idx_l, idx_m, idx_n], b)
+            a = binary_array[idx_p, idx_l, idx_m, idx_n].assign(b)
             new_act_value = tf.cond(c, lambda: act_value - p,
                                     lambda: act_value)
             with tf.control_dependencies([a]):
@@ -210,7 +210,7 @@ def to_binary(x, num_bits):
             p = powers[idx_p]
             c = k.greater_equal(act_value, p)
             b = tf.cond(c, lambda: 1., lambda: 0.)
-            a = tf.assign(binary_array[idx_p, idx_l], b)
+            a = binary_array[idx_p, idx_l].assign(b)
             new_act_value = tf.cond(c, lambda: act_value - p,
                                     lambda: act_value)
             with tf.control_dependencies([a]):
@@ -249,20 +249,20 @@ def to_binary_numpy(x, num_bits):
     powers = [2**-i for i in range(num_bits)]
 
     if len(x.shape) > 2:
-        for l in range(x.shape[1]):
+        for j in range(x.shape[1]):
             for m in range(x.shape[2]):
                 for n in range(x.shape[3]):
-                    f = x[0, l, m, n]
+                    f = x[0, j, m, n]
                     for i in range(num_bits):
                         if f >= powers[i]:
-                            binary_array[i, l, m, n] = 1
+                            binary_array[i, j, m, n] = 1
                             f -= powers[i]
     else:
-        for l in range(x.shape[1]):
-            f = x[0, l]
+        for j in range(x.shape[1]):
+            f = x[0, j]
             for i in range(num_bits):
                 if f >= powers[i]:
-                    binary_array[i, l] = 1
+                    binary_array[i, j] = 1
                     f -= powers[i]
     return binary_array
 
