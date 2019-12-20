@@ -9,3 +9,12 @@ __pycache__
 .idea/
 .tox/
 .pytest_cache
+.project
+.pydevproject
+.settings/
+**/log/
+**/application_generated_data_files/
+**/reports/
+*.h5
+*.npz
+*.json

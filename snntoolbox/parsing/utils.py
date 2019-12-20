@@ -36,6 +36,8 @@ from abc import abstractmethod
 
 import keras
 import numpy as np
+import sys
+import keras_rewiring
 
 
 class AbstractModelParser:
@@ -111,7 +113,7 @@ class AbstractModelParser:
         name_map = {}
         idx = 0
         inserted_flatten = False
-        for layer in layers:
+        for lid, layer in enumerate(layers):
             layer_type = self.get_type(layer)
 
             # Absorb BatchNormalization layer into parameters of previous layer
@@ -129,12 +131,33 @@ class AbstractModelParser:
                 prev_layer_type = self.get_type(prev_layer)
                 print("Absorbing batch-normalization parameters into " +
                       "parameters of previous {}.".format(prev_layer_type))
-                args = parameters + parameters_bn
-                kwargs = {'axis': axis, 'image_data_format':
-                          keras.backend.image_data_format(),
-                          'is_depthwise': prev_layer_type == 'DepthwiseConv2D'}
-                self._layer_list[prev_layer_idx]['parameters'] = \
-                    absorb_bn_parameters(*args, **kwargs)
+                _depthwise_conv_names = ['DepthwiseConv2D',
+                                         'SparseDepthwiseConv2D']
+                _sparse_names = [
+                    'Sparse',
+                    'SparseConv2D',
+                    'SparseDepthwiseConv2D']
+                axis = -2 if prev_layer_type in _depthwise_conv_names else axis
+                if (self._layer_list[prev_layer_idx]
+                        ['layer_type'] in _sparse_names):
+                    args = [parameters[0], parameters[2]] + parameters_bn
+                else:
+                    args = parameters[:2] + parameters_bn
+                kwargs = {
+                    'axis': axis,
+                    'image_data_format': keras.backend.image_data_format(),
+                    'is_depthwise': prev_layer_type in _depthwise_conv_names}
+                params_to_absorb = absorb_bn_parameters(*args, **kwargs)
+                # is the layer in question sparse?
+                if (self._layer_list[prev_layer_idx]
+                        ['layer_type'] in _sparse_names):
+                    # then you also need to save the mask associated with it
+                    params_to_absorb = (params_to_absorb[0],
+                                        params_to_absorb[1],
+                                        parameters[1]
+                                        )
+
+                self._layer_list[prev_layer_idx]['parameters'] = params_to_absorb
 
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
@@ -145,7 +168,8 @@ class AbstractModelParser:
                     {'layer_type': 'AveragePooling2D',
                      'name': self.get_name(layer, idx, 'AveragePooling2D'),
                      'pool_size': (layer.input_shape[a: a + 2]),
-                     'inbound': self.get_inbound_names(layer, name_map)})
+                     'inbound': self.get_inbound_names(layer, name_map),
+                     'strides': [1, 1]})
                 name_map['AveragePooling2D' + str(idx)] = idx
                 idx += 1
                 num_str = str(idx) if idx > 9 else '0' + str(idx)
@@ -189,11 +213,33 @@ class AbstractModelParser:
             if layer_type == 'Dense':
                 self.parse_dense(layer, attributes)
 
-            if layer_type == 'Conv2D':
+            if layer_type == 'Sparse':
+                self.parse_sparse(layer, attributes)
+
+            if layer_type in {'Conv1D', 'Conv2D'}:
                 self.parse_convolution(layer, attributes)
+
+            if layer_type == 'SparseConv2D':
+                self.parse_sparse_convolution(layer, attributes)
 
             if layer_type == 'DepthwiseConv2D':
                 self.parse_depthwiseconvolution(layer, attributes)
+
+            if layer_type == 'SparseDepthwiseConv2D':
+                self.parse_sparse_depthwiseconvolution(layer, attributes)
+
+            if layer_type in [
+                'Sparse',
+                'SparseConv2D',
+                    'SparseDepthwiseConv2D']:
+                weights, bias, mask = attributes['parameters']
+
+                weights, bias = modify_parameter_precision(
+                    weights, bias, self.config, attributes)
+
+                attributes['parameters'] = (weights, bias, mask)
+
+                self.absorb_activation(layer, attributes)
 
             if layer_type in {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D'}:
                 weights, bias = attributes['parameters']
@@ -346,7 +392,12 @@ class AbstractModelParser:
         self._layers_to_skip: List[str]
         """
 
-        return ['BatchNormalization', 'Activation', 'Dropout', 'ReLU']
+        return [
+            'BatchNormalization',
+            'Activation',
+            'Dropout',
+            'ReLU',
+            'ActivityRegularization']
 
     @abstractmethod
     def has_weights(self, layer):
@@ -422,12 +473,11 @@ class AbstractModelParser:
             layer_type = self.get_type(layer)
 
         output_shape = self.get_output_shape(layer)
-        if len(output_shape) == 2:
-            shape_string = '_{}'.format(output_shape[1])
-        else:
-            shape_string = '_{}x{}x{}'.format(output_shape[1],
-                                              output_shape[2],
-                                              output_shape[3])
+
+        shape_string = ["{}x".format(x) for x in output_shape[1:]]
+        shape_string[0] = "_" + shape_string[0]
+        shape_string[-1] = shape_string[-1][:-1]
+        shape_string = "".join(shape_string)
 
         num_str = str(idx) if idx > 9 else '0' + str(idx)
 
@@ -457,7 +507,8 @@ class AbstractModelParser:
         previous_layers = self.get_inbound_layers(layer)
         prev_layer_output_shape = self.get_output_shape(previous_layers[0])
         if len(output_shape) < len(prev_layer_output_shape) and \
-                self.get_type(layer) != 'Flatten':
+                self.get_type(layer) != 'Flatten' and \
+                self.get_type(previous_layers[0]) != 'InputLayer':
             assert len(previous_layers) == 1, \
                 "Layer to flatten must be unique."
             print("Inserting layer Flatten.")
@@ -667,11 +718,18 @@ class AbstractModelParser:
                 layer['weights'] = layer.pop('parameters')
 
             # Add layer
-            parsed_layer = getattr(keras.layers, layer.pop('layer_type'))
+            try:
+                _x = layer.pop('layer_type')
+                parsed_layer = getattr(keras.layers, _x)
+            except AttributeError as e:
+                print(e, file=sys.stderr)
+                import keras_rewiring
+                parsed_layer = getattr(keras_rewiring.sparse_layer, _x)
 
             inbound = [parsed_layers[inb] for inb in layer.pop('inbound')]
             if len(inbound) == 1:
                 inbound = inbound[0]
+            check_for_custom_activations(layer)
             parsed_layers[layer['name']] = parsed_layer(**layer)(inbound)
 
         print("Compiling parsed model...\n")
@@ -682,7 +740,7 @@ class AbstractModelParser:
             'sgd', 'categorical_crossentropy',
             ['accuracy', keras.metrics.top_k_categorical_accuracy])
         # Todo: Enable adding custom metric via self.input_model.metrics.
-
+        self.parsed_model.summary()
         return self.parsed_model
 
     def evaluate(self, batch_size, num_to_test, x_test=None, y_test=None,
@@ -827,6 +885,41 @@ def padding_string(pad, pool_size):
             "Padding {} could not be interpreted as any of the ".format(pad) +
             "supported border modes 'valid', 'same' or 'full'.")
     return padding
+
+
+def load_parameters(filepath):
+    """Load all layer parameters from an HDF5 file."""
+
+    import h5py
+
+    f = h5py.File(filepath, 'r')
+
+    params = []
+    for k in sorted(f.keys()):
+        params.append(np.array(f.get(k)))
+
+    f.close()
+
+    return params
+
+
+def save_parameters(params, filepath, fileformat='h5'):
+    """Save all layer parameters to an HDF5 file."""
+
+    if fileformat == 'pkl':
+        import pickle
+        pickle.dump(params, open(filepath + '.pkl', str('wb')))
+    else:
+        import h5py
+        with h5py.File(filepath, mode='w') as f:
+            for i, p in enumerate(params):
+                if i < 10:
+                    j = '00' + str(i)
+                elif i < 100:
+                    j = '0' + str(i)
+                else:
+                    j = str(i)
+                f.create_dataset('param_' + j, data=p)
 
 
 def has_weights(layer):
@@ -1188,6 +1281,16 @@ def get_clamped_relu_from_string(activation_str):
     return activation
 
 
+def get_noisy_softplus_from_string(activation_str):
+    from snntoolbox.utils.utils import NoisySoftplus
+
+    k, sigma = map(eval, activation_str.split('_')[-2:])
+
+    activation = NoisySoftplus(k, sigma)
+
+    return activation
+
+
 def get_custom_activation(activation_str):
     """
     If ``activation_str`` describes a custom activation function, import this
@@ -1221,10 +1324,48 @@ def get_custom_activation(activation_str):
             activation_str)
     elif 'clamped_relu' in activation_str:
         activation = get_clamped_relu_from_string(activation_str)
+    elif 'NoisySoftplus' in activation_str:
+        from snntoolbox.utils.utils import NoisySoftplus
+        activation = NoisySoftplus
     else:
         activation = activation_str
 
     return activation, activation_str
+
+
+def assemble_custom_dict(*args):
+    assembly = []
+    for arg in args:
+        assembly += arg.items()
+    return dict(assembly)
+
+
+def get_custom_layers_dict(filepath=None):
+    """
+        Import all implemented custom layers so they can be used when
+        loading a Keras model.
+
+        Parameters
+        ----------
+
+        filepath : Optional[str]
+            Path to json file containing additional custom objects.
+        """
+    from keras_rewiring import Sparse, SparseConv2D, \
+        SparseDepthwiseConv2D
+    from keras_rewiring.optimizers import NoisySGD
+    custom_obj = {'Sparse': Sparse,
+                  'SparseConv2D': SparseConv2D,
+                  'SparseDepthwiseConv2D': SparseDepthwiseConv2D,
+                  'NoisySGD': NoisySGD
+                  }
+    if filepath is not None and filepath != '':
+        import json
+        with open(filepath) as f:
+            kwargs = json.load(f)
+            custom_obj.update(kwargs)
+
+    return custom_obj
 
 
 def get_custom_activations_dict(filepath=None):
@@ -1240,7 +1381,7 @@ def get_custom_activations_dict(filepath=None):
     """
 
     from snntoolbox.utils.utils import binary_sigmoid, binary_tanh, \
-        ClampedReLU
+        ClampedReLU, LimitedReLU, NoisySoftplus
 
     # Todo: We should be able to load a different activation for each layer.
     # Need to remove this hack:
@@ -1252,9 +1393,38 @@ def get_custom_activations_dict(filepath=None):
             # Todo: This should work regardless of the specific attributes of
             #       the ClampedReLU class used during training.
             'clamped_relu': ClampedReLU(),
+            'LimitedReLU': LimitedReLU,
+            'relu6': LimitedReLU({'max_value': 6}),
             activation_str: activation,
+            'Noisy_Softplus': NoisySoftplus,
             'precision': precision,
             'activity_regularizer': keras.regularizers.l1}
+
+    if filepath is not None and filepath != '':
+        import json
+        with open(filepath) as f:
+            kwargs = json.load(f)
+
+        for key in kwargs:
+            if 'LimitedReLU' in key:
+                custom_objects[key] = LimitedReLU(kwargs[key])
+    return custom_objects
+
+
+def check_for_custom_activations(layer_attributes):
+    """
+    Check if the layer contains a custom activation function, and deal with it
+    appropriately.
+
+    Parameters
+    ----------
+
+    layer_attributes: dict
+        A dictionary containing the attributes of the layer.
+    """
+
+    if 'activation' not in layer_attributes.keys():
+        return
 
 
 def precision(y_true, y_pred):

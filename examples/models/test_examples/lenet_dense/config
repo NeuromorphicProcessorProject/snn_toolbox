@@ -1,0 +1,33 @@
+[paths]
+dataset_path = %(path_wd)s
+filename_ann = trained_model_of_lenet_300_100_relu_crossent_noisy_sgd_retest_final_dense  
+runlabel = scrap
+
+[tools]
+evaluate_ann = False
+normalize = False
+only_serialise = True
+
+[normalization]
+percentile = 90
+
+[simulation]
+simulator = spiNNaker
+duration = 1000
+num_to_test = 5
+batch_size = 5
+keras_backend = tensorflow
+dt = 0.1
+
+[cell]
+tau_syn_E = 0.2
+tau_syn_I = 0.2
+v_thresh = 1
+
+[input]
+poisson_input = True
+
+
+[output]
+log_vars = {'all'}
+plot_vars = {'all'}

@@ -1,0 +1,32 @@
+[paths]
+dataset_path = %(path_wd)s/dataset
+filename_ann = PB_bias_test_2
+runlabel = PB_bias_test_2
+
+[tools]
+evaluate_ann = True
+convert = True
+normalize = False
+
+[normalization]
+percentile = 99.5
+
+[simulation]
+simulator = spiNNaker
+duration = 1000
+num_to_test = 1
+batch_size = 1
+keras_backend = tensorflow
+dt = 1
+
+[input]
+poisson_input = True
+
+[cell]
+v_thresh = 1 
+tau_syn_E = 0.2
+tau_syn_I = 0.2
+
+[output]
+log_vars = {}
+plot_vars = {'activations', 'input_image', 'spikerates'}
