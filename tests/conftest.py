@@ -12,7 +12,6 @@ from keras.datasets import mnist
 from keras.layers import Conv2D, AveragePooling2D, Flatten, Dropout, Dense, \
     Concatenate, Activation, BatchNormalization
 from keras.utils import np_utils
-from keras_rewiring import Sparse, SparseConv2D, SparseDepthwiseConv2D
 
 from snntoolbox.bin.utils import update_setup
 from snntoolbox.utils.utils import import_configparser
@@ -191,6 +190,8 @@ def _model_2(_dataset):
 
 @pytest.fixture(scope='session')
 def _model_3(_dataset):
+    from keras_rewiring import Sparse, SparseConv2D, SparseDepthwiseConv2D
+
     x_train, y_train, x_test, y_test = _dataset
 
     axis = 1 if keras.backend.image_data_format() == 'channels_first' else -1

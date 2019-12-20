@@ -1,19 +1,17 @@
-# """End-to-end example for SNN Toolbox.
-#
-# This script sets up a small CNN using Keras and tensorflow, trains it for one
-# epoch on MNIST, stores model and dataset in a temporary folder on disk, creates
-# a configuration file for SNN toolbox, and finally calls the main function of
-# SNN toolbox to convert the trained ANN to an SNN and run it using Brian2
-# simulator.
-# """
-#
+"""End-to-end example for SNN Toolbox.
+
+This script sets up a small CNN using Keras and tensorflow, trains it for one
+epoch on MNIST, stores model and dataset in a temporary folder on disk, creates
+a configuration file for SNN toolbox, and finally calls the main function of
+SNN toolbox to convert the trained ANN to an SNN and run it using spiNNaker.
+"""
+
 import os
-import time
 import numpy as np
 
 import keras
 from keras import Input, Model
-from keras.layers import Conv2D, AveragePooling2D, Flatten, Dense, Dropout
+from keras.layers import AveragePooling2D, Flatten, Dropout
 from keras_rewiring import Sparse, SparseConv2D, SparseDepthwiseConv2D
 from keras_rewiring.optimizers import NoisySGD
 from keras_rewiring.rewiring_callback import RewiringCallback
@@ -22,19 +20,19 @@ from keras.utils import np_utils
 
 from snntoolbox.bin.run import main
 from snntoolbox.utils.utils import import_configparser
-#
-#
-# # WORKING DIRECTORY #
-# #####################
-#
-# # Define path where model and output files will be stored.
-# # The user is responsible for cleaning up this temporary directory.
+
+
+# WORKING DIRECTORY #
+#####################
+
+# Define path where model and output files will be stored.
+# The user is responsible for cleaning up this temporary directory.
 path_wd = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(
     __file__)), '..', 'temp/sparse_test'))
 # os.makedirs(path_wd)
-#
-# # GET DATASET #
-# ###############
+
+# GET DATASET #
+###############
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
@@ -58,21 +56,20 @@ np.savez_compressed(os.path.join(path_wd, 'y_test'), y_test)
 # SNN toolbox will not do any training, but we save a subset of the training
 # set so the toolbox can use it when normalizing the network parameters.
 np.savez_compressed(os.path.join(path_wd, 'x_norm'), x_train[::10])
-# # SETUP REWIRING #
-# ##############
-#
+
+# SETUP REWIRING #
+##################
+
 deep_r = RewiringCallback(noise_coeff=10 ** -5)
-#
-callback_list = []
-callback_list.append(deep_r)
-#
-#
-# # CREATE ANN #
-# ##############
-#
-# # This section creates a simple CNN using Keras, and trains it
-# # with backpropagation. There are no spikes involved at this point.
-#
+
+callback_list = [deep_r]
+
+# CREATE ANN #
+##############
+
+# This section creates a simple CNN using Keras, and trains it
+# with backpropagation. There are no spikes involved at this point.
+
 input_shape = x_train.shape[1:]
 input_layer = Input(input_shape)
 
