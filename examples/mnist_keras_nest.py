@@ -119,6 +119,12 @@ config['simulation'] = {
     'duration': 50,                 # Number of time steps to run each sample.
     'num_to_test': 5,               # How many test samples to run.
     'batch_size': 1,                # Batch size for simulation.
+    'dt': 0.1  # Time resolution for ODE solving.
+}
+
+config['cell'] = {
+    'tau_refrac': 0.1               # Refractory period must be at least one
+                                    # time step.
 }
 
 config['output'] = {
