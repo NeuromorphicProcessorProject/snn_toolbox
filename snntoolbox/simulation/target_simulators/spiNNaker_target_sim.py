@@ -5,10 +5,8 @@ Building and simulating spiking neural networks using
 
 Dependency: `SpyNNaker software
 <http://spinnakermanchester.github.io/development/devenv.html>`_
-Some changes have to be made in SpyNNaker script due to compatibilty.
-(@piewchee: Please specify.)
 
-@author: rbodo, piewchee
+@author: UMan, rbodo, piewchee
 """
 
 import os
@@ -217,7 +215,7 @@ class SNN(PYSNN):
                        header="columns = ['i', 'j', 'weight', 'delay']")
 
     def build_convolution(self, layer):
-        from snntoolbox.simulation.utils import build_convolution, build_depthwise_convolution, build_1D_convolution
+        from snntoolbox.simulation.utils import build_convolution, build_depthwise_convolution, build_1d_convolution
         from snntoolbox.parsing.utils import get_type
 
         # If the parsed model contains a ZeroPadding layer, we need to tell the
@@ -242,8 +240,7 @@ class SNN(PYSNN):
             weights, biases = build_depthwise_convolution(
                 layer, delay, transpose_kernel)
         elif get_type(layer) == 'Conv1D':
-            weights, biases = build_1D_convolution(
-                layer, delay, transpose_kernel)
+            weights, biases = build_1d_convolution(layer, delay)
         else:
             ValueError("Layer {} of type {} unrecognised here. "
                        "How did you get into this function?".format(

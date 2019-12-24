@@ -595,10 +595,12 @@ class AbstractSNN:
             # of the simulation.
             print("\nStarting new simulation...\n")
             output_b_l_t = self.simulate(**data_batch_kwargs)
-            # Halt if model is to be serialised only
+
+            # Halt if model is to be serialised only.
             if self.config.getboolean('tools', 'serialise_only'):
                 import sys
                 sys.exit()
+
             # Get classification result by comparing the guessed class (i.e.
             # the index of the neuron in the last layer which spiked most) to
             # the ground truth.
@@ -761,7 +763,7 @@ class AbstractSNN:
         return top1acc_total
 
     def setup_layers(self, batch_shape):
-        "Iterates over all layers to instantiate them in the simulator"
+        """Iterates over all layers to instantiate them in the simulator"""
 
         self.add_input_layer(batch_shape)
         for layer in self.parsed_model.layers[1:]:
@@ -1180,7 +1182,7 @@ def get_samples_from_list(x_test, y_test, dataflow, config):
     return x_test, y_test
 
 
-def build_1D_convolution(layer, delay, transpose_kernel=False):
+def build_1d_convolution(layer, delay):
     """Build convolution layer.
 
     Parameters
@@ -1190,9 +1192,6 @@ def build_1D_convolution(layer, delay, transpose_kernel=False):
         Parsed model layer.
     delay: float
         Synaptic delay.
-    transpose_kernel: bool
-        Whether or not to convert kernels from Tensorflow to Theano format
-        (correlation instead of convolution).
 
     Returns
     -------
@@ -1286,16 +1285,7 @@ def build_convolution(layer, delay, transpose_kernel=False):
         Flattened array containing the biases of all neurons in the ``layer``.
     """
 
-    all_weights = layer.get_weights()
-    if len(all_weights) == 2:
-        weights, biases = all_weights
-    elif len(all_weights) == 3:
-        weights, biases, masks = all_weights
-        weights = weights * masks
-    else:
-        raise ValueError("Layer {} was expected to contain "
-                         "weights, biases and, in rare cases,"
-                         "masks.".format(layer.name))
+    weights, biases = get_weights(layer)
 
     if transpose_kernel:
         from keras.utils.conv_utils import convert_kernel
@@ -1382,16 +1372,7 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
         Flattened array containing the biases of all neurons in the ``layer``.
     """
 
-    all_weights = layer.get_weights()
-    if len(all_weights) == 2:
-        weights, biases = all_weights
-    elif len(all_weights) == 3:
-        weights, biases, masks = all_weights
-        weights = weights * masks
-    else:
-        raise ValueError("Layer {} was expected to contain "
-                         "weights, biases and, in rare cases,"
-                         "masks.".format(layer.name))
+    weights, biases = get_weights(layer)
 
     if transpose_kernel:
         from keras.utils.conv_utils import convert_kernel
@@ -1404,7 +1385,6 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
 
     ii = 0 if layer.data_format == 'channels_first' else 1
 
-    nc = layer.input_shape[0 - ii]  # Number of input channels
     nx = layer.input_shape[-1 - ii]  # Width of feature map
     ny = layer.input_shape[-2 - ii]  # Height of feature map
 
@@ -1766,3 +1746,30 @@ def get_shape_from_label(label):
 
     """
     return [int(i) for i in label.split('_')[1].split('x')]
+
+
+def get_weights(layer):
+    """Get weights of Keras layer, possibly applying sparsifying mask.
+
+    Parameters
+    ----------
+
+    layer: keras.layers.Layer
+
+    Returns
+    -------
+
+    : tuple
+        The layer weights and biases.
+    """
+
+    all_weights = layer.get_weights()
+    if len(all_weights) == 2:
+        weights, biases = all_weights
+    elif len(all_weights) == 3:
+        weights, biases, masks = all_weights
+        weights = weights * masks
+    else:
+        raise ValueError("Layer {} was expected to contain weights, biases "
+                         "and, in rare cases,masks.".format(layer.name))
+    return weights, biases

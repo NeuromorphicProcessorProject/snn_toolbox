@@ -36,8 +36,6 @@ from abc import abstractmethod
 
 import keras
 import numpy as np
-import sys
-import keras_rewiring
 
 
 class AbstractModelParser:
@@ -113,7 +111,7 @@ class AbstractModelParser:
         name_map = {}
         idx = 0
         inserted_flatten = False
-        for lid, layer in enumerate(layers):
+        for layer in layers:
             layer_type = self.get_type(layer)
 
             # Absorb BatchNormalization layer into parameters of previous layer
@@ -131,33 +129,32 @@ class AbstractModelParser:
                 prev_layer_type = self.get_type(prev_layer)
                 print("Absorbing batch-normalization parameters into " +
                       "parameters of previous {}.".format(prev_layer_type))
+
                 _depthwise_conv_names = ['DepthwiseConv2D',
                                          'SparseDepthwiseConv2D']
-                _sparse_names = [
-                    'Sparse',
-                    'SparseConv2D',
-                    'SparseDepthwiseConv2D']
-                axis = -2 if prev_layer_type in _depthwise_conv_names else axis
-                if (self._layer_list[prev_layer_idx]
-                        ['layer_type'] in _sparse_names):
+                _sparse_names = ['Sparse', 'SparseConv2D',
+                                 'SparseDepthwiseConv2D']
+                is_depthwise = prev_layer_type in _depthwise_conv_names
+                is_sparse = prev_layer_type in _sparse_names
+
+                if is_sparse:
                     args = [parameters[0], parameters[2]] + parameters_bn
                 else:
                     args = parameters[:2] + parameters_bn
+
                 kwargs = {
                     'axis': axis,
                     'image_data_format': keras.backend.image_data_format(),
-                    'is_depthwise': prev_layer_type in _depthwise_conv_names}
-                params_to_absorb = absorb_bn_parameters(*args, **kwargs)
-                # is the layer in question sparse?
-                if (self._layer_list[prev_layer_idx]
-                        ['layer_type'] in _sparse_names):
-                    # then you also need to save the mask associated with it
-                    params_to_absorb = (params_to_absorb[0],
-                                        params_to_absorb[1],
-                                        parameters[1]
-                                        )
+                    'is_depthwise': is_depthwise}
 
-                self._layer_list[prev_layer_idx]['parameters'] = params_to_absorb
+                params_to_absorb = absorb_bn_parameters(*args, **kwargs)
+
+                if is_sparse:
+                    # Need to also save the mask associated with sparse layer.
+                    params_to_absorb += (parameters[1],)
+
+                self._layer_list[prev_layer_idx]['parameters'] = \
+                    params_to_absorb
 
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
@@ -228,10 +225,8 @@ class AbstractModelParser:
             if layer_type == 'SparseDepthwiseConv2D':
                 self.parse_sparse_depthwiseconvolution(layer, attributes)
 
-            if layer_type in [
-                'Sparse',
-                'SparseConv2D',
-                    'SparseDepthwiseConv2D']:
+            if layer_type in ['Sparse', 'SparseConv2D',
+                              'SparseDepthwiseConv2D']:
                 weights, bias, mask = attributes['parameters']
 
                 weights, bias = modify_parameter_precision(
@@ -392,12 +387,13 @@ class AbstractModelParser:
         self._layers_to_skip: List[str]
         """
 
-        return [
-            'BatchNormalization',
-            'Activation',
-            'Dropout',
-            'ReLU',
-            'ActivityRegularization']
+        # Todo: We should get this list from some central place like the
+        #       ``config_defaults`` file.
+        return ['BatchNormalization',
+                'Activation',
+                'Dropout',
+                'ReLU',
+                'ActivityRegularization']
 
     @abstractmethod
     def has_weights(self, layer):
@@ -568,6 +564,15 @@ class AbstractModelParser:
 
         pass
 
+    def parse_sparse(self, layer, attributes):
+        pass
+
+    def parse_sparse_convolution(self, layer, attributes):
+        pass
+
+    def parse_sparse_depthwiseconvolution(self, layer, attributes):
+        pass
+
     @abstractmethod
     def parse_pooling(self, layer, attributes):
         """Parse a pooling layer.
@@ -718,13 +723,12 @@ class AbstractModelParser:
                 layer['weights'] = layer.pop('parameters')
 
             # Add layer
-            try:
-                _x = layer.pop('layer_type')
-                parsed_layer = getattr(keras.layers, _x)
-            except AttributeError as e:
-                print(e, file=sys.stderr)
+            layer_type = layer.pop('layer_type')
+            if hasattr(keras.layers, layer_type):
+                parsed_layer = getattr(keras.layers, layer_type)
+            else:
                 import keras_rewiring
-                parsed_layer = getattr(keras_rewiring.sparse_layer, _x)
+                parsed_layer = getattr(keras_rewiring.sparse_layer, layer_type)
 
             inbound = [parsed_layers[inb] for inb in layer.pop('inbound')]
             if len(inbound) == 1:
@@ -794,8 +798,8 @@ def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
     print("Using BatchNorm axis {}.".format(axis))
 
     # Map batch norm axis from layer dimension space to kernel dimension space.
-    # kernel_axes tells where to map each axis of a layer. Assumes that kernels
-    # are shaped like [height, width, num_input_channels, num_output_channels],
+    # Assumes that kernels are shaped like
+    # [height, width, num_input_channels, num_output_channels],
     # and layers like [batch_size, channels, height, width] or
     # [batch_size, height, width, channels].
     if weight.ndim == 4:
@@ -803,14 +807,9 @@ def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
         channel_axis = 2 if is_depthwise else 3
 
         if image_data_format == 'channels_first':
-            kernel_axes = [None, channel_axis, 0, 1]
+            layer2kernel_axes_map = [None, channel_axis, 0, 1]
         else:
-            kernel_axes = [None, 0, 1, channel_axis]
-
-        # Read: batch axis is mapped nowhere, channel axis is mapped from 1 or
-        # 3 to 3, etc.
-        layer2kernel_axes_map = {layer_axis: kernel_axis for layer_axis,
-                                 kernel_axis in enumerate(kernel_axes)}
+            layer2kernel_axes_map = [None, 0, 1, channel_axis]
 
         axis = layer2kernel_axes_map[axis]
 
@@ -1342,30 +1341,35 @@ def assemble_custom_dict(*args):
 
 def get_custom_layers_dict(filepath=None):
     """
-        Import all implemented custom layers so they can be used when
-        loading a Keras model.
+    Import all implemented custom layers so they can be used when loading a
+    Keras model.
 
-        Parameters
-        ----------
+    Parameters
+    ----------
 
-        filepath : Optional[str]
-            Path to json file containing additional custom objects.
-        """
-    from keras_rewiring import Sparse, SparseConv2D, \
-        SparseDepthwiseConv2D
-    from keras_rewiring.optimizers import NoisySGD
-    custom_obj = {'Sparse': Sparse,
-                  'SparseConv2D': SparseConv2D,
-                  'SparseDepthwiseConv2D': SparseDepthwiseConv2D,
-                  'NoisySGD': NoisySGD
-                  }
+    filepath : Optional[str]
+        Path to json file containing additional custom objects.
+    """
+
+    from snntoolbox.utils.utils import is_module_installed
+
+    custom_layers = {}
+    if is_module_installed('keras_rewiring'):
+        from keras_rewiring import Sparse, SparseConv2D, SparseDepthwiseConv2D
+        from keras_rewiring.optimizers import NoisySGD
+
+        custom_layers.update({'Sparse': Sparse,
+                              'SparseConv2D': SparseConv2D,
+                              'SparseDepthwiseConv2D': SparseDepthwiseConv2D,
+                              'NoisySGD': NoisySGD})
+
     if filepath is not None and filepath != '':
         import json
         with open(filepath) as f:
             kwargs = json.load(f)
-            custom_obj.update(kwargs)
+            custom_layers.update(kwargs)
 
-    return custom_obj
+    return custom_layers
 
 
 def get_custom_activations_dict(filepath=None):
@@ -1384,21 +1388,22 @@ def get_custom_activations_dict(filepath=None):
         ClampedReLU, LimitedReLU, NoisySoftplus
 
     # Todo: We should be able to load a different activation for each layer.
-    # Need to remove this hack:
+    #       Need to remove this hack:
     activation_str = 'relu_Q1.4'
     activation = get_quantized_activation_function_from_string(activation_str)
 
-    return {'binary_sigmoid': binary_sigmoid,
-            'binary_tanh': binary_tanh,
-            # Todo: This should work regardless of the specific attributes of
-            #       the ClampedReLU class used during training.
-            'clamped_relu': ClampedReLU(),
-            'LimitedReLU': LimitedReLU,
-            'relu6': LimitedReLU({'max_value': 6}),
-            activation_str: activation,
-            'Noisy_Softplus': NoisySoftplus,
-            'precision': precision,
-            'activity_regularizer': keras.regularizers.l1}
+    custom_objects = {
+        'binary_sigmoid': binary_sigmoid,
+        'binary_tanh': binary_tanh,
+        # Todo: This should work regardless of the specific attributes of the
+        #       ClampedReLU class used during training.
+        'clamped_relu': ClampedReLU(),
+        'LimitedReLU': LimitedReLU,
+        'relu6': LimitedReLU({'max_value': 6}),
+        activation_str: activation,
+        'Noisy_Softplus': NoisySoftplus,
+        'precision': precision,
+        'activity_regularizer': keras.regularizers.l1}
 
     if filepath is not None and filepath != '':
         import json
@@ -1408,6 +1413,7 @@ def get_custom_activations_dict(filepath=None):
         for key in kwargs:
             if 'LimitedReLU' in key:
                 custom_objects[key] = LimitedReLU(kwargs[key])
+
     return custom_objects
 
 

@@ -391,26 +391,22 @@ def quantized_relu(x, m, f):
     """
     return keras.backend.relu(reduce_precision_var(x, m, f))
 
-class LimitedReLU:
+
+class LimitedReLU(keras.layers.ReLU):
     def __init__(self, cfg):
-        self.negative_slope = cfg['negative_slope']
-        self.max_value = cfg['max_value']
-        self.threshold = cfg['threshold']
-        self.__name__ = '{}_{}_{}_LimitedReLU'.format(self.negative_slope, self.max_value, self.threshold)
-        
+        super(LimitedReLU, self).__init__(**cfg)
+        self.__name__ = '{}_{}_{}_LimitedReLU'.format(
+            self.negative_slope, self.max_value, self.threshold)
+
     def get_cfg(self):
-        return {'negative_slope' : self.negative_slope,
-                'max_value' : self.max_value,
-                'threshold' : self.threshold}
-        
+        return self.get_config()
+
     def set_cfg(self, cfg):
-        self.negative_slope = cfg['negative_slope']
-        self.max_value = cfg['max_value']
-        self.threshold = cfg['threshold']
-        self.__name__ = '{}_{}_{}_LimitedReLU'.format(self.negative_slope, self.max_value, self.threshold)
-    
-    def __call__ (self, *args, **kwargs):
-        return keras.backend.relu(args[0], self.negative_slope, self.max_value, self.threshold)
+        self.__init__(cfg)
+
+    def __call__(self, *args, **kwargs):
+        return super(LimitedReLU, self).call(args[0])
+
 
 class ClampedReLU:
     """
@@ -433,35 +429,21 @@ class ClampedReLU:
                                                     self.max_value)
 
     def __call__(self, *args, **kwargs):
+        import tensorflow as tf
         x = keras.backend.relu(args[0], max_value=self.max_value)
-        return keras.backend.tf.where(keras.backend.less(x, self.threshold),
-                                      keras.backend.zeros_like(x), x)
+        return tf.where(keras.backend.less(x, self.threshold),
+                        keras.backend.zeros_like(x), x)
 
 
-class LimitedReLU(keras.layers.ReLU):
-    def __init__(self, cfg):
-        super(LimitedReLU, self).__init__(**cfg)
-        self.__name__ = '{}_{}_{}_LimitedReLU'.format(
-            self.negative_slope, self.max_value, self.threshold)
-
-    def get_cfg(self):
-        return self.get_config()
-
-    def set_cfg(self, cfg):
-        self.__init__(cfg)
-
-    def __call__(self, *args, **kwargs):
-        return super(LimitedReLU, self).call(args[0])
-    
-class NoisySoftplus():
+class NoisySoftplus:
     def __init__(self, k=0.17, sigma=1):
         self.k = k
         self.sigma = sigma
-        self.__name__ = 'noisy_softplus_{}_{}'.format(self.k,
-                                                    self.sigma)
+        self.__name__ = 'noisy_softplus_{}_{}'.format(self.k, self.sigma)
                 
-    def __call__ (self, *args, **kwargs):
-        return self.k*self.sigma*keras.backend.softplus(args[0]/(self.k*self.sigma))
+    def __call__(self, *args, **kwargs):
+        return self.k * self.sigma * keras.backend.softplus(
+            args[0] / (self.k * self.sigma))
 
 
 def wilson_score(p, n):
@@ -627,3 +609,13 @@ def import_configparser():
         import ConfigParser as configparser
 
     return configparser
+
+
+def is_module_installed(mod):
+    import sys
+    if sys.version_info[0] < 3:
+        import pkgutil
+        return pkgutil.find_loader(mod) is not None
+    else:
+        import importlib
+        return importlib.util.find_spec(mod) is not None

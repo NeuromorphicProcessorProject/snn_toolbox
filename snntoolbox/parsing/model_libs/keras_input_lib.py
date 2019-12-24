@@ -55,7 +55,6 @@ class ModelParser(AbstractModelParser):
         return layer.output_shape
 
     def parse_sparse(self, layer, attributes):
-        #attributes['mask'] = K.get_value(layer.mask)
         return self.parse_dense(layer, attributes)
 
     def parse_dense(self, layer, attributes):
@@ -67,7 +66,6 @@ class ModelParser(AbstractModelParser):
             attributes['use_bias'] = True
 
     def parse_sparse_convolution(self, layer, attributes):
-        #attributes['mask'] = K.get_value(layer.mask)
         return self.parse_convolution(layer, attributes)
 
     def parse_convolution(self, layer, attributes):
@@ -82,7 +80,6 @@ class ModelParser(AbstractModelParser):
                                                      k.image_data_format()))
 
     def parse_sparse_depthwiseconvolution(self, layer, attributes):
-        #attributes['mask'] = K.get_value(layer.mask)
         return self.parse_depthwiseconvolution(layer, attributes)
 
     def parse_depthwiseconvolution(self, layer, attributes):
@@ -109,15 +106,6 @@ class ModelParser(AbstractModelParser):
 
     def parse_concatenate(self, layer, attributes):
         pass
-
-    def get_number_of_neurons(self):
-        count = 0
-        for layer in self.layers:
-            if layer.type in ['Flatten', 'Reshape', 'Padding']:
-                continue
-            if hasattr(layer, shape):
-                count += np.prod(*layer.shape)
-        return count
 
 
 def load(path, filename, **kwargs):
@@ -154,7 +142,8 @@ def load(path, filename, **kwargs):
         model = models.model_from_json(open(filepath + '.json').read())
         try:
             model.load_weights(filepath + '.h5')
-        except Exception:            # Allows h5 files without a .h5 extension to be loaded
+        except OSError:
+            # Allows h5 files without a .h5 extension to be loaded.
             model.load_weights(filepath)
         # With this loading method, optimizer and loss cannot be recovered.
         # Could be specified by user, but since they are not really needed
@@ -172,21 +161,12 @@ def load(path, filename, **kwargs):
         custom_dicts = assemble_custom_dict(
             get_custom_activations_dict(filepath_custom_objects),
             get_custom_layers_dict())
-        if "config" in kwargs.keys():
-            custom_dicts_path = kwargs['config'].get(
-                'paths', 'filepath_custom_objects')
-            custom_dicts = assemble_custom_dict(
-                custom_dicts,
-                get_custom_activations_dict(custom_dicts_path))
         try:
-            model = models.load_model(
-                filepath + '.h5',
-                custom_dicts)
+            model = models.load_model(filepath + '.h5', custom_dicts)
         except OSError as e:
             print(e)
-            model = models.load_model(
-                filepath,
-                custom_dicts)
+            print("Trying to load without '.h5' extension.")
+            model = models.load_model(filepath, custom_dicts)
         model.compile(model.optimizer, model.loss,
                       ['accuracy', metrics.top_k_categorical_accuracy])
 

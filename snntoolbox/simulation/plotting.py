@@ -249,7 +249,7 @@ def plot_layer_activity(layer, title, path=None, limits=None,
     num = shape[0]
     fac = 1  # Scales height of colorbar
     # Case: One-dimensional layer (e.g. Dense). If larger than 100 neurons,
-    # form a rectangle. Otherwise plot a 1d-image.lay
+    # form a rectangle. Otherwise plot a 1d-image.
     if len(shape) == 1:
         if num >= 100:
             n = int(np.sqrt(num))
@@ -1154,7 +1154,7 @@ def plot_input_image(x, label, path=None, data_format=None, filename=None):
     if data_format == 'channels_first':
         x = np.transpose(x, (1, 2, 0))
 
-    if x.shape[-1] == 1 and x.ndim >2:
+    if x.shape[-1] == 1 and x.ndim > 2:
         x = x[..., 0]
 
     plt.figure()

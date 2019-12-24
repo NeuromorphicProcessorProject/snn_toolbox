@@ -546,7 +546,7 @@ def initialize_simulator(config):
         if simulator == 'spiNNaker':
             try:
                 sim = import_module('pyNN.' + simulator)
-            except ImportError as e:
+            except ImportError:
                 sim = import_module('spynnaker8')
         else:
             sim = import_module('pyNN.' + simulator)
