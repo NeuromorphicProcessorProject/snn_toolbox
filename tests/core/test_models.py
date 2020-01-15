@@ -14,7 +14,9 @@ from snntoolbox.datasets.utils import get_dataset
 from snntoolbox.simulation.utils import spiketrains_to_rates
 from snntoolbox.simulation.plotting import get_pearson_coefficients
 from snntoolbox.utils.utils import import_configparser
-
+from tests.conftest import spinnaker_skip_if_dependency_missing
+from tests.conftest import nest_skip_if_dependency_missing
+from tests.conftest import brian2_skip_if_dependency_missing
 
 configparser = import_configparser()
 
@@ -129,6 +131,7 @@ class TestOutputModel:
         assert np.all(corr[:-1] > 0.99)
         assert corr[-1] > 0.90
 
+    @brian2_skip_if_dependency_missing
     def test_brian2(self, _model_1, _config):
 
         path_wd = _config.get('paths', 'path_wd')
@@ -143,16 +146,14 @@ class TestOutputModel:
                 'simulator': 'brian2',
                 'duration': 200,
                 'num_to_test': 100,
-                'batch_size': 1},
+                'batch_size': 1,
+                'dt': 0.1},
             'output': {
                 'log_vars': {'activations_n_b_l', 'spiketrains_n_b_l_t'}}}
 
         _config.read_dict(updates)
 
-        try:
-            initialize_simulator(_config)
-        except (ImportError, KeyError, ValueError):
-            return
+        initialize_simulator(_config)
 
         acc = run_pipeline(_config)
 
@@ -162,6 +163,7 @@ class TestOutputModel:
         assert np.all(corr[:-1] > 0.97)
         assert corr[-1] > 0.5
 
+    @nest_skip_if_dependency_missing
     def test_nest(self, _model_1, _config):
 
         path_wd = _config.get('paths', 'path_wd')
@@ -182,10 +184,69 @@ class TestOutputModel:
 
         _config.read_dict(updates)
 
-        try:
-            initialize_simulator(_config)
-        except (ImportError, KeyError, ValueError):
-            return
+        initialize_simulator(_config)
+
+        acc = run_pipeline(_config)
+
+        assert acc[0] >= 0.95
+
+        corr = get_correlations(_config)
+        assert np.all(corr[:-1] > 0.97)
+        assert corr[-1] > 0.5
+
+    @spinnaker_skip_if_dependency_missing
+    def test_spinnaker(self, _model_1, _config):
+
+        path_wd = _config.get('paths', 'path_wd')
+        model_name = _config.get('paths', 'filename_ann')
+        keras.models.save_model(_model_1,
+                                os.path.join(path_wd, model_name + '.h5'))
+
+        updates = {
+            'tools': {'evaluate_ann': False},
+            'input': {'poisson_input': True},
+            'simulation': {
+                'simulator': 'spiNNaker',
+                'duration': 100,
+                'num_to_test': 1,  # smaller to make more feasible
+                'batch_size': 1},
+            'output': {
+                'log_vars': {'activations_n_b_l', 'spiketrains_n_b_l_t'}}}
+
+        _config.read_dict(updates)
+
+        initialize_simulator(_config)
+
+        acc = run_pipeline(_config)
+
+        assert acc[0] >= 0.95
+
+        corr = get_correlations(_config)
+        assert np.all(corr[:-1] > 0.97)
+        assert corr[-1] > 0.5
+
+    @spinnaker_skip_if_dependency_missing
+    def test_spinnaker_sparse(self, _model_3, _config):
+
+        path_wd = _config.get('paths', 'path_wd')
+        model_name = _config.get('paths', 'filename_ann')
+        keras.models.save_model(_model_3,
+                                os.path.join(path_wd, model_name + '.h5'))
+
+        updates = {
+            'tools': {'evaluate_ann': False},
+            'input': {'poisson_input': True},
+            'simulation': {
+                'simulator': 'spiNNaker',
+                'duration': 100,
+                'num_to_test': 1,  # smaller to make more feasible
+                'batch_size': 1},
+            'output': {
+                'log_vars': {'activations_n_b_l', 'spiketrains_n_b_l_t'}}}
+
+        _config.read_dict(updates)
+
+        initialize_simulator(_config)
 
         acc = run_pipeline(_config)
 

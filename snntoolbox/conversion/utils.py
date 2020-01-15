@@ -176,6 +176,10 @@ def normalize_parameters(model, config, **kwargs):
                 # flattened layer depend on the image_data_format.
                 raise NotImplementedError
 
+        # Check if the layer happens to be Sparse
+        # if the layer is sparse, add the mask to the list of parameters
+        if len(parameters) == 3:
+            parameters_norm.append(parameters[-1])
         # Update model with modified parameters
         layer.set_weights(parameters_norm)
 
@@ -374,8 +378,11 @@ def get_activations_batch(ann, x_batch):
 
     activations_batch = []
     for layer in ann.layers:
+        # Todo: This list should be replaced by
+        #       ``not in eval(config.get('restrictions', 'spiking_layers')``
         if layer.__class__.__name__ in ['Input', 'InputLayer', 'Flatten',
-                                        'Concatenate']:
+                                        'Concatenate', 'ZeroPadding2D',
+                                        'Reshape']:
             continue
         activations = keras.models.Model(
             ann.input, layer.output).predict_on_batch(x_batch)

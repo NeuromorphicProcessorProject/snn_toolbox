@@ -14,17 +14,7 @@ from keras.layers import Conv2D, AveragePooling2D, Flatten, Dropout, Dense, \
 from keras.utils import np_utils
 
 from snntoolbox.bin.utils import update_setup
-from snntoolbox.utils.utils import import_configparser
-
-
-def is_module_installed(mod):
-    import sys
-    if sys.version_info[0] < 3:
-        import pkgutil
-        return pkgutil.find_loader(mod) is not None
-    else:
-        import importlib
-        return importlib.util.find_spec(mod) is not None
+from snntoolbox.utils.utils import import_configparser, is_module_installed
 
 
 @pytest.fixture(scope='function')
@@ -188,14 +178,83 @@ def _model_2(_dataset):
     return model
 
 
+@pytest.fixture(scope='session')
+def _model_3(_dataset):
+
+    if not is_module_installed('keras_rewiring'):
+        return
+
+    from keras_rewiring import Sparse, SparseConv2D, SparseDepthwiseConv2D
+
+    x_train, y_train, x_test, y_test = _dataset
+
+    axis = 1 if keras.backend.image_data_format() == 'channels_first' else -1
+
+    input_shape = x_train.shape[1:]
+    input_layer = Input(input_shape)
+
+    layer = SparseConv2D(filters=16,
+                         kernel_size=(5, 5),
+                         strides=(2, 2))(input_layer)
+    layer = BatchNormalization(axis=axis)(layer)
+    layer = Activation('relu')(layer)
+    layer = AveragePooling2D()(layer)
+    branch1 = SparseConv2D(filters=32,
+                           kernel_size=(3, 3),
+                           padding='same',
+                           activation='relu')(layer)
+    branch2 = SparseDepthwiseConv2D(kernel_size=(1, 1),
+                                    activation='relu')(layer)
+    layer = Concatenate(axis=axis)([branch1, branch2])
+    layer = SparseConv2D(filters=10,
+                         kernel_size=(3, 3),
+                         activation='relu')(layer)
+    layer = Flatten()(layer)
+    layer = Dropout(1e-5)(layer)
+    layer = Sparse(units=10,
+                   activation='softmax')(layer)
+
+    model = Model(input_layer, layer)
+
+    model.compile('adam', 'categorical_crossentropy', ['accuracy'])
+
+    # Train model with backprop.
+    history = model.fit(x_train, y_train, batch_size=64, epochs=1, verbose=2,
+                        validation_data=(x_test, y_test))
+
+    assert history.history['val_accuracy'][-1] > 0.96
+
+    return model
+
+
+spinnaker_conditions = (is_module_installed('keras_rewiring') and
+                        is_module_installed('pynn_object_serialisation') and
+                        (is_module_installed('pyNN.spiNNaker') or
+                         is_module_installed('spynnaker8')))
+spinnaker_skip_if_dependency_missing = pytest.mark.skipif(
+    not spinnaker_conditions, reason="Spinnaker dependency missing.")
+
+nest_conditions = (is_module_installed('pyNN') and
+                   is_module_installed('nest'))
+nest_skip_if_dependency_missing = pytest.mark.skipif(
+    not nest_conditions, reason="Nest dependency missing.")
+
+brian2_conditions = (is_module_installed('brian2'))
+brian2_skip_if_dependency_missing = pytest.mark.skipif(
+    not brian2_conditions, reason="Brian2 dependency missing.")
+
+
 def get_examples():
     path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
                                         'examples'))
     files = ['mnist_keras_INI.py']
-    if is_module_installed('brian2'):
+    if brian2_conditions:
         files.append('mnist_keras_brian2.py')
-    if is_module_installed('pyNN') and is_module_installed('nest'):
+    if nest_conditions:
         files.append('mnist_keras_nest.py')
+    if spinnaker_conditions:
+        files.append('mnist_keras_spiNNaker.py')
+        files.append('mnist_keras_spiNNaker_sparse.py')
 
     example_filepaths = [os.path.join(path, f) for f in files]
 

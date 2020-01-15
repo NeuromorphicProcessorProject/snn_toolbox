@@ -230,10 +230,9 @@ def plot_layer_activity(layer, title, path=None, limits=None,
     data_format: Optional[str]
         One of 'channels_first' or 'channels_last'.
     """
-
     data = layer[0]
     # Reshape data to our default format.
-    if data_format == 'channels_last' and data.ndim == 3:
+    if data_format != 'channels_first' and data.ndim == 3:
         data = np.moveaxis(data, -1, 0)
 
     # Highest possible spike rate, used to normalize image plots. Need to
@@ -1143,21 +1142,20 @@ def plot_input_image(x, label, path=None, data_format=None, filename=None):
     filename: Optional[str]
         Name of file to save.
     """
-
     # In case an image was flattened for use in a fully-connected network, try
     # to reshape it to 2D:
     if x.ndim == 1:
         try:
-            x = np.reshape(x, (1, int(np.sqrt(len(x))), -1))
+            x = np.reshape(x, (int(np.sqrt(len(x))), -1))
         except RuntimeError:
             return
 
     # Move channel axis to the last dimension.
-    if data_format != 'channels_last':
+    if data_format == 'channels_first':
         x = np.transpose(x, (1, 2, 0))
 
-    if x.shape[-1] == 1:
-        x = x[:, :, 0]
+    if x.shape[-1] == 1 and x.ndim > 2:
+        x = x[..., 0]
 
     plt.figure()
     plt.title('Input image (class: {})'.format(label))

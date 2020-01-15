@@ -54,28 +54,41 @@ class ModelParser(AbstractModelParser):
     def get_output_shape(self, layer):
         return layer.output_shape
 
+    def parse_sparse(self, layer, attributes):
+        return self.parse_dense(layer, attributes)
+
     def parse_dense(self, layer, attributes):
-        attributes['parameters'] = layer.get_weights()
+        attributes['parameters'] = list(layer.get_weights())
         if layer.bias is None:
-            attributes['parameters'].append(np.zeros(layer.output_shape[1]))
+            attributes['parameters'].insert(
+                1, np.zeros(layer.output_shape[1]))
+            attributes['parameters'] = tuple(attributes['parameters'])
             attributes['use_bias'] = True
 
+    def parse_sparse_convolution(self, layer, attributes):
+        return self.parse_convolution(layer, attributes)
+
     def parse_convolution(self, layer, attributes):
-        attributes['parameters'] = layer.get_weights()
+        attributes['parameters'] = list(layer.get_weights())
         if layer.bias is None:
-            attributes['parameters'].append(np.zeros(layer.filters))
+            attributes['parameters'].insert(1, np.zeros(layer.filters))
+            attributes['parameters'] = tuple(attributes['parameters'])
             attributes['use_bias'] = True
         assert layer.data_format == k.image_data_format(), (
-            "THe input model was setup with image data format '{}', but your "
+            "The input model was setup with image data format '{}', but your "
             "keras config file expects '{}'.".format(layer.data_format,
                                                      k.image_data_format()))
 
+    def parse_sparse_depthwiseconvolution(self, layer, attributes):
+        return self.parse_depthwiseconvolution(layer, attributes)
+
     def parse_depthwiseconvolution(self, layer, attributes):
-        attributes['parameters'] = layer.get_weights()
+        attributes['parameters'] = list(layer.get_weights())
         if layer.bias is None:
             a = 1 if layer.data_format == 'channels_first' else -1
-            attributes['parameters'].append(np.zeros(layer.depth_multiplier *
-                                                     layer.input_shape[a]))
+            attributes['parameters'].insert(1, np.zeros(
+                layer.depth_multiplier * layer.input_shape[a]))
+            attributes['parameters'] = tuple(attributes['parameters'])
             attributes['use_bias'] = True
 
     def parse_pooling(self, layer, attributes):
@@ -127,7 +140,11 @@ def load(path, filename, **kwargs):
 
     if os.path.exists(filepath + '.json'):
         model = models.model_from_json(open(filepath + '.json').read())
-        model.load_weights(filepath + '.h5')
+        try:
+            model.load_weights(filepath + '.h5')
+        except OSError:
+            # Allows h5 files without a .h5 extension to be loaded.
+            model.load_weights(filepath)
         # With this loading method, optimizer and loss cannot be recovered.
         # Could be specified by user, but since they are not really needed
         # at inference time, set them to the most common choice.
@@ -135,16 +152,25 @@ def load(path, filename, **kwargs):
         model.compile('sgd', 'categorical_crossentropy',
                       ['accuracy', metrics.top_k_categorical_accuracy])
     else:
-        from snntoolbox.parsing.utils import get_custom_activations_dict
+        from snntoolbox.parsing.utils import get_custom_activations_dict, \
+            assemble_custom_dict, get_custom_layers_dict
         filepath_custom_objects = kwargs.get('filepath_custom_objects', None)
         if filepath_custom_objects is not None:
             filepath_custom_objects = str(filepath_custom_objects)  # python 2
-        model = models.load_model(
-            str(filepath + '.h5'),
-            get_custom_activations_dict(filepath_custom_objects))
+
+        custom_dicts = assemble_custom_dict(
+            get_custom_activations_dict(filepath_custom_objects),
+            get_custom_layers_dict())
+        try:
+            model = models.load_model(filepath + '.h5', custom_dicts)
+        except OSError as e:
+            print(e)
+            print("Trying to load without '.h5' extension.")
+            model = models.load_model(filepath, custom_dicts)
         model.compile(model.optimizer, model.loss,
                       ['accuracy', metrics.top_k_categorical_accuracy])
 
+    model.summary()
     return {'model': model, 'val_fn': model.evaluate}
 
 

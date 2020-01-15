@@ -3,8 +3,7 @@
 This script sets up a small CNN using Keras and tensorflow, trains it for one
 epoch on MNIST, stores model and dataset in a temporary folder on disk, creates
 a configuration file for SNN toolbox, and finally calls the main function of
-SNN toolbox to convert the trained ANN to an SNN and run it using pyNN/nest
-simulator.
+SNN toolbox to convert the trained ANN to an SNN and run it using SpiNNaker.
 """
 
 import os
@@ -68,19 +67,23 @@ input_layer = Input(input_shape)
 layer = Conv2D(filters=16,
                kernel_size=(5, 5),
                strides=(2, 2),
-               activation='relu')(input_layer)
+               activation='relu',
+               use_bias=False)(input_layer)
 layer = Conv2D(filters=32,
                kernel_size=(3, 3),
-               activation='relu')(layer)
+               activation='relu',
+               use_bias=False)(layer)
 layer = AveragePooling2D()(layer)
 layer = Conv2D(filters=8,
                kernel_size=(3, 3),
                padding='same',
-               activation='relu')(layer)
+               activation='relu',
+               use_bias=False)(layer)
 layer = Flatten()(layer)
 layer = Dropout(0.01)(layer)
 layer = Dense(units=10,
-              activation='softmax')(layer)
+              activation='softmax',
+              use_bias=False)(layer)
 
 model = Model(input_layer, layer)
 
@@ -111,20 +114,29 @@ config['paths'] = {
 
 config['tools'] = {
     'evaluate_ann': True,           # Test ANN on dataset before conversion.
-    'normalize': True,              # Normalize weights for full dynamic range.
+    # Normalize weights for full dynamic range.
+    'normalize': False,
+    'scale_weights_exp': True
 }
 
 config['simulation'] = {
-    'simulator': 'nest',            # Chooses execution backend of SNN toolbox.
+    # Chooses execution backend of SNN toolbox.
+    'simulator': 'spiNNaker',
     'duration': 50,                 # Number of time steps to run each sample.
     'num_to_test': 5,               # How many test samples to run.
     'batch_size': 1,                # Batch size for simulation.
-    'dt': 0.1  # Time resolution for ODE solving.
+    # SpiNNaker seems to require 0.1 for comparable results.
+    'dt': 0.1
+}
+
+config['input'] = {
+    'poisson_input': True,           # Images are encodes as spike trains.
+    'input_rate': 1000
 }
 
 config['cell'] = {
-    'tau_refrac': 0.1               # Refractory period must be at least one
-                                    # time step.
+    'tau_syn_E': 0.01,
+    'tau_syn_I': 0.01
 }
 
 config['output'] = {

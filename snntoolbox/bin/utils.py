@@ -323,6 +323,38 @@ def update_setup(config_filepath):
             saving/reloading methods implemented.) Setting convert = True.
             \n"""))
         config.set('tools', 'convert', str(True))
+        
+    elif simulator in config_string_to_set_of_strings(
+            config.get('restrictions', 'simulators_pyNN')):
+        delay = config.getfloat('cell', 'delay')
+        tau_refrac = config.getfloat('cell', 'tau_refrac')
+        v_thresh = config.getfloat('cell', 'v_thresh')
+        dt = config.getfloat('simulation', 'dt')
+        # We found that in some cases the refractory period can actually be
+        # smaller than the time step.
+        scale = 1e1 if dt == 0.1 else 1e3
+        if tau_refrac < dt / scale and tau_refrac != 0:
+            print("\nSNN toolbox WARNING: Refractory period ({}) must be at "
+                  "least one time step / {} ({}). Setting tau_refrac = dt / "
+                  "{}.".format(tau_refrac, scale, dt / scale, scale))
+            config.set('cell', 'tau_refrac', str(dt / scale))
+        elif tau_refrac > dt / scale:
+            print("\nSNN toolbox WARNING: We recommend to set the refractory "
+                  "period ({}) to be as small as possible (one time step / {}"
+                  ", {}).".format(tau_refrac, scale, dt / scale))
+        if delay < dt:
+            print("\nSNN toolbox WARNING: Delay ({}) must be at least one "
+                  "time step ({}). Setting delay = dt.".format(delay, dt))
+            config.set('cell', 'delay', str(dt))
+        elif delay > dt:
+            print("\nSNN toolbox WARNING: We recommend to set the delay ({}) "
+                  "to be as small as possible (one time step, {})."
+                  "".format(delay, dt))
+        if v_thresh != 0.01:
+            print("\nSNN toolbox WARNING: For optimal correspondence between "
+                  "the original ANN and the converted SNN simulated on pyNN, "
+                  "the threshold should be 0.01. Current value: {}."
+                  "".format(v_thresh))
 
     # Set default path if user did not specify it.
     if config.get('paths', 'path_wd') == '':
@@ -511,7 +543,13 @@ def initialize_simulator(config):
     print("Initializing {} simulator...\n".format(simulator))
     if simulator in config_string_to_set_of_strings(
             config.get('restrictions', 'simulators_pyNN')):
-        sim = import_module('pyNN.' + simulator)
+        if simulator == 'spiNNaker':
+            try:
+                sim = import_module('pyNN.' + simulator)
+            except ImportError:
+                sim = import_module('spynnaker8')
+        else:
+            sim = import_module('pyNN.' + simulator)
 
         # From the pyNN documentation:
         # "Before using any other functions or classes from PyNN, the user
