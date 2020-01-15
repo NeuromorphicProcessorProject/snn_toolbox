@@ -3,7 +3,7 @@
 This script sets up a small CNN using Keras and tensorflow, trains it for one
 epoch on MNIST, stores model and dataset in a temporary folder on disk, creates
 a configuration file for SNN toolbox, and finally calls the main function of
-SNN toolbox to convert the trained ANN to an SNN and run it using spiNNaker.
+SNN toolbox to convert the trained ANN to an SNN and run it using SpiNNaker.
 """
 
 import os
@@ -116,6 +116,7 @@ config['tools'] = {
     'evaluate_ann': True,           # Test ANN on dataset before conversion.
     # Normalize weights for full dynamic range.
     'normalize': False,
+    'scale_weights_exp': True
 }
 
 config['simulation'] = {

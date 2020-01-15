@@ -28,7 +28,7 @@ from snntoolbox.utils.utils import import_configparser
 # Define path where model and output files will be stored.
 # The user is responsible for cleaning up this temporary directory.
 path_wd = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(
-    __file__)), '..', 'temp/sparse_test'))
+    __file__)), '..', 'temp'))
 # os.makedirs(path_wd)
 
 # GET DATASET #
@@ -147,12 +147,13 @@ config['tools'] = {
     'evaluate_ann': True,           # Test ANN on dataset before conversion.
     # Normalize weights for full dynamic range.
     'normalize': False,
+    'scale_weights_exp': True
 }
 
 config['simulation'] = {
     # Chooses execution backend of SNN toolbox.
     'simulator': 'spiNNaker',
-    'duration': 100,                 # Number of time steps to run each sample.
+    'duration': 50,                 # Number of time steps to run each sample.
     'num_to_test': 5,               # How many test samples to run.
     'batch_size': 1,                # Batch size for simulation.
     # SpiNNaker seems to require 0.1 for comparable results.
@@ -161,7 +162,7 @@ config['simulation'] = {
 
 config['input'] = {
     'poisson_input': True,           # Images are encodes as spike trains.
-    'input_rate': 10
+    'input_rate': 1000
 }
 
 config['cell'] = {
