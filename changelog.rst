@@ -1,6 +1,14 @@
 SNN Toolbox: Release Notes
 ==========================
 
+Version 0.4
+-----------
+
+The toolbox now supports deploying converted networks on the SpiNNaker
+architecture!
+
+Thanks to ej159, pabogdan, and rbodo for contributing.
+
 Version 0.3.2
 -------------
 
