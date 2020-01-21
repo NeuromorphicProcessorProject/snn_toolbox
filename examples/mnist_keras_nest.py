@@ -99,6 +99,8 @@ keras.models.save_model(model, os.path.join(path_wd, model_name + '.h5'))
 # SNN TOOLBOX CONFIGURATION #
 #############################
 
+dt = 0.1  # Time resolution of simulator.
+
 # Create a config file with experimental setup for SNN Toolbox.
 configparser = import_configparser()
 config = configparser.ConfigParser()
@@ -119,12 +121,14 @@ config['simulation'] = {
     'duration': 50,                 # Number of time steps to run each sample.
     'num_to_test': 5,               # How many test samples to run.
     'batch_size': 1,                # Batch size for simulation.
-    'dt': 0.1  # Time resolution for ODE solving.
+    'dt': dt                        # Time resolution for ODE solving.
 }
 
 config['cell'] = {
-    'tau_refrac': 0.1               # Refractory period must be at least one
-                                    # time step.
+    'tau_refrac': dt,               # Refractory period and delay must be at
+    'delay': dt,                    # least one time step.
+    'v_thresh': 0.01                # Reducing default value (1) for higher
+                                    # spikerates.
 }
 
 config['output'] = {

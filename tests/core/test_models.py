@@ -173,12 +173,16 @@ class TestOutputModel:
 
         updates = {
             'tools': {'evaluate_ann': False},
-            'input': {'poisson_input': True},
             'simulation': {
                 'simulator': 'nest',
-                'duration': 100,
-                'num_to_test': 100,
-                'batch_size': 1},
+                'duration': 50,
+                'num_to_test': 10,
+                'batch_size': 1,
+                'dt': 0.1},
+            'cell': {
+                'tau_refrac': 0.1,
+                'delay': 0.1,
+                'v_thresh': 0.01},
             'output': {
                 'log_vars': {'activations_n_b_l', 'spiketrains_n_b_l_t'}}}
 
