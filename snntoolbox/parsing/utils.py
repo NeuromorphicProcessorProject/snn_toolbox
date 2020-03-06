@@ -393,7 +393,8 @@ class AbstractModelParser:
                 'Activation',
                 'Dropout',
                 'ReLU',
-                'ActivityRegularization']
+                'ActivityRegularization',
+                'GaussianNoise']
 
     @abstractmethod
     def has_weights(self, layer):
