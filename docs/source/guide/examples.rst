@@ -13,7 +13,7 @@ end-to-end tutorials covering how to
    - store model and dataset in a temporary folder on disk,
    - create a configuration file for SNN toolbox,
    - call the main function of SNN toolbox to convert the trained ANN to an SNN
-     and run it using some simulator backend.
+     and run it using some simulator backend or neuromorphic hardware.
 
 More examples are included in a stand-alone `applications repository
 <https://github.com/NeuromorphicProcessorProject/snntoolbox_applications.git>`_.

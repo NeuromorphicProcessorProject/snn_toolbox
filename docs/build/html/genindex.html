@@ -9,7 +9,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Index &mdash; SNN toolbox 0.3.0 documentation</title>
+  <title>Index &mdash; SNN toolbox 0.4.1 documentation</title>
   
 
   
@@ -22,11 +22,11 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0.3
+                0.4
               </div>
             
           
@@ -230,8 +230,6 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.add_input_layer">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.add_layer">add_layer() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
@@ -241,9 +239,13 @@
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.add_layer">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.add_layer">(snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
+</li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.add_layer">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.add_payloads">add_payloads() (in module snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
 
       <ul>
@@ -255,6 +257,8 @@
       <li><a href="api/utils.html#snntoolbox.utils.utils.apply_modifications">apply_modifications() (in module snntoolbox.utils.utils)</a>
 </li>
       <li><a href="api/conversion.html#snntoolbox.conversion.utils.apply_normalization_schedule">apply_normalization_schedule() (in module snntoolbox.conversion.utils)</a>
+</li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.utils.assemble_custom_dict">assemble_custom_dict() (in module snntoolbox.parsing.utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -290,6 +294,8 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConv2D.build">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeConv2D method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDense.build">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDense method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDepthwiseConv2D.build">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDepthwiseConv2D method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeMaxPooling2D.build">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeMaxPooling2D method)</a>
 </li>
@@ -338,6 +344,8 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/simulation.html#snntoolbox.simulation.utils.build_1d_convolution">build_1d_convolution() (in module snntoolbox.simulation.utils)</a>
+</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.build_convolution">build_convolution() (in module snntoolbox.simulation.utils)</a>
 
       <ul>
@@ -348,6 +356,8 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.build_convolution">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.build_convolution">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.build_convolution">(snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.build_convolution">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
@@ -361,9 +371,13 @@
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.build_dense">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.build_dense">(snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
+</li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.build_dense">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.utils.build_depthwise_convolution">build_depthwise_convolution() (in module snntoolbox.simulation.utils)</a>
+</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.build_flatten">build_flatten() (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 
       <ul>
@@ -395,6 +409,8 @@
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.build_pooling">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.build_pooling">(snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
+</li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.build_pooling">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
@@ -417,9 +433,15 @@
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDense.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDense method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDepthwiseConv2D.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDepthwiseConv2D method)</a>
+</li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeMaxPooling2D.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeMaxPooling2D method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeReshape.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeReshape method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeZeroPadding2D.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeZeroPadding2D method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeAveragePooling2D.call">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeAveragePooling2D method)</a>
 </li>
@@ -472,6 +494,8 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.cellparams">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.utils.check_for_custom_activations">check_for_custom_activations() (in module snntoolbox.parsing.utils)</a>
+</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.check_megasim_output">check_megasim_output() (snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN static method)</a>
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.ClampedReLU">ClampedReLU (class in snntoolbox.utils.utils)</a>
@@ -482,6 +506,10 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten.class_name">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten property)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.class_name">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer property)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeReshape.class_name">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeReshape property)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeZeroPadding2D.class_name">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeZeroPadding2D property)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate.class_name">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate property)</a>
 </li>
@@ -605,6 +633,8 @@
       <ul>
         <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.keras_input_lib.evaluate">(in module snntoolbox.parsing.model_libs.keras_input_lib)</a>
 </li>
+        <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.pytorch_input_lib.evaluate">(in module snntoolbox.parsing.model_libs.pytorch_input_lib)</a>
+</li>
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.evaluate">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
       </ul></li>
@@ -672,6 +702,8 @@
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.get_batchnorm_parameters">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
       </ul></li>
+      <li><a href="api/utils.html#snntoolbox.utils.utils.LimitedReLU.get_cfg">get_cfg() (snntoolbox.utils.utils.LimitedReLU method)</a>
+</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.get_clamp_idx">get_clamp_idx() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
 
       <ul>
@@ -683,6 +715,8 @@
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_custom_activation">get_custom_activation() (in module snntoolbox.parsing.utils)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_custom_activations_dict">get_custom_activations_dict() (in module snntoolbox.parsing.utils)</a>
+</li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_custom_layers_dict">get_custom_layers_dict() (in module snntoolbox.parsing.utils)</a>
 </li>
       <li><a href="api/datasets.html#snntoolbox.datasets.utils.get_dataset">get_dataset() (in module snntoolbox.datasets.utils)</a>
 </li>
@@ -768,6 +802,8 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer.get_new_thresh">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeLayer method)</a>
 </li>
       </ul></li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_noisy_softplus_from_string">get_noisy_softplus_from_string() (in module snntoolbox.parsing.utils)</a>
+</li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_outbound_activation">get_outbound_activation() (in module snntoolbox.parsing.utils)</a>
 </li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.get_outbound_layers">get_outbound_layers() (in module snntoolbox.parsing.utils)</a>
@@ -835,6 +871,8 @@
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.get_spiketrains">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.get_spiketrains">(snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
+</li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.get_spiketrains">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
@@ -847,6 +885,8 @@
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.get_spiketrains_input">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.get_spiketrains_input">(snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
+</li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.get_spiketrains_input">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
@@ -856,6 +896,8 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.get_spiketrains_output">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.get_spiketrains_output">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.get_spiketrains_output">(snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.get_spiketrains_output">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
@@ -868,6 +910,10 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten.get_time">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten static method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.get_time">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeReshape.get_time">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeReshape static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeZeroPadding2D.get_time">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeZeroPadding2D static method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate.get_time">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate static method)</a>
 </li>
@@ -919,9 +965,13 @@
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.get_vmem">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.get_vmem">(snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
+</li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.get_vmem">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.utils.get_weights">get_weights() (in module snntoolbox.simulation.utils)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -1016,6 +1066,8 @@
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.is_built">is_built (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
+      <li><a href="api/utils.html#snntoolbox.utils.utils.is_module_installed">is_module_installed() (in module snntoolbox.utils.utils)</a>
+</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.is_parallelizable">is_parallelizable() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN property)</a>
 
       <ul>
@@ -1054,6 +1106,8 @@
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.layers_to_skip">(snntoolbox.parsing.utils.AbstractModelParser property)</a>
 </li>
       </ul></li>
+      <li><a href="api/utils.html#snntoolbox.utils.utils.LimitedReLU">LimitedReLU (class in snntoolbox.utils.utils)</a>
+</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.linear_activation">linear_activation() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
 
       <ul>
@@ -1068,6 +1122,8 @@
 
       <ul>
         <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.keras_input_lib.load">(in module snntoolbox.parsing.model_libs.keras_input_lib)</a>
+</li>
+        <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.pytorch_input_lib.load">(in module snntoolbox.parsing.model_libs.pytorch_input_lib)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.load">(snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 </li>
@@ -1093,6 +1149,8 @@
       <li><a href="api/bin.html#snntoolbox.bin.utils.load_config">load_config() (in module snntoolbox.bin.utils)</a>
 </li>
       <li><a href="api/datasets.html#snntoolbox.datasets.utils.load_npz">load_npz() (in module snntoolbox.datasets.utils)</a>
+</li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.utils.load_parameters">load_parameters() (in module snntoolbox.parsing.utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1124,6 +1182,8 @@
 
       <ul>
         <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.keras_input_lib.ModelParser">(class in snntoolbox.parsing.model_libs.keras_input_lib)</a>
+</li>
+        <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.pytorch_input_lib.ModelParser">(class in snntoolbox.parsing.model_libs.pytorch_input_lib)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -1165,6 +1225,8 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.n_repeat">n_repeat (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.n_repeat">[1]</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.neuron_operations_b_t">neuron_operations_b_t (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
+</li>
+      <li><a href="api/utils.html#snntoolbox.utils.utils.NoisySoftplus">NoisySoftplus (class in snntoolbox.utils.utils)</a>
 </li>
       <li><a href="api/conversion.html#snntoolbox.conversion.utils.normalize_parameters">normalize_parameters() (in module snntoolbox.conversion.utils)</a>
 </li>
@@ -1264,6 +1326,24 @@
         <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.parse_pooling">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
       </ul></li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.keras_input_lib.ModelParser.parse_sparse">parse_sparse() (snntoolbox.parsing.model_libs.keras_input_lib.ModelParser method)</a>
+
+      <ul>
+        <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.parse_sparse">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.keras_input_lib.ModelParser.parse_sparse_convolution">parse_sparse_convolution() (snntoolbox.parsing.model_libs.keras_input_lib.ModelParser method)</a>
+
+      <ul>
+        <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.parse_sparse_convolution">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.keras_input_lib.ModelParser.parse_sparse_depthwiseconvolution">parse_sparse_depthwiseconvolution() (snntoolbox.parsing.model_libs.keras_input_lib.ModelParser method)</a>
+
+      <ul>
+        <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.parse_sparse_depthwiseconvolution">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
+</li>
+      </ul></li>
       <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.parsed_model">parsed_model (snntoolbox.parsing.utils.AbstractModelParser attribute)</a>
 
       <ul>
@@ -1272,14 +1352,14 @@
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikePool.perform">perform() (snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikePool method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.plotting.plot_activ_hist">plot_activ_hist() (in module snntoolbox.simulation.plotting)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.plotting.plot_activations">plot_activations() (in module snntoolbox.simulation.plotting)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.plotting.plot_activations_minus_rates">plot_activations_minus_rates() (in module snntoolbox.simulation.plotting)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.plotting.plot_confusion_matrix">plot_confusion_matrix() (in module snntoolbox.simulation.plotting)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.plotting.plot_correlations">plot_correlations() (in module snntoolbox.simulation.plotting)</a>
@@ -1371,6 +1451,10 @@
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer.reset">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeLayer method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeReshape.reset">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeReshape static method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeZeroPadding2D.reset">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeZeroPadding2D static method)</a>
+</li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate.reset">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeConcatenate static method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeFlatten.reset">(snntoolbox.simulation.backends.inisim.temporal_mean_rate_theano.SpikeFlatten static method)</a>
@@ -1459,6 +1543,8 @@
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.save">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.save">(snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
+</li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.save">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       </ul></li>
@@ -1467,17 +1553,27 @@
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.save_biases">save_biases() (snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.save_connections">save_connections() (snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.save_connections">(snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.utils.save_parameters">save_parameters() (in module snntoolbox.parsing.utils)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.scale_first_layer_parameters">scale_first_layer_parameters() (snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.scale_weights">scale_weights() (snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
+</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.scaling_factor">scaling_factor (snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base attribute)</a>, <a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.Megasim_base.scaling_factor">[1]</a>
 </li>
-      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.set_biases">set_biases() (in module snntoolbox.simulation.target_simulators.brian2_target_sim)</a>
+      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.set_biases">set_biases() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
 
       <ul>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.set_biases">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
 </li>
       </ul></li>
+      <li><a href="api/utils.html#snntoolbox.utils.utils.LimitedReLU.set_cfg">set_cfg() (snntoolbox.utils.utils.LimitedReLU method)</a>
+</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.set_connectivity">set_connectivity() (snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.set_mem_stats">set_mem_stats() (snntoolbox.simulation.utils.AbstractSNN method)</a>
@@ -1528,6 +1624,12 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN.set_time">(snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim.SNN method)</a>
 </li>
       </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.setup_layers">setup_layers() (snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
+
+      <ul>
+        <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.setup_layers">(snntoolbox.simulation.utils.AbstractSNN method)</a>
+</li>
+      </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.sim">sim (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.simulate">simulate() (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN method)</a>
@@ -1544,6 +1646,8 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN.simulate">(snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN.simulate">(snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN method)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN.simulate">(snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN method)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.simulate">(snntoolbox.simulation.utils.AbstractSNN method)</a>
 </li>
@@ -1562,6 +1666,8 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.MegaSim_target_sim.SNN">(class in snntoolbox.simulation.target_simulators.MegaSim_target_sim)</a>
 </li>
         <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.pyNN_target_sim.SNN">(class in snntoolbox.simulation.target_simulators.pyNN_target_sim)</a>
+</li>
+        <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.spiNNaker_target_sim.SNN">(class in snntoolbox.simulation.target_simulators.spiNNaker_target_sim)</a>
 </li>
       </ul></li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.snn">snn (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN attribute)</a>
@@ -1584,6 +1690,8 @@
 </li>
       <li><a href="api/parsing.html#module-snntoolbox.parsing.model_libs.keras_input_lib">snntoolbox.parsing.model_libs.keras_input_lib (module)</a>
 </li>
+      <li><a href="api/parsing.html#module-snntoolbox.parsing.model_libs.pytorch_input_lib">snntoolbox.parsing.model_libs.pytorch_input_lib (module)</a>
+</li>
       <li><a href="api/parsing.html#module-snntoolbox.parsing.utils">snntoolbox.parsing.utils (module)</a>
 </li>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow">snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow (module)</a>
@@ -1600,14 +1708,14 @@
 </li>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.backends.megasim.megasim">snntoolbox.simulation.backends.megasim.megasim (module)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.plotting">snntoolbox.simulation.plotting (module)</a>
 </li>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.brian2_target_sim">snntoolbox.simulation.target_simulators.brian2_target_sim (module)</a>
 </li>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim">snntoolbox.simulation.target_simulators.INI_temporal_mean_rate_target_sim (module)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim">snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim (module)</a>
 </li>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.INI_ttfs_corrective_target_sim">snntoolbox.simulation.target_simulators.INI_ttfs_corrective_target_sim (module)</a>
@@ -1619,6 +1727,8 @@
       <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.MegaSim_target_sim">snntoolbox.simulation.target_simulators.MegaSim_target_sim (module)</a>
 </li>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.pyNN_target_sim">snntoolbox.simulation.target_simulators.pyNN_target_sim (module)</a>
+</li>
+      <li><a href="api/simulation.html#module-snntoolbox.simulation.target_simulators.spiNNaker_target_sim">snntoolbox.simulation.target_simulators.spiNNaker_target_sim (module)</a>
 </li>
       <li><a href="api/simulation.html#module-snntoolbox.simulation.utils">snntoolbox.simulation.utils (module)</a>
 </li>
@@ -1712,6 +1822,8 @@
         <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh.SpikeDense">(class in snntoolbox.simulation.backends.inisim.ttfs_dyn_thresh)</a>
 </li>
       </ul></li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeDepthwiseConv2D">SpikeDepthwiseConv2D (class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
+</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeFlatten">SpikeFlatten (class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
 
       <ul>
@@ -1760,9 +1872,13 @@
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN.spikerates_to_trains">spikerates_to_trains() (snntoolbox.simulation.target_simulators.INI_temporal_pattern_target_sim.SNN method)</a>
 </li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeReshape">SpikeReshape (class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
+</li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.spiketrains_n_b_l_t">spiketrains_n_b_l_t (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.spiketrains_to_rates">spiketrains_to_rates() (in module snntoolbox.simulation.utils)</a>
+</li>
+      <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow.SpikeZeroPadding2D">SpikeZeroPadding2D (class in snntoolbox.simulation.backends.inisim.temporal_mean_rate_tensorflow)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.target_simulators.brian2_target_sim.SNN.statemonitors">statemonitors (snntoolbox.simulation.target_simulators.brian2_target_sim.SNN attribute)</a>
 </li>
@@ -1800,15 +1916,17 @@
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.to_binary">to_binary() (in module snntoolbox.simulation.backends.inisim.temporal_pattern)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/simulation.html#snntoolbox.simulation.backends.inisim.temporal_pattern.to_binary_numpy">to_binary_numpy() (in module snntoolbox.simulation.backends.inisim.temporal_pattern)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/datasets.html#snntoolbox.datasets.utils.to_categorical">to_categorical() (in module snntoolbox.datasets.utils)</a>
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.to_json">to_json() (in module snntoolbox.utils.utils)</a>
 </li>
       <li><a href="api/utils.html#snntoolbox.utils.utils.to_list">to_list() (in module snntoolbox.utils.utils)</a>
+</li>
+      <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.pytorch_input_lib.to_numpy">to_numpy() (in module snntoolbox.parsing.model_libs.pytorch_input_lib)</a>
 </li>
       <li><a href="api/simulation.html#snntoolbox.simulation.utils.AbstractSNN.top1err_ann">top1err_ann (snntoolbox.simulation.utils.AbstractSNN attribute)</a>
 </li>
@@ -1824,8 +1942,12 @@
 </li>
       <li><a href="api/datasets.html#snntoolbox.datasets.utils.try_get_normset_from_scalefacs">try_get_normset_from_scalefacs() (in module snntoolbox.datasets.utils)</a>
 </li>
-      <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.try_insert_flatten">try_insert_flatten() (snntoolbox.parsing.utils.AbstractModelParser method)</a>
+      <li><a href="api/parsing.html#snntoolbox.parsing.model_libs.pytorch_input_lib.ModelParser.try_insert_flatten">try_insert_flatten() (snntoolbox.parsing.model_libs.pytorch_input_lib.ModelParser method)</a>
+
+      <ul>
+        <li><a href="api/parsing.html#snntoolbox.parsing.utils.AbstractModelParser.try_insert_flatten">(snntoolbox.parsing.utils.AbstractModelParser method)</a>
 </li>
+      </ul></li>
       <li><a href="api/conversion.html#snntoolbox.conversion.utils.try_reload_activations">try_reload_activations() (in module snntoolbox.conversion.utils)</a>
 </li>
   </ul></td>
@@ -1943,9 +2065,9 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2019, Bodo Rueckauer
+        &copy; Copyright 2020, Bodo Rueckauer
       <span class="lastupdated">
-        Last updated on Oct 12, 2019.
+        Last updated on Mar 07, 2020.
       </span>
 
     </p>

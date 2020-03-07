@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Keras model parser.
+"""PyTorch model parser.
 
 @author: rbodo
 """

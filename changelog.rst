@@ -1,6 +1,13 @@
 SNN Toolbox: Release Notes
 ==========================
 
+Version 0.4.1
+-------------
+
+The toolbox now supports input models from the PyTorch library.
+
+Thanks to Pengfei Sun for contributing.
+
 Version 0.4
 -----------
 
