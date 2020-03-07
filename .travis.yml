@@ -1,0 +1,14 @@
+language: python
+python:
+  - "3.8"
+env:
+  - TENSORFLOW_VERSION=2.0.1
+  - TENSORFLOW_VERSION=2.1.0
+  - KERAS_VERSION=2.2.5
+  - KERAS_VERSION=2.3.1
+install:
+  - pip install -q tensorflow==$TENSORFLOW_VERSION
+  - pip install -q keras==$KERAS_VERSION
+  - pip install -r requirements.txt
+script:
+  - pytest
