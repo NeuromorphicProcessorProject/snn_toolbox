@@ -227,6 +227,79 @@ def _model_3(_dataset):
     return model
 
 
+@pytest.fixture(scope='session')
+def _model_4(_dataset):
+
+    if not is_module_installed('torch'):
+        return
+
+    import torch
+    import torch.nn as nn
+    from tests.parsing.models import pytorch
+
+    x_train, y_train, x_test, y_test = _dataset
+
+    # Pytorch doesn't support one-hot labels.
+    y_train = np.argmax(y_train, 1)
+    y_test = np.argmax(y_test, 1)
+
+    # Pytorch needs channel dimension first.
+    if keras.backend.image_data_format() == 'channels_last':
+        x_train = np.moveaxis(x_train, 3, 1)
+        x_test = np.moveaxis(x_test, 3, 1)
+
+    class PytorchDataset(torch.utils.data.Dataset):
+        def __init__(self, data, target, transform=None):
+            self.data = torch.from_numpy(data).float()
+            self.target = torch.from_numpy(target).long()
+            self.transform = transform
+
+        def __getitem__(self, index):
+            x = self.data[index]
+
+            if self.transform:
+                x = self.transform(x)
+
+            return x, self.target[index]
+
+        def __len__(self):
+            return len(self.data)
+
+    trainset = torch.utils.data.DataLoader(PytorchDataset(x_train, y_train),
+                                           batch_size=64)
+    testset = torch.utils.data.DataLoader(PytorchDataset(x_test, y_test),
+                                          batch_size=64)
+
+    model = pytorch.Model()
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters())
+
+    acc = 0
+    for epoch in range(3):
+        for i, (xx, y) in enumerate(trainset):
+            optimizer.zero_grad()
+            outputs = model(xx)
+            loss = criterion(outputs, y)
+            loss.backward()
+            optimizer.step()
+
+        total = 0
+        correct = 0
+        with torch.no_grad():
+            for xx, y in testset:
+                outputs = model(xx)
+                _, predicted = torch.max(outputs.data, 1)
+                total += y.size(0)
+                correct += (predicted == y).sum().item()
+        acc = correct / total
+
+    print("Test accuracy: {:.2%}".format(acc))
+    # assert acc > 0.96, "Test accuracy after training not high enough."
+
+    return model
+
+
 spinnaker_conditions = (is_module_installed('keras_rewiring') and
                         is_module_installed('pynn_object_serialisation') and
                         (is_module_installed('pyNN.spiNNaker') or
@@ -242,6 +315,12 @@ nest_skip_if_dependency_missing = pytest.mark.skipif(
 brian2_conditions = (is_module_installed('brian2'))
 brian2_skip_if_dependency_missing = pytest.mark.skipif(
     not brian2_conditions, reason="Brian2 dependency missing.")
+
+pytorch_conditions = (is_module_installed('torch') and
+                      is_module_installed('onnx') and
+                      is_module_installed('onnx2keras'))
+pytorch_skip_if_dependency_missing = pytest.mark.skipif(
+    not pytorch_conditions, reason='Pytorch dependencies missing')
 
 
 def get_examples():

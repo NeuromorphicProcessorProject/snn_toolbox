@@ -65,6 +65,7 @@ def run_pipeline(config, queue=None):
 
     normset, testset = get_dataset(config)
 
+    results = None
     parsed_model = None
     if config.getboolean('tools', 'parse') and not is_stop(queue):
 
@@ -80,9 +81,10 @@ def run_pipeline(config, queue=None):
         if config.getboolean('tools', 'evaluate_ann') and not is_stop(queue):
             print("Evaluating input model on {} samples...".format(
                 num_to_test))
-            model_lib.evaluate(input_model['val_fn'],
-                               config.getint('simulation', 'batch_size'),
-                               num_to_test, **testset)
+            acc = model_lib.evaluate(input_model['val_fn'],
+                                     config.getint('simulation', 'batch_size'),
+                                     num_to_test, **testset)
+            results = [acc]
 
         # ____________________________ PARSE ________________________________ #
 
@@ -100,8 +102,10 @@ def run_pipeline(config, queue=None):
         if config.getboolean('tools', 'evaluate_ann') and not is_stop(queue):
             print("Evaluating parsed model on {} samples...".format(
                 num_to_test))
-            model_parser.evaluate(config.getint(
-                'simulation', 'batch_size'), num_to_test, **testset)
+            score = model_parser.evaluate(
+                config.getint('simulation', 'batch_size'),
+                num_to_test, **testset)
+            results = [score[1]]
 
         # Write parsed model to disk
         parsed_model.save(str(
@@ -153,7 +157,7 @@ def run_pipeline(config, queue=None):
         if queue:
             queue.put(results)
 
-        return results
+    return results
 
 
 def is_stop(queue):
