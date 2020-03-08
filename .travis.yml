@@ -7,6 +7,8 @@ env:
 
 install:
 - python -m pip install --upgrade pip
+- pip install -q tensorflow==$TENSORFLOW_VERSION
+- pip install -q keras==$KERAS_VERSION
 - pip install -r requirements.txt
 
 script: pytest
