@@ -3,10 +3,10 @@ language: python
 matrix:
   fast_finish: true
   include:
-    - name: 'tf2.0.1_keras2.2.5'
+    - name: 'tf2.0.1_keras2.3.0'
       env: 
         - TENSORFLOW_VERSION=2.0.1
-        - KERAS_VERSION=2.2.5
+        - KERAS_VERSION=2.3.0
     - name: 'tf2.1.0_keras2.3.1'
       env: 
         - TENSORFLOW_VERSION=2.1.0
