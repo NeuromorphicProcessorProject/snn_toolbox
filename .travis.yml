@@ -11,6 +11,8 @@ matrix:
       env: 
         - TENSORFLOW_VERSION=2.1.0
         - KERAS_VERSION=2.3.1
+  allow_failures:
+    - name: 'tf2.1.0_keras2.3.1'
 
 install:
   - python -m pip install --upgrade pip
@@ -18,9 +20,5 @@ install:
   - pip install -q keras==$KERAS_VERSION
   - pip install matplotlib pynn brian2 onnx onnx2keras onnxruntime torch Pillow
   - pip install -r requirements.txt
-
-jobs:
-  allow_failures:
-    - name: 'tf2.1.0_keras2.3.1'
 
 script: pytest
