@@ -1,21 +1,26 @@
 language: python
 
-env:
-- TENSORFLOW_VERSION=2.0.1
-- TENSORFLOW_VERSION=2.1.0
-- KERAS_VERSION=2.2.5
-- KERAS_VERSION=2.3.1
+matrix:
+  fast_finish: true
+  include:
+    - name: 'tf2.0.1_keras2.2.5'
+      env: 
+        - TENSORFLOW_VERSION=2.0.1
+        - KERAS_VERSION=2.2.5
+    - name: 'tf2.1.0_keras2.3.1'
+      env: 
+        - TENSORFLOW_VERSION=2.1.0
+        - KERAS_VERSION=2.3.1
 
 install:
-- python -m pip install --upgrade pip
-- pip install -q tensorflow==$TENSORFLOW_VERSION
-- pip install -q keras==$KERAS_VERSION
-- pip install matplotlib pynn brian2 onnx onnx2keras onnxruntime torch Pillow
-- pip install -r requirements.txt
+  - python -m pip install --upgrade pip
+  - pip install -q tensorflow==$TENSORFLOW_VERSION
+  - pip install -q keras==$KERAS_VERSION
+  - pip install matplotlib pynn brian2 onnx onnx2keras onnxruntime torch Pillow
+  - pip install -r requirements.txt
 
 jobs:
   allow_failures:
-  - env: TENSORFLOW_VERSION=2.1.0
-  - env: KERAS_VERSION=2.3.1
+    - name: 'tf2.1.0_keras2.3.1'
 
 script: pytest
