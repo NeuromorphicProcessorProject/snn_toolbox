@@ -1,5 +1,11 @@
-.. image:: https://travis-ci.org/NeuromorphicProcessorProject/snn_toolbox.svg?branch=master
+|b1| |b2|
+
+.. |b1| image:: https://travis-ci.org/NeuromorphicProcessorProject/snn_toolbox.svg?branch=master
     :target: https://travis-ci.org/NeuromorphicProcessorProject/snn_toolbox
+
+.. |b2| image:: https://readthedocs.org/projects/snntoolbox/badge/?version=latest
+    :target: https://snntoolbox.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 
 Spiking neural network conversion toolbox
 =========================================
