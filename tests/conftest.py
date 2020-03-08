@@ -243,11 +243,6 @@ def _model_4(_dataset):
     y_train = np.argmax(y_train, 1)
     y_test = np.argmax(y_test, 1)
 
-    # Pytorch needs channel dimension first.
-    if keras.backend.image_data_format() == 'channels_last':
-        x_train = np.moveaxis(x_train, 3, 1)
-        x_test = np.moveaxis(x_test, 3, 1)
-
     class PytorchDataset(torch.utils.data.Dataset):
         def __init__(self, data, target, transform=None):
             self.data = torch.from_numpy(data).float()
