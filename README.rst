@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/NeuromorphicProcessorProject/snn_toolbox.svg?branch=master
+    :target: https://travis-ci.org/NeuromorphicProcessorProject/snn_toolbox
+
 Spiking neural network conversion toolbox
 =========================================
 
