@@ -2,8 +2,8 @@ language: python
 
 env:
   global:
-  - TENSORFLOW_VERSION="2.0.1,2.1.0"
-  - KERAS_VERSION="2.2.5,2.3.1"
+  - TENSORFLOW_VERSION=">=2.0.1,<=2.1.0"
+  - KERAS_VERSION=">=2.2.5,<=2.3.1"
 
 install:
 - python -m pip install --upgrade pip
