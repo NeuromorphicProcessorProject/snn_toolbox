@@ -67,7 +67,7 @@ class TestPytorchParser:
                                  _config.getint('simulation', 'num_to_test'),
                                  **testset)
 
-        assert acc >= 0.95
+        assert acc >= 0.8
 
     def test_parsing(self, _model_4, _config):
 
@@ -90,7 +90,7 @@ class TestPytorchParser:
 
         acc = run_pipeline(_config)
 
-        assert acc[0] >= 0.95
+        assert acc[0] >= 0.8
 
     def test_normalizing(self, _model_4, _config):
 
@@ -113,7 +113,7 @@ class TestPytorchParser:
 
         acc = run_pipeline(_config)
 
-        assert acc[0] >= 0.95
+        assert acc[0] >= 0.8
 
     def test_pipeline(self, _model_4, _config):
 
@@ -135,7 +135,7 @@ class TestPytorchParser:
 
         acc = run_pipeline(_config)
 
-        assert acc[0] >= 0.95
+        assert acc[0] >= 0.8
 
         corr = get_correlations(_config)
         assert np.all(corr[:-1] > 0.97)
