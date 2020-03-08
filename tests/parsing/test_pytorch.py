@@ -8,6 +8,10 @@ from snntoolbox.datasets.utils import get_dataset
 from tests.conftest import pytorch_skip_if_dependency_missing
 from tests.core.test_models import get_correlations
 
+# Pytorch needs channel dimension first.
+import keras
+keras.backend.set_image_data_format('channels_first')
+
 
 @pytorch_skip_if_dependency_missing
 class TestPytorchParser:
