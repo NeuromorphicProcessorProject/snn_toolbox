@@ -1,4 +1,4 @@
-|b1| |b2|
+|b1| |b2| |b3| |b4|
 
 .. |b1| image:: https://travis-ci.org/NeuromorphicProcessorProject/snn_toolbox.svg?branch=master
     :target: https://travis-ci.org/NeuromorphicProcessorProject/snn_toolbox
@@ -6,6 +6,13 @@
 .. |b2| image:: https://readthedocs.org/projects/snntoolbox/badge/?version=latest
     :target: https://snntoolbox.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
+
+.. |b3| image:: https://badge.fury.io/py/snntoolbox.svg
+    :target: https://badge.fury.io/py/snntoolbox
+
+.. |b4| image:: https://pepy.tech/badge/snntoolbox
+    :target: https://pepy.tech/project/snntoolbox
+    
 
 Spiking neural network conversion toolbox
 =========================================
