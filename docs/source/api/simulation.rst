@@ -15,6 +15,8 @@ implemented:
     ~snntoolbox.simulation.target_simulators.INI_ttfs_target_sim
     ~snntoolbox.simulation.target_simulators.INI_ttfs_dyn_thresh_target_sim
     ~snntoolbox.simulation.target_simulators.INI_ttfs_corrective_target_sim
+    ~snntoolbox.simulation.target_simulators.loihi_target_sim
+    ~snntoolbox.simulation.target_simulators.spiNNaker_target_sim
 
 The abstract base class :py:class:`~snntoolbox.simulation.utils.AbstractSNN` for
 the simulation tools above is contained here:
@@ -135,3 +137,12 @@ Finally, utility functions for plotting are contained in
 
 .. automodule:: snntoolbox.simulation.target_simulators.MegaSim_target_sim
 
+:mod:`~snntoolbox.simulation.target_simulators.loihi_target_sim`
+................................................................
+
+.. automodule:: snntoolbox.simulation.target_simulators.loihi_target_sim
+
+:mod:`~snntoolbox.simulation.target_simulators.spiNNaker_target_sim`
+....................................................................
+
+.. automodule:: snntoolbox.simulation.target_simulators.spiNNaker_target_sim

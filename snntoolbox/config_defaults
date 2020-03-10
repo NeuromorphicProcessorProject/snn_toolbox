@@ -116,7 +116,7 @@ plotproperties = {
 # validity of config.
 
 [restrictions]
-model_libs = {'keras', 'lasagne', 'caffe'}
+model_libs = {'keras', 'lasagne', 'caffe', 'pytorch'}
 dataset_formats = {'npz', 'jpg', 'aedat'}
 frame_gen_method = {'signed_sum', 'rectified_sum'}
 maxpool_types = {'fir_max', 'exp_max', 'avg_max'}

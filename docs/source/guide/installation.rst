@@ -14,7 +14,7 @@ generating output plots.
 
 The toolbox relies on Keras internally, and by default installs
 `Tensorflow <https://www.tensorflow.org/>`_ as Keras backend. You may want to
-update this backend to optimally fit your system, e.g. to use the GPU.
+update this backend to optimally fit your system.
 
 .. note:: The SNN toolbox provides a built-in simulator to run the converted
    network. This simulator is Keras-based and will use either Tensorflow or
@@ -27,10 +27,18 @@ update this backend to optimally fit your system, e.g. to use the GPU.
       [simulation]
       keras_backend = tensorflow
 
+   As the Theano is not actively developed any more, the tensorflow backend is
+   better maintained. The only reason to choose Theano at this point is that we
+   provide an implementation of MaxPooling in INIsim, which is not available
+   with the tensorflow backend.
+
+.. note:: (March 2020) The toolbox has been tested to work with keras==2.3.0
+   and tensorflow==2.0.1.
+
 Development version (recommended)
 ---------------------------------
 
-To get the latest version, checkout the `repository <https://github.com/NeuromorphicProcessorProject/snn_toolbox>`_.
+To get the latest updates, checkout the `repository <https://github.com/NeuromorphicProcessorProject/snn_toolbox>`_.
 In the toolbox root directory ``snn_toolbox/``, run ``pip install .``.
 
 .. note:: Using easy_install via ``python setup.py install`` has been reported

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Spiking neural network conversion toolbox &mdash; SNN toolbox 0.3.0 documentation</title>
+  <title>Spiking neural network conversion toolbox &mdash; SNN toolbox 0.4.1 documentation</title>
   
 
   
@@ -21,11 +21,11 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0.3
+                0.4
               </div>
             
           
@@ -167,9 +167,15 @@
             
   <div class="section" id="spiking-neural-network-conversion-toolbox">
 <h1>Spiking neural network conversion toolbox<a class="headerlink" href="#spiking-neural-network-conversion-toolbox" title="Permalink to this headline">¶</a></h1>
-<p>The SNN conversion toolbox contains functions to transform rate-based artificial
-neural networks into spiking neural networks, and to simulate them. The source
-code can be found on <a class="reference external" href="https://github.com/NeuromorphicProcessorProject/snn_toolbox">GitHub</a>. See also the accompanying <a class="reference external" href="https://www.frontiersin.org/articles/10.3389/fnins.2017.00682/abstract">article</a>.</p>
+<p>The SNN conversion toolbox (SNN-TB) is a framework to transform rate-based
+artificial neural networks into spiking neural networks, and to run them using
+various spike encodings. A unique feature about SNN-TB is that it accepts input
+models from many different deep-learning libraries (Keras / TF, pytorch, …)
+and provides an interface to several backends for simulation (pyNN, brian2,
+…) or deployment (SpiNNaker, Loihi). The source code can be found on
+<a class="reference external" href="https://github.com/NeuromorphicProcessorProject/snn_toolbox">GitHub</a>. See also the accompanying articles
+<a class="reference external" href="https://www.frontiersin.org/articles/10.3389/fnins.2017.00682/abstract">[Rueckauer et al., 2017]</a>
+and <a class="reference external" href="https://ieeexplore.ieee.org/abstract/document/8351295/">[Rueckauer and Liu, 2018]</a>.</p>
 <div class="section" id="user-guide">
 <h2>User Guide<a class="headerlink" href="#user-guide" title="Permalink to this headline">¶</a></h2>
 <p>These sections guide you through the installation, configuration and running of
@@ -253,9 +259,9 @@ the toolbox. Examples are included.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2019, Bodo Rueckauer
+        &copy; Copyright 2020, Bodo Rueckauer
       <span class="lastupdated">
-        Last updated on Oct 12, 2019.
+        Last updated on Mar 07, 2020.
       </span>
 
     </p>

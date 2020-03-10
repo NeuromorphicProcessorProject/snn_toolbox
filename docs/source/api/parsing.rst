@@ -8,6 +8,7 @@ neural network libraries can be parsed:
     :nosignatures:
 
     snntoolbox.parsing.model_libs.keras_input_lib
+    snntoolbox.parsing.model_libs.pytorch_input_lib
     snntoolbox.parsing.model_libs.lasagne_input_lib
     snntoolbox.parsing.model_libs.caffe_input_lib
 
@@ -28,6 +29,11 @@ library.
 .....................................................
 
 .. automodule:: snntoolbox.parsing.model_libs.keras_input_lib
+
+:mod:`~snntoolbox.parsing.model_libs.pytorch_input_lib`
+.......................................................
+
+.. automodule:: snntoolbox.parsing.model_libs.pytorch_input_lib
 
 :mod:`~snntoolbox.parsing.model_libs.lasagne_input_lib`
 .......................................................

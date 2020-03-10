@@ -1,0 +1,120 @@
+# -*- coding: utf-8 -*-
+"""PyTorch model parser.
+
+@author: rbodo
+"""
+
+import os
+import numpy as np
+
+import keras
+import torch
+import onnx
+from onnx2keras import onnx_to_keras
+import onnxruntime
+
+from snntoolbox.parsing.model_libs import keras_input_lib
+from snntoolbox.utils.utils import import_script
+
+
+def to_numpy(tensor):
+    return tensor.detach().cpu().numpy() if tensor.requires_grad \
+        else tensor.cpu().numpy()
+
+
+class ModelParser(keras_input_lib.ModelParser):
+
+    def try_insert_flatten(self, layer, idx, name_map):
+        return False
+        
+
+def load(path, filename):
+    """Load network from file.
+
+    Parameters
+    ----------
+
+    path: str
+        Path to directory where to load model from.
+
+    filename: str
+        Name of file to load model from.
+
+    Returns
+    -------
+
+    : dict[str, Union[keras.models.Sequential, function]]
+        A dictionary of objects that constitute the input model. It must
+        contain the following two keys:
+
+        - 'model': keras.models.Sequential
+            Keras model instance of the network.
+        - 'val_fn': function
+            Function that allows evaluating the original model.
+    """
+
+    filepath = str(os.path.join(path, filename))
+
+    # Load the Pytorch model.
+    mod = import_script(path, filename)
+    model_pytorch = mod.Model()
+    model_pytorch.load_state_dict(torch.load(filepath + '.pkl'))
+
+    # Switch from train to eval mode to ensure Dropout / BatchNorm is handled
+    # correctly.
+    model_pytorch.eval()
+
+    # Run on dummy input with correct shape to trace the Pytorch model.
+    input_shape = [1] + list(model_pytorch.input_shape)
+    input_numpy = np.random.random_sample(input_shape).astype(np.float32)
+    input_torch = torch.from_numpy(input_numpy).float()
+    output_torch = model_pytorch(input_torch)
+    output_numpy = to_numpy(output_torch)
+
+    # Export as onnx model, and then reload.
+    input_names = ['input_0']
+    output_names = ['output_{}'.format(i) for i in range(len(output_torch))]
+    dynamic_axes = {'input_0': {0: 'batch_size'}}
+    dynamic_axes.update({name: {0: 'batch_size'} for name in output_names})
+    torch.onnx.export(model_pytorch, input_torch, filepath + '.onnx',
+                      input_names=input_names,
+                      output_names=output_names,
+                      dynamic_axes=dynamic_axes)
+    model_onnx = onnx.load(filepath + '.onnx')
+    # onnx.checker.check_model(model_onnx)  # Crashes with segmentation fault.
+
+    # Compute ONNX Runtime output prediction.
+    ort_session = onnxruntime.InferenceSession(filepath + '.onnx')
+    input_onnx = {ort_session.get_inputs()[0].name: input_numpy}
+    output_onnx = ort_session.run(None, input_onnx)
+
+    # Compare ONNX Runtime and PyTorch results.
+    err_msg = "Pytorch model could not be ported to ONNX. Output difference: "
+    np.testing.assert_allclose(output_numpy, output_onnx[0],
+                               rtol=1e-03, atol=1e-05, err_msg=err_msg)
+    print("Pytorch model was successfully ported to ONNX.")
+
+    # Port ONNX model to Keras.
+    model_keras = onnx_to_keras(model_onnx, input_names, [input_shape[1:]])
+
+    # Save the keras model.
+    keras.models.save_model(model_keras, filepath + '.h5')
+
+    # Loading the model here is a workaround for version conflicts with
+    # TF > 2.0.1 and keras > 2.2.5. Should be able to remove this later.
+    model_keras = keras.models.load_model(filepath + '.h5')
+    model_keras.compile('sgd', 'categorical_crossentropy',
+                        ['accuracy', keras.metrics.top_k_categorical_accuracy])
+
+    # Compute Keras output and compare against ONNX.
+    output_keras = model_keras.predict(input_numpy)
+    err_msg = "ONNX model could not be ported to Keras. Output difference: "
+    np.testing.assert_allclose(output_numpy, output_keras,
+                               rtol=1e-03, atol=1e-05, err_msg=err_msg)
+    print("ONNX model was successfully ported to Keras.")
+
+    return {'model': model_keras, 'val_fn': model_keras.evaluate}
+
+
+def evaluate(*args, **kwargs):
+    return keras_input_lib.evaluate(*args, **kwargs)

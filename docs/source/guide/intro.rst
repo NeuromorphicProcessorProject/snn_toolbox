@@ -34,8 +34,8 @@ activation of the corresponding neurons in the original ANN. See
 :doc:`citation` for details.
 
 This toolbox automates the conversion of pre-trained analog to spiking neural
-networks (ANN to SNN), and provides tools for testing the SNNs in a spiking
-neuron simulator.
+networks (ANN to SNN), and provides tools for testing the SNNs in spiking
+neuron simulators or neuromorphic hardware.
 
 .. figure:: ../images/workflow.png
    :scale: 50 %
@@ -54,19 +54,18 @@ stage from the input and is internally used by the toolbox to perform the
 actual conversion to a spiking network.
 
 The conversion toolbox currently supports input networks generated with
-`Keras <https://keras.io/>`_,
+`Keras <https://keras.io/>`_, `PyTorch <https://pytorch.org/>`_,
 `Lasagne <https://lasagne.readthedocs.io/en/latest/>`_, or
 `Caffe <http://caffe.berkeleyvision.org/>`_. See :doc:`extending` on how to
-extend the relevant methods to handle models from other common libraries like
-Torch.
+extend the relevant methods to handle models from other common libraries.
 
 The following table lists the input files expected by the toolbox.
 
 .. figure:: ../images/input_specs.png
-   :scale: 50 %
+   :scale: 100 %
    :alt: Input format specifications.
 
-The second column in the following table summarized which features of the input
+The first column in the following table summarized which features of the input
 model the toolbox knows about and can handle.
 
 .. _simulating:
@@ -96,6 +95,10 @@ spiking neuron chips. Currently, the following output formats are supported
       simulation, the run time is reduced by several orders of magnitude,
       without compromising accuracy. This simulator backend is recommended
       as it supports the most features and its integration is maintained best.
+    - If you have access to Intel's neuromorphic processor Loihi, or the
+      SpiNNaker system from the University of Manchester, you may use the SNN
+      toolbox to deploy your converted model on this dedicated hardware. See
+      :doc:`examples` for end-to-end tutorials.
 
 The second column in the table below compares these different simulators with
 respect to the network features that can be implemented on them.

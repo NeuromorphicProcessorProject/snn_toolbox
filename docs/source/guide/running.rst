@@ -23,4 +23,4 @@ script::
 
    snntoolbox.bin.run.main(path_to_config_file)
 
-See :doc:`examples` for typical usecases.
+See :doc:`examples` for typical usecases and end-to-end examples.

@@ -112,12 +112,11 @@ class TestOutputModel:
                                 os.path.join(path_wd, model_name + '.h5'))
 
         updates = {
-            'tools': {'evaluate_ann': False}, 'simulation': {
-                'simulator': 'INI',
+            'tools': {'evaluate_ann': False},
+            'simulation': {
                 'duration': 100,
                 'num_to_test': 100,
-                'batch_size': 50,
-                'keras_backend': 'tensorflow'},
+                'batch_size': 50},
             'output': {
                 'log_vars': {'activations_n_b_l', 'spiketrains_n_b_l_t'}}}
 
