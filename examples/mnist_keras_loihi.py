@@ -27,7 +27,7 @@ os.environ['SLURM'] = '1'
 os.environ['PYTHONUNBUFFERED'] = '1'
 
 # Add path to the nxsdk_modules package.
-sys.path.append('/homes/rbodo/Repositories/nxtf/nxsdk-apps')
+sys.path.append('/homes/rbodo/Repositories/nxsdk-apps')
 
 # WORKING DIRECTORY #
 #####################

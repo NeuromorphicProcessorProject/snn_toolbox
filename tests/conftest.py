@@ -52,9 +52,9 @@ def _datapath(tmpdir_factory, _dataset):
     datapath = tmpdir_factory.mktemp('dataset')
     x_train, y_train, x_test, y_test = _dataset
 
-    np.savez_compressed(os.path.join(datapath, 'x_test'), x_test)
-    np.savez_compressed(os.path.join(datapath, 'y_test'), y_test)
-    np.savez_compressed(os.path.join(datapath, 'x_norm'), x_test)
+    np.savez_compressed(os.path.join(str(datapath), 'x_test'), x_test)
+    np.savez_compressed(os.path.join(str(datapath), 'y_test'), y_test)
+    np.savez_compressed(os.path.join(str(datapath), 'x_norm'), x_test)
 
     return datapath
 
@@ -315,7 +315,12 @@ pytorch_conditions = (is_module_installed('torch') and
                       is_module_installed('onnx') and
                       is_module_installed('onnx2keras'))
 pytorch_skip_if_dependency_missing = pytest.mark.skipif(
-    not pytorch_conditions, reason='Pytorch dependencies missing')
+    not pytorch_conditions, reason='Pytorch dependencies missing.')
+
+loihi_conditions = (is_module_installed('nxsdk') and
+                    is_module_installed('nxsdk_modules'))
+loihi_skip_if_dependency_missing = pytest.mark.skipif(
+    not loihi_conditions, reason='Loihi dependency missing.')
 
 
 def get_examples():
@@ -329,6 +334,8 @@ def get_examples():
     if spinnaker_conditions:
         files.append('mnist_keras_spiNNaker.py')
         files.append('mnist_keras_spiNNaker_sparse.py')
+    if loihi_conditions:
+        files.append('mnist_keras_loihi.py')
 
     example_filepaths = [os.path.join(path, f) for f in files]
 
