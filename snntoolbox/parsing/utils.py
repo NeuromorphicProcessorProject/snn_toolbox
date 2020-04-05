@@ -504,7 +504,7 @@ class AbstractModelParser:
         previous_layers = self.get_inbound_layers(layer)
         prev_layer_output_shape = self.get_output_shape(previous_layers[0])
         if len(output_shape) < len(prev_layer_output_shape) and \
-                self.get_type(layer) != 'Flatten' and \
+                self.get_type(layer) not in {'Flatten', 'Reshape'} and \
                 self.get_type(previous_layers[0]) != 'InputLayer':
             assert len(previous_layers) == 1, \
                 "Layer to flatten must be unique."

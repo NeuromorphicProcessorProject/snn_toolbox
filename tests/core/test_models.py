@@ -12,8 +12,8 @@ from snntoolbox.bin.utils import run_pipeline
 from snntoolbox.conversion.utils import normalize_parameters
 from snntoolbox.datasets.utils import get_dataset
 from snntoolbox.simulation.utils import spiketrains_to_rates
-from snntoolbox.simulation.plotting import get_pearson_coefficients
-from snntoolbox.utils.utils import import_configparser
+from snntoolbox.utils.utils import import_configparser, \
+    get_pearson_coefficients
 from tests.conftest import spinnaker_skip_if_dependency_missing, \
     loihi_skip_if_dependency_missing
 from tests.conftest import nest_skip_if_dependency_missing

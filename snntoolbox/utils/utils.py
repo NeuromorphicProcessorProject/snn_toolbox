@@ -619,3 +619,46 @@ def is_module_installed(mod):
     else:
         import importlib
         return importlib.util.find_spec(mod) is not None
+
+
+def get_pearson_coefficients(spikerates_batch, activations_batch, max_rate):
+    """
+    Compute Pearson coefficients.
+
+    Parameters
+    ----------
+
+    spikerates_batch : 
+    activations_batch :
+    max_rate: float
+        Highest spike rate.
+
+    Returns
+    -------
+    
+    co: list
+
+    """
+
+    co = []
+    for layer_num in range(len(spikerates_batch)):
+        c = []
+        for sample in range(len(spikerates_batch[0][0])):
+            s = spikerates_batch[layer_num][0][sample].flatten()
+            a = activations_batch[layer_num][0][sample].flatten()
+            if layer_num < len(spikerates_batch) - 1:
+                # Remove points at origin and saturated units, except for
+                # output layer (has too few units and gets activation of 1
+                # because of softmax).
+                ss = []
+                aa = []
+                for sss, aaa in zip(s, a):
+                    if (sss > 0 or aaa > 0) and aaa < max_rate:
+                        ss.append(sss)
+                        aa.append(aaa)
+                s = ss
+                a = aa
+            c.append(np.corrcoef(s, a)[0, 1])
+        co.append(c)
+
+    return co
