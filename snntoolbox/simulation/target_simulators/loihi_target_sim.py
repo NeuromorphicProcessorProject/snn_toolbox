@@ -7,4 +7,4 @@ Currently, this code is part of the nxsdk, so we redirect there.
 """
 
 # noinspection PyUnresolvedReferences
-from official.snntoolbox.nx_backend import SNN
+from nxsdk_modules_ncl.snntoolbox.nx_backend import SNN

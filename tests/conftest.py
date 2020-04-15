@@ -318,7 +318,7 @@ pytorch_skip_if_dependency_missing = pytest.mark.skipif(
     not pytorch_conditions, reason='Pytorch dependencies missing.')
 
 loihi_conditions = (is_module_installed('nxsdk') and
-                    is_module_installed('official'))
+                    is_module_installed('nxsdk_modules_ncl'))
 loihi_skip_if_dependency_missing = pytest.mark.skipif(
     not loihi_conditions, reason='Loihi dependency missing.')
 
