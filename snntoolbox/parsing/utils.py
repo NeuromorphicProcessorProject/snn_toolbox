@@ -638,10 +638,15 @@ class AbstractModelParser:
         if activation_str == 'softmax' and \
                 self.config.getboolean('conversion', 'softmax_to_relu'):
             activation = 'relu'
-            activation_str = 'relu'
             print("Replaced softmax by relu activation function.")
+        elif activation_str == 'linear' and self.get_type(layer) == 'Dense' \
+                and self.config.getboolean('conversion', 'append_softmax',
+                                           fallback=False):
+            activation = 'softmax'
+            print("Added softmax.")
+        else:
+            print("Using activation {}.".format(activation_str))
 
-        print("Using activation {}.".format(activation_str))
         attributes['activation'] = activation
 
     @abstractmethod

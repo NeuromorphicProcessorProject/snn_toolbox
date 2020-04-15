@@ -1170,3 +1170,21 @@ def plot_probe(probe, path, filename):
         probe.plot()
     plt.savefig(os.path.join(path, filename))
     plt.close()
+
+
+def plot_weight_distribution(path, model):
+    parameters = model.get_weights()
+    weights = parameters[0::2]
+    biases = parameters[1::2]
+
+    plt.figure(figsize=(15, 10))
+    plt.boxplot([np.ravel(w) for w in weights], whis=15)
+    plt.xlabel("Layer index")
+    plt.ylabel("Weight value")
+    plt.savefig(os.path.join(path, 'weight_distribution'))
+
+    plt.figure(figsize=(15, 10))
+    plt.boxplot([np.ravel(b) for b in biases])
+    plt.xlabel("Layer index")
+    plt.ylabel("Bias value")
+    plt.savefig(os.path.join(path, 'bias_distribution'))

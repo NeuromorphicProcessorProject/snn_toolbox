@@ -664,8 +664,7 @@ class AbstractSNN:
             if 'error_t' in self._plot_keys:
                 snn_plt.plot_error_vs_time(
                     self.top1err_b_t, self.top5err_b_t, self._duration,
-                    self._dt, 1 - self.top1err_ann, 1 - self.top5err_ann,
-                    log_dir)
+                    self._dt, self.top1err_ann, self.top5err_ann, log_dir)
 
             # Plot confusion matrix.
             if 'confusion_matrix' in self._plot_keys:
@@ -1158,13 +1157,14 @@ def get_samples_from_list(x_test, y_test, dataflow, config):
 
     batch_size = config.getint('simulation', 'batch_size')
     si = list(eval(config.get('simulation', 'sample_idxs_to_test')))
+    num_to_test = len(si)
     if not len(si) == 0:
         if dataflow is not None:
             batch_idx = 0
             x_test = []
             y_test = []
             target_idx = si.pop(0)
-            while len(x_test) < config.getint('simulation', 'num_to_test'):
+            while len(x_test) < num_to_test:
                 x_b_l, y_b = dataflow.next()
                 for i in range(batch_size):
                     if batch_idx * batch_size + i == target_idx:
@@ -1178,6 +1178,8 @@ def get_samples_from_list(x_test, y_test, dataflow, config):
         elif x_test is not None:
             x_test = np.array([x_test[i] for i in si])
             y_test = np.array([y_test[i] for i in si])
+
+        config.set('simulation', 'num_to_test', str(num_to_test))
 
     return x_test, y_test
 

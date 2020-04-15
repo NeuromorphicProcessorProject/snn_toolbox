@@ -439,13 +439,13 @@ def update_setup(config_filepath):
 
     sample_idxs_to_test = eval(config.get('simulation', 'sample_idxs_to_test'))
     num_to_test = config.getint('simulation', 'num_to_test')
-    if not sample_idxs_to_test == []:
-        if len(sample_idxs_to_test) != num_to_test:
+    if len(sample_idxs_to_test):
+        num_required = max(sample_idxs_to_test) + 1
+        if num_required > num_to_test:
             print(dedent("""
             SNN toolbox warning: Settings mismatch. Adjusting 'num_to_test' to 
-            equal the number of 'sample_idxs_to_test'."""))
-            config.set('simulation', 'num_to_test',
-                       str(len(sample_idxs_to_test)))
+            include all 'sample_idxs_to_test'."""))
+            config.set('simulation', 'num_to_test', str(num_required))
 
     # Create log directory if it does not exist.
     if config.get('paths', 'log_dir_of_current_run') == '':

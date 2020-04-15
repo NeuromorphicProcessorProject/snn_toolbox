@@ -188,6 +188,11 @@ def normalize_parameters(model, config, **kwargs):
         from snntoolbox.simulation.plotting import plot_hist
         from snntoolbox.simulation.plotting import plot_max_activ_hist
 
+        # All layers in one plot. Assumes model.get_weights() returns
+        # [w, b, w, b, ...].
+        # from snntoolbox.simulation.plotting import plot_weight_distribution
+        # plot_weight_distribution(norm_dir, model)
+
         print("Plotting distributions of weights and activations before and "
               "after normalizing...")
 

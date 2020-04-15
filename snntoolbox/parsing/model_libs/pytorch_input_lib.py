@@ -10,7 +10,6 @@ import numpy as np
 import keras
 import torch
 import onnx
-from onnx2keras import onnx_to_keras
 import onnxruntime
 
 from snntoolbox.parsing.model_libs import keras_input_lib
@@ -57,8 +56,16 @@ def load(path, filename):
 
     # Load the Pytorch model.
     mod = import_script(path, filename)
-    model_pytorch = mod.Model()
-    model_pytorch.load_state_dict(torch.load(filepath + '.pkl'))
+    kwargs = mod.kwargs if hasattr(mod, 'kwargs') else {}
+    model_pytorch = mod.Model(**kwargs)
+    map_location = 'cpu' if not torch.cuda.is_available() else None
+    for ext in ['.pth', '.pkl']:
+        model_path = filepath + ext
+        if os.path.exists(model_path):
+            break
+    assert model_path, "Pytorch state_dict not found at {}".format(model_path)
+    model_pytorch.load_state_dict(torch.load(model_path,
+                                             map_location=map_location))
 
     # Switch from train to eval mode to ensure Dropout / BatchNorm is handled
     # correctly.
@@ -94,8 +101,18 @@ def load(path, filename):
                                rtol=1e-03, atol=1e-05, err_msg=err_msg)
     print("Pytorch model was successfully ported to ONNX.")
 
+    change_ordering = keras.backend.image_data_format() == 'channels_last'
+    if change_ordering:
+        input_numpy = np.moveaxis(input_numpy, 1, -1)
+        output_numpy = np.moveaxis(output_numpy, 1, -1)
+
+    # Import this here; import changes image_data_format to channels_first.
+    from onnx2keras import onnx_to_keras
     # Port ONNX model to Keras.
-    model_keras = onnx_to_keras(model_onnx, input_names, [input_shape[1:]])
+    model_keras = onnx_to_keras(model_onnx, input_names, [input_shape[1:]],
+                                change_ordering=change_ordering)
+    if change_ordering:
+        keras.backend.set_image_data_format('channels_last')
 
     # Save the keras model.
     keras.models.save_model(model_keras, filepath + '.h5')
