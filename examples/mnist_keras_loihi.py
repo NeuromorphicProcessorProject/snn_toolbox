@@ -146,7 +146,6 @@ config['loihi'] = {
                           'numBiasBits': 12},
     'validate_partitions': False,   # Validates correctness of compiled layers.
     'save_output': False,           # Plots compiler information.
-    'use_reset_snip': True,         # Snip accelerates reset between samples.
     'do_overflow_estimate': True,   # Estimate overflow of dendritic accumul.
     'normalize_thresholds': True,   # Tune thresholds to optimal dynamic range.
 }

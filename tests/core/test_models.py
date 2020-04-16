@@ -279,7 +279,6 @@ class TestOutputModel:
                                             'numBiasBits': 12},
                       'validate_partitions': False,
                       'save_output': False,
-                      'use_reset_snip': True,
                       'do_overflow_estimate': False,
                       'normalize_thresholds': True},
             'simulation': {

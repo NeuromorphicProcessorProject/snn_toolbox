@@ -110,7 +110,7 @@ def load(path, filename):
     from onnx2keras import onnx_to_keras
     # Port ONNX model to Keras.
     model_keras = onnx_to_keras(model_onnx, input_names, [input_shape[1:]],
-                                change_ordering=change_ordering)
+                                change_ordering=change_ordering, verbose=False)
     if change_ordering:
         keras.backend.set_image_data_format('channels_last')
 
