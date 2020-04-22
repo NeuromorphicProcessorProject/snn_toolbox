@@ -1188,3 +1188,32 @@ def plot_weight_distribution(path, model):
     plt.xlabel("Layer index")
     plt.ylabel("Bias value")
     plt.savefig(os.path.join(path, 'bias_distribution'))
+
+
+def plot_execution_time_probe(path, probe):
+    plt.figure(figsize=(20, 5))
+    probe.plotExecutionTime()
+    plt.savefig(os.path.join(path, 'etprobe'))
+    execution_time = np.stack([probe.totalTimePerTimeStep,
+                               probe.hostTimePerTimeStep,
+                               probe.managementTimePerTimeStep,
+                               probe.learningTimePerTimeStep,
+                               probe.spikingTimePerTimeStep], -1)
+    np.savetxt(os.path.join(path, 'etprobe_csv'), execution_time, fmt='%.4e',
+               delimiter=',')
+
+
+def plot_energy_probe(path, probe):
+    plt.figure(figsize=(20, 5))
+    probe.plotEnergy()
+    plt.savefig(os.path.join(path, 'eprobe'))
+
+
+def plot_parameter_histogram(path, filename, weights, biases, bins=32):
+    plt.figure()
+    ax1 = plt.gca()
+    ax2 = ax1.twinx()
+    ax1.hist(weights.ravel(), bins=bins, label='weights', alpha=0.5)
+    ax2.hist(biases.ravel(), bins=bins, label='biases', color='m', alpha=0.5)
+    plt.legend()
+    plt.savefig(os.path.join(path, filename))
