@@ -129,9 +129,9 @@ config['tools'] = {
 
 config['simulation'] = {
     'simulator': 'loihi',           # Chooses execution backend of SNN toolbox.
-    'duration': 512,                # Number of time steps to run each sample.
+    'duration': 100,                # Number of time steps to run each sample.
     'num_to_test': 100,             # How many test samples to run.
-    'batch_size': 1,                # Loihi only supports batch size 1.
+    'batch_size': 20
 }
 
 config['loihi'] = {
