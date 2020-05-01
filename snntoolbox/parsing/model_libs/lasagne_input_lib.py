@@ -29,6 +29,7 @@ class ModelParser(AbstractModelParser):
                             'BatchNormLayer': 'BatchNormalization',
                             'NonlinearityLayer': 'Activation',
                             'ConcatLayer': 'Concatenate',
+                            'Add': 'Add', # qinyu changes
                             'GlobalPoolLayer': 'GlobalAveragePooling2D'}
         self.activation_dict = {'rectify': 'relu',
                                 'softmax': 'softmax',
@@ -131,6 +132,9 @@ class ModelParser(AbstractModelParser):
 
     def parse_concatenate(self, layer, attributes):
         attributes['axis'] = layer.axis
+
+    def parse_add(self, layer, attributes):
+        attributes['axis'] = layer.axis #qinyu changes
 
 
 def load(path, filename):

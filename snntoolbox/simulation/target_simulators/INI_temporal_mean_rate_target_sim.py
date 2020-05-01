@@ -238,12 +238,13 @@ class SNN(AbstractSNN):
             none_class_b = -1 * np.ones(self.batch_size)
             clean_guesses_b = np.where(undecided_b, none_class_b, guesses_b)
             current_acc = np.mean(kwargs[str('truth_b')] == clean_guesses_b)
-            if self.config.getint('output', 'verbose') > 0 \
-                    and sim_step % 1 == 0:
-                echo('{:.2%}_'.format(current_acc))
-            else:
-                sys.stdout.write('\r{:>7.2%}'.format(current_acc))
-                sys.stdout.flush()
+            # qinyu changes
+            # if self.config.getint('output', 'verbose') > 0 \
+            #         and sim_step % 1 == 0:
+            #     echo('{:.2%}_'.format(current_acc))
+            # else:
+            #     sys.stdout.write('\r{:>7.2%}'.format(current_acc))
+            #     sys.stdout.flush()
 
         if self._dataset_format == 'aedat':
             remaining_events = \

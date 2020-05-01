@@ -23,6 +23,7 @@ class ModelParser(AbstractModelParser):
                             'ReLU': 'Activation',
                             'Softmax': 'Activation',
                             'Concat': 'Concatenate',
+                            'Add': 'Add', # qinyu changes
                             'LPInnerProduct': 'Dense',
                             'LPConvolution': 'Conv2D',
                             'LPAct': 'Activation'}
@@ -159,6 +160,10 @@ class ModelParser(AbstractModelParser):
     def parse_concatenate(self, layer, attributes):
         attributes.update({'mode': 'concat',
                            'concat_axis': layer.concat_param.axis})
+    # qinyu changes
+    def parse_add(self, layer, attributes):
+        attributes.update({'mode': 'add',
+                           'add_axis': layer.add_param.axis})
 
 
 def load(path=None, filename=None):

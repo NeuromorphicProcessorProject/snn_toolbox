@@ -38,6 +38,8 @@ def normalize_parameters(model, config, **kwargs):
     import json
     from collections import OrderedDict
     from snntoolbox.parsing.utils import get_inbound_layers_with_params
+    from snntoolbox.parsing.utils import get_inbound_layers_with_params, get_inbound_layers, get_fanin, get_outbound_layers
+    from snntoolbox.parsing.utils import get_type
 
     print("Normalizing parameters...")
 
@@ -69,7 +71,7 @@ def normalize_parameters(model, config, **kwargs):
             x_norm, y = kwargs[str('dataflow')].next()
         print("Using {} samples for normalization.".format(len(x_norm)))
         sizes = [
-            len(x_norm) * np.array(layer.output_shape[1:]).prod() * 32 /
+            len(x_norm) * np.array(layer.output_shape[1:], dtype='int64').prod() * 32 /
             (8 * 1e9) for layer in model.layers if len(layer.weights) > 0]
         size_str = ['{:.2f}'.format(s) for s in sizes]
         print("INFO: Need {} GB for layer activations.\n".format(size_str) +
@@ -83,6 +85,7 @@ def normalize_parameters(model, config, **kwargs):
         return
 
     batch_size = config.getint('simulation', 'batch_size')
+    network_mode = config.getint('normalization', 'network_mode')
 
     # If scale factors have not been computed in a previous run, do so now.
     if len(scale_facs) == 1:
@@ -127,12 +130,39 @@ def normalize_parameters(model, config, **kwargs):
         np.savez_compressed(os.path.join(norm_dir, 'activations', 'sparsity'),
                             sparsity=sparsity)
 
-    # Apply scale factors to normalize the parameters.
+    # detect whether there is the CONV layer existing in the identity branch of the current resblock. 1 denotes no, 2 denotes existing. CONV layer here
+    # is used to keep the channel the same, and prepare for point-wise addition in the Add layers. Here we call it channel-adaptive shortcut.
+    test_idx = 0
+    res_block = []
+    res_block.append(1)
     for layer in model.layers:
-        # Skip if layer has no parameters
         if len(layer.weights) == 0:
             continue
+        inbound_identity_test = get_inbound_layers(layer)
+        if get_type(inbound_identity_test[0]) == 'Add':
+            test_idx += 1
+        else:
+            if test_idx != 0:
+                res_block.append(test_idx)
+            test_idx = 0
+    res_block.append(0)
+    res_block = np.array(res_block)
 
+    # Apply scale factors to normalize the parameters.
+    s_para_idx = 0
+    i = 0
+    ii = 0
+    # compensation factors
+    gamma = 1.04  #(1.0 ~ 1.1)
+    beta = 1.21   #(1.0 ~ 1.3)
+    for layer in model.layers:
+        # Skip if layer has no parameters
+        layer_type = get_type(layer)
+        if layer_type == 'Add':
+            i += 1
+
+        if len(layer.weights) == 0:
+            continue
         # Scale parameters
         parameters = layer.get_weights()
         if layer.activation.__name__ == 'softmax':
@@ -141,40 +171,101 @@ def normalize_parameters(model, config, **kwargs):
             # (e.g. 0.01 for ImageNet). This amplifies weights and biases
             # greatly. But large biases cause large offsets in the beginning
             # of the simulation (spike input absent).
-            scale_fac = 1.0
+            scale_fac = 1
             print("Using scale factor {:.2f} for softmax layer.".format(
                 scale_fac))
         else:
             scale_fac = scale_facs[layer.name]
+
         inbound = get_inbound_layers_with_params(layer)
         if len(inbound) == 0:  # Input layer
             parameters_norm = [
                 parameters[0] * scale_facs[model.layers[0].name] / scale_fac,
                 parameters[1] / scale_fac]
         elif len(inbound) == 1:
+            inbound = get_inbound_layers_with_params(layer)
+            outbound = get_outbound_layers(layer)
+            outbound_type = get_type(outbound[0])
+            # change the scaling factor of the current layer when the junction node occurs.
+            if outbound_type == 'Add':
+                if res_block[i] == 1:  # CONV layer in the non-identity branch of the resblock, connected to the Add layers
+                    scale_fac1 = scale_facs[layer.name]
+                    index = model.layers.index(layer)
+                    if i == 0:
+                        scale_fac2 = scale_facs[model.layers[index - 2].name]  # The first CONV layer in resblock, passing no Add layer before.
+                    else:
+                        scale_fac2 = scale_facs[model.layers[index - 3].name]
+                    scale_fac = np.sqrt(scale_fac1 * scale_fac2 / gamma)
+                    scale_facs[layer.name] = scale_fac
+                if res_block[i] == 2:  # CONV layer in the non-identity branch of the resblock
+                    scale_facs[layer.name] = scale_fac_rec
+                    scale_fac = scale_fac_rec  # scale_fac_rec is calculated before in the CONV layer of the identity branch.
             parameters_norm = [
                 parameters[0] * scale_facs[inbound[0].name] / scale_fac,
                 parameters[1] / scale_fac]
         else:
-            # In case of this layer receiving input from several layers, we can
-            # apply scale factor to bias as usual, but need to rescale weights
-            # according to their respective input.
-            parameters_norm = [parameters[0], parameters[1] / scale_fac]
-            if parameters[0].ndim == 4:
-                # In conv layers, just need to split up along channel dim.
-                offset = 0  # Index offset at input filter dimension
-                for inb in inbound:
-                    f_out = inb.filters  # Num output features of inbound layer
-                    f_in = range(offset, offset + f_out)
-                    parameters_norm[0][:, :, f_in, :] *= \
-                        scale_facs[inb.name] / scale_fac
-                    offset += f_out
+            # determine the s_para_idx according to the res_block
+            if res_block[i] == 1 and res_block[i - 1] != 2:
+                s_para_idx = s_para_idx
+            elif res_block[i] == 1 and res_block[i - 1] == 2:
+                s_para_idx = 0
+            elif res_block[i] == 2 and res_block[i - 1] != 2:
+                ii += 1
+                if ii % 2 == 1:
+                    s_para_idx = s_para_idx
+                else:
+                    s_para_idx -= 1
+            elif res_block[i] == 2 and res_block[i - 1] == 2:
+                s_para_idx = 0
+            elif res_block[i] == 0 and res_block[i - 1] == 2:
+                s_para_idx = 0
+            elif res_block[i] == 0 and res_block[i - 1] != 2:
+                s_para_idx = s_para_idx
+
+            # change the current scaling factor.
+            # get the scale_fac used to be divided of the CONV layer in the identity branch in the resblock with channel-adaptive shortcut.
+            if res_block[i] == 2:
+                if parameters[0].ndim == 4:
+                    outbound = get_outbound_layers(layer)
+                    outbound_type = get_type(outbound[0])
+                if outbound_type == 'Add':
+                    scale_fac1 = scale_facs[layer.name]
+                    index = model.layers.index(layer)
+                    scale_fac2 = scale_facs[model.layers[index + 1].name]
+                    scale_fac = np.sqrt(scale_fac1 * scale_fac2 * beta)  # beta is the compensation factor.
+                    scale_fac_rec = scale_fac  # record the scale_fac, which will be used in the next CONV layer located at the non-identity branch.
+                    scale_facs[layer.name] = scale_fac
+                    # scale_facs[model.layers[index + 1].name] = scale_fac
+
+            # get the scale_fac of the previous layer.
+            if res_block[i] == 1 and res_block[i - 1] == 2:
+                scale_facs_mean = scale_fac_rec
             else:
-                # Fully-connected layers need more consideration, because they
-                # could receive input from several conv layers that are
-                # concatenated and then flattened. The neuron position in the
-                # flattened layer depend on the image_data_format.
-                raise NotImplementedError
+                scale_facs_mean = scale_facs[inbound[s_para_idx + 1].name]
+
+            scale_facs[inbound[s_para_idx].name] = scale_facs_mean
+            scale_facs[inbound[s_para_idx + 1].name] = scale_facs_mean
+
+            if parameters[0].ndim == 4:
+                if network_mode == 0:
+                    # In conv layers, just need to split up along channel dim.
+                    offset = 0  # Index offset at input filter dimension
+                    for inb in inbound:
+                        f_out = inb.filters  # Num output features of inbound layer
+                        f_in = range(offset, offset + f_out)
+                        parameters_norm[0][:, :, f_in, :] *= \
+                            scale_facs[inb.name] / scale_fac
+                        offset += f_out
+                elif network_mode == 1:
+                    parameters_norm = [
+                        parameters[0] * scale_facs[inbound[s_para_idx + 1].name] / scale_fac,
+                        parameters[1] / scale_fac]
+            else:
+                parameters_norm = [
+                    parameters[0] * scale_facs[inbound[s_para_idx + 1].name] / scale_fac,
+                    parameters[1] / scale_fac]
+
+            s_para_idx += 1
 
         # Check if the layer happens to be Sparse
         # if the layer is sparse, add the mask to the list of parameters
@@ -387,7 +478,7 @@ def get_activations_batch(ann, x_batch):
         #       ``not in eval(config.get('restrictions', 'spiking_layers')``
         if layer.__class__.__name__ in ['Input', 'InputLayer', 'Flatten',
                                         'Concatenate', 'ZeroPadding2D',
-                                        'Reshape']:
+                                        'Reshape', 'Add']: # qinyu changes
             continue
         activations = keras.models.Model(
             ann.input, layer.output).predict_on_batch(x_batch)

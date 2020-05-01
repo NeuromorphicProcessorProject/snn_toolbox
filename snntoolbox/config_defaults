@@ -45,6 +45,7 @@ online_normalization = False
 diff_to_max_rate = 200
 diff_to_min_rate = 100
 timestep_fraction = 10
+network_mode = 0
 
 [conversion]
 softmax_to_relu = False
@@ -134,7 +135,7 @@ spiking_layers = {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D', 'MaxPooling2D'
                   'SparseDepthwiseConv2D'}
 # Layers that can be implemented by our spiking neuron simulators:
 snn_layers = %(spiking_layers)s | {'Reshape', 'Flatten', 'Concatenate',
-                                   'ZeroPadding2D'}
+                                   'ZeroPadding2D', 'Add'}
 cellparams_pyNN = {'v_thresh', 'v_reset', 'v_rest', 'cm', 'tau_refrac',
                    'tau_m', 'tau_syn_E', 'tau_syn_I'}
 

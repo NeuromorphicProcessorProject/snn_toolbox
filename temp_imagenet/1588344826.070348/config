@@ -1,0 +1,19 @@
+[paths]
+dataset_path = /home/qinche/snn_toolbox/imagenet/raw-data/validation
+filename_ann = imagenet_resnet
+
+[tools]
+evaluate_ann = True
+
+[input]
+dataset_format = jpg
+datagen_kwargs = {'preprocessing_function': 'helper_functions'}
+dataflow_kwargs = {'target_size': (224, 224), 'shuffle': True}
+
+[simulation]
+duration = 600
+batch_size = 1
+num_to_test = 2
+
+[normalization]
+percentile = 100

@@ -24,7 +24,7 @@ from future import standard_library
 import tensorflow as tf
 from keras import backend as k
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
-from keras.layers import Layer, Concatenate
+from keras.layers import Layer, Concatenate, Add
 
 standard_library.install_aliases()
 
@@ -352,6 +352,32 @@ def spike_call(call):
     return decorator
 
 
+#qinyu changes
+class SpikeAdd(Add):
+    """Spike merge layer"""
+
+    def __init__(self, **kwargs):
+        kwargs.pop(str('config'))
+        Add.__init__(self, **kwargs)
+
+    @staticmethod
+    def get_time():
+
+        pass
+
+    @staticmethod
+    def reset(sample_idx):
+        """Reset layer variables."""
+
+        pass
+
+    @property
+    def class_name(self):
+        """Get class name."""
+
+        return self.__class__.__name__
+
+
 class SpikeConcatenate(Concatenate):
     """Spike merge layer"""
 
@@ -526,4 +552,5 @@ custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeConv2D': SpikeConv2D,
                  'SpikeAveragePooling2D': SpikeAveragePooling2D,
                  'SpikeMaxPooling2D': SpikeMaxPooling2D,
-                 'SpikeConcatenate': SpikeConcatenate}
+                 'SpikeConcatenate': SpikeConcatenate,
+                 'SpikeAdd': Add}

@@ -252,6 +252,9 @@ class AbstractModelParser:
             if layer_type == 'Concatenate':
                 self.parse_concatenate(layer, attributes)
 
+            if layer_type == 'Add': # qinyu changes
+                self.parse_add(layer, attributes)
+
             self._layer_list.append(attributes)
 
             # Map layer index to layer id. Needed for inception modules.
@@ -691,6 +694,22 @@ class AbstractModelParser:
 
     @abstractmethod
     def parse_concatenate(self, layer, attributes):
+        """Parse a concatenation layer.
+
+        Parameters
+        ----------
+
+        layer:
+            Layer.
+        attributes: dict
+            The layer attributes as key-value pairs in a dict.
+        """
+
+        pass
+
+    # qinyu changes
+    @abstractmethod
+    def parse_add(self, layer, attributes):
         """Parse a concatenation layer.
 
         Parameters

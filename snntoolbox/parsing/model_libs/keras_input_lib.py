@@ -107,6 +107,10 @@ class ModelParser(AbstractModelParser):
     def parse_concatenate(self, layer, attributes):
         pass
 
+    def parse_add(self, layer, attributes):
+        pass
+    #qinyu changes
+
 
 def load(path, filename, **kwargs):
     """Load network from file.

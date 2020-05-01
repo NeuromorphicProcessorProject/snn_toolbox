@@ -1,0 +1,23 @@
+[paths]
+path_wd = /home/qinche/PycharmProjects/snn_resnet/snn_toolbox/temp_cifar/1587585638.3050525
+dataset_path = /home/qinche/PycharmProjects/snn_resnet/snn_toolbox/temp_cifar/1587585638.3050525
+filename_ann = cifar10_resnet
+
+[tools]
+evaluate_ann = True
+normalize = True
+
+[normalization]
+network_mode = 1
+norm_op = 1
+
+[simulation]
+simulator = INI
+duration = 500
+num_to_test = 10000
+batch_size = 50
+keras_backend = tensorflow
+
+[output]
+plot_vars = {}
+

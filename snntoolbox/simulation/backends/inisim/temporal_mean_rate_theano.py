@@ -22,7 +22,7 @@ import theano
 from future import standard_library
 from keras import backend as k
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
-from keras.layers import Layer, Concatenate
+from keras.layers import Layer, Concatenate, Add
 
 from snntoolbox.parsing.utils import get_inbound_layers
 
@@ -515,6 +515,29 @@ class SpikeConcatenate(Concatenate):
 
         return self.__class__.__name__
 
+#qinyuc changes
+class SpikeAdd(Add):
+    """Spike merge layer"""
+
+    def __init__(self, **kwargs):
+        kwargs.pop(str('config'))
+        Add.__init__(self, **kwargs)
+
+    @staticmethod
+    def get_time():
+        return None
+
+    @staticmethod
+    def reset(sample_idx):
+        """Reset layer variables."""
+
+        pass
+
+    @property
+    def class_name(self):
+        """Get class name."""
+
+        return self.__class__.__name__
 
 class SpikeFlatten(Flatten):
     """Spike flatten layer."""
@@ -1008,4 +1031,5 @@ custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeConv2D': SpikeConv2D,
                  'SpikeAveragePooling2D': SpikeAveragePooling2D,
                  'SpikeMaxPooling2D': SpikeMaxPooling2D,
-                 'SpikeConcatenate': SpikeConcatenate}
+                 'SpikeConcatenate': SpikeConcatenate,
+                 'SpikeAdd': SpikeAdd}#qinyu changes
