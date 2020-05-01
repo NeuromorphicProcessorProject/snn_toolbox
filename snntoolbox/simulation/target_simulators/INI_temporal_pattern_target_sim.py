@@ -7,15 +7,14 @@
 from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
-import re
-
 import keras
 import numpy as np
 from future import standard_library
 
 from snntoolbox.simulation.target_simulators.\
     INI_temporal_mean_rate_target_sim import SNN as SNN_
-from snntoolbox.simulation.utils import get_layer_synaptic_operations
+from snntoolbox.simulation.utils import get_layer_synaptic_operations, \
+    remove_name_counter
 
 standard_library.install_aliases()
 
@@ -58,12 +57,7 @@ class SNN(SNN_):
         # snn.set_weights(parsed_model.get_weights()) does not work any more.
         # Need to extract the actual weights here:
 
-        def remove_name_counter(name_in):
-            splits = str(name_in).split('_')
-            name_out = splits[0] + '_' + splits[1]
-            if len(splits) == 3:
-                name_out += re.sub(r'\d+/', '/', splits[2])
-            return name_out
+
 
         parameter_map = {remove_name_counter(p.name): v for p, v in
                          zip(self.parsed_model.weights,
@@ -99,10 +93,8 @@ class SNN(SNN_):
         # Main step: Propagate input through network and record output spikes.
         out_spikes = self.snn.predict_on_batch(input_b_l)
 
-        # Add current spikes to previous spikes.
-        x = self.sim.to_binary_numpy(out_spikes, self.num_bits)
-        x *= np.expand_dims([2 ** -i for i in range(self.num_bits)], -1)
-        output_b_l_t[:, :, :] = np.expand_dims(x.transpose(), 0)
+        # Broadcast the raw output (softmax) across time axis.
+        output_b_l_t[:, :, :] = np.expand_dims(out_spikes, -1)
 
         # Record neuron variables.
         i = 0

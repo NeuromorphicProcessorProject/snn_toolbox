@@ -20,7 +20,8 @@ import numpy as np
 from future import standard_library
 import tensorflow as tf
 from keras import backend as k
-from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
+from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, \
+    Conv2D, DepthwiseConv2D, Reshape, ZeroPadding2D
 from keras.layers import Layer, Concatenate
 from keras.activations import softmax, relu
 
@@ -87,7 +88,7 @@ def spike_call(call):
         # exponentially across the 32 temporal steps (batch-dimension).
         shape = [self.num_bits] + [1] * len(x.shape[1:])
         x_powers = x_binary * k.constant(
-            [2**-i for i in range(self.num_bits)], k.floatx(), shape)
+            [2**-(i+1) for i in range(self.num_bits)], k.floatx(), shape)
         x_weighted = call(self, x_powers)
         x_preactiv = k.sum(x_weighted, 0, keepdims=True)
         x_activ = softmax(x_preactiv) if self.activation_str == 'softmax' \
@@ -127,7 +128,7 @@ def to_binary(x, num_bits):
     binary_array = k.zeros([num_bits] + list(shape[1:]), k.floatx())
 
     powers = k.constant(
-        [2**-i for i in range(num_bits)], k.floatx(), (num_bits,))
+        [2**-(i+1) for i in range(num_bits)], k.floatx(), (num_bits,))
     idx_p0 = k.constant(0, 'int32')
 
     if len(shape) > 2:
@@ -245,7 +246,7 @@ def to_binary_numpy(x, num_bits):
 
     binary_array = np.zeros([num_bits] + list(x.shape[1:]))
 
-    powers = [2**-i for i in range(num_bits)]
+    powers = [2**-(i+1) for i in range(num_bits)]
 
     if len(x.shape) > 2:
         for j in range(x.shape[1]):
@@ -316,6 +317,44 @@ class SpikeFlatten(Flatten):
         return self.__class__.__name__
 
 
+class SpikeReshape(Reshape):
+    """Spike reshape layer."""
+
+    def __init__(self, target_shape, **kwargs):
+        kwargs.pop(str('config'))
+        Reshape.__init__(self, target_shape, **kwargs)
+
+    @staticmethod
+    def get_time():
+
+        pass
+
+    @staticmethod
+    def reset(sample_idx):
+        """Reset layer variables."""
+
+        pass
+
+
+class SpikeZeroPadding2D(ZeroPadding2D):
+    """Spike padding layer."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.pop(str('config'))
+        ZeroPadding2D.__init__(self, *args, **kwargs)
+
+    @staticmethod
+    def get_time():
+
+        pass
+
+    @staticmethod
+    def reset(sample_idx):
+        """Reset layer variables."""
+
+        pass
+
+
 class SpikeDense(Dense, SpikeLayer):
     """Spike Dense layer."""
 
@@ -361,6 +400,30 @@ class SpikeConv2D(Conv2D, SpikeLayer):
     def call(self, x, mask=None):
 
         return Conv2D.call(self, x)
+
+
+class SpikeDepthwiseConv2D(DepthwiseConv2D, SpikeLayer):
+    """Spike 2D depthwise-separable Convolution."""
+
+    def build(self, input_shape):
+        """Creates the layer weights.
+        Must be implemented on all layers that have weights.
+
+        Parameters
+        ----------
+
+        input_shape: Union[list, tuple, Any]
+            Keras tensor (future input to layer) or list/tuple of Keras tensors
+            to reference for weight shape computations.
+        """
+
+        DepthwiseConv2D.build(self, input_shape)
+        self.init_neurons(input_shape)
+
+    @spike_call
+    def call(self, x, mask=None):
+
+        return DepthwiseConv2D.call(self, x)
 
 
 class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
@@ -427,4 +490,7 @@ custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeConv2D': SpikeConv2D,
                  'SpikeAveragePooling2D': SpikeAveragePooling2D,
                  'SpikeMaxPooling2D': SpikeMaxPooling2D,
-                 'SpikeConcatenate': SpikeConcatenate}
+                 'SpikeConcatenate': SpikeConcatenate,
+                 'SpikeDepthwiseConv2D': SpikeDepthwiseConv2D,
+                 'SpikeZeroPadding2D': SpikeZeroPadding2D,
+                 'SpikeReshape': SpikeReshape}

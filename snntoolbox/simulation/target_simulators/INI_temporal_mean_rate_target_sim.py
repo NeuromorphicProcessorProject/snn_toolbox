@@ -14,7 +14,7 @@ import keras
 import numpy as np
 from future import standard_library
 
-from snntoolbox.simulation.utils import AbstractSNN
+from snntoolbox.simulation.utils import AbstractSNN, remove_name_counter
 
 standard_library.install_aliases()
 
@@ -111,24 +111,6 @@ class SNN(AbstractSNN):
         # variables (membrane potential etc). So a simple
         # snn.set_weights(parsed_model.get_weights()) does not work any more.
         # Need to extract the actual weights here.
-
-        def remove_name_counter(name_in):
-            """
-            Tensorflow adds a counter to layer names, e.g. <name>/kernel:0 ->
-            <name>_0/kernel:0. Need to remove this _0.
-            Situation get complicated because SNN toolbox assigns layer names
-            that contain the layer shape, e.g. 00Conv2D_3x32x32. In addition,
-            we may get another underscore in the parameter name, e.g.
-            00DepthwiseConv2D_3X32x32_0/depthwise_kernel:0.
-            """
-
-            split_dash = str(name_in).split('/')
-            assert len(split_dash) == 2, "Layer name must not contain '/'."
-            # We are only interested in the part before the /.
-            split_underscore = split_dash[0].split('_')
-            # The first '_' is assigned by SNN toolbox and should be kept.
-            return (split_underscore[0] + '_' + split_underscore[1] + '/' +
-                    split_dash[1])
 
         parameter_map = {remove_name_counter(p.name): v for p, v in
                          zip(self.parsed_model.weights,
