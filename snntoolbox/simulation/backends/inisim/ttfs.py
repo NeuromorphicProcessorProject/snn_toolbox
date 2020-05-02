@@ -20,7 +20,8 @@ import numpy as np
 from future import standard_library
 import tensorflow as tf
 from keras import backend as k
-from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
+from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, \
+    Conv2D, ZeroPadding2D, Reshape, DepthwiseConv2D
 from keras.layers import Layer, Concatenate
 
 standard_library.install_aliases()
@@ -155,8 +156,7 @@ class SpikeLayer(Layer):
             new_spiketimes = tf.where(k.not_equal(output_spikes, 0),
                                       k.ones_like(output_spikes) * self.time,
                                       self.last_spiketimes)
-            assign_new_spiketimes = tf.assign(self.last_spiketimes,
-                                              new_spiketimes)
+            assign_new_spiketimes = self.last_spiketimes.assign(new_spiketimes)
             with tf.control_dependencies([assign_new_spiketimes]):
                 last_spiketimes = self.last_spiketimes + 0  # Dummy op
                 psp = tf.where(k.greater(last_spiketimes, 0),
@@ -321,6 +321,55 @@ class SpikeConcatenate(Concatenate):
         return self.__class__.__name__
 
 
+class SpikeZeroPadding2D(ZeroPadding2D):
+    """Spike padding layer"""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.pop(str('config'))
+        ZeroPadding2D.__init__(self, *args, **kwargs)
+
+    @staticmethod
+    def get_time():
+
+        pass
+
+    @staticmethod
+    def reset(sample_idx):
+        """Reset layer variables."""
+
+        pass
+
+    @property
+    def class_name(self):
+        """Get class name."""
+
+        return self.__class__.__name__
+
+
+class SpikeReshape(Reshape):
+    """Spike reshape layer"""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.pop(str('config'))
+        Reshape.__init__(self, *args, **kwargs)
+
+    @staticmethod
+    def get_time():
+        pass
+
+    @staticmethod
+    def reset(sample_idx):
+        """Reset layer variables."""
+
+        pass
+
+    @property
+    def class_name(self):
+        """Get class name."""
+
+        return self.__class__.__name__
+
+
 class SpikeFlatten(Flatten):
     """Spike flatten layer."""
 
@@ -391,6 +440,30 @@ class SpikeConv2D(Conv2D, SpikeLayer):
         return Conv2D.call(self, x)
 
 
+class SpikeDepthwiseConv2D(DepthwiseConv2D, SpikeLayer):
+    """Spike 2D depthwise-separable convolution."""
+
+    def build(self, input_shape):
+        """Creates the layer weights.
+        Must be implemented on all layers that have weights.
+
+        Parameters
+        ----------
+
+        input_shape: Union[list, tuple, Any]
+            Keras tensor (future input to layer) or list/tuple of Keras tensors
+            to reference for weight shape computations.
+        """
+
+        DepthwiseConv2D.build(self, input_shape)
+        self.init_neurons(input_shape)
+
+    @spike_call
+    def call(self, x, mask=None):
+
+        return DepthwiseConv2D.call(self, x)
+
+
 class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
     """Average Pooling."""
 
@@ -441,8 +514,8 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
         input_psp = MaxPooling2D.call(self, x)
 
         if self.spiketrain is not None:
-            new_spikes = tf.logical_xor(k.greater(input_psp, 0),
-                                        k.greater(self.last_spiketimes, 0))
+            new_spikes = tf.math.logical_xor(
+                k.greater(input_psp, 0), k.greater(self.last_spiketimes, 0))
             self.add_update([(self.spiketrain,
                               self.time * k.cast(new_spikes, k.floatx()))])
 
@@ -456,4 +529,7 @@ custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeConv2D': SpikeConv2D,
                  'SpikeAveragePooling2D': SpikeAveragePooling2D,
                  'SpikeMaxPooling2D': SpikeMaxPooling2D,
-                 'SpikeConcatenate': SpikeConcatenate}
+                 'SpikeConcatenate': SpikeConcatenate,
+                 'SpikeDepthwiseConv2D': SpikeDepthwiseConv2D,
+                 'SpikeZeroPadding2D': SpikeZeroPadding2D,
+                 'SpikeReshape': SpikeReshape}

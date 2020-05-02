@@ -24,8 +24,9 @@ from future import standard_library
 import tensorflow as tf
 from keras import backend as k
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
-from keras.layers import Layer, Concatenate
-
+from keras.layers import Layer, DepthwiseConv2D
+from snntoolbox.simulation.backends.inisim.ttfs import SpikeConcatenate, \
+    SpikeZeroPadding2D, SpikeReshape
 standard_library.install_aliases()
 
 
@@ -103,13 +104,13 @@ class SpikeLayer(Layer):
                                   self.refrac_until)
         c = new_refrac[:self.batch_size]
         cc = k.concatenate([c, c], 0)
-        updates = [tf.assign(self.refrac_until, cc)]
+        updates = [self.refrac_until.assign(cc)]
 
         if self.spiketrain is not None:
             c = self.time * k.cast(k.not_equal(output_spikes, 0),
                                    k.floatx())[:self.batch_size]
             cc = k.concatenate([c, c], 0)
-            updates += [tf.assign(self.spiketrain, cc)]
+            updates += [self.spiketrain.assign(cc)]
 
         with tf.control_dependencies(updates):
             masked_impulse = \
@@ -117,10 +118,10 @@ class SpikeLayer(Layer):
                          k.zeros_like(self.impulse), self.impulse)
             c = k.greater(masked_impulse, 0)[:self.batch_size]
             cc = k.cast(k.concatenate([c, c], 0), k.floatx())
-            updates = [tf.assign(self.prospective_spikes, cc)]
+            updates = [self.prospective_spikes.assign(cc)]
             new_thresh = self._v_thresh * k.ones_like(self.v_thresh) + \
                 self.missing_impulse
-            updates += [tf.assign(self.v_thresh, new_thresh)]
+            updates += [self.v_thresh.assign(new_thresh)]
 
             with tf.control_dependencies(updates):
                 # Compute post-synaptic potential.
@@ -177,8 +178,7 @@ class SpikeLayer(Layer):
             new_spiketimes = tf.where(k.not_equal(output_spikes, 0),
                                       k.ones_like(output_spikes) * self.time,
                                       self.last_spiketimes)
-            assign_new_spiketimes = tf.assign(self.last_spiketimes,
-                                              new_spiketimes)
+            assign_new_spiketimes = self.last_spiketimes.assign(new_spiketimes)
             with tf.control_dependencies([assign_new_spiketimes]):
                 last_spiketimes = self.last_spiketimes + 0  # Dummy op
                 psp = tf.where(k.greater(last_spiketimes, 0),
@@ -313,27 +313,27 @@ def spike_call(call):
     def decorator(self, x):
 
         updates = []
-        if len(self.weights) > 0:
-            store_old_kernel = tf.assign(self._kernel, self.kernel)
-            store_old_bias = tf.assign(self._bias, self.bias)
+        if hasattr(self, 'kernel'):
+            store_old_kernel = self._kernel.assign(self.kernel)
+            store_old_bias = self._bias.assign(self.bias)
             updates += [store_old_kernel, store_old_bias]
             with tf.control_dependencies(updates):
                 new_kernel = k.abs(self.kernel)
                 new_bias = k.zeros_like(self.bias)
-                assign_new_kernel = tf.assign(self.kernel, new_kernel)
-                assign_new_bias = tf.assign(self.bias, new_bias)
+                assign_new_kernel = self.kernel.assign(new_kernel)
+                assign_new_bias = self.bias.assign(new_bias)
                 updates += [assign_new_kernel, assign_new_bias]
             with tf.control_dependencies(updates):
                 c = call(self, x)[self.batch_size:]
                 cc = k.concatenate([c, c], 0)
-                updates = [tf.assign(self.missing_impulse, cc)]
+                updates = [self.missing_impulse.assign(cc)]
                 with tf.control_dependencies(updates):
-                    updates = [tf.assign(self.kernel, self._kernel),
-                               tf.assign(self.bias, self._bias)]
+                    updates = [self.kernel.assign(self._kernel),
+                               self.bias.assign(self._bias)]
         elif 'AveragePooling' in self.name:
             c = call(self, x)[self.batch_size:]
             cc = k.concatenate([c, c], 0)
-            updates = [tf.assign(self.missing_impulse, cc)]
+            updates = [self.missing_impulse.assign(cc)]
         else:
             updates = []
 
@@ -350,31 +350,6 @@ def spike_call(call):
                               self.prospective_spikes[self.batch_size:]], 0)
 
     return decorator
-
-
-class SpikeConcatenate(Concatenate):
-    """Spike merge layer"""
-
-    def __init__(self, axis, **kwargs):
-        kwargs.pop(str('config'))
-        Concatenate.__init__(self, axis, **kwargs)
-
-    @staticmethod
-    def get_time():
-
-        pass
-
-    @staticmethod
-    def reset(sample_idx):
-        """Reset layer variables."""
-
-        pass
-
-    @property
-    def class_name(self):
-        """Get class name."""
-
-        return self.__class__.__name__
 
 
 class SpikeFlatten(Flatten):
@@ -426,8 +401,8 @@ class SpikeDense(Dense, SpikeLayer):
 
         Dense.build(self, input_shape)
         self.init_neurons(input_shape)
-        self._kernel = k.variable(k.zeros_like(self.kernel))
-        self._bias = k.variable(k.zeros_like(self.bias))
+        self._kernel = tf.Variable(lambda : tf.zeros_like(self.kernel))
+        self._bias = tf.Variable(lambda : tf.zeros_like(self.bias))
 
     @spike_call
     def call(self, x, **kwargs):
@@ -452,13 +427,40 @@ class SpikeConv2D(Conv2D, SpikeLayer):
 
         Conv2D.build(self, input_shape)
         self.init_neurons(input_shape)
-        self._kernel = k.variable(k.zeros_like(self.kernel))
-        self._bias = k.variable(k.zeros_like(self.bias))
+        self._kernel = tf.Variable(lambda : tf.zeros_like(self.kernel))
+        self._bias = tf.Variable(lambda : tf.zeros_like(self.bias))
 
     @spike_call
     def call(self, x, mask=None):
 
         return Conv2D.call(self, x)
+
+
+class SpikeDepthwiseConv2D(DepthwiseConv2D, SpikeLayer):
+    """Spike 2D depthwise-separable convolution."""
+
+    def build(self, input_shape):
+        """Creates the layer weights.
+        Must be implemented on all layers that have weights.
+
+        Parameters
+        ----------
+
+        input_shape: Union[list, tuple, Any]
+            Keras tensor (future input to layer) or list/tuple of Keras tensors
+            to reference for weight shape computations.
+        """
+
+        DepthwiseConv2D.build(self, input_shape)
+        self.init_neurons(input_shape)
+        self.kernel = self.depthwise_kernel
+        self._kernel = tf.Variable(lambda : tf.zeros_like(self.kernel))
+        self._bias = tf.Variable(lambda : tf.zeros_like(self.bias))
+
+    @spike_call
+    def call(self, x, mask=None):
+
+        return DepthwiseConv2D.call(self, x)
 
 
 class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
@@ -511,8 +513,8 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
         input_psp = MaxPooling2D.call(self, x)
 
         if self.spiketrain is not None:
-            new_spikes = tf.logical_xor(k.greater(input_psp, 0),
-                                        k.greater(self.last_spiketimes, 0))
+            new_spikes = tf.math.logical_xor(
+                k.greater(input_psp, 0), k.greater(self.last_spiketimes, 0))
             self.add_update([(self.spiketrain,
                               self.time * k.cast(new_spikes, k.floatx()))])
 
@@ -526,4 +528,7 @@ custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeConv2D': SpikeConv2D,
                  'SpikeAveragePooling2D': SpikeAveragePooling2D,
                  'SpikeMaxPooling2D': SpikeMaxPooling2D,
-                 'SpikeConcatenate': SpikeConcatenate}
+                 'SpikeConcatenate': SpikeConcatenate,
+                 'SpikeDepthwiseConv2D': SpikeDepthwiseConv2D,
+                 'SpikeZeroPadding2D': SpikeZeroPadding2D,
+                 'SpikeReshape': SpikeReshape}
