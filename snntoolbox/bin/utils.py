@@ -78,13 +78,13 @@ def run_pipeline(config, queue=None):
                                      config.get('paths', 'filename_ann'))
 
         # Evaluate input model.
-        if config.getboolean('tools', 'evaluate_ann') and not is_stop(queue):
-            print("Evaluating input model on {} samples...".format(
-                num_to_test))
-            acc = model_lib.evaluate(input_model['val_fn'],
-                                     config.getint('simulation', 'batch_size'),
-                                     num_to_test, **testset)
-            results = [acc]
+        # if config.getboolean('tools', 'evaluate_ann') and not is_stop(queue):
+        #     print("Evaluating input model on {} samples...".format(
+        #         num_to_test))
+        #     acc = model_lib.evaluate(input_model['model'], input_model['val_fn'],
+        #                              config.getint('simulation', 'batch_size'),
+        #                              num_to_test, **testset)
+        #     results = [acc]
 
         # ____________________________ PARSE ________________________________ #
 

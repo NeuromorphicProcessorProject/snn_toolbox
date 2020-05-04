@@ -178,7 +178,7 @@ def load(path, filename, **kwargs):
     return {'model': model, 'val_fn': model.evaluate}
 
 
-def evaluate(val_fn, batch_size, num_to_test, x_test=None, y_test=None,
+def evaluate(model, val_fn, batch_size, num_to_test, x_test=None, y_test=None,
              dataflow=None):
     """Evaluate the original ANN.
 
@@ -214,6 +214,10 @@ def evaluate(val_fn, batch_size, num_to_test, x_test=None, y_test=None,
             x_batch, y_batch = dataflow.next()
             score += val_fn(x_batch, y_batch, batch_size, verbose=0)
         score /= batches
+    # x_batch, y_batch = dataflow.next()
+    # scores = model.evaluate(x_batch, y_batch, verbose=2)
+    # print('Test loss:', scores[0])
+    # print('Test accuracy:', scores[1])
 
     print("Top-1 accuracy: {:.2%}".format(score[1]))
     print("Top-5 accuracy: {:.2%}\n".format(score[2]))

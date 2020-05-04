@@ -175,11 +175,10 @@ def try_get_normset_from_scalefacs(config):
         return
     filepath = os.path.join(newpath, config.get('normalization',
                                                 'percentile') + '.json')
-    #qinyu changes
-    # if os.path.isfile(filepath):
-    #     print("Loading scale factors from disk instead of recalculating.")
-    #     with open(filepath) as f:
-    #         return {'scale_facs': json.load(f)}
+    if os.path.isfile(filepath):
+        print("Loading scale factors from disk instead of recalculating.")
+        with open(filepath) as f:
+            return {'scale_facs': json.load(f)}
 
 
 def to_categorical(y, nb_classes):

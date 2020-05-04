@@ -134,12 +134,14 @@ def normalize_parameters(model, config, **kwargs):
     # is used to keep the channel the same, and prepare for point-wise addition in the Add layers. Here we call it channel-adaptive shortcut.
     test_idx = 0
     res_block = []
-    res_block.append(1)
     for layer in model.layers:
+        if get_type(layer) == 'Dense':
+            res_block.append(test_idx)
+            continue
         if len(layer.weights) == 0:
             continue
-        inbound_identity_test = get_inbound_layers(layer)
-        if get_type(inbound_identity_test[0]) == 'Add':
+        outbound_identity_test = get_outbound_layers(layer)
+        if get_type(outbound_identity_test[0]) == 'Add':
             test_idx += 1
         else:
             if test_idx != 0:
@@ -148,10 +150,48 @@ def normalize_parameters(model, config, **kwargs):
     res_block.append(0)
     res_block = np.array(res_block)
 
+
+    # test_idx = 0
+    # res_block = []
+    # res_block.append(1)
+    # for layer in model.layers:
+    #     if len(layer.weights) == 0:
+    #         continue
+    #     inbound_identity_test = get_inbound_layers(layer)
+    #     if get_type(inbound_identity_test[0]) == 'Add':
+    #         test_idx += 1
+    #     else:
+    #         if test_idx != 0:
+    #             res_block.append(test_idx)
+    #         test_idx = 0
+    # res_block.append(0)
+    # res_block = np.array(res_block)
+
     # Apply scale factors to normalize the parameters.
+    layernum_per_res = 0
+    i = 0
+    for layer in model.layers:
+        if get_type(layer) == 'Add':
+            if i > 1:
+                continue
+            if i == 0:
+                index = model.layers.index(layer)
+                index_previous = index
+            elif i == 1:
+                index = model.layers.index(layer)
+                layernum_per_res = index - index_previous
+                if res_block[i] == 1:
+                    layernum_per_res = layernum_per_res - 1
+                else:
+                    layernum_per_res = layernum_per_res - 2
+            i += 1
+
+
     s_para_idx = 0
     i = 0
     ii = 0
+    flag = False
+
     # compensation factors
     gamma = 1.04  #(1.0 ~ 1.1)
     beta = 1.21   #(1.0 ~ 1.3)
@@ -192,14 +232,25 @@ def normalize_parameters(model, config, **kwargs):
                     scale_fac1 = scale_facs[layer.name]
                     index = model.layers.index(layer)
                     if i == 0:
-                        scale_fac2 = scale_facs[model.layers[index - 2].name]  # The first CONV layer in resblock, passing no Add layer before.
+                        scale_fac2 = scale_facs[model.layers[index - layernum_per_res].name]  # The first CONV layer in resblock, passing no Add layer before.
                     else:
-                        scale_fac2 = scale_facs[model.layers[index - 3].name]
+                        scale_fac2 = scale_facs[model.layers[index - layernum_per_res - 1].name]
                     scale_fac = np.sqrt(scale_fac1 * scale_fac2 / gamma)
                     scale_facs[layer.name] = scale_fac
+                    scale_fac_rec1 = scale_fac
                 if res_block[i] == 2:  # CONV layer in the non-identity branch of the resblock
-                    scale_facs[layer.name] = scale_fac_rec
-                    scale_fac = scale_fac_rec  # scale_fac_rec is calculated before in the CONV layer of the identity branch.
+                    if flag == False:
+                        scale_fac1 = scale_facs[layer.name]
+                        index = model.layers.index(layer)
+                        scale_fac2 = scale_facs[model.layers[index + 1].name]
+                        scale_fac = np.sqrt(scale_fac1 * scale_fac2 * beta)  # beta is the compensation factor.
+                        scale_fac_rec = scale_fac  # record the scale_fac, which will be used in the next CONV layer located at the non-identity branch.
+                        scale_facs[layer.name] = scale_fac
+                        flag = True
+                    else:
+                        scale_facs[layer.name] = scale_fac_rec
+                        scale_fac = scale_fac_rec  # scale_fac_rec is calculated before in the CONV layer of the identity branch.
+                        flag = False
             parameters_norm = [
                 parameters[0] * scale_facs[inbound[0].name] / scale_fac,
                 parameters[1] / scale_fac]
@@ -229,22 +280,32 @@ def normalize_parameters(model, config, **kwargs):
                     outbound = get_outbound_layers(layer)
                     outbound_type = get_type(outbound[0])
                 if outbound_type == 'Add':
-                    scale_fac1 = scale_facs[layer.name]
-                    index = model.layers.index(layer)
-                    scale_fac2 = scale_facs[model.layers[index + 1].name]
-                    scale_fac = np.sqrt(scale_fac1 * scale_fac2 * beta)  # beta is the compensation factor.
-                    scale_fac_rec = scale_fac  # record the scale_fac, which will be used in the next CONV layer located at the non-identity branch.
-                    scale_facs[layer.name] = scale_fac
+                    if flag == False:
+                        scale_fac1 = scale_facs[layer.name]
+                        index = model.layers.index(layer)
+                        scale_fac2 = scale_facs[model.layers[index + 1].name]
+                        scale_fac = np.sqrt(scale_fac1 * scale_fac2 * beta)  # beta is the compensation factor.
+                        scale_fac_rec = scale_fac  # record the scale_fac, which will be used in the next CONV layer located at the non-identity branch.
+                        scale_facs[layer.name] = scale_fac
+                        flag = True
+                    else:
+                        scale_fac = scale_fac_rec
+                        scale_facs[layer.name] = scale_fac_rec
+                        flag = False
+
                     # scale_facs[model.layers[index + 1].name] = scale_fac
 
             # get the scale_fac of the previous layer.
             if res_block[i] == 1 and res_block[i - 1] == 2:
                 scale_facs_mean = scale_fac_rec
             else:
-                scale_facs_mean = scale_facs[inbound[s_para_idx + 1].name]
+                # scale_facs_mean = scale_facs[inbound[s_para_idx + 1].name]
+                index = model.layers.index(layer)
+                # scale_facs_mean = scale_facs[model.layers[index - 2].name]
+                scale_facs_mean = scale_fac_rec1
 
-            scale_facs[inbound[s_para_idx].name] = scale_facs_mean
-            scale_facs[inbound[s_para_idx + 1].name] = scale_facs_mean
+            # scale_facs[inbound[s_para_idx].name] = scale_facs_mean
+            # scale_facs[inbound[s_para_idx + 1].name] = scale_facs_mean
 
             if parameters[0].ndim == 4:
                 if network_mode == 0:
@@ -258,11 +319,11 @@ def normalize_parameters(model, config, **kwargs):
                         offset += f_out
                 elif network_mode == 1:
                     parameters_norm = [
-                        parameters[0] * scale_facs[inbound[s_para_idx + 1].name] / scale_fac,
+                        parameters[0] * scale_facs_mean / scale_fac,
                         parameters[1] / scale_fac]
             else:
                 parameters_norm = [
-                    parameters[0] * scale_facs[inbound[s_para_idx + 1].name] / scale_fac,
+                    parameters[0] * scale_facs_mean / scale_fac,
                     parameters[1] / scale_fac]
 
             s_para_idx += 1
