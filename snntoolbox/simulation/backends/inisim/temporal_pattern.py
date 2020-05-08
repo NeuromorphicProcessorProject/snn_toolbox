@@ -80,9 +80,18 @@ class SpikeLayer(Layer):
 
 def spike_call(call):
     def decorator(self, x):
+
+        mask_pos = tf.greater_equal(x, 0)
+        mask_neg = tf.logical_not(mask_pos)
+        x_neg = tf.where(mask_neg, x, tf.zeros([1]))
+        x_pos = tf.where(mask_pos, x, tf.zeros([1]))
+
         # Transform x into binary format here. Effective batch_size increases
         # from 1 to num_bits.
-        x_binary = to_binary(x, self.num_bits)
+        x_binary_neg = to_binary(-x_neg, self.num_bits)
+        x_binary_pos = to_binary(x_pos, self.num_bits)
+
+        x_binary = tf.where(mask_pos, x_binary_pos, -x_binary_neg)
 
         # Multiply binary feature map matrix by PSP kernel which decays
         # exponentially across the 32 temporal steps (batch-dimension).

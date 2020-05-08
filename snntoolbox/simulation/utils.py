@@ -615,8 +615,8 @@ class AbstractSNN:
             self.top1err_b_t = guesses_b_t != np.broadcast_to(
                 np.expand_dims(truth_b, -1), guesses_b_t.shape)
             for t in range(self._num_timesteps):
-                self.top5err_b_t[:, t] = ~in_top_k(output_b_l_t[:, :, t],
-                                                   truth_b, self.top_k)
+                self.top5err_b_t[:, t] = np.logical_not(
+                    in_top_k(output_b_l_t[:, :, t], truth_b, self.top_k))
 
             # Add results of current batch to previous results.
             truth_d += list(truth_b)
