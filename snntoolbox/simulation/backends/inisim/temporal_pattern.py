@@ -19,11 +19,10 @@ from __future__ import print_function, unicode_literals
 import numpy as np
 from future import standard_library
 import tensorflow as tf
-from keras import backend as k
-from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, \
-    Conv2D, DepthwiseConv2D, Reshape, ZeroPadding2D
-from keras.layers import Layer, Concatenate
-from keras.activations import softmax, relu
+import tensorflow.keras.backend as k
+from tensorflow.keras.layers import Dense, Flatten, AveragePooling2D, Layer, \
+    MaxPooling2D, Conv2D, Concatenate, DepthwiseConv2D, Reshape, ZeroPadding2D
+from tensorflow.keras.activations import softmax, relu
 
 standard_library.install_aliases()
 
@@ -36,7 +35,9 @@ class SpikeLayer(Layer):
         self.layer_type = self.class_name
         self.spikerates = None
         self.num_bits = self.config.getint('conversion', 'num_bits')
-
+        self.powers = k.constant([2**-(i+1) for i in range(self.num_bits)],
+                                 k.floatx(), (self.num_bits,))
+        self._x_binary = None
         allowed_kwargs = {'input_shape',
                           'batch_input_shape',
                           'batch_size',
@@ -88,16 +89,18 @@ def spike_call(call):
 
         # Transform x into binary format here. Effective batch_size increases
         # from 1 to num_bits.
-        x_binary_neg = to_binary(-x_neg, self.num_bits)
-        x_binary_pos = to_binary(x_pos, self.num_bits)
+        if self._x_binary is None:
+            shape = [self.num_bits] + list(k.int_shape(x)[1:])
+            self._x_binary = k.zeros(shape, k.floatx())
+        x_binary_neg = to_binary(-x_neg, self.powers, self._x_binary)
+        x_binary_pos = to_binary(x_pos, self.powers, self._x_binary)
 
         x_binary = tf.where(mask_pos, x_binary_pos, -x_binary_neg)
 
         # Multiply binary feature map matrix by PSP kernel which decays
         # exponentially across the 32 temporal steps (batch-dimension).
         shape = [self.num_bits] + [1] * len(x.shape[1:])
-        x_powers = x_binary * k.constant(
-            [2**-(i+1) for i in range(self.num_bits)], k.floatx(), shape)
+        x_powers = tf.multiply(x_binary, tf.reshape(self.powers, shape))
         x_weighted = call(self, x_powers)
         x_preactiv = k.sum(x_weighted, 0, keepdims=True)
         x_activ = softmax(x_preactiv) if self.activation_str == 'softmax' \
@@ -110,34 +113,36 @@ def spike_call(call):
 
     return decorator
 
-
-def to_binary(x, num_bits):
+def to_binary(x, powers, x_binary):
     """Transform an array of floats into binary representation.
 
     Parameters
     ----------
 
-    x: ndarray
-        Input array containing float values. The first dimension has to be of
+    x: tf.Tensor
+        Input tensor containing float values. The first dimension has to be of
         length 1.
-    num_bits: int
-        The fixed point precision to be used when converting to binary.
+    powers: tf.Tensor
+        Vector of length ``num_bits`` containing
+        [2^-1, 2^-2, ..., 2^-num_bits].
+    x_binary: tf.Variable
+        The output array to be filled in. Will be fully overwritten. We pass
+        this container in as an argument to avoid creating it at every call
+        (tensorflow throws error).
 
     Returns
     -------
 
-    binary_array: ndarray
-        Output boolean array. The first dimension of x is expanded to length
-        ``bits``. The binary representation of each value in ``x`` is
-        distributed across the first dimension of ``binary_array``.
+    x_binary: tf.Variable
+        Output boolean array. The first dimension of ``x`` is expanded to
+        length ``num_bits``. The binary representation of each value in ``x``
+        is distributed across the first dimension of ``x_binary``.
     """
 
     shape = k.int_shape(x)
 
-    binary_array = k.zeros([num_bits] + list(shape[1:]), k.floatx())
+    num_bits = len(powers)
 
-    powers = k.constant(
-        [2**-(i+1) for i in range(num_bits)], k.floatx(), (num_bits,))
     idx_p0 = k.constant(0, 'int32')
 
     if len(shape) > 2:
@@ -186,7 +191,7 @@ def to_binary(x, num_bits):
             p = powers[idx_p]
             c = k.greater_equal(act_value, p)
             b = tf.cond(c, lambda: 1., lambda: 0.)
-            a = binary_array[idx_p, idx_l, idx_m, idx_n].assign(b)
+            a = x_binary[idx_p, idx_l, idx_m, idx_n].assign(b)
             new_act_value = tf.cond(c, lambda: act_value - p,
                                     lambda: act_value)
             with tf.control_dependencies([a]):
@@ -196,7 +201,7 @@ def to_binary(x, num_bits):
             is_iterate_neurons_l, iterate_neurons_l,
             [idx_p0, idx_l0, idx_m0, idx_n0])
         with tf.control_dependencies([idx_p_, idx_l_, idx_m_, idx_n_]):
-            return binary_array + 0
+            return x_binary + 0
     else:
         idx_l0 = k.constant(0, 'int32')
 
@@ -219,7 +224,7 @@ def to_binary(x, num_bits):
             p = powers[idx_p]
             c = k.greater_equal(act_value, p)
             b = tf.cond(c, lambda: 1., lambda: 0.)
-            a = binary_array[idx_p, idx_l].assign(b)
+            a = x_binary[idx_p, idx_l].assign(b)
             new_act_value = tf.cond(c, lambda: act_value - p,
                                     lambda: act_value)
             with tf.control_dependencies([a]):
@@ -229,7 +234,7 @@ def to_binary(x, num_bits):
             is_iterate_neurons_l, iterate_neurons_l, [idx_p0, idx_l0])
 
         with tf.control_dependencies([idx_p_, idx_l_]):
-            return binary_array + 0
+            return x_binary + 0
 
 
 def to_binary_numpy(x, num_bits):
@@ -438,9 +443,6 @@ class SpikeDepthwiseConv2D(DepthwiseConv2D, SpikeLayer):
 class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
     """Spike Average Pooling layer."""
 
-    def __init__(self, **kwargs):
-        AveragePooling2D.__init__(self, **kwargs)
-
     def build(self, input_shape):
         """Creates the layer weights.
         Must be implemented on all layers that have weights.
@@ -467,9 +469,6 @@ class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
 
 class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
     """Spike Max Pooling."""
-
-    def __init__(self, **kwargs):
-        MaxPooling2D.__init__(self, **kwargs)
 
     def build(self, input_shape):
         """Creates the layer neurons and connections..

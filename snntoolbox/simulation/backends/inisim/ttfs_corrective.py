@@ -22,9 +22,9 @@ from __future__ import print_function, unicode_literals
 import numpy as np
 from future import standard_library
 import tensorflow as tf
-from keras import backend as k
-from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
-from keras.layers import Layer, Concatenate
+import tensorflow.keras.backend as k
+from tensorflow.keras.layers import Dense, Flatten, AveragePooling2D, \
+    MaxPooling2D, Conv2D, Layer, Concatenate
 
 standard_library.install_aliases()
 

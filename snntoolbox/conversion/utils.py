@@ -17,7 +17,7 @@ from __future__ import print_function, unicode_literals
 
 import os
 
-import keras
+from tensorflow.keras.models import Model
 import numpy as np
 from future import standard_library
 
@@ -354,7 +354,7 @@ def get_activations_layer(layer_in, layer_out, x, batch_size=None):
     if len(x) % batch_size != 0:
         x = x[: -(len(x) % batch_size)]
 
-    return keras.models.Model(layer_in, layer_out).predict(x, batch_size)
+    return Model(layer_in, layer_out).predict(x, batch_size)
 
 
 def get_activations_batch(ann, x_batch):
@@ -393,8 +393,7 @@ def get_activations_batch(ann, x_batch):
                                         'Concatenate', 'ZeroPadding2D',
                                         'Reshape']:
             continue
-        activations = keras.models.Model(
-            ann.input, layer.output).predict_on_batch(x_batch)
+        activations = Model(ann.input, layer.output).predict_on_batch(x_batch)
         activations_batch.append((activations, layer.name))
     return activations_batch
 

@@ -17,9 +17,9 @@ from abc import abstractmethod
 import numpy as np
 
 from snntoolbox.bin.utils import get_log_keys, get_plot_keys
-from snntoolbox.parsing.utils import get_type
+from snntoolbox.parsing.utils import get_type, fix_input_layer_shape
 from snntoolbox.utils.utils import echo
-import keras
+from tensorflow import keras
 
 
 class AbstractSNN:
@@ -422,7 +422,8 @@ class AbstractSNN:
                                                               'top_k'))
 
         # Get batch input shape
-        batch_shape = list(parsed_model.layers[0].batch_input_shape)
+        batch_shape = \
+            list(fix_input_layer_shape(parsed_model.layers[0].input_shape))
         batch_shape[0] = self.batch_size
         if self.config.get('conversion', 'spike_code') == 'ttfs_dyn_thresh':
             batch_shape[0] *= 2

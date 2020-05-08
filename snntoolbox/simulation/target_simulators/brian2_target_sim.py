@@ -265,7 +265,7 @@ class SNN(AbstractSNN):
                 np.savez(filepath, self.connections[i].w)
 
     def load(self, path, filename):
-        import keras
+        from tensorflow.keras.models import load_model
         from snntoolbox.parsing.utils import get_type
         from snntoolbox.simulation.utils import get_ann_ops
 
@@ -274,7 +274,7 @@ class SNN(AbstractSNN):
                      if os.path.isfile(os.path.join(dirpath, f))]
         print("Loading spiking model...")
 
-        self.parsed_model = keras.models.load_model(
+        self.parsed_model = load_model(
             os.path.join(self.config.get('paths', 'path_wd'),
                          self.config.get('paths',
                                          'filename_parsed_model') + '.h5'))

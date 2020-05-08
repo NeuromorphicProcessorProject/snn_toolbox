@@ -7,10 +7,10 @@
 import os
 import numpy as np
 
-import keras
 import torch
 import onnx
 import onnxruntime
+from tensorflow.keras import backend, models, metrics
 
 from snntoolbox.parsing.model_libs import keras_input_lib
 from snntoolbox.utils.utils import import_script
@@ -101,7 +101,7 @@ def load(path, filename):
                                rtol=1e-03, atol=1e-05, err_msg=err_msg)
     print("Pytorch model was successfully ported to ONNX.")
 
-    change_ordering = keras.backend.image_data_format() == 'channels_last'
+    change_ordering = backend.image_data_format() == 'channels_last'
     if change_ordering:
         input_numpy = np.moveaxis(input_numpy, 1, -1)
         output_numpy = np.moveaxis(output_numpy, 1, -1)
@@ -112,16 +112,12 @@ def load(path, filename):
     model_keras = onnx_to_keras(model_onnx, input_names, [input_shape[1:]],
                                 change_ordering=change_ordering, verbose=False)
     if change_ordering:
-        keras.backend.set_image_data_format('channels_last')
+        backend.set_image_data_format('channels_last')
 
     # Save the keras model.
-    keras.models.save_model(model_keras, filepath + '.h5')
-
-    # Loading the model here is a workaround for version conflicts with
-    # TF > 2.0.1 and keras > 2.2.5. Should be able to remove this later.
-    model_keras = keras.models.load_model(filepath + '.h5')
     model_keras.compile('sgd', 'categorical_crossentropy',
-                        ['accuracy', keras.metrics.top_k_categorical_accuracy])
+                        ['accuracy', metrics.top_k_categorical_accuracy])
+    models.save_model(model_keras, filepath + '.h5')
 
     # Compute Keras output and compare against ONNX.
     output_keras = model_keras.predict(input_numpy)

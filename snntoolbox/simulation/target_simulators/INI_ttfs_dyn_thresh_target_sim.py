@@ -8,7 +8,7 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 import sys
-import keras
+from tensorflow import keras
 import numpy as np
 from future import standard_library
 

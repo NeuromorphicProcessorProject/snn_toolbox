@@ -34,7 +34,7 @@ connectivity and layer attributes:
 
 from abc import abstractmethod
 
-import keras
+from tensorflow import keras
 import numpy as np
 
 
@@ -1020,6 +1020,8 @@ def get_inbound_layers(layer):
         inbound_layers = layer._inbound_nodes[0].inbound_layers
     except AttributeError:  # For Keras backward-compatibility.
         inbound_layers = layer.inbound_nodes[0].inbound_layers
+    if not isinstance(inbound_layers, (list, tuple)):
+        inbound_layers = [inbound_layers]
     return inbound_layers
 
 
@@ -1136,7 +1138,10 @@ def get_fanout(layer, config):
     fanout = 0
     for next_layer in next_layers:
         if 'Conv' in next_layer.name and not has_stride_unity(next_layer):
-            fanout = np.zeros(layer.output_shape[1:])
+            shape = layer.output_shape
+            if 'input' in layer.name:
+                shape = fix_input_layer_shape(shape)
+            fanout = np.zeros(shape[1:])
             break
 
     for next_layer in next_layers:
@@ -1182,7 +1187,10 @@ def get_fanout_array(layer_pre, layer_post, is_depthwise_conv=False):
     sx = layer_post.strides[1]
     sy = layer_post.strides[0]
 
-    fanout = np.zeros(layer_pre.output_shape[1:])
+    shape = layer_pre.output_shape
+    if 'input' in layer_pre.name:
+        shape = fix_input_layer_shape(shape)
+    fanout = np.zeros(shape[1:])
 
     for y_pre in range(fanout.shape[0 + ax]):
         y_post = [int((y_pre + py) / sy)]
@@ -1447,7 +1455,19 @@ def precision(y_true, y_pred):
     precision.
     """
 
-    import keras.backend as k
+    import tensorflow.keras.backend as k
     true_positives = k.sum(k.round(k.clip(y_true * y_pred, 0, 1)))
     predicted_positives = k.sum(k.round(k.clip(y_pred, 0, 1)))
     return true_positives / (predicted_positives + k.epsilon())
+
+
+def fix_input_layer_shape(shape):
+    """
+    tf.keras.models.load_model function introduced a bug that wraps the input
+    tensors and shapes in a single-entry list, i.e.
+    output_shape == [(None, 1, 28, 28)]. Thus we have to apply [0] here.
+    """
+
+    if len(shape) == 1:
+        return shape[0]
+    return shape

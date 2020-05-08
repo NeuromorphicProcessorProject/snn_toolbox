@@ -299,7 +299,7 @@ def update_setup(config_filepath):
     os.environ['KERAS_BACKEND'] = keras_backend
     # The keras import has to happen after setting the backend environment
     # variable!
-    import keras.backend as k
+    import tensorflow.keras.backend as k
     assert k.backend() == keras_backend, \
         "Keras backend set to {} in snntoolbox config file, but has already " \
         "been set to {} by a previous keras import. Set backend " \

@@ -10,7 +10,7 @@ from __future__ import print_function, unicode_literals
 import os
 import sys
 
-import keras
+from tensorflow import keras
 import numpy as np
 from future import standard_library
 
@@ -63,8 +63,10 @@ class SNN(AbstractSNN):
         from snntoolbox.parsing.utils import get_type
         spike_layer_name = getattr(self.sim, 'Spike' + get_type(layer))
         # noinspection PyProtectedMember
-        inbound = [self._spiking_layers[inb.name] for inb in
-                   layer._inbound_nodes[0].inbound_layers]
+        inbound = layer._inbound_nodes[0].inbound_layers
+        if not isinstance(inbound, (list, tuple)):
+            inbound = [inbound]
+        inbound = [self._spiking_layers[inb.name] for inb in inbound]
         if len(inbound) == 1:
             inbound = inbound[0]
         layer_kwargs = layer.get_config()

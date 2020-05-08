@@ -13,7 +13,7 @@ import os
 import warnings
 
 import numpy as np
-import keras
+from tensorflow import keras
 from snntoolbox.utils.utils import confirm_overwrite
 from snntoolbox.simulation.target_simulators.pyNN_target_sim import SNN as PYSNN
 

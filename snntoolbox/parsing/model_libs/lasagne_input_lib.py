@@ -98,7 +98,7 @@ class ModelParser(AbstractModelParser):
     def parse_convolution(self, layer, attributes):
         weights = layer.W.get_value()
         weights = np.transpose(weights, (2, 3, 1, 0))
-        import keras
+        from tensorflow import keras
         if keras.backend.backend() != 'theano':  # Assumes lasagne uses theano.
             weights = keras.utils.conv_utils.convert_kernel(weights)
         bias = layer.b.get_value()

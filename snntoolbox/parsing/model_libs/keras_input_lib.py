@@ -5,8 +5,8 @@
 """
 
 import numpy as np
-import keras.backend as k
-from snntoolbox.parsing.utils import AbstractModelParser
+import tensorflow.keras.backend as k
+from snntoolbox.parsing.utils import AbstractModelParser, fix_input_layer_shape
 
 
 class ModelParser(AbstractModelParser):
@@ -27,6 +27,9 @@ class ModelParser(AbstractModelParser):
         beta = np.zeros_like(mean) if layer.beta is None else \
             k.get_value(layer.beta)
         axis = layer.axis
+        if isinstance(axis, (list, tuple)):
+            assert len(axis) == 1, "Multiple BatchNorm axes not understood."
+            axis = axis[0]
 
         return [mean, var_eps_sqrt_inv, gamma, beta, axis]
 
@@ -49,7 +52,8 @@ class ModelParser(AbstractModelParser):
         return attributes
 
     def get_input_shape(self):
-        return tuple(self.get_layer_iterable()[0].batch_input_shape[1:])
+        return \
+            fix_input_layer_shape(self.get_layer_iterable()[0].input_shape)[1:]
 
     def get_output_shape(self, layer):
         return layer.output_shape
@@ -134,7 +138,7 @@ def load(path, filename, **kwargs):
     """
 
     import os
-    from keras import models, metrics
+    from tensorflow.keras import models, metrics
 
     filepath = str(os.path.join(path, filename))
 

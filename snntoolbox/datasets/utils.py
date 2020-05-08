@@ -93,7 +93,7 @@ def get_dataset(config):
 
     # ________________________________ jpg ___________________________________#
     elif config.get('input', 'dataset_format') in {'jpg', 'png'}:
-        from keras.preprocessing.image import ImageDataGenerator
+        from tensorflow.keras.preprocessing.image import ImageDataGenerator
         print("Loading data set from ImageDataGenerator, using images in "
               "{}.\n".format(dataset_path))
         # Transform str to dict

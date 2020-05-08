@@ -7,7 +7,7 @@
 from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
-import keras
+from tensorflow import keras
 import numpy as np
 from future import standard_library
 
@@ -56,9 +56,6 @@ class SNN(SNN_):
         # variables (membrane potential etc). So a simple
         # snn.set_weights(parsed_model.get_weights()) does not work any more.
         # Need to extract the actual weights here:
-
-
-
         parameter_map = {remove_name_counter(p.name): v for p, v in
                          zip(self.parsed_model.weights,
                              self.parsed_model.get_weights())}
@@ -123,6 +120,9 @@ class SNN(SNN_):
                                           guesses_b)))
 
         return np.cumsum(output_b_l_t, 2)
+
+    def save(self, path, filename):
+        pass
 
     def load(self, path, filename):
         SNN_.load(self, path, filename)
