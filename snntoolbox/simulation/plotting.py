@@ -186,7 +186,7 @@ def plot_layer_summaries(plot_vars, config, path=None, data_format=None):
             plot_layer_activity(plot_vars['activations_n_l'][i],
                                 str('Activations'), newpath,
                                 data_format=data_format)
-        if 'spikerates_n_l' in plot_vars and 'activations_n_l' in plot_vars:
+        if 'spikerates' in plot_keys and 'activations_n_l' in plot_vars:
             plot_activations_minus_rates(plot_vars['activations_n_l'][i][0],
                                          plot_vars['spikerates_n_l'][i][0],
                                          name, newpath, data_format)
