@@ -66,7 +66,11 @@ def normalize_parameters(model, config, **kwargs):
         if 'x_norm' in kwargs:
             x_norm = kwargs[str('x_norm')]
         elif 'dataflow' in kwargs:
-            x_norm, y = kwargs[str('dataflow')].next()
+            x_norm = []
+            while len(x_norm) < config.getint('simulation', 'num_to_test'):
+                x, y = kwargs[str('dataflow')].next()
+                x_norm.append(x)
+            x_norm = np.concatenate(x_norm)
         print("Using {} samples for normalization.".format(len(x_norm)))
         sizes = [
             len(x_norm) * np.array(layer.output_shape[1:]).prod() * 32 /
