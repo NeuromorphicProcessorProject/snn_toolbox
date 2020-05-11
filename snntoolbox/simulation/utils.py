@@ -8,16 +8,21 @@ another simulator is added to the toolbox (see :ref:`extending`).
 
 @author: rbodo
 """
+import warnings
 
 import os
+import sys
 from abc import abstractmethod
-
 import numpy as np
-
-from snntoolbox.bin.utils import get_log_keys, get_plot_keys
-from snntoolbox.parsing.utils import get_type, fix_input_layer_shape
-from snntoolbox.utils.utils import echo
 from tensorflow import keras
+from tensorflow.python.keras.utils.conv_utils import convert_kernel
+
+from snntoolbox.bin.utils import get_log_keys, get_plot_keys, \
+    initialize_simulator
+from snntoolbox.conversion.utils import get_activations_batch
+from snntoolbox.parsing.utils import get_type, fix_input_layer_shape, \
+    get_fanout, get_fanin, get_outbound_layers
+from snntoolbox.utils.utils import echo, in_top_k
 
 
 class AbstractSNN:
@@ -133,7 +138,6 @@ class AbstractSNN:
     """
 
     def __init__(self, config, queue=None):
-        from snntoolbox.bin.utils import initialize_simulator
 
         self.config = config
         self.queue = queue
@@ -488,8 +492,6 @@ class AbstractSNN:
             test samples.
         """
 
-        from snntoolbox.conversion.utils import get_activations_batch
-        from snntoolbox.utils.utils import in_top_k
         if len(self._plot_keys) > 0:
             import snntoolbox.simulation.plotting as snn_plt
         else:
@@ -597,7 +599,6 @@ class AbstractSNN:
 
             # Halt if model is to be serialised only.
             if self.config.getboolean('tools', 'serialise_only'):
-                import sys
                 sys.exit()
 
             # Get classification result by comparing the guessed class (i.e.
@@ -871,10 +872,10 @@ class AbstractSNN:
             self.input_b_l_t = np.zeros_like(self.input_b_l_t)
 
         if self.spiketrains_n_b_l_t is not None:
-            for l in range(len(self.spiketrains_n_b_l_t)):
-                self.spiketrains_n_b_l_t[l] = (
-                    np.zeros_like(self.spiketrains_n_b_l_t[l][0]),
-                    self.spiketrains_n_b_l_t[l][1])
+            for n in range(len(self.spiketrains_n_b_l_t)):
+                self.spiketrains_n_b_l_t[n] = (
+                    np.zeros_like(self.spiketrains_n_b_l_t[n][0]),
+                    self.spiketrains_n_b_l_t[n][1])
 
         if self.synaptic_operations_b_t is not None:
             self.synaptic_operations_b_t = np.zeros_like(
@@ -885,9 +886,9 @@ class AbstractSNN:
                 self.neuron_operations_b_t)
 
         if self.mem_n_b_l_t is not None:
-            for l in range(len(self.mem_n_b_l_t)):
-                self.mem_n_b_l_t[l] = (np.zeros_like(self.mem_n_b_l_t[l][0]),
-                                       self.mem_n_b_l_t[l][1])
+            for n in range(len(self.mem_n_b_l_t)):
+                self.mem_n_b_l_t[n] = (np.zeros_like(self.mem_n_b_l_t[n][0]),
+                                       self.mem_n_b_l_t[n][1])
 
     def set_connectivity(self):
         """
@@ -895,8 +896,6 @@ class AbstractSNN:
         in the network. This includes e.g. the members `fanin`, `fanout`,
         `num_neurons`, `num_neurons_with_bias`.
         """
-
-        from snntoolbox.parsing.utils import get_fanin, get_fanout
 
         self.fanin = [0]
         self.fanout = [get_fanout(self.parsed_model.layers[0], self.config)]
@@ -975,10 +974,10 @@ class AbstractSNN:
         output_b_l_t = np.zeros(shape, 'int32')
         spiketrains_b_l_t = self.get_spiketrains_output()
         for b in range(shape[0]):
-            for l in range(shape[1]):
+            for ll in range(shape[1]):
                 for t in range(shape[2]):
-                    output_b_l_t[b, l, t] = np.count_nonzero(
-                        spiketrains_b_l_t[b, l, :t + 1])
+                    output_b_l_t[b, ll, t] = np.count_nonzero(
+                        spiketrains_b_l_t[b, ll, :t + 1])
         return output_b_l_t
 
     def reset_container_counters(self):
@@ -1250,11 +1249,11 @@ def build_1d_convolution(layer, delay):
                          fout * mx)
             for fin in range(weights.shape[1]):
                 source = x + (fin * nx)
-                for l in range(-px, px + 1):
-                    if not 0 <= x + l < nx:
+                for p in range(-px, px + 1):
+                    if not 0 <= x + p < nx:
                         continue
-                    connections.append((source + l, target,
-                                        weights[px - l, fin, fout], delay))
+                    connections.append((source + p, target,
+                                        weights[px - p, fin, fout], delay))
         echo('.')
     print('')
 
@@ -1289,7 +1288,6 @@ def build_convolution(layer, delay, transpose_kernel=False):
     weights, biases = get_weights(layer)
 
     if transpose_kernel:
-        from keras.utils.conv_utils import convert_kernel
         print("Transposing kernels.")
         weights = convert_kernel(weights)
 
@@ -1335,12 +1333,12 @@ def build_convolution(layer, delay, transpose_kernel=False):
                     for k in range(-py, py + 1):
                         if not 0 <= y + k < ny:
                             continue
-                        for l in range(-px, px + 1):
-                            if not 0 <= x + l < nx:
+                        for p in range(-px, px + 1):
+                            if not 0 <= x + p < nx:
                                 continue
-                            source = l + x + (y + k) * nx + fin * nx * ny
+                            source = p + x + (y + k) * nx + fin * nx * ny
                             connections.append((source, target,
-                                                weights[py - k, px - l, fin,
+                                                weights[py - k, px - p, fin,
                                                         fout], delay))
         echo('.')
     print('')
@@ -1376,7 +1374,6 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
     weights, biases = get_weights(layer)
 
     if transpose_kernel:
-        from keras.utils.conv_utils import convert_kernel
         print("Transposing kernels.")
         weights = convert_kernel(weights)
 
@@ -1432,12 +1429,12 @@ def build_depthwise_convolution(layer, delay, transpose_kernel=False):
                     for k in range(-py, py + 1):
                         if not 0 <= y + k < ny:
                             continue
-                        for l in range(-px, px + 1):
-                            if not 0 <= x + l < nx:
+                        for p in range(-px, px + 1):
+                            if not 0 <= x + p < nx:
                                 continue
-                            source = x + l + ((y + k) * nx) + (fin * nx * ny)
+                            source = x + p + ((y + k) * nx) + (fin * nx * ny)
                             connections.append((source, target,
-                                                weights[py - k, px - l, fin,
+                                                weights[py - k, px - p, fin,
                                                         d], delay))
             echo('.')
     print('')
@@ -1467,7 +1464,6 @@ def build_pooling(layer, delay):
     """
 
     if layer.__class__.__name__ == 'MaxPooling2D':
-        import warnings
 
         warnings.warn("Layer type 'MaxPooling' not supported yet. " +
                       "Falling back on 'AveragePooling'.", RuntimeWarning)
@@ -1493,8 +1489,8 @@ def build_pooling(layer, delay):
                              fout * nx * ny / (dx * dy))
                 for k in range(dy):
                     source = x + (y + k) * nx + fout * nx * ny
-                    for l in range(dx):
-                        connections.append((source + l, target, weight, delay))
+                    for j in range(dx):
+                        connections.append((source + j, target, weight, delay))
         echo('.')
     print('')
 
@@ -1607,8 +1603,6 @@ def get_spiking_outbound_layers(layer, config):
     : list
         List of outbound layers.
     """
-
-    from snntoolbox.parsing.utils import get_outbound_layers
 
     outbound = layer
     while True:

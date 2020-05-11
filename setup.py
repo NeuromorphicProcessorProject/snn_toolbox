@@ -51,11 +51,7 @@ setup(
 
     setup_requires=['pytest-runner'],
 
-    tests_require=['tox',
-                   'pytest',
-                   'brian2',
-                   'matplotlib',
-                   'Pillow'],
+    tests_require=['pytest'],
 
     # cmdclass={'test': Tox, 'build_doc': BuildDoc},
 

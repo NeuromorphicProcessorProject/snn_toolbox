@@ -2,8 +2,9 @@
 
 """Test configuration of toolbox."""
 
-import os
+import importlib
 
+import os
 import pytest
 
 from snntoolbox.bin.utils import update_setup
@@ -18,7 +19,6 @@ with open(os.path.abspath(os.path.join(os.path.dirname(__file__),
 
 @pytest.mark.parametrize('required_module', requirements)
 def test_imports_from_requirements(required_module):
-    import importlib
     assert importlib.import_module(required_module)
 
 

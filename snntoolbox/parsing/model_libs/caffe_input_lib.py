@@ -4,7 +4,11 @@
 @author: rbodo
 """
 
+import os
+
 import numpy as np
+import caffe
+from google.protobuf import text_format
 
 from snntoolbox.parsing.utils import AbstractModelParser, padding_string
 
@@ -184,10 +188,6 @@ def load(path=None, filename=None):
         - 'val_fn':
             Function that allows evaluating the original model.
     """
-
-    import os
-    from google.protobuf import text_format
-    import caffe
 
     prototxt = os.path.join(path, filename + '.prototxt')
     caffemodel = os.path.join(path, filename + '.caffemodel')

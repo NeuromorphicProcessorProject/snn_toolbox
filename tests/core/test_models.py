@@ -4,7 +4,7 @@ import subprocess
 import sys
 from importlib import import_module
 
-import keras
+from tensorflow.keras import models
 import numpy as np
 
 from snntoolbox.bin.utils import initialize_simulator
@@ -44,7 +44,7 @@ class TestInputModel:
     def test_parsing(self, _model_2, _config):
 
         # Parsing removes BatchNorm layers, so we make a copy of the model.
-        input_model = keras.models.clone_model(_model_2)
+        input_model = models.clone_model(_model_2)
         input_model.set_weights(_model_2.get_weights())
         input_model.compile(_model_2.optimizer.__class__.__name__,
                             _model_2.loss, _model_2.metrics)
@@ -72,7 +72,7 @@ class TestInputModel:
     def test_normalizing(self, _model_2, _config):
 
         # Parsing removes BatchNorm layers, so we make a copy of the model.
-        input_model = keras.models.clone_model(_model_2)
+        input_model = models.clone_model(_model_2)
         input_model.set_weights(_model_2.get_weights())
         input_model.compile(_model_2.optimizer.__class__.__name__,
                             _model_2.loss, _model_2.metrics)
@@ -109,8 +109,7 @@ class TestOutputModel:
 
         path_wd = _config.get('paths', 'path_wd')
         model_name = _config.get('paths', 'filename_ann')
-        keras.models.save_model(_model_2,
-                                os.path.join(path_wd, model_name + '.h5'))
+        models.save_model(_model_2, os.path.join(path_wd, model_name + '.h5'))
 
         updates = {
             'tools': {'evaluate_ann': False},
@@ -136,8 +135,7 @@ class TestOutputModel:
 
         path_wd = _config.get('paths', 'path_wd')
         model_name = _config.get('paths', 'filename_ann')
-        keras.models.save_model(_model_1,
-                                os.path.join(path_wd, model_name + '.h5'))
+        models.save_model(_model_1, os.path.join(path_wd, model_name + '.h5'))
 
         updates = {
             'tools': {'evaluate_ann': False},
@@ -168,8 +166,7 @@ class TestOutputModel:
 
         path_wd = _config.get('paths', 'path_wd')
         model_name = _config.get('paths', 'filename_ann')
-        keras.models.save_model(_model_1,
-                                os.path.join(path_wd, model_name + '.h5'))
+        models.save_model(_model_1, os.path.join(path_wd, model_name + '.h5'))
 
         updates = {
             'tools': {'evaluate_ann': False},
@@ -203,8 +200,7 @@ class TestOutputModel:
 
         path_wd = _config.get('paths', 'path_wd')
         model_name = _config.get('paths', 'filename_ann')
-        keras.models.save_model(_model_1,
-                                os.path.join(path_wd, model_name + '.h5'))
+        models.save_model(_model_1, os.path.join(path_wd, model_name + '.h5'))
 
         updates = {
             'tools': {'evaluate_ann': False},
@@ -234,8 +230,7 @@ class TestOutputModel:
 
         path_wd = _config.get('paths', 'path_wd')
         model_name = _config.get('paths', 'filename_ann')
-        keras.models.save_model(_model_3,
-                                os.path.join(path_wd, model_name + '.h5'))
+        models.save_model(_model_3, os.path.join(path_wd, model_name + '.h5'))
 
         updates = {
             'tools': {'evaluate_ann': False},
@@ -265,8 +260,7 @@ class TestOutputModel:
 
         path_wd = _config.get('paths', 'path_wd')
         model_name = _config.get('paths', 'filename_ann')
-        keras.models.save_model(_model_1,
-                                os.path.join(path_wd, model_name + '.h5'))
+        models.save_model(_model_1, os.path.join(path_wd, model_name + '.h5'))
 
         updates = {
             'tools': {'evaluate_ann': True,

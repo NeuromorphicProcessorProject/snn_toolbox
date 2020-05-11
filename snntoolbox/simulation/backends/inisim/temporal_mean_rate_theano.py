@@ -11,7 +11,9 @@ simulation duration.
 
 @author: rbodo
 """
+import os
 
+import json
 import warnings
 
 import numpy as np
@@ -46,7 +48,6 @@ class SpikeLayer(Layer):
         if clamp_var:
             self.spikerate = self.var = None
 
-        import os
         from snntoolbox.utils.utils import get_abs_path
         path, filename = \
             get_abs_path(self.config.get('paths', 'filename_clamp_indices'),
@@ -413,8 +414,6 @@ class SpikeLayer(Layer):
         : int
             Time step when to stop clamping.
         """
-
-        import json
 
         with open(self.filename_clamp_indices) as f:
             clamp_indices = json.load(f)

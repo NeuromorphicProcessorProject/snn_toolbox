@@ -4,8 +4,11 @@
 @author: rbodo
 """
 
+import pickle
+
 import os
 import lasagne
+from tensorflow import keras
 import numpy as np
 
 from snntoolbox.parsing.utils import AbstractModelParser, padding_string
@@ -98,7 +101,6 @@ class ModelParser(AbstractModelParser):
     def parse_convolution(self, layer, attributes):
         weights = layer.W.get_value()
         weights = np.transpose(weights, (2, 3, 1, 0))
-        from tensorflow import keras
         if keras.backend.backend() != 'theano':  # Assumes lasagne uses theano.
             weights = keras.utils.conv_utils.convert_kernel(weights)
         bias = layer.b.get_value()
@@ -124,7 +126,7 @@ class ModelParser(AbstractModelParser):
 
     def get_outbound_layers(self, layer):
         layers = self.get_layer_iterable()
-        layer_ids = [id(l) for l in layers]
+        layer_ids = [id(layer) for layer in layers]
         current_idx = layer_ids.index(id(layer))
         return [] if current_idx + 1 >= len(layer_ids) \
             else [layers[current_idx + 1]]
@@ -167,7 +169,6 @@ def load(path, filename):
     model = mod.build_network()
     if os.path.isfile(filepath + '.pkl'):
         print("Loading parameters from .pkl file.")
-        import pickle
         params = pickle.load(open(filepath + '.pkl', 'rb'),
                              encoding='latin1')['param values']
     else:
@@ -234,7 +235,6 @@ def load_parameters(filepath):
     """Load all layer parameters from an HDF5 file."""
 
     import h5py
-
     f = h5py.File(filepath, 'r')
 
     params = []
@@ -250,7 +250,6 @@ def save_parameters(params, filepath, fileformat='h5'):
     """Save all layer parameters to an HDF5 file."""
 
     if fileformat == 'pkl':
-        import pickle
         pickle.dump(params, open(filepath + '.pkl', str('wb')))
     else:
         import h5py

@@ -14,6 +14,8 @@ from analog to spiking.
 
 import os
 
+import json
+from collections import OrderedDict
 from tensorflow.keras.models import Model
 import numpy as np
 
@@ -29,8 +31,6 @@ def normalize_parameters(model, config, **kwargs):
     time- and memory-consuming for larger networks.
     """
 
-    import json
-    from collections import OrderedDict
     from snntoolbox.parsing.utils import get_inbound_layers_with_params
 
     print("Normalizing parameters...")

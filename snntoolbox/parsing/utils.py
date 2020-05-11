@@ -31,6 +31,9 @@ connectivity and layer attributes:
 
 @author: rbodo
 """
+import json
+
+import pickle
 
 from abc import abstractmethod
 
@@ -912,7 +915,6 @@ def save_parameters(params, filepath, fileformat='h5'):
     """Save all layer parameters to an HDF5 file."""
 
     if fileformat == 'pkl':
-        import pickle
         pickle.dump(params, open(filepath + '.pkl', str('wb')))
     else:
         import h5py
@@ -1378,7 +1380,6 @@ def get_custom_layers_dict(filepath=None):
                               'NoisySGD': NoisySGD})
 
     if filepath is not None and filepath != '':
-        import json
         with open(filepath) as f:
             kwargs = json.load(f)
             custom_layers.update(kwargs)
@@ -1420,7 +1421,6 @@ def get_custom_activations_dict(filepath=None):
         'activity_regularizer': keras.regularizers.l1}
 
     if filepath is not None and filepath != '':
-        import json
         with open(filepath) as f:
             kwargs = json.load(f)
 

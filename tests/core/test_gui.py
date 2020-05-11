@@ -1,14 +1,14 @@
 # coding=utf-8
 
 """Test snntoolbox GUI."""
-import shutil
 
+import shutil
+import time
 import pytest
 
 
 @pytest.mark.skip("Passes when all dependencies are installed properly.")
 def test_gui(_config):
-    import time
     from snntoolbox.bin.gui.gui import tk, SNNToolboxGUI
 
     root = tk.Tk()

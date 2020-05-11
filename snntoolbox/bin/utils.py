@@ -16,6 +16,8 @@ Important functions:
 import os
 from importlib import import_module
 
+from snntoolbox.parsing.model_libs.keras_input_lib import load
+
 
 def run_pipeline(config, queue=None):
     """Convert an analog network to a spiking network and simulate it.
@@ -110,7 +112,6 @@ def run_pipeline(config, queue=None):
 
     if config.getboolean('tools', 'convert') and not is_stop(queue):
         if parsed_model is None:
-            from snntoolbox.parsing.model_libs.keras_input_lib import load
             try:
                 parsed_model = load(
                     config.get('paths', 'path_wd'),

@@ -11,12 +11,12 @@ import os
 import time
 import numpy as np
 
-import keras
-from keras import Input, Model
-from keras.layers import Conv2D, AveragePooling2D, Flatten, Dense, Dropout, \
-    BatchNormalization, Activation
-from keras.datasets import mnist
-from keras.utils import np_utils
+import tensorflow.keras as keras
+from tensorflow.keras import Input, Model
+from tensorflow.keras.layers import Conv2D, AveragePooling2D, Flatten, Dense, \
+    Dropout, BatchNormalization, Activation
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.utils import to_categorical
 
 from snntoolbox.bin.run import main
 from snntoolbox.utils.utils import import_configparser
@@ -47,8 +47,8 @@ x_train = np.expand_dims(x_train, axis)
 x_test = np.expand_dims(x_test, axis)
 
 # One-hot encode target vectors.
-y_train = np_utils.to_categorical(y_train, 10)
-y_test = np_utils.to_categorical(y_test, 10)
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
 
 # Save dataset so SNN toolbox can find it.
 np.savez_compressed(os.path.join(path_wd, 'x_test'), x_test)

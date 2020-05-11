@@ -1,8 +1,7 @@
 language: python
 
 install:
-  - python -m pip install --upgrade pip
   - pip install -r requirements.txt
-  - pip install matplotlib pynn brian2 onnx onnx2keras onnxruntime torch Pillow
+  - pip install -r requirements.rtd.txt
 
 script: pytest

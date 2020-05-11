@@ -8,14 +8,21 @@ Dependency: `SpyNNaker software
 
 @author: UMan, rbodo, piewchee
 """
-
-import os
 import warnings
 
 import numpy as np
+import os
+import sys
 from tensorflow import keras
+
+from snntoolbox.parsing.utils import get_type
+from snntoolbox.simulation.target_simulators.pyNN_target_sim import \
+    SNN as PYSNN
+from snntoolbox.simulation.target_simulators.pyNN_target_sim import \
+    get_shape_from_label
+from snntoolbox.simulation.utils import build_convolution, \
+    build_depthwise_convolution, build_1d_convolution, build_pooling
 from snntoolbox.utils.utils import confirm_overwrite
-from snntoolbox.simulation.target_simulators.pyNN_target_sim import SNN as PYSNN
 
 
 class SNN(PYSNN):
@@ -42,8 +49,6 @@ class SNN(PYSNN):
 
     def setup_layers(self, batch_shape):
         '''Iterates over all layers to instantiate them in the simulator.'''
-        from snntoolbox.parsing.utils import get_type
-        from snntoolbox.simulation.target_simulators.pyNN_target_sim import get_shape_from_label
 
         self.add_input_layer(batch_shape)
 
@@ -215,8 +220,6 @@ class SNN(PYSNN):
                        header="columns = ['i', 'j', 'weight', 'delay']")
 
     def build_convolution(self, layer):
-        from snntoolbox.simulation.utils import build_convolution, build_depthwise_convolution, build_1d_convolution
-        from snntoolbox.parsing.utils import get_type
 
         # If the parsed model contains a ZeroPadding layer, we need to tell the
         # Conv layer about it here, because ZeroPadding layers are removed when
@@ -280,7 +283,6 @@ class SNN(PYSNN):
                        header="columns = ['i', 'j', 'weight', 'delay']")
 
     def build_pooling(self, layer):
-        from snntoolbox.simulation.utils import build_pooling
 
         delay = self.config.getfloat('cell', 'delay')
 
@@ -375,7 +377,6 @@ class SNN(PYSNN):
         except Exception:
             print("There was a problem with serialisation.")
         if self.config.getboolean('tools', 'serialise_only'):
-            import sys
             sys.exit('finished after serialisation')
         self.sim.run(self._duration)
         print("\nCollecting results...")

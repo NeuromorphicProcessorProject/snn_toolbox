@@ -3,11 +3,16 @@
 @author: rbodo
 """
 
+import importlib
+import pkgutil
+
+import json
+import numpy as np
 import os
 import sys
-
+import tempfile
+import tensorflow as tf
 from tensorflow import keras
-import numpy as np
 
 
 def get_range(start=0.0, stop=1.0, num=5, method='linear'):
@@ -71,8 +76,6 @@ def to_json(data, path):
     A :py:exc:`TypeError` is raised if objects in ``data`` are not JSON
     serializable.
     """
-
-    import json
 
     def get_json_type(obj):
         """Get type of object to check if JSON serializable.
@@ -176,8 +179,6 @@ def import_script(path, filename):
     filename: string
         Name of script file.
     """
-
-    import sys
 
     filepath = os.path.join(path, filename + '.py')
 
@@ -429,7 +430,6 @@ class ClampedReLU:
                                                     self.max_value)
 
     def __call__(self, *args, **kwargs):
-        import tensorflow as tf
         x = keras.backend.relu(args[0], max_value=self.max_value)
         return tf.where(keras.backend.less(x, self.threshold),
                         keras.backend.zeros_like(x), x)
@@ -589,8 +589,6 @@ def apply_modifications(model, custom_objects=None):
     # Taken from
     # https://github.com/raghakot/keras-vis/blob/master/vis/utils/utils.py
 
-    import tempfile
-
     # noinspection PyProtectedMember
     model_path = os.path.join(tempfile.gettempdir(),
                               next(tempfile._get_candidate_names()) + '.h5')
@@ -612,12 +610,9 @@ def import_configparser():
 
 
 def is_module_installed(mod):
-    import sys
     if sys.version_info[0] < 3:
-        import pkgutil
         return pkgutil.find_loader(mod) is not None
     else:
-        import importlib
         return importlib.util.find_spec(mod) is not None
 
 

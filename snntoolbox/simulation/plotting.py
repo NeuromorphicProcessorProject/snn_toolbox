@@ -10,7 +10,11 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from snntoolbox.utils.utils import get_pearson_coefficients
+from snntoolbox.utils.utils import get_pearson_coefficients, extract_label, \
+    wilson_score
+from snntoolbox.conversion.utils import get_activations_batch
+from snntoolbox.simulation.utils import get_sample_activity_from_batch, \
+    spiketrains_to_rates
 
 
 def output_graphs(plot_vars, config, path=None, idx=0, data_format=None):
@@ -52,9 +56,6 @@ def output_graphs(plot_vars, config, path=None, idx=0, data_format=None):
     data_format: Optional[str]
         One of 'channels_first' or 'channels_last'.
     """
-
-    from snntoolbox.simulation.utils import spiketrains_to_rates
-    from snntoolbox.simulation.utils import get_sample_activity_from_batch
 
     if plot_vars == {}:
         return
@@ -147,8 +148,6 @@ def plot_layer_summaries(plot_vars, config, path=None, data_format=None):
     data_format: Optional[str]
         One of 'channels_first' or 'channels_last'.
     """
-
-    from snntoolbox.utils.utils import extract_label
 
     plot_keys = eval(config.get('output', 'plot_vars'))
 
@@ -324,9 +323,6 @@ def plot_activations(model, x_test, path, data_format=None):
     data_format: Optional[str]
         One of 'channels_first' or 'channels_last'.
     """
-
-    from snntoolbox.conversion.utils import get_activations_batch
-    from snntoolbox.simulation.utils import get_sample_activity_from_batch
 
     activations_batch = get_activations_batch(model, x_test)
     activations = get_sample_activity_from_batch(activations_batch, 0)
@@ -520,8 +516,6 @@ def plot_pearson_coefficients(spikerates_batch, activations_batch, config,
     path: Optional[str]
         Where to save the output.
     """
-
-    from snntoolbox.utils.utils import extract_label
 
     max_rate = 1. / config.getfloat('simulation', 'dt')
     co = get_pearson_coefficients(spikerates_batch, activations_batch,
@@ -766,8 +760,6 @@ def plot_param_sweep(results, n, params, param_name, param_logscale):
     param_logscale: bool
         Whether to plot the parameter axis in log-scale.
     """
-
-    from snntoolbox.utils.utils import wilson_score
 
     # Compute confidence intervals of the experiments
     ci = [wilson_score(q, n) for q in results]

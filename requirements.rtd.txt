@@ -1,2 +1,12 @@
 h5py
 matplotlib
+Pillow
+torch
+onnx
+onnxruntime
+onnx2keras
+lasagne
+theano
+brian2
+pyNN
+NEURON

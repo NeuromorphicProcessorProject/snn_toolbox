@@ -8,8 +8,12 @@ import warnings
 
 import numpy as np
 import os
+from tensorflow.keras.models import load_model
 
-from snntoolbox.simulation.utils import AbstractSNN, get_shape_from_label
+from snntoolbox.parsing.utils import get_type
+from snntoolbox.simulation.utils import AbstractSNN, get_shape_from_label, \
+    build_convolution, build_pooling, get_ann_ops
+from snntoolbox.utils.utils import confirm_overwrite
 
 
 class SNN(AbstractSNN):
@@ -167,7 +171,6 @@ class SNN(AbstractSNN):
         self.connections[-1].w = connections[:, 2]
 
     def build_convolution(self, layer, weights=None):
-        from snntoolbox.simulation.utils import build_convolution
 
         delay = self.config.getfloat('cell', 'delay')
         transpose_kernel = \
@@ -186,7 +189,6 @@ class SNN(AbstractSNN):
         self.connections[-1].w = w
 
     def build_pooling(self, layer, weights=None):
-        from snntoolbox.simulation.utils import build_pooling
 
         delay = self.config.getfloat('cell', 'delay')
         connections = np.array(build_pooling(layer, delay))
@@ -241,7 +243,6 @@ class SNN(AbstractSNN):
         pass
 
     def save(self, path, filename):
-        from snntoolbox.utils.utils import confirm_overwrite
 
         print("Saving weights ...")
         for i, connection in enumerate(self.connections):
@@ -259,9 +260,6 @@ class SNN(AbstractSNN):
                 np.savez(filepath, self.connections[i].w)
 
     def load(self, path, filename):
-        from tensorflow.keras.models import load_model
-        from snntoolbox.parsing.utils import get_type
-        from snntoolbox.simulation.utils import get_ann_ops
 
         dirpath = os.path.join(path, filename, 'brian2-model')
         npz_files = [f for f in sorted(os.listdir(dirpath))

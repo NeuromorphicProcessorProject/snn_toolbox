@@ -3,10 +3,15 @@
 
 @author: rbodo
 """
+import os
 
 import numpy as np
 import tensorflow.keras.backend as k
-from snntoolbox.parsing.utils import AbstractModelParser, fix_input_layer_shape
+from tensorflow.keras import models, metrics
+
+from snntoolbox.parsing.utils import AbstractModelParser, has_weights, \
+    fix_input_layer_shape, get_type, get_inbound_layers, get_outbound_layers, \
+    get_custom_activations_dict, assemble_custom_dict, get_custom_layers_dict
 
 
 class ModelParser(AbstractModelParser):
@@ -15,7 +20,6 @@ class ModelParser(AbstractModelParser):
         return self.input_model.layers
 
     def get_type(self, layer):
-        from snntoolbox.parsing.utils import get_type
         return get_type(layer)
 
     def get_batchnorm_parameters(self, layer):
@@ -34,7 +38,6 @@ class ModelParser(AbstractModelParser):
         return [mean, var_eps_sqrt_inv, gamma, beta, axis]
 
     def get_inbound_layers(self, layer):
-        from snntoolbox.parsing.utils import get_inbound_layers
         return get_inbound_layers(layer)
 
     @property
@@ -43,7 +46,6 @@ class ModelParser(AbstractModelParser):
         return AbstractModelParser.layers_to_skip.fget(self)
 
     def has_weights(self, layer):
-        from snntoolbox.parsing.utils import has_weights
         return has_weights(layer)
 
     def initialize_attributes(self, layer=None):
@@ -104,8 +106,6 @@ class ModelParser(AbstractModelParser):
 
     def get_outbound_layers(self, layer):
 
-        from snntoolbox.parsing.utils import get_outbound_layers
-
         return get_outbound_layers(layer)
 
     def parse_concatenate(self, layer, attributes):
@@ -137,9 +137,6 @@ def load(path, filename, **kwargs):
             Function that allows evaluating the original model.
     """
 
-    import os
-    from tensorflow.keras import models, metrics
-
     filepath = str(os.path.join(path, filename))
 
     if os.path.exists(filepath + '.json'):
@@ -156,8 +153,6 @@ def load(path, filename, **kwargs):
         model.compile('sgd', 'categorical_crossentropy',
                       ['accuracy', metrics.top_k_categorical_accuracy])
     else:
-        from snntoolbox.parsing.utils import get_custom_activations_dict, \
-            assemble_custom_dict, get_custom_layers_dict
         filepath_custom_objects = kwargs.get('filepath_custom_objects', None)
         if filepath_custom_objects is not None:
             filepath_custom_objects = str(filepath_custom_objects)  # python 2

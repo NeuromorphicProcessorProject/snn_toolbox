@@ -2,16 +2,15 @@
 
 """py.test fixtures with module-scope."""
 
-import os
-
-import keras
 import numpy as np
+import os
 import pytest
-from keras import Input, Model
-from keras.datasets import mnist
-from keras.layers import Conv2D, AveragePooling2D, Flatten, Dropout, Dense, \
-    Concatenate, Activation, BatchNormalization
-from keras.utils import np_utils
+from tensorflow import keras
+from tensorflow.keras import Input, Model
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.layers import Conv2D, AveragePooling2D, Flatten, \
+    Dropout, Dense, Concatenate, Activation, BatchNormalization
+from tensorflow.keras.utils import to_categorical
 
 from snntoolbox.bin.utils import update_setup
 from snntoolbox.utils.utils import import_configparser, is_module_installed
@@ -71,8 +70,8 @@ def _dataset():
     x_train = np.expand_dims(x_train, axis)
     x_test = np.expand_dims(x_test, axis)
 
-    y_train = np_utils.to_categorical(y_train, 10)
-    y_test = np_utils.to_categorical(y_test, 10)
+    y_train = to_categorical(y_train, 10)
+    y_test = to_categorical(y_test, 10)
 
     return x_train, y_train, x_test, y_test
 
