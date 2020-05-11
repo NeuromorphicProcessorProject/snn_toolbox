@@ -9,7 +9,7 @@ SNN toolbox to convert the trained ANN to an SNN and run it using spiNNaker.
 import os
 import numpy as np
 
-import tensorflow.keras as keras
+from tensorflow import keras
 from tensorflow.keras import Input, Model
 from tensorflow.keras.layers import AveragePooling2D, Flatten, Dropout
 from tensorflow.keras.datasets import mnist

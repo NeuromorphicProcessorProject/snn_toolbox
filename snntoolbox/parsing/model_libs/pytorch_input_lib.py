@@ -67,6 +67,13 @@ def load(path, filename):
     model_pytorch.load_state_dict(torch.load(model_path,
                                              map_location=map_location))
 
+    # state_dict = torch.load(model_path, map_location=map_location)['state_dict']
+    # new_state_dict = {}
+    # for k, v in state_dict.items():
+    #     k = str(k).replace('module.', '')
+    #     new_state_dict[k] = v
+    # model_pytorch.load_state_dict(new_state_dict, strict=False)
+
     # Switch from train to eval mode to ensure Dropout / BatchNorm is handled
     # correctly.
     model_pytorch.eval()

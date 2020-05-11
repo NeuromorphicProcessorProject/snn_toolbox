@@ -12,7 +12,7 @@ import sys
 import time
 import numpy as np
 
-import tensorflow.keras as keras
+from tensorflow import keras
 from tensorflow.keras import Input, Model
 from tensorflow.keras.layers import Conv2D, AveragePooling2D, Flatten, Dense, \
     Dropout, BatchNormalization, Activation

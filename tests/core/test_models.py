@@ -279,7 +279,7 @@ class TestOutputModel:
                 'simulator': 'loihi',
                 'duration': 512,
                 'num_to_test': 100,
-                'batch_size': 1},
+                'batch_size': 20},
             'output': {
                 'log_vars': {'activations_n_b_l', 'spiketrains_n_b_l_t'}}}
 
