@@ -5,6 +5,7 @@
 import numpy as np
 import os
 import pytest
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import Input, Model
 from tensorflow.keras.datasets import mnist
@@ -312,9 +313,19 @@ brian2_skip_if_dependency_missing = pytest.mark.skipif(
 
 pytorch_conditions = (is_module_installed('torch') and
                       is_module_installed('onnx') and
-                      is_module_installed('onnx2keras'))
+                      is_module_installed('onnx2keras') and
+                      len(tf.config.list_physical_devices('GPU')))
 pytorch_skip_if_dependency_missing = pytest.mark.skipif(
     not pytorch_conditions, reason='Pytorch dependencies missing.')
+
+# Pytorch needs channel dimension first. But Tensorflow only works with
+# channels last on CPU. Ideally, we would set and unset the channel order
+# parameter in a setup and teardown method. But that would either require
+# storing another copy of the dataset with channels_first, or setting the scope
+# of the _dataset and _datapath fixtures from 'session' to 'class'. For now
+# we force all tests to use 'channels_first'.
+if pytorch_conditions:
+    keras.backend.set_image_data_format('channels_first')
 
 loihi_conditions = (is_module_installed('nxsdk') and
                     is_module_installed('nxsdk_modules_ncl'))

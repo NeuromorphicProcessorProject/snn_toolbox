@@ -11,13 +11,6 @@ from snntoolbox.datasets.utils import get_dataset
 from tests.conftest import pytorch_skip_if_dependency_missing
 from tests.core.test_models import get_correlations
 
-# Pytorch needs channel dimension first. Ideally, we would set and unset this
-# parameter in a setup and teardown method. But that would either require
-# storing another copy of the dataset with channels_first, or setting the scope
-# of the _dataset and _datapath fixtures from 'session' to 'class'. By leaving
-# it here, we force all tests to use 'channels_first'.
-backend.set_image_data_format('channels_first')
-
 
 @pytorch_skip_if_dependency_missing
 class TestPytorchParser:

@@ -32,9 +32,6 @@ update this backend to optimally fit your system.
    provide an implementation of MaxPooling in INIsim, which is not available
    with the tensorflow backend.
 
-.. note:: (March 2020) The toolbox has been tested to work with keras==2.3.0
-   and tensorflow==2.0.1.
-
 Development version (recommended)
 ---------------------------------
 
