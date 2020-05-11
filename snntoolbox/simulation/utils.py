@@ -9,8 +9,6 @@ another simulator is added to the toolbox (see :ref:`extending`).
 @author: rbodo
 """
 
-from __future__ import division
-
 import os
 from abc import abstractmethod
 
@@ -1782,14 +1780,17 @@ def remove_name_counter(name_in):
     """
     Tensorflow adds a counter to layer names, e.g. <name>/kernel:0 ->
     <name>_0/kernel:0. Need to remove this _0.
-    Situation get complicated because SNN toolbox assigns layer names
+    The situation gets complicated because SNN toolbox assigns layer names
     that contain the layer shape, e.g. 00Conv2D_3x32x32. In addition,
     we may get another underscore in the parameter name, e.g.
     00DepthwiseConv2D_3X32x32_0/depthwise_kernel:0.
     """
 
+    if '_' not in name_in or '/' not in name_in:
+        return name_in
+
     split_dash = str(name_in).split('/')
-    assert len(split_dash) == 2, "Layer name must not contain '/'."
+    assert len(split_dash) == 2, "Variable name must not contain '/'."
     # We are only interested in the part before the /.
     split_underscore = split_dash[0].split('_')
     # The first '_' is assigned by SNN toolbox and should be kept.

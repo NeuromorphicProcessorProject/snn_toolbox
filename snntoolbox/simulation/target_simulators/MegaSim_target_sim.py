@@ -4,10 +4,6 @@
 @author: Evangelos Stromatias
 """
 
-from __future__ import division, absolute_import
-# For compatibility with python2
-from __future__ import print_function, unicode_literals
-
 import os
 import subprocess
 import sys
@@ -16,11 +12,8 @@ from abc import abstractmethod
 from builtins import int, range
 
 import numpy as np
-from future import standard_library
 
 from snntoolbox.simulation.utils import AbstractSNN
-
-standard_library.install_aliases()
 
 if sys.version_info >= (3, 4):
     ABC = abc.ABC

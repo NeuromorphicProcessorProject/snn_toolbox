@@ -1,24 +1,8 @@
 language: python
 
-matrix:
-  fast_finish: true
-  include:
-    - name: 'tf2.0.1_keras2.3.0'
-      env: 
-        - TENSORFLOW_VERSION=2.0.1
-        - KERAS_VERSION=2.3.0
-    - name: 'tf2.1.0_keras2.3.1'
-      env: 
-        - TENSORFLOW_VERSION=2.1.0
-        - KERAS_VERSION=2.3.1
-  allow_failures:
-    - name: 'tf2.1.0_keras2.3.1'
-
 install:
   - python -m pip install --upgrade pip
-  - pip install -q tensorflow==$TENSORFLOW_VERSION
-  - pip install -q keras==$KERAS_VERSION
-  - pip install matplotlib pynn brian2 onnx onnx2keras onnxruntime torch Pillow
   - pip install -r requirements.txt
+  - pip install matplotlib pynn brian2 onnx onnx2keras onnxruntime torch Pillow
 
 script: pytest

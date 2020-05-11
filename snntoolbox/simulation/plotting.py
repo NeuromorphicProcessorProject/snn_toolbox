@@ -6,17 +6,11 @@ network.
 @author: rbodo
 """
 
-from __future__ import division, absolute_import
-from __future__ import print_function, unicode_literals
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from future import standard_library
 
 from snntoolbox.utils.utils import get_pearson_coefficients
-
-standard_library.install_aliases()
 
 
 def output_graphs(plot_vars, config, path=None, idx=0, data_format=None):

@@ -11,15 +11,9 @@ Assumes that have write access to the home folder.
 @author: evan
 """
 
-from __future__ import print_function, unicode_literals
-from __future__ import division, absolute_import
-from future import standard_library
-
 import os
 import sys
 import json
-
-standard_library.install_aliases()
 
 
 def megasim_path():

@@ -12,21 +12,15 @@ simulation duration.
 @author: rbodo
 """
 
-from __future__ import division, absolute_import
-from __future__ import print_function, unicode_literals
-
 import warnings
 
 import numpy as np
 import theano
-from future import standard_library
 from keras import backend as k
 from keras.layers import Dense, Flatten, AveragePooling2D, MaxPooling2D, Conv2D
 from keras.layers import Layer, Concatenate
 
 from snntoolbox.parsing.utils import get_inbound_layers
-
-standard_library.install_aliases()
 
 # Experimental
 clamp_var = False

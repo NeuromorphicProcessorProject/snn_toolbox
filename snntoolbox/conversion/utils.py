@@ -12,16 +12,10 @@ from analog to spiking.
 @author: rbodo
 """
 
-from __future__ import division, absolute_import
-from __future__ import print_function, unicode_literals
-
 import os
 
 from tensorflow.keras.models import Model
 import numpy as np
-from future import standard_library
-
-standard_library.install_aliases()
 
 
 def normalize_parameters(model, config, **kwargs):
@@ -287,7 +281,7 @@ def get_percentile(config, layer_idx=None):
     perc = config.getfloat('normalization', 'percentile')
 
     if config.getboolean('normalization', 'normalization_schedule'):
-        assert layer_idx, "Layer index needed for normalization schedule."
+        assert layer_idx >= 0, "Layer index needed for normalization schedule."
         perc = apply_normalization_schedule(perc, layer_idx)
 
     return perc

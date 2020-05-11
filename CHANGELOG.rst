@@ -1,6 +1,17 @@
 SNN Toolbox: Release Notes
 ==========================
 
+Version 0.5.0
+-------------
+
+Added support for Tensorflow 2.2.
+The toolbox no longer imports stand-alone Keras, but instead uses Keras only
+from within Tensorflow (tf.keras).
+Enabled simulating SNNs in the tensorflow-based INIsim using graph mode rather
+than eager execution, which results in a speed-up of about 7X.
+Removed support for python 2.
+Updated various temporal coding backends.
+
 Version 0.4.1
 -------------
 

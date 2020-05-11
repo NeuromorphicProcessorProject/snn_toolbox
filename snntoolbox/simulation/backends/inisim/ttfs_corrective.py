@@ -16,17 +16,11 @@ This simulator works only with Keras backend set to Tensorflow.
 @author: rbodo
 """
 
-from __future__ import division, absolute_import
-from __future__ import print_function, unicode_literals
-
 import numpy as np
-from future import standard_library
 import tensorflow as tf
 import tensorflow.keras.backend as k
 from tensorflow.keras.layers import Dense, Flatten, AveragePooling2D, \
     MaxPooling2D, Conv2D, Layer, Concatenate
-
-standard_library.install_aliases()
 
 
 class SpikeLayer(Layer):

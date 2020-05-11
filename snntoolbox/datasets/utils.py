@@ -13,17 +13,11 @@ For details see
 @author: rbodo
 """
 
-from __future__ import division, absolute_import
-from __future__ import print_function, unicode_literals
-
 import json
 import os
 
 from configparser import NoOptionError
 import numpy as np
-from future import standard_library
-
-standard_library.install_aliases()
 
 
 def get_dataset(config):

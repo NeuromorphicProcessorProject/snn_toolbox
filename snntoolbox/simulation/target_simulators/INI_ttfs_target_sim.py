@@ -4,17 +4,12 @@
 @author: rbodo
 """
 
-from __future__ import division, absolute_import
-from __future__ import print_function, unicode_literals
-
 import sys
 from tensorflow import keras
 import numpy as np
-from future import standard_library
 
 from snntoolbox.simulation.target_simulators.\
     INI_temporal_mean_rate_target_sim import SNN as SNN_
-standard_library.install_aliases()
 
 remove_classifier = False
 

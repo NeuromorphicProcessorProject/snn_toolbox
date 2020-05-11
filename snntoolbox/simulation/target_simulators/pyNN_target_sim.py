@@ -6,23 +6,17 @@ Building and simulating spiking neural networks using
 @author: rbodo
 """
 
-from __future__ import division, absolute_import
-from __future__ import print_function, unicode_literals
-
 import os
 import sys
 import time
 import warnings
 
 import numpy as np
-from future import standard_library
 from six.moves import cPickle
 
 from snntoolbox.utils.utils import confirm_overwrite, is_module_installed
 from snntoolbox.simulation.utils import AbstractSNN, get_shape_from_label
 from snntoolbox.bin.utils import config_string_to_set_of_strings
-
-standard_library.install_aliases()
 
 
 class SNN(AbstractSNN):

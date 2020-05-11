@@ -4,19 +4,13 @@
 @author: rbodo
 """
 
-from __future__ import division, absolute_import
-from __future__ import print_function, unicode_literals
-
 import os
 import sys
 
 from tensorflow import keras
 import numpy as np
-from future import standard_library
 
 from snntoolbox.simulation.utils import AbstractSNN, remove_name_counter
-
-standard_library.install_aliases()
 
 remove_classifier = False
 

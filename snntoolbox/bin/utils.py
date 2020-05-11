@@ -13,15 +13,8 @@ Important functions:
 @author: rbodo
 """
 
-from __future__ import division, absolute_import
-from __future__ import print_function, unicode_literals
-
 import os
 from importlib import import_module
-
-from future import standard_library
-
-standard_library.install_aliases()
 
 
 def run_pipeline(config, queue=None):

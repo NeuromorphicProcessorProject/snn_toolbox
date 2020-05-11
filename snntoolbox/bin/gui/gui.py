@@ -23,8 +23,6 @@ Note
 @author: rbodo
 """
 
-from __future__ import with_statement
-
 import json
 import os
 import sys

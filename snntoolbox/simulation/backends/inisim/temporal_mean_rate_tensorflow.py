@@ -12,20 +12,12 @@ simulation duration.
 @author: rbodo
 """
 
-from __future__ import division, absolute_import
-from __future__ import print_function, unicode_literals
-
-import numpy as np
-from future import standard_library
 import tensorflow as tf
-import tensorflow.keras.backend as k
 from tensorflow.keras.layers import Dense, Flatten, AveragePooling2D, \
     MaxPooling2D, Conv2D, DepthwiseConv2D, ZeroPadding2D, Reshape, Layer, \
     Concatenate
 
 from snntoolbox.parsing.utils import get_inbound_layers
-
-standard_library.install_aliases()
 
 # Experimental
 clamp_var = False
@@ -46,8 +38,6 @@ class SpikeLayer(Layer):
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
         self.refrac_until = self.max_spikerate = None
-        if self.config.getboolean('cell', 'bias_relaxation'):
-            self.b0 = None
         if clamp_var:
             self.spikerate = self.var = None
 
@@ -63,7 +53,7 @@ class SpikeLayer(Layer):
             self.filename_clamp_indices = filepath
             self.clamp_idx = None
 
-        self.payloads = self.config.getboolean('cell', 'payloads')
+        self.payloads = None
         self.payloads_sum = None
         self.online_normalization = self.config.getboolean(
             'normalization', 'online_normalization')
@@ -82,11 +72,12 @@ class SpikeLayer(Layer):
                 kwargs.pop(kwarg)
         Layer.__init__(self, **kwargs)
         self.stateful = True
+        self._floatx = tf.keras.backend.floatx()
 
     def reset(self, sample_idx):
         """Reset layer variables."""
 
-        self.reset_spikevars(sample_idx)
+        self.reset_spikevars(tf.constant(sample_idx))
 
     @property
     def class_name(self):
@@ -120,30 +111,27 @@ class SpikeLayer(Layer):
 
         # Store refractory
         if self.tau_refrac > 0:
-            new_refractory = tf.where(k.not_equal(output_spikes, 0),
+            new_refractory = tf.where(tf.not_equal(output_spikes, 0),
                                       self.time + self.tau_refrac,
                                       self.refrac_until)
-            self.add_update([(self.refrac_until, new_refractory)])
+            self.refrac_until.assign(new_refractory)
 
         if self.payloads:
-            residuals = tf.where(k.not_equal(output_spikes, 0),
+            residuals = tf.where(tf.not_equal(output_spikes, 0),
                                  new_mem - self._v_thresh, new_mem)
-            payloads, payloads_sum = self.update_payload(residuals,
-                                                         output_spikes)
-            self.add_update([(self.payloads, payloads),
-                             (self.payloads_sum, payloads_sum)])
+            self.update_payload(residuals, output_spikes)
 
         if self.online_normalization:
-            self.add_update([(self.spikecounts, self.spikecounts + k.cast(
-                k.not_equal(output_spikes, 0), k.floatx())),
-                             (self.max_spikerate,
-                              k.max(self.spikecounts) * self.dt / self.time)])
+            self.spikecounts.assign_add(tf.cast(tf.not_equal(output_spikes, 0),
+                                                self._floatx))
+            self.max_spikerate.assign(tf.reduce_max(self.spikecounts)
+                                      * self.dt / self.time)
 
         if self.spiketrain is not None:
-            self.add_update([(self.spiketrain, self.time * k.cast(
-                k.not_equal(output_spikes, 0), k.floatx()))])
+            self.spiketrain.assign(tf.cast(tf.not_equal(output_spikes, 0),
+                                           self._floatx) * self.time)
 
-        return k.cast(output_spikes, k.floatx())
+        return tf.cast(output_spikes, self._floatx)
 
     def update_payload(self, residuals, spikes):
         """Update payloads.
@@ -151,28 +139,31 @@ class SpikeLayer(Layer):
         Uses the residual of the membrane potential after spike.
         """
 
-        idxs = k.not_equal(spikes, 0)
+        idxs = tf.not_equal(spikes, 0)
         payloads = tf.where(idxs, residuals[idxs] - self.payloads_sum[idxs],
                             self.payloads)
         payloads_sum = tf.where(idxs, self.payloads_sum + self.payloads,
                                 self.payloads_sum)
-        return payloads, payloads_sum
+        self.payloads.assign(payloads)
+        self.payloads_sum.assign(payloads_sum)
 
     def linear_activation(self, mem):
         """Linear activation."""
-        return k.cast(k.greater_equal(mem, self.v_thresh), k.floatx()) * \
+        return tf.cast(tf.greater_equal(mem, self.v_thresh), self._floatx) * \
             self.v_thresh
 
     def binary_sigmoid_activation(self, mem):
         """Binary sigmoid activation."""
 
-        return k.cast(k.greater(mem, 0), k.floatx()) * self.v_thresh
+        return tf.cast(tf.greater(mem, 0), self._floatx) * self.v_thresh
 
     def binary_tanh_activation(self, mem):
         """Binary tanh activation."""
 
-        output_spikes = k.cast(k.greater(mem, 0), k.floatx()) * self.v_thresh
-        output_spikes += k.cast(k.less(mem, 0), k.floatx()) * -self.v_thresh
+        output_spikes = tf.cast(tf.greater(mem, 0), self._floatx) \
+            * self.v_thresh
+        output_spikes += tf.cast(tf.less(mem, 0), self._floatx) \
+            * -self.v_thresh
 
         return output_spikes
 
@@ -184,7 +175,7 @@ class SpikeLayer(Layer):
         # spiking_neurons = k.repeat(spiking_samples, 10)
         # activ = k.softmax(mem)
         # max_activ = k.max(activ, axis=1, keepdims=True)
-        # output_spikes = k.equal(activ, max_activ).astype(k.floatx())
+        # output_spikes = k.equal(activ, max_activ).astype(self._floatx)
         # output_spikes = tf.where(k.equal(spiking_neurons, 0),
         #                          k.zeros_like(output_spikes), output_spikes)
         # new_and_reset_mem = tf.where(spiking_neurons, k.zeros_like(mem),
@@ -192,13 +183,14 @@ class SpikeLayer(Layer):
         # self.add_update([(self.mem, new_and_reset_mem)])
         # return output_spikes
 
-        return k.cast(k.less_equal(k.random_uniform(k.shape(mem)),
-                                   k.softmax(mem)), k.floatx()) * self.v_thresh
+        output_spikes = tf.less_equal(tf.random.uniform(tf.shape(mem)),
+                                      tf.nn.softmax(mem))
+        return tf.cast(output_spikes, self._floatx) * self.v_thresh
 
     def quantized_activation(self, mem, m, f):
         """Activation with precision reduced to fixed point format Qm.f."""
         # Todo: Needs to be implemented somehow...
-        return k.cast(k.greater_equal(mem, self.v_thresh), k.floatx()) * \
+        return tf.cast(tf.greater_equal(mem, self.v_thresh), self._floatx) * \
             self.v_thresh
 
     def get_new_mem(self):
@@ -206,32 +198,32 @@ class SpikeLayer(Layer):
 
         # Destroy impulse if in refractory period
         masked_impulse = self.impulse if self.tau_refrac == 0 else \
-            tf.where(k.greater(self.refrac_until, self.time),
-                     k.zeros_like(self.impulse), self.impulse)
+            tf.where(tf.greater(self.refrac_until, self.time),
+                     tf.zeros_like(self.impulse), self.impulse)
 
         # Add impulse
         if clamp_var:
             # Experimental: Clamp the membrane potential to zero until the
             # presynaptic neurons fire at their steady-state rates. This helps
             # avoid a transient response.
-            new_mem = tf.cond(k.less(k.mean(self.var), 1e-4) +
-                              k.greater(self.time, self.duration / 2),
+            new_mem = tf.cond(tf.less(tf.reduce_mean(self.var), 1e-4) +
+                              tf.greater(self.time, self.duration / 2),
                               lambda: self.mem + masked_impulse,
                               lambda: self.mem)
         elif hasattr(self, 'clamp_idx'):
             # Set clamp-duration by a specific delay from layer to layer.
-            new_mem = tf.cond(k.less(self.time, self.clamp_idx),
+            new_mem = tf.cond(tf.less(self.time, self.clamp_idx),
                               lambda: self.mem,
                               lambda: self.mem + masked_impulse)
         elif v_clip:
             # Clip membrane potential to prevent too strong accumulation.
-            new_mem = k.clip(self.mem + masked_impulse, -3, 3)
+            new_mem = tf.clip_by_value(self.mem + masked_impulse, -3, 3)
         else:
             new_mem = self.mem + masked_impulse
 
         if self.config.getboolean('cell', 'leak'):
             # Todo: Implement more flexible version of leak!
-            new_mem = tf.where(k.greater(new_mem, 0), new_mem - 0.1 * self.dt,
+            new_mem = tf.where(tf.greater(new_mem, 0), new_mem - 0.1 * self.dt,
                                new_mem)
 
         return new_mem
@@ -246,19 +238,20 @@ class SpikeLayer(Layer):
                 self.activation_str == 'softmax'):
             # Turn off reset (uncomment second line) to get a faster and better
             # top-1 error. The top-5 error is better when resetting:
-            new = tf.where(k.not_equal(spikes, 0), k.zeros_like(mem), mem)
+            new = tf.where(tf.not_equal(spikes, 0), tf.zeros_like(mem), mem)
             # new = tf.identity(mem)
         elif self.config.get('cell', 'reset') == 'Reset by subtraction':
             if self.payloads:  # Experimental.
-                new = tf.where(k.not_equal(spikes, 0), k.zeros_like(mem), mem)
+                new = tf.where(tf.not_equal(spikes, 0),
+                               tf.zeros_like(mem), mem)
             else:
-                new = tf.where(k.greater(spikes, 0), mem - self.v_thresh, mem)
-                new = tf.where(k.less(spikes, 0), new + self.v_thresh, new)
+                new = tf.where(tf.greater(spikes, 0), mem - self.v_thresh, mem)
+                new = tf.where(tf.less(spikes, 0), new + self.v_thresh, new)
         elif self.config.get('cell', 'reset') == 'Reset by modulo':
-            new = tf.where(k.not_equal(spikes, 0), mem % self.v_thresh, mem)
+            new = tf.where(tf.not_equal(spikes, 0), mem % self.v_thresh, mem)
         else:  # self.config.get('cell', 'reset') == 'Reset to zero':
-            new = tf.where(k.not_equal(spikes, 0), k.zeros_like(mem), mem)
-        self.add_update([(self.mem, new)])
+            new = tf.where(tf.not_equal(spikes, 0), tf.zeros_like(mem), mem)
+        self.mem.assign(new)
 
     def get_new_thresh(self):
         """Get new threshhold."""
@@ -285,7 +278,7 @@ class SpikeLayer(Layer):
                 Current simulation time.
             """
 
-        return k.get_value(self.time)
+        return self.time.eval
 
     def set_time(self, time):
         """Set simulation time variable.
@@ -297,7 +290,7 @@ class SpikeLayer(Layer):
             Current simulation time.
         """
 
-        k.set_value(self.time, time)
+        self.time.assign(time)
 
     def init_membrane_potential(self, output_shape=None, mode='zero'):
         """Initialize membrane potential.
@@ -330,18 +323,19 @@ class SpikeLayer(Layer):
             output_shape = self.output_shape
 
         if mode == 'uniform':
-            init_mem = k.random_uniform(output_shape,
-                                        -self._v_thresh, self._v_thresh)
+            init_mem = tf.random.uniform(output_shape,
+                                         -self._v_thresh, self._v_thresh)
         elif mode == 'bias':
-            init_mem = np.zeros(output_shape, k.floatx())
+            init_mem = tf.zeros(output_shape, self._floatx)
             if hasattr(self, 'b'):
                 b = self.get_weights()[1]
                 for i in range(len(b)):
                     init_mem[:, i, Ellipsis] = -b[i]
         else:  # mode == 'zero':
-            init_mem = np.zeros(output_shape, k.floatx())
+            init_mem = tf.zeros(output_shape, self._floatx)
         return init_mem
 
+    @tf.function
     def reset_spikevars(self, sample_idx):
         """
         Reset variables present in spiking layers. Can be turned off for
@@ -352,56 +346,65 @@ class SpikeLayer(Layer):
         mod = mod if mod else sample_idx + 1
         do_reset = sample_idx % mod == 0
         if do_reset:
-            k.set_value(self.mem, self.init_membrane_potential())
-            k.set_value(self.time, np.float32(self.dt))
+            self.mem.assign(self.init_membrane_potential())
+            self.time.assign(self.dt)
         if self.tau_refrac > 0:
-            k.set_value(self.refrac_until,
-                        np.zeros(self.output_shape, k.floatx()))
+            self.refrac_until.assign(tf.zeros(self.output_shape, self._floatx))
         if self.spiketrain is not None:
-            k.set_value(self.spiketrain,
-                        np.zeros(self.output_shape, k.floatx()))
+            self.spiketrain.assign(tf.zeros(self.output_shape, self._floatx))
         if self.payloads:
-            k.set_value(self.payloads,
-                        np.zeros(self.output_shape, k.floatx()))
-            k.set_value(self.payloads_sum,
-                        np.zeros(self.output_shape, k.floatx()))
+            self.payloads.assign(tf.zeros(self.output_shape, self._floatx))
+            self.payloads_sum.assign(tf.zeros(self.output_shape, self._floatx))
         if self.online_normalization and do_reset:
-            k.set_value(self.spikecounts,
-                        np.zeros(self.output_shape, k.floatx()))
-            k.set_value(self.max_spikerate, np.float32(0.))
-            k.set_value(self.v_thresh, np.float32(self._v_thresh))
+            self.spikecounts.assign(tf.zeros(self.output_shape, self._floatx))
+            self.max_spikerate.assign(0)
+            self.v_thresh.assign(self._v_thresh)
         if clamp_var and do_reset:
-            k.set_value(self.spikerate, np.zeros(self.input_shape, k.floatx()))
-            k.set_value(self.var, np.zeros(self.input_shape, k.floatx()))
+            self.spikerate.assign(tf.zeros(self.input_shape, self._floatx))
+            self.var.assign(tf.zeros(self.input_shape, self._floatx))
 
+    @tf.function
     def init_neurons(self, input_shape):
         """Init layer neurons."""
 
         from snntoolbox.bin.utils import get_log_keys, get_plot_keys
 
         output_shape = self.compute_output_shape(input_shape)
-        self.v_thresh = k.variable(self._v_thresh, name='v_thresh')
-        self.mem = k.variable(self.init_membrane_potential(output_shape),
-                              name='v_mem')
-        self.time = k.variable(self.dt, name='dt')
+        if self.v_thresh is None:  # Need this check because of @tf.function.
+            self.v_thresh = tf.Variable(self._v_thresh, name='v_thresh',
+                                        trainable=False)
+        if self.mem is None:
+            self.mem = tf.Variable(self.init_membrane_potential(output_shape),
+                                   name='v_mem', trainable=False)
+        if self.time is None:
+            self.time = tf.Variable(self.dt, name='dt', trainable=False)
         # To save memory and computations, allocate only where needed:
-        if self.tau_refrac > 0:
-            self.refrac_until = k.zeros(output_shape, name='refrac_until')
+        if self.tau_refrac > 0 and self.tau_refrac_until is None:
+            self.refrac_until = tf.Variable(
+                tf.zeros(output_shape), name='refrac_until', trainable=False)
         if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
                 'hist_spikerates_activations', 'operations',
                 'synaptic_operations_b_t', 'neuron_operations_b_t',
                 'spiketrains_n_b_l_t'} & (get_plot_keys(self.config) |
-               get_log_keys(self.config))):
-            self.spiketrain = k.zeros(output_shape, name='spiketrains')
-        if self.online_normalization:
-            self.spikecounts = k.zeros(output_shape, name='spikecounts')
-            self.max_spikerate = k.variable(0, name='max_spikerate')
-        if self.payloads:
-            self.payloads = k.zeros(output_shape, name='payloads')
-            self.payloads_sum = k.zeros(output_shape, name='payloads_sum')
-        if clamp_var:
-            self.spikerate = k.zeros(input_shape, name='spikerates')
-            self.var = k.zeros(input_shape, name='var')
+               get_log_keys(self.config))) and self.spiketrain is None:
+            self.spiketrain = tf.Variable(tf.zeros(output_shape),
+                                          trainable=False, name='spiketrains')
+        if self.online_normalization and self.spikecounts is None:
+            self.spikecounts = tf.Variable(tf.zeros(output_shape),
+                                           trainable=False, name='spikecounts')
+            self.max_spikerate = tf.Variable(tf.zeros([1]), trainable=False,
+                                             name='max_spikerate')
+        if self.config.getboolean('cell', 'payloads') \
+                and self.payloads is None:
+            self.payloads = tf.Variable(tf.zeros(output_shape),
+                                        trainable=False, name='payloads')
+            self.payloads_sum = tf.Variable(
+                tf.zeros(output_shape), trainable=False, name='payloads_sum')
+        if clamp_var and self.spikerate is None:
+            self.spikerate = tf.Variable(tf.zeros(input_shape),
+                                         trainable=False, name='spikerates')
+            self.var = tf.Variable(tf.zeros(input_shape),
+                                   trainable=False, name='var')
         if hasattr(self, 'clamp_idx'):
             self.clamp_idx = self.get_clamp_idx()
 
@@ -449,30 +452,33 @@ class SpikeLayer(Layer):
         delta = spikes - self.spikerate
         spikerate_new = self.spikerate + delta / self.time
         var_new = self.var + delta * (spikes - spikerate_new)
-        self.add_update([(self.var, var_new / self.time),
-                         (self.spikerate, spikerate_new)])
+        self.var.assign(var_new / self.time)
+        self.spikerate.assign(spikerate_new)
 
+    @tf.function
     def update_b(self):
         """
         Get a new value for the bias, relaxing it over time to the true value.
         """
 
         i = self.get_layer_idx()
-        return self.b0 * k.minimum(k.maximum(
-            0, 1 - (1 - 2 * self.time / self.duration) * i / 50), 1)
+        m = tf.clip_by_value(1 - (1 - 2 * self.time / self.duration) * i / 50,
+                             0, 1)
+        self.bias.assign(self.bias * m)
 
 
 def add_payloads(prev_layer, input_spikes):
     """Get payloads from previous layer."""
 
     # Get only payloads of those pre-synaptic neurons that spiked
-    payloads = tf.where(k.equal(input_spikes, 0.),
-                        k.zeros_like(input_spikes), prev_layer.payloads)
+    payloads = tf.where(tf.equal(input_spikes, 0.),
+                        tf.zeros_like(input_spikes), prev_layer.payloads)
     print("Using spikes with payloads from layer {}".format(prev_layer.name))
     return input_spikes + payloads
 
 
 def spike_call(call):
+    @tf.function
     def decorator(self, x):
 
         if clamp_var:
@@ -480,7 +486,7 @@ def spike_call(call):
             self.update_avg_variance(x)
         if self.online_normalization:
             # Modify threshold if firing rate of layer too low
-            self.add_update([(self.v_thresh, self.get_new_thresh())])
+            self.v_thresh.assign(self.get_new_thresh())
         if self.payloads:
             # Add payload from previous layer
             x = add_payloads(get_inbound_layers(self)[0], x)
@@ -492,8 +498,8 @@ def spike_call(call):
 
 
 def get_isi_from_impulse(impulse, epsilon):
-    return tf.where(k.less(impulse, epsilon), k.zeros_like(impulse),
-                    np.true_divide(1., impulse))
+    return tf.where(tf.less(impulse, epsilon), tf.zeros_like(impulse),
+                    tf.divide(1., impulse))
 
 
 class SpikeConcatenate(Concatenate):
@@ -530,7 +536,7 @@ class SpikeFlatten(Flatten):
 
     def call(self, x, mask=None):
 
-        return k.cast(super(SpikeFlatten, self).call(x), k.floatx())
+        return super(SpikeFlatten, self).call(x)
 
     @staticmethod
     def get_time():
@@ -622,11 +628,10 @@ class SpikeDense(Dense, SpikeLayer):
         """
 
         Dense.build(self, input_shape)
-        self.init_neurons(input_shape)
+        self.init_neurons(input_shape.as_list())
 
         if self.config.getboolean('cell', 'bias_relaxation'):
-            self.b0 = k.variable(k.get_value(self.bias))
-            self.add_update([(self.bias, self.update_b())])
+            self.update_b()
 
     @spike_call
     def call(self, x, **kwargs):
@@ -650,11 +655,10 @@ class SpikeConv2D(Conv2D, SpikeLayer):
         """
 
         Conv2D.build(self, input_shape)
-        self.init_neurons(input_shape)
+        self.init_neurons(input_shape.as_list())
 
         if self.config.getboolean('cell', 'bias_relaxation'):
-            self.b0 = k.variable(k.get_value(self.bias))
-            self.add_update([(self.bias, self.update_b())])
+            self.update_b()
 
     @spike_call
     def call(self, x, mask=None):
@@ -678,11 +682,10 @@ class SpikeDepthwiseConv2D(DepthwiseConv2D, SpikeLayer):
         """
 
         DepthwiseConv2D.build(self, input_shape)
-        self.init_neurons(input_shape)
+        self.init_neurons(input_shape.as_list())
 
         if self.config.getboolean('cell', 'bias_relaxation'):
-            self.b0 = k.variable(k.get_value(self.bias))
-            self.add_update([(self.bias, self.update_b())])
+            self.update_b()
 
     @spike_call
     def call(self, x, mask=None):
@@ -706,7 +709,7 @@ class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
         """
 
         AveragePooling2D.build(self, input_shape)
-        self.init_neurons(input_shape)
+        self.init_neurons(input_shape.as_list())
 
     @spike_call
     def call(self, x, mask=None):
@@ -716,9 +719,6 @@ class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
 
 class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
     """Spike Max Pooling."""
-
-    def __init__(self, **kwargs):
-        MaxPooling2D.__init__(self, **kwargs)
 
     def build(self, input_shape):
         """Creates the layer neurons and connections..
@@ -732,7 +732,7 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
         """
 
         MaxPooling2D.build(self, input_shape)
-        self.init_neurons(input_shape)
+        self.init_neurons(input_shape.as_list())
 
     @spike_call
     def call(self, x, mask=None):
@@ -741,8 +741,7 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
         print("WARNING: Rate-based spiking MaxPooling layer is not "
               "implemented in TensorFlow backend. Falling back on "
               "AveragePooling. Switch to Theano backend to use MaxPooling.")
-        return k.pool2d(x, self.pool_size, self.strides, self.padding,
-                        pool_mode='avg')
+        return tf.nn.avg_pool2d(x, self.pool_size, self.strides, self.padding)
 
 
 custom_layers = {'SpikeFlatten': SpikeFlatten,

@@ -785,7 +785,7 @@ class AbstractModelParser:
                                                verbose=0)
         else:
             steps = int(num_to_test / batch_size)
-            score = self.parsed_model.evaluate_generator(dataflow, steps)
+            score = self.parsed_model.evaluate(dataflow, steps=steps)
         print("Top-1 accuracy: {:.2%}".format(score[1]))
         print("Top-5 accuracy: {:.2%}\n".format(score[2]))
 

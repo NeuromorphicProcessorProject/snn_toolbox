@@ -4,21 +4,13 @@
 @author: rbodo
 """
 
-from __future__ import division, absolute_import
-from __future__ import print_function, unicode_literals
-
-from tensorflow import keras
+import tensorflow as tf
 import numpy as np
-from future import standard_library
 
 from snntoolbox.simulation.target_simulators.\
     INI_temporal_mean_rate_target_sim import SNN as SNN_
 from snntoolbox.simulation.utils import get_layer_synaptic_operations, \
     remove_name_counter
-
-standard_library.install_aliases()
-
-remove_classifier = False
 
 
 class SNN(SNN_):
@@ -47,7 +39,7 @@ class SNN(SNN_):
 
     def compile(self):
 
-        self.snn = keras.models.Model(
+        self.snn = tf.keras.models.Model(
             self._input_images,
             self._spiking_layers[self.parsed_model.layers[-1].name])
         self.snn.compile('sgd', 'categorical_crossentropy', ['accuracy'])
@@ -56,14 +48,13 @@ class SNN(SNN_):
         # variables (membrane potential etc). So a simple
         # snn.set_weights(parsed_model.get_weights()) does not work any more.
         # Need to extract the actual weights here:
-        parameter_map = {remove_name_counter(p.name): v for p, v in
-                         zip(self.parsed_model.weights,
-                             self.parsed_model.get_weights())}
+        parameter_map = {remove_name_counter(p.name): p for p in
+                         self.parsed_model.weights}
         count = 0
         for p in self.snn.weights:
             name = remove_name_counter(p.name)
             if name in parameter_map:
-                keras.backend.set_value(p, parameter_map[name])
+                p.assign(parameter_map[name])
                 count += 1
         assert count == len(parameter_map), "Not all weights have been " \
                                             "transferred from ANN to SNN."
@@ -71,10 +62,9 @@ class SNN(SNN_):
         for layer in self.snn.layers:
             if hasattr(layer, 'bias'):
                 # Adjust biases to time resolution of simulator.
-                bias = (keras.backend.get_value(layer.bias) /
-                        self._num_timesteps)
-                keras.backend.set_value(layer.bias, bias)
+                layer.bias.assign(layer.bias / self._num_timesteps)
 
+    # @tf.function
     def simulate(self, **kwargs):
 
         from snntoolbox.utils.utils import echo
@@ -98,7 +88,7 @@ class SNN(SNN_):
         for layer in self.snn.layers:
             # Excludes Input, Flatten, Concatenate, etc:
             if hasattr(layer, 'spikerates') and layer.spikerates is not None:
-                spikerates_b_l = keras.backend.get_value(layer.spikerates)
+                spikerates_b_l = layer.spikerates.numpy()
                 spiketrains_b_l_t = self.spikerates_to_trains(spikerates_b_l)
                 self.set_spikerates(spikerates_b_l, i)
                 self.set_spiketrains(spiketrains_b_l_t, i)
@@ -120,9 +110,6 @@ class SNN(SNN_):
                                           guesses_b)))
 
         return np.cumsum(output_b_l_t, 2)
-
-    def save(self, path, filename):
-        pass
 
     def load(self, path, filename):
         SNN_.load(self, path, filename)

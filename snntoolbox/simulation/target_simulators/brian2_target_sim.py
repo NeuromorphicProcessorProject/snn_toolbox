@@ -4,18 +4,12 @@
 @author: rbodo
 """
 
-from __future__ import division, absolute_import
-from __future__ import print_function, unicode_literals
-
 import warnings
 
 import numpy as np
 import os
-from future import standard_library
 
 from snntoolbox.simulation.utils import AbstractSNN, get_shape_from_label
-
-standard_library.install_aliases()
 
 
 class SNN(AbstractSNN):
