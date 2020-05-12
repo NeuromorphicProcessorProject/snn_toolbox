@@ -4,7 +4,7 @@ Pillow
 torch
 onnx
 onnxruntime
-onnx2keras
+# onnx2keras  # Latest version breaks installation in readthedocs build.
 lasagne
 theano
 brian2
