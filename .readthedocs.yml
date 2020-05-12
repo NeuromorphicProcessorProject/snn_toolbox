@@ -14,7 +14,6 @@ formats: []
 # Optionally set the version of Python and requirements required to build your docs
 python:
   install:
-    - requirements:
-      - requirements.txt
-      - requirements.rtd.txt
+    - requirements: requirements.txt
+    - requirements: requirements.rtd.txt
   system_packages: true
