@@ -40,6 +40,8 @@ from abc import abstractmethod
 from tensorflow import keras
 import numpy as np
 
+IS_CHANNELS_FIRST = keras.backend.image_data_format() == 'channels_first'
+
 
 class AbstractModelParser:
     """Abstract base class for neural network model parsers.
@@ -162,25 +164,63 @@ class AbstractModelParser:
             if layer_type == 'GlobalAveragePooling2D':
                 print("Replacing GlobalAveragePooling by AveragePooling "
                       "plus Flatten.")
-                a = 1 if keras.backend.image_data_format() == 'channels_last' \
-                    else 2
+                _layer_type = 'AveragePooling2D'
+                axis = 2 if IS_CHANNELS_FIRST else 1
                 self._layer_list.append(
-                    {'layer_type': 'AveragePooling2D',
-                     'name': self.get_name(layer, idx, 'AveragePooling2D'),
-                     'pool_size': (layer.input_shape[a: a + 2]),
+                    {'layer_type': _layer_type,
+                     'name': self.get_name(layer, idx, _layer_type),
+                     'pool_size': (layer.input_shape[axis: axis + 2]),
                      'inbound': self.get_inbound_names(layer, name_map),
                      'strides': [1, 1]})
-                name_map['AveragePooling2D' + str(idx)] = idx
+                name_map[_layer_type + str(idx)] = idx
                 idx += 1
-                num_str = str(idx) if idx > 9 else '0' + str(idx)
-                shape_string = str(np.prod(layer.output_shape[1:]))
+                _layer_type = 'Flatten'
+                num_str = self.format_layer_idx(idx)
+                shape_str = str(np.prod(layer.output_shape[1:]))
                 self._layer_list.append(
-                    {'name': num_str + 'Flatten_' + shape_string,
-                     'layer_type': 'Flatten',
+                    {'name': num_str + _layer_type + '_' + shape_str,
+                     'layer_type': _layer_type,
                      'inbound': [self._layer_list[-1]['name']]})
-                name_map['Flatten' + str(idx)] = idx
+                name_map[_layer_type + str(idx)] = idx
                 idx += 1
                 inserted_flatten = True
+
+            if layer_type == 'Add':
+                print("Replacing Add layer by Concatenate plus Conv.")
+                shape = layer.output_shape
+                if IS_CHANNELS_FIRST:
+                    axis = 1
+                    c, h, w = shape[1:]
+                    shape_str = '{}x{}x{}'.format(2 * c, h, w)
+                else:
+                    axis = -1
+                    h, w, c = shape[1:]
+                    shape_str = '{}x{}x{}'.format(h, w, 2 * c)
+                _layer_type = 'Concatenate'
+                num_str = self.format_layer_idx(idx)
+                self._layer_list.append({
+                    'layer_type': _layer_type,
+                    'name': num_str + _layer_type + '_' + shape_str,
+                    'inbound': self.get_inbound_names(layer, name_map),
+                    'axis': axis})
+                name_map[_layer_type + str(idx)] = idx
+                idx += 1
+                _layer_type = 'Conv2D'
+                num_str = self.format_layer_idx(idx)
+                shape_str = '{}x{}x{}'.format(*shape[1:])
+                weights = np.zeros([1, 1, 2 * c, c])
+                for k in range(c):
+                    weights[:, :, k::c, k] = 1
+                self._layer_list.append({
+                    'name': num_str + _layer_type + '_' + shape_str,
+                    'layer_type': _layer_type,
+                    'inbound': [self._layer_list[-1]['name']],
+                    'filters': c,
+                    'activation': 'relu',  # Default nonlinearity of SNN
+                    'parameters': (weights, np.zeros(c)),
+                    'kernel_size': 1})
+                name_map[str(id(layer))] = idx
+                idx += 1
 
             if layer_type not in snn_layers:
                 print("Skipping layer {}.".format(layer_type))
@@ -198,6 +238,7 @@ class AbstractModelParser:
                 print("Replacing max by average pooling.")
                 layer_type = 'AveragePooling2D'
 
+            # If we inserted a layer, need to set the right inbound layer here.
             if inserted_flatten:
                 inbound = [self._layer_list[-1]['name']]
                 inserted_flatten = False
@@ -479,9 +520,31 @@ class AbstractModelParser:
         shape_string[-1] = shape_string[-1][:-1]
         shape_string = "".join(shape_string)
 
-        num_str = str(idx) if idx > 9 else '0' + str(idx)
+        num_str = self.format_layer_idx(idx)
 
         return num_str + layer_type + shape_string
+
+    def format_layer_idx(self, idx):
+        """Pad the layer index with the appropriate amount of zeros.
+
+        The number of zeros used for padding is determined by the maximum index
+        (i.e. the number of layers in the network).
+
+        Parameters
+        ----------
+
+        idx: int
+            Layer index.
+
+        Returns
+        -------
+
+        num_str: str
+            Zero-padded layer index.
+        """
+
+        max_idx = len(self.input_model.layers)
+        return str(idx).zfill(len(str(max_idx)))
 
     @abstractmethod
     def get_output_shape(self, layer):
@@ -512,7 +575,7 @@ class AbstractModelParser:
             assert len(previous_layers) == 1, \
                 "Layer to flatten must be unique."
             print("Inserting layer Flatten.")
-            num_str = str(idx) if idx > 9 else '0' + str(idx)
+            num_str = self.format_layer_idx(idx)
             shape_string = str(np.prod(prev_layer_output_shape[1:]))
             self._layer_list.append({
                 'name': num_str + 'Flatten_' + shape_string,
@@ -1098,7 +1161,7 @@ def get_fanin(layer):
 
     layer_type = get_type(layer)
     if 'Conv' in layer_type:
-        ax = 1 if keras.backend.image_data_format() == 'channels_first' else -1
+        ax = 1 if IS_CHANNELS_FIRST else -1
         fanin = np.prod(layer.kernel_size) * layer.input_shape[ax]
     elif 'Dense' in layer_type:
         fanin = layer.input_shape[1]
@@ -1178,7 +1241,7 @@ def get_fanout_array(layer_pre, layer_post, is_depthwise_conv=False):
     the post-synaptic layer has stride > 1, the fan-out varies between neurons.
     """
 
-    ax = 1 if keras.backend.image_data_format() == 'channels_first' else 0
+    ax = 1 if IS_CHANNELS_FIRST else 0
 
     nx = layer_post.output_shape[2 + ax]  # Width of feature map
     ny = layer_post.output_shape[1 + ax]  # Height of feature map
