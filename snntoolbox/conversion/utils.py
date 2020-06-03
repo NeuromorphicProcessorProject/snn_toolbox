@@ -51,6 +51,8 @@ def normalize_parameters(model, config, **kwargs):
                 weights[layer.name] = w[0]
         np.savez_compressed(os.path.join(activ_dir, 'weights.npz'), **weights)
 
+    batch_size = config.getint('simulation', 'batch_size')
+
     # Either load scale factors from disk, or get normalization data set to
     # calculate them.
     x_norm = None
@@ -61,7 +63,8 @@ def normalize_parameters(model, config, **kwargs):
             x_norm = kwargs[str('x_norm')]
         elif 'dataflow' in kwargs:
             x_norm = []
-            while len(x_norm) < config.getint('simulation', 'num_to_test'):
+            num_samples_norm = config.getint('simulation', 'num_to_test')
+            while len(x_norm) * batch_size < num_samples_norm:
                 x, y = kwargs[str('dataflow')].next()
                 x_norm.append(x)
             x_norm = np.concatenate(x_norm)
@@ -79,8 +82,6 @@ def normalize_parameters(model, config, **kwargs):
                       "loaded. Proceeding without normalization.",
                       RuntimeWarning)
         return
-
-    batch_size = config.getint('simulation', 'batch_size')
 
     # If scale factors have not been computed in a previous run, do so now.
     if len(scale_facs) == 1:
