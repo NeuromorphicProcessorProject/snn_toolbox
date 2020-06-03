@@ -41,7 +41,6 @@ class SNN(AbstractSNN):
         self._spiking_layers = {}
         self._input_images = None
         self._binary_activation = None
-        self.avg_rate = None
         self._input_spikecount = None
 
     @property
@@ -142,9 +141,7 @@ class SNN(AbstractSNN):
         print("Current accuracy of batch:")
 
         # Loop through simulation time.
-        self.avg_rate = 0
         self._input_spikecount = 0
-        actual_num_timesteps = self._num_timesteps
         for sim_step_int in range(self._num_timesteps):
             sim_step = (sim_step_int + 1) * self._dt
             self.set_time(sim_step)
@@ -157,7 +154,6 @@ class SNN(AbstractSNN):
 
             if self.config.getboolean('simulation', 'early_stopping') and \
                     np.count_nonzero(input_b_l) == 0:
-                actual_num_timesteps = sim_step
                 print("\nInput empty: Finishing simulation {} steps early."
                       "".format(self._num_timesteps - sim_step_int))
                 break
@@ -180,7 +176,6 @@ class SNN(AbstractSNN):
                 if hasattr(layer, 'spiketrain') \
                         and layer.spiketrain is not None:
                     spiketrains_b_l = keras.backend.get_value(layer.spiketrain)
-                    self.avg_rate += np.count_nonzero(spiketrains_b_l)
                     if self.spiketrains_n_b_l_t is not None:
                         self.spiketrains_n_b_l_t[i][0][
                             Ellipsis, sim_step_int] = spiketrains_b_l
@@ -235,13 +230,6 @@ class SNN(AbstractSNN):
             print("SNN Toolbox WARNING: Simulation of current batch finished, "
                   "but {} input events were not processed. Consider "
                   "increasing the simulation time.".format(remaining_events))
-
-        self.avg_rate /= self.batch_size * np.sum(self.num_neurons) * \
-            actual_num_timesteps
-
-        if self.spiketrains_n_b_l_t is None:
-            print("Average spike rate: {} spikes per simulation time step."
-                  "".format(self.avg_rate))
 
         return np.cumsum(output_b_l_t, 2)
 
