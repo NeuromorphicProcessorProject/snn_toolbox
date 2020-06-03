@@ -10,6 +10,7 @@ import sys
 from tensorflow import keras
 import numpy as np
 
+from snntoolbox.parsing.utils import get_inbound_layers_with_params
 from snntoolbox.simulation.utils import AbstractSNN, remove_name_counter
 
 remove_classifier = False
@@ -84,6 +85,8 @@ class SNN(AbstractSNN):
 
         spike_layer = spike_layer_name(**layer_kwargs)
         spike_layer.activation_str = activation_str
+        spike_layer.is_first_spiking = \
+            len(get_inbound_layers_with_params(layer)) == 0
         self._spiking_layers[layer.name] = spike_layer(inbound)
 
     def build_dense(self, layer):

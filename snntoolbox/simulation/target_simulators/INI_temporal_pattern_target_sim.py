@@ -89,7 +89,8 @@ class SNN(SNN_):
             # Excludes Input, Flatten, Concatenate, etc:
             if hasattr(layer, 'spikerates') and layer.spikerates is not None:
                 spikerates_b_l = layer.spikerates.numpy()
-                spiketrains_b_l_t = self.spikerates_to_trains(spikerates_b_l)
+                spiketrains_b_l_t = to_binary_numpy(spikerates_b_l,
+                                                    self.num_bits)
                 self.set_spikerates(spikerates_b_l, i)
                 self.set_spiketrains(spiketrains_b_l_t, i)
                 if self.synaptic_operations_b_t is not None:
@@ -127,14 +128,40 @@ class SNN(SNN_):
 
     def set_synaptic_operations(self, spiketrains_b_l_t, i):
         for t in range(self.synaptic_operations_b_t.shape[-1]):
-            self.synaptic_operations_b_t[:, t] += 2 * \
-                get_layer_synaptic_operations(
-                    spiketrains_b_l_t[Ellipsis, t], self.fanout[i + 1])
+            ops = get_layer_synaptic_operations(spiketrains_b_l_t[Ellipsis, t],
+                                                self.fanout[i + 1])
+            self.synaptic_operations_b_t[:, t] += 2 * ops
 
-    def spikerates_to_trains(self, spikerates_b_l):
-        x = self.sim.to_binary_numpy(spikerates_b_l, self.num_bits)
-        shape = [self.num_bits] + [1] * (x.ndim - 1)
-        x *= np.resize(np.arange(self.num_bits), shape)
-        perm = (1, 2, 3, 0) if len(x.shape) > 2 else (1, 0)
-        spiketrains_b_l_t = np.expand_dims(np.transpose(x, perm), 0)
-        return spiketrains_b_l_t
+
+def to_binary_numpy(x, num_bits):
+    """Transform an array of floats into binary representation.
+
+    Parameters
+    ----------
+
+    x: ndarray
+        Input array containing float values. The first dimension has to be of
+        length 1.
+    num_bits: int
+        The fixed point precision to be used when converting to binary.
+
+    Returns
+    -------
+
+    y: ndarray
+        Output array with same shape as ``x`` except that an axis is added to
+        the last dimension with size ``num_bits``. The binary representation of
+        each value in ``x`` is distributed across the last dimension of ``y``.
+    """
+
+    n = 2 ** num_bits - 1
+    a = np.round(x * n) / n
+
+    y = np.zeros(list(x.shape) + [num_bits])
+    for i in range(num_bits):
+        p = 2 ** -(i + 1)
+        b = np.greater(a, p) * p
+        y[Ellipsis, i] = b
+        a -= b
+
+    return y
