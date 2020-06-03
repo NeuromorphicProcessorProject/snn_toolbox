@@ -45,11 +45,12 @@ def get_dataset(config):
 
     """
 
-    testset = None
+    testset = {}
     normset = try_get_normset_from_scalefacs(config)
     dataset_path = config.get('paths', 'dataset_path')
     is_testset_needed = config.getboolean('tools', 'evaluate_ann') or \
-        config.getboolean('tools', 'simulate')
+        config.getboolean('tools', 'simulate') or \
+        config.getboolean('loihi', 'normalize_thresholds', fallback=False)
     is_normset_needed = config.getboolean('tools', 'normalize') and \
         normset is None
 
@@ -114,12 +115,14 @@ def get_dataset(config):
             dataflow_kwargs['batch_size'] = config.getint('simulation',
                                                           'batch_size')
         datagen = ImageDataGenerator(**datagen_kwargs)
-        # Compute quantities required for featurewise normalization
-        # (std, mean, and principal components if ZCA whitening is applied)
-        rs = datagen_kwargs['rescale'] if 'rescale' in datagen_kwargs else None
-        x_orig = ImageDataGenerator(rescale=rs).flow_from_directory(
-            **dataflow_kwargs).next()[0]
-        datagen.fit(x_orig)
+        if (datagen.featurewise_center or datagen.featurewise_std_normalization
+                or datagen.zca_whitening):
+            # Compute quantities required for featurewise normalization
+            # (std, mean, and principal components if ZCA whitening is applied)
+            rs = datagen_kwargs.get('rescale', None)
+            x_orig = ImageDataGenerator(rescale=rs).flow_from_directory(
+                **dataflow_kwargs).next()[0]
+            datagen.fit(x_orig)
         if is_normset_needed:
             shuffle = dataflow_kwargs.get('shuffle')
             dataflow_kwargs['shuffle'] = True
