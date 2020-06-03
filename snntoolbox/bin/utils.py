@@ -401,9 +401,10 @@ def update_setup(config_filepath):
             assert os.path.isfile(py_filepath), \
                 "File {} not found.".format(py_filepath)
         else:
-            print("For the specified input model library {}, no test is "
-                  "implemented to check if input model files exist in the "
-                  "specified working directory!".format(model_lib))
+            pass
+            # print("For the specified input model library {}, no test is "
+            #       "implemented to check if input model files exist in the "
+            #       "specified working directory!".format(model_lib))
 
     # Set default path if user did not specify it.
     if config.get('paths', 'dataset_path') == '':

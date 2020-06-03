@@ -531,6 +531,9 @@ class AbstractSNN:
         path_acc = os.path.join(log_dir, 'accuracy.txt')
         if os.path.isfile(path_acc):
             os.remove(path_acc)
+        with open(path_acc, str('a')) as f_acc:
+            f_acc.write(str("# samples | SNN top-1 | top-{0} | ANN top-1 | "
+                            "top-{0}\n".format(self.top_k)))
 
         self.init_log_vars()
 
@@ -632,9 +635,6 @@ class AbstractSNN:
                 batch_idx + 1, num_batches, (batch_idx + 1) / num_batches))
             print("Moving accuracy of SNN (top-1, top-{}): {:.2%}, {:.2%}."
                   "".format(self.top_k, top1acc_moving, top5acc_moving))
-            with open(path_acc, str('a')) as f_acc:
-                f_acc.write(str("{} {:.2%} {:.2%}\n".format(
-                    num_samples_seen, top1acc_moving, top5acc_moving)))
 
             # Evaluate ANN on the same batch as SNN for a direct comparison.
             score = self.parsed_model.evaluate(
@@ -646,6 +646,11 @@ class AbstractSNN:
             print("Moving accuracy of ANN (top-1, top-{}): {:.2%}, {:.2%}."
                   "\n".format(self.top_k, 1 - self.top1err_ann,
                               1 - self.top5err_ann))
+
+            with open(path_acc, str('a')) as f_acc:
+                f_acc.write(str("{} {:.2%} {:.2%} {:.2%} {:.2%}\n".format(
+                    num_samples_seen, top1acc_moving, top5acc_moving,
+                    1 - self.top1err_ann, 1 - self.top5err_ann)))
 
             # Plot input image.
             if 'input_image' in self._plot_keys:
