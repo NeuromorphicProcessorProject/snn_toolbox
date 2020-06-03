@@ -812,9 +812,10 @@ class AbstractModelParser:
         self.parsed_model = keras.models.Model(img_input, parsed_layers[
             self._layer_list[-1]['name']])
         # Optimizer and loss do not matter because we only do inference.
-        self.parsed_model.compile(
-            'sgd', 'categorical_crossentropy',
-            ['accuracy', keras.metrics.top_k_categorical_accuracy])
+        top_k = lambda x, y: keras.metrics.top_k_categorical_accuracy(
+            x, y, self.config.getint('simulation', 'top_k'))
+        self.parsed_model.compile('sgd', 'categorical_crossentropy',
+                                  ['accuracy', top_k])
         # Todo: Enable adding custom metric via self.input_model.metrics.
         self.parsed_model.summary()
         return self.parsed_model
