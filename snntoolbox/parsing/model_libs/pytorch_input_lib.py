@@ -64,15 +64,14 @@ def load(path, filename):
         if os.path.exists(model_path):
             break
     assert model_path, "Pytorch state_dict not found at {}".format(model_path)
-    model_pytorch.load_state_dict(torch.load(model_path,
-                                             map_location=map_location))
-
-    # state_dict = torch.load(model_path, map_location=map_location)['state_dict']
-    # new_state_dict = {}
-    # for k, v in state_dict.items():
-    #     k = str(k).replace('module.', '')
-    #     new_state_dict[k] = v
-    # model_pytorch.load_state_dict(new_state_dict, strict=False)
+    try:
+        model_pytorch.load_state_dict(
+            torch.load(model_path, map_location=map_location))
+    except RuntimeError as e:
+        print("WARNING: Ignored mismatch when loading pytorch state_dict.")
+        print(e)
+        model_pytorch.load_state_dict(
+            torch.load(model_path, map_location=map_location), strict=False)
 
     # Switch from train to eval mode to ensure Dropout / BatchNorm is handled
     # correctly.
