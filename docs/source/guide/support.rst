@@ -3,10 +3,6 @@
 Support
 =======
 
-For questions and feedback, please write to
+For usage questions and bug reports please submit a ticket on the associated github page.
 
-Bodo Rueckauer
-
-rbodo(at)ini(dot)uzh(dot)ch
-
-We are happy to hear from you!
+If applicable, provide your config file as well as the full stack trace.
