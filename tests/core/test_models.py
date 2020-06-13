@@ -55,8 +55,7 @@ class TestInputModel:
         _config.set('simulation', 'num_to_test', str(num_to_test))
 
         _, testset = get_dataset(_config)
-        x_test = testset['x_test']
-        y_test = testset['y_test']
+        dataflow = testset['dataflow']
 
         model_lib = import_module('snntoolbox.parsing.model_libs.' +
                                   _config.get('input', 'model_lib') +
@@ -65,8 +64,9 @@ class TestInputModel:
         model_parser.parse()
         model_parser.build_parsed_model()
         _, acc, _ = model_parser.evaluate(batch_size, num_to_test,
-                                          x_test, y_test)
-        _, target_acc = _model_2.evaluate(x_test, y_test, batch_size)
+                                          dataflow=dataflow)
+        _, target_acc = _model_2.evaluate(dataflow,
+                                          steps=int(num_to_test / batch_size))
         assert acc == target_acc
 
     def test_normalizing(self, _model_2, _config):
@@ -83,9 +83,8 @@ class TestInputModel:
         _config.set('simulation', 'num_to_test', str(num_to_test))
 
         normset, testset = get_dataset(_config)
-        x_test = testset['x_test']
-        y_test = testset['y_test']
-        x_norm = normset['x_norm']
+        dataflow = testset['dataflow']
+        dataflow_norm = normset['dataflow']
 
         model_lib = import_module('snntoolbox.parsing.model_libs.' +
                                   _config.get('input', 'model_lib') +
@@ -94,11 +93,12 @@ class TestInputModel:
         model_parser.parse()
         parsed_model = model_parser.build_parsed_model()
 
-        normalize_parameters(parsed_model, _config, x_norm=x_norm)
+        normalize_parameters(parsed_model, _config, dataflow=dataflow_norm)
 
         _, acc, _ = model_parser.evaluate(batch_size, num_to_test,
-                                          x_test, y_test)
-        _, target_acc = _model_2.evaluate(x_test, y_test, batch_size)
+                                          dataflow=dataflow)
+        _, target_acc = _model_2.evaluate(dataflow,
+                                          steps=int(num_to_test / batch_size))
         assert acc == target_acc
 
 
