@@ -49,7 +49,7 @@ class SNN(SNN_):
             # Generate new input in case it changes with each simulation step.
             if self._poisson_input:
                 input_b_l = self.get_poisson_frame_batch(kwargs[str('x_b_l')])
-            elif self._dataset_format == 'aedat':
+            elif self._is_aedat_input:
                 input_b_l = kwargs[str('dvs_gen')].next_eventframe_batch()
 
             # Main step: Propagate input through network and record output
@@ -89,7 +89,7 @@ class SNN(SNN_):
 
             if 'input_b_l_t' in self._log_keys:
                 self.input_b_l_t[Ellipsis, sim_step_int] = input_b_l
-            if self._poisson_input or self._dataset_format == 'aedat':
+            if self._poisson_input or self._is_aedat_input:
                 if self.synaptic_operations_b_t is not None:
                     self.synaptic_operations_b_t[:, sim_step_int] += \
                         get_layer_synaptic_operations(input_b_l,

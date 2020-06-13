@@ -18,6 +18,8 @@ import os
 
 from configparser import NoOptionError
 import numpy as np
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from snntoolbox.utils.utils import import_helpers
 
 
 def get_dataset(config):
@@ -48,11 +50,14 @@ def get_dataset(config):
     testset = {}
     normset = try_get_normset_from_scalefacs(config)
     dataset_path = config.get('paths', 'dataset_path')
+    dataset_format = config.get('input', 'dataset_format')
+    normalize_thresholds = config.getboolean('loihi', 'normalize_thresholds',
+                                             fallback=False)
     is_testset_needed = config.getboolean('tools', 'evaluate_ann') or \
-        config.getboolean('tools', 'simulate') or \
-        config.getboolean('loihi', 'normalize_thresholds', fallback=False)
-    is_normset_needed = config.getboolean('tools', 'normalize') and \
-        normset is None
+        config.getboolean('tools', 'simulate') or normalize_thresholds
+    is_normset_needed = normalize_thresholds or (
+            config.getboolean('tools', 'normalize') and normset is None)
+    batch_size = config.getint('simulation', 'batch_size')
 
     # _______________________________ Keras __________________________________#
     try:
@@ -73,22 +78,24 @@ def get_dataset(config):
         print("Warning:", e)
 
     # ________________________________ npz ___________________________________#
-    if config.get('input', 'dataset_format') == 'npz':
+    if dataset_format == 'npz':
         print("Loading data set from '.npz' files in {}.\n".format(
             dataset_path))
         if is_testset_needed:
             num_to_test = config.getint('simulation', 'num_to_test')
-            testset = {
-                'x_test': load_npz(dataset_path, 'x_test.npz')[:num_to_test],
-                'y_test': load_npz(dataset_path, 'y_test.npz')[:num_to_test]}
-            assert testset, "Test set empty."
+            x_test = load_npz(dataset_path, 'x_test.npz')[:num_to_test]
+            y_test = load_npz(dataset_path, 'y_test.npz')[:num_to_test]
+            dataflow = ImageDataGenerator().flow(x_test, y_test, batch_size,
+                                                 shuffle=False)
+            testset = {'dataflow': dataflow}
         if is_normset_needed:
-            normset = {'x_norm': load_npz(dataset_path, 'x_norm.npz')}
-            assert normset, "Normalization set empty."
+            x_norm = load_npz(dataset_path, 'x_norm.npz')
+            dataflow = ImageDataGenerator().flow(x_norm, batch_size=batch_size,
+                                                 shuffle=True)
+            normset = {'dataflow': dataflow}
 
     # ________________________________ jpg ___________________________________#
-    elif config.get('input', 'dataset_format') in {'jpg', 'png'}:
-        from tensorflow.keras.preprocessing.image import ImageDataGenerator
+    elif dataset_format in {'jpg', 'png'}:
         print("Loading data set from ImageDataGenerator, using images in "
               "{}.\n".format(dataset_path))
         # Transform str to dict
@@ -104,7 +111,6 @@ def get_dataset(config):
 
         # Get proprocessing function
         if 'preprocessing_function' in datagen_kwargs:
-            from snntoolbox.utils.utils import import_helpers
             helpers = import_helpers(datagen_kwargs['preprocessing_function'],
                                      config)
             datagen_kwargs['preprocessing_function'] = \
@@ -112,8 +118,7 @@ def get_dataset(config):
 
         dataflow_kwargs['directory'] = dataset_path
         if 'batch_size' not in dataflow_kwargs:
-            dataflow_kwargs['batch_size'] = config.getint('simulation',
-                                                          'batch_size')
+            dataflow_kwargs['batch_size'] = batch_size
         datagen = ImageDataGenerator(**datagen_kwargs)
         if (datagen.featurewise_center or datagen.featurewise_std_normalization
                 or datagen.zca_whitening):
@@ -136,11 +141,15 @@ def get_dataset(config):
             assert testset, "Test set empty."
 
     # _______________________________ aedat __________________________________#
-    elif config.get('input', 'dataset_format') == 'aedat':
+    elif dataset_format == 'aedat':
         if is_normset_needed:
-            normset = {'x_norm': load_npz(dataset_path, 'x_norm.npz')}
-            assert normset, "Normalization set empty."
-        testset = {}
+            print("Loading normalization dataset from '.npz' file in {}.\n"
+                  "".format(dataset_path))
+            x_norm = load_npz(dataset_path, 'x_norm.npz')
+            normset = {'x_norm': x_norm}
+            # For Loihi threshold normalization we need to pass the
+            # normalization data in the testset dict.
+            testset = {'x_norm': x_norm}
 
     return normset, testset
 

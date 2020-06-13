@@ -167,7 +167,10 @@ class AbstractSNN:
 
         self.sim = initialize_simulator(config)
 
-        self._dataset_format = self.config.get('input', 'dataset_format')
+        self._is_early_stopping = self.config.getboolean('simulation',
+                                                         'early_stopping')
+        self._is_aedat_input = \
+            self.config.get('input', 'dataset_format') == 'aedat'
         self._poisson_input = self.config.getboolean('input', 'poisson_input')
         self._num_poisson_events_per_sample = \
             self.config.getint('input', 'num_poisson_events_per_sample')
@@ -512,10 +515,8 @@ class AbstractSNN:
 
         # Divide the test set into batches and run all samples in a batch in
         # parallel.
-        dataset_format = self.config.get('input', 'dataset_format')
-        num_batches = int(1e6) if dataset_format == 'aedat' else \
-            int(np.floor(self.config.getint('simulation', 'num_to_test') /
-                         self.batch_size))
+        num_batches = \
+            self.config.getint('simulation', 'num_to_test') // self.batch_size
 
         # Initialize intermediate variables for computing statistics.
         top5score_moving = 0
@@ -543,10 +544,10 @@ class AbstractSNN:
         data_batch_kwargs = {}
 
         # If DVS events are used as input, instantiate a DVSIterator.
-        if dataset_format == 'aedat':
+        if self._is_aedat_input:
             from snntoolbox.datasets.aedat.DVSIterator import DVSIterator
             batch_shape = list(np.array(
-                self.parsed_model.layers[0].batch_input_shape, int))
+                self.parsed_model.layers[0].input_shape, int).flatten())
             batch_shape[0] = self.batch_size
             # Get shape of input image, in case we need to subsample.
             image_shape = batch_shape[1:3] \
@@ -580,7 +581,7 @@ class AbstractSNN:
                     y_b_l = y_test[batch_idxs, :]
             elif dataflow is not None:
                 x_b_l, y_b_l = dataflow.next()
-            elif dataset_format == 'aedat':
+            elif self._is_aedat_input:
                 try:
                     data_batch_kwargs['dvs_gen'].next_sequence_batch()
                     y_b_l = data_batch_kwargs['dvs_gen'].y_b
@@ -589,6 +590,11 @@ class AbstractSNN:
 
                 # Generate frames so we can compare with ANN.
                 x_b_l = data_batch_kwargs['dvs_gen'].get_frame_batch()
+
+            # Effective batch size could be smaller than user-specified
+            # self.batch_size if dataset size not an integer multiple.
+            if len(x_b_l) < self.batch_size:
+                continue
 
             truth_b = np.argmax(y_b_l, axis=1)
 
@@ -1015,7 +1021,7 @@ class AbstractSNN:
         simulation.
         """
 
-        if self._poisson_input or self._dataset_format == 'aedat':
+        if self._poisson_input or self._is_aedat_input:
             spiketrains_b_l_t = self.get_spiketrains_input()
             if self.input_b_l_t is not None:
                 self.input_b_l_t = spiketrains_b_l_t

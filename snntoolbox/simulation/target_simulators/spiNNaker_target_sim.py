@@ -354,7 +354,7 @@ class SNN(PYSNN):
         if self._poisson_input:
             rates = 1000 * x_flat / self.rescale_fac
             self.layers[0].set(rate=rates)
-        elif self._dataset_format == 'aedat':
+        elif self._is_aedat_input:
             raise NotImplementedError
         else:
             spike_times = \

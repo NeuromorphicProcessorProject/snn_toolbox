@@ -199,7 +199,7 @@ class SNN(AbstractSNN):
         x_flat = np.ravel(data)
         if self._poisson_input:
             self.layers[0].set(rate=list(x_flat / self.rescale_fac * 1000))
-        elif self._dataset_format == 'aedat':
+        elif self._is_aedat_input:
             raise NotImplementedError
         else:
             spike_times = \

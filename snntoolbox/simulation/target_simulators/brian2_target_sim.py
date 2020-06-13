@@ -218,7 +218,7 @@ class SNN(AbstractSNN):
         inputs = kwargs[str('x_b_l')].flatten() / self.sim.ms
         if self._poisson_input:
             self._input_layer.rates = inputs / self.rescale_fac
-        elif self._dataset_format == 'aedat':
+        elif self._is_aedat_input:
             # TODO: Implement by using brian2.SpikeGeneratorGroup.
             raise NotImplementedError
         else:

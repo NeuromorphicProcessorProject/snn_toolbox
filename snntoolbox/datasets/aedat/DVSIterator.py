@@ -148,6 +148,12 @@ class DVSIterator(object):
                            self.batch_size * self.batch_idx)
         return self.frames_from_sequence[event_idxs]
 
+    def remaining_events_of_current_batch(self):
+        num_events = 0
+        for deque in self.event_deques_batch:
+            num_events += len(deque)
+        return num_events
+
 
 def extract_batch(event_list, frame_gen_method, batch_size,
                   batch_idx, num_events_per_frame, maxpool_subsampling,

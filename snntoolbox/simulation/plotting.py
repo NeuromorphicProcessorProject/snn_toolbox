@@ -1178,21 +1178,27 @@ def plot_weight_distribution(path, model):
 
 def plot_execution_time_probe(path, probe):
     plt.figure(figsize=(20, 5))
-    probe.plotExecutionTime()
-    plt.savefig(os.path.join(path, 'etprobe'))
+    probe.plotExecutionTime('log')
+    plt.savefig(os.path.join(path, 'time_probe'))
     execution_time = np.stack([probe.totalTimePerTimeStep,
                                probe.hostTimePerTimeStep,
                                probe.managementTimePerTimeStep,
                                probe.learningTimePerTimeStep,
                                probe.spikingTimePerTimeStep], -1)
-    np.savetxt(os.path.join(path, 'etprobe_csv'), execution_time, fmt='%.4e',
-               delimiter=',')
+    np.savetxt(os.path.join(path, 'time_probe_csv'), execution_time,
+               fmt='%.4e', delimiter=',')
 
 
 def plot_energy_probe(path, probe):
     plt.figure(figsize=(20, 5))
-    probe.plotEnergy()
-    plt.savefig(os.path.join(path, 'eprobe'))
+    probe.plotEnergy('log')
+    plt.savefig(os.path.join(path, 'energy_probe'))
+
+
+def plot_power_probe(path, probe):
+    plt.figure(figsize=(20, 5))
+    probe.plotPower()
+    plt.savefig(os.path.join(path, 'power_probe'))
 
 
 def plot_parameter_histogram(path, filename, weights, biases, bins=32):

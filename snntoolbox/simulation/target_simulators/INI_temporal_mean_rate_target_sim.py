@@ -152,11 +152,10 @@ class SNN(AbstractSNN):
             # Generate new input in case it changes with each simulation step.
             if self._poisson_input:
                 input_b_l = self.get_poisson_frame_batch(kwargs[str('x_b_l')])
-            elif self._dataset_format == 'aedat':
+            elif self._is_aedat_input:
                 input_b_l = kwargs[str('dvs_gen')].next_eventframe_batch()
 
-            if self.config.getboolean('simulation', 'early_stopping') and \
-                    np.count_nonzero(input_b_l) == 0:
+            if self._is_early_stopping and np.count_nonzero(input_b_l) == 0:
                 print("\nInput empty: Finishing simulation {} steps early."
                       "".format(self._num_timesteps - sim_step_int))
                 break
@@ -197,7 +196,7 @@ class SNN(AbstractSNN):
 
             if 'input_b_l_t' in self._log_keys:
                 self.input_b_l_t[Ellipsis, sim_step_int] = input_b_l
-            if self._poisson_input or self._dataset_format == 'aedat':
+            if self._poisson_input or self._is_aedat_input:
                 if self.synaptic_operations_b_t is not None:
                     self.synaptic_operations_b_t[:, sim_step_int] += \
                         get_layer_synaptic_operations(input_b_l,
@@ -221,7 +220,7 @@ class SNN(AbstractSNN):
                 sys.stdout.write('\r{:>7.2%}'.format(current_acc))
                 sys.stdout.flush()
 
-        if self._dataset_format == 'aedat':
+        if self._is_aedat_input:
             remaining_events = \
                 len(kwargs[str('dvs_gen')].event_deques_batch[0])
         elif self._poisson_input and self._num_poisson_events_per_sample > 0:

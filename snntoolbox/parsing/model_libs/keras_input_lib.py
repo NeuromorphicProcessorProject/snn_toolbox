@@ -202,13 +202,11 @@ def evaluate(val_fn, batch_size, num_to_test, x_test=None, y_test=None,
 
     if x_test is not None:
         score = val_fn(x_test, y_test, batch_size, verbose=0)
+    elif dataflow is not None:
+        steps = len(dataflow)
+        score = val_fn(dataflow, batch_size=batch_size, verbose=0, steps=steps)
     else:
-        score = np.zeros(3)
-        batches = int(num_to_test / batch_size)
-        for i in range(batches):
-            x_batch, y_batch = dataflow.next()
-            score += val_fn(x_batch, y_batch, batch_size, verbose=0)
-        score /= batches
+        raise NotImplementedError
 
     print("Top-1 accuracy: {:.2%}".format(score[1]))
     print("Top-5 accuracy: {:.2%}\n".format(score[2]))
