@@ -7,6 +7,8 @@ for use in a time-stepped simulator.
 
 import os
 import numpy as np
+from collections import deque
+from more_itertools import unique_everseen
 from snntoolbox.datasets.utils import to_categorical
 
 
@@ -45,7 +47,7 @@ class DVSIterator(object):
 
         self.label_dict = dict(zip(classes, range(len(classes)))) \
             if not label_dict else label_dict
-        self.num_classes = len(label_dict)
+        self.num_classes = len(self.label_dict)
         assert self.num_classes == len(classes), \
             "The number of classes provided by label_dict {} does not match " \
             "the number of subdirectories found in dataset_path {}.".format(
@@ -89,8 +91,8 @@ class DVSIterator(object):
         self.num_events_of_sample = len(event_list)
         print("Total number of events of this sample: {}.".format(
             self.num_events_of_sample))
-        print("Number of batches: {:d}.".format(
-            int(self.num_events_of_sample / self.num_events_per_batch)))
+        print("Number of batches: {}.".format(
+            self.num_events_of_sample // self.num_events_per_batch + 1))
 
         # Reset batch index, because new sequence will be used to generate new
         # batches.
@@ -121,8 +123,8 @@ class DVSIterator(object):
                 self.is_x_flipped, self.is_y_flipped, self.maxpool_subsampling,
                 self.do_clip_three_sigma, self.chip_size, self.target_shape)
             # Discard last frames that do not fill a complete batch.
-            num_frames = self.batch_size * int(self.num_events_of_sample /
-                                               self.num_events_per_batch)
+            num_frames = self.batch_size * (self.num_events_of_sample //
+                                            self.num_events_per_batch + 1)
             self.frames_from_sequence = self.frames_from_sequence[:num_frames]
 
         # From the current event sequence, extract the next bunch of events and
@@ -150,8 +152,8 @@ class DVSIterator(object):
 
     def remaining_events_of_current_batch(self):
         num_events = 0
-        for deque in self.event_deques_batch:
-            num_events += len(deque)
+        for d in self.event_deques_batch:
+            num_events += len(d)
         return num_events
 
 
@@ -183,9 +185,6 @@ def extract_batch(event_list, frame_gen_method, batch_size,
 
     """
 
-    from collections import deque
-    from more_itertools import unique_everseen
-
     if target_shape is None:
         target_shape = chip_size
         scale = None
@@ -216,13 +215,15 @@ def extract_batch(event_list, frame_gen_method, batch_size,
             pp = p if frame_gen_method == 'signed_sum' else 1
             frame_event_list.append((x, y, t, pp))
 
+        num_events = len(frame_event_list)
+
         if maxpool_subsampling:
             frame_event_list = list(unique_everseen(frame_event_list))
             num_events_after_subsampling = len(frame_event_list)
             print("Discarded {} events during subsampling.".format(
-                num_events_per_frame - num_events_after_subsampling))
+                num_events - num_events_after_subsampling))
         else:
-            num_events_after_subsampling = num_events_per_frame
+            num_events_after_subsampling = num_events
 
         if do_clip_three_sigma:
             for x, y, t, p in frame_event_list:
@@ -437,15 +438,13 @@ def get_frames_from_sequence(event_list, num_events_per_frame, data_format,
     ``xaddr`` etc sequentially until all are processed into frames.
     """
 
-    from more_itertools import unique_everseen
-
     if target_shape is None:
         target_shape = chip_size
         scale = None
     else:
         scale = [np.true_divide((t - 1), (c - 1)) for t, c in zip(target_shape,
                                                                   chip_size)]
-    num_frames = int(len(event_list) / num_events_per_frame)
+    num_frames = len(event_list) // num_events_per_frame + 1
     frames = np.zeros([num_frames] + list(target_shape), 'float32')
 
     print("Extracting {} frames from DVS event sequence.".format(num_frames))
