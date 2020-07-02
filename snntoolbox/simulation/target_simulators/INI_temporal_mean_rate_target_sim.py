@@ -42,7 +42,6 @@ class SNN(AbstractSNN):
         self._spiking_layers = {}
         self._input_images = None
         self._binary_activation = None
-        self._input_spikecount = None
 
     @property
     def is_parallelizable(self):
@@ -138,6 +137,10 @@ class SNN(AbstractSNN):
 
         input_b_l = kwargs[str('x_b_l')] * self._dt
 
+        # Optionally stop simulation of current batch when number of input
+        # spikes exceeds a given limit.
+        num_timesteps = self._get_timestep_at_spikecount(input_b_l)
+
         output_b_l_t = np.zeros((self.batch_size, self.num_classes,
                                  self._num_timesteps))
 
@@ -145,7 +148,7 @@ class SNN(AbstractSNN):
 
         # Loop through simulation time.
         self._input_spikecount = 0
-        for sim_step_int in range(self._num_timesteps):
+        for sim_step_int in range(num_timesteps):
             sim_step = (sim_step_int + 1) * self._dt
             self.set_time(sim_step)
 
@@ -222,15 +225,15 @@ class SNN(AbstractSNN):
 
         if self._is_aedat_input:
             remaining_events = \
-                len(kwargs[str('dvs_gen')].event_deques_batch[0])
+                kwargs[str('dvs_gen')].remaining_events_of_current_batch()
         elif self._poisson_input and self._num_poisson_events_per_sample > 0:
             remaining_events = self._num_poisson_events_per_sample - \
                 self._input_spikecount
         else:
             remaining_events = 0
         if remaining_events > 0:
-            print("SNN Toolbox WARNING: Simulation of current batch finished, "
-                  "but {} input events were not processed. Consider "
+            print("\nSNN Toolbox WARNING: Simulation of current batch "
+                  "finished, but {} input events were not processed. Consider "
                   "increasing the simulation time.".format(remaining_events))
 
         return np.cumsum(output_b_l_t, 2)
@@ -332,3 +335,42 @@ class SNN(AbstractSNN):
         beta = b + tau * (self._duration - t) / (t + tau) * w * input_b_l
         keras.backend.set_value(self.snn.layers[0].kernel, alpha * w)
         keras.backend.set_value(self.snn.layers[0].bias, beta)
+
+    def _get_timestep_at_spikecount(self, x):
+        """Compute timestep at which a given number of input spikes is reached.
+
+        If the user hasn't set the ``max_num_input_spikes`` parameter in the
+        config file, the simulation duration will not change.
+
+        Otherwise, we compute the number of steps required to reach the desired
+        number of spikes, which can be used to limit the simulation duration.
+
+        Currently only works with input in the form of constant bias currents,
+        not DVS or Poisson input.
+
+        Only supports reset by subtraction for now.
+        """
+
+        max_spikecount = self.config.getint('input', 'max_num_input_spikes',
+                                            fallback='')
+        if max_spikecount == '':
+            return self._num_timesteps
+
+        if self._is_aedat_input or self._poisson_input or \
+                self.config.get('cell', 'reset') != 'Reset by subtraction':
+            # raise NotImplementedError
+            return self._num_timesteps
+
+        # Transform sample-wise to batch-wise spikecount limit.
+        max_spikecount_norm = max_spikecount * self.batch_size
+
+        x_accum = np.zeros_like(x)
+        t = 0
+        while True:
+            x_accum += x
+            # Neglect threshold here (always 1 in input layer)
+            spikecount = np.sum(np.floor(x_accum))  # / v_thresh
+            if spikecount > max_spikecount_norm:
+                print(t)
+                return min(t, self._num_timesteps)
+            t += 1

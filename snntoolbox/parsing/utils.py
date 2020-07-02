@@ -402,7 +402,7 @@ class AbstractModelParser:
                     break
         if len(self._layer_list) == 0 or \
                 any([self.get_type(inb) == 'InputLayer' for inb in inbound]):
-            return ['input']
+            return [self.input_layer_name]
         else:
             inb_idxs = [name_map[str(id(inb))] for inb in inbound]
             return [self._layer_list[i]['name'] for i in inb_idxs]
@@ -786,8 +786,9 @@ class AbstractModelParser:
         """
 
         img_input = keras.layers.Input(
-            batch_shape=self.get_batch_input_shape(), name='input')
-        parsed_layers = {'input': img_input}
+            batch_shape=self.get_batch_input_shape(),
+            name=self.input_layer_name)
+        parsed_layers = {self.input_layer_name: img_input}
         print("Building parsed model...\n")
         for layer in self._layer_list:
             # Replace 'parameters' key with Keras key 'weights'
@@ -857,6 +858,10 @@ class AbstractModelParser:
         print("Top-5 accuracy: {:.2%}\n".format(score[2]))
 
         return score
+
+    @property
+    def input_layer_name(self):
+        return 'input'
 
 
 def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
@@ -1205,7 +1210,7 @@ def get_fanout(layer, config):
     for next_layer in next_layers:
         if 'Conv' in next_layer.name and not has_stride_unity(next_layer):
             shape = layer.output_shape
-            if 'input' in layer.name:
+            if 'Input' in get_type(layer):
                 shape = fix_input_layer_shape(shape)
             fanout = np.zeros(shape[1:])
             break
@@ -1254,7 +1259,7 @@ def get_fanout_array(layer_pre, layer_post, is_depthwise_conv=False):
     sy = layer_post.strides[0]
 
     shape = layer_pre.output_shape
-    if 'input' in layer_pre.name:
+    if 'Input' in get_type(layer_pre):
         shape = fix_input_layer_shape(shape)
     fanout = np.zeros(shape[1:])
 

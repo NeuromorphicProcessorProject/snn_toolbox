@@ -111,6 +111,10 @@ class ModelParser(AbstractModelParser):
     def parse_concatenate(self, layer, attributes):
         pass
 
+    @property
+    def input_layer_name(self):
+        return self.input_model.layers[0].name
+
 
 def load(path, filename, **kwargs):
     """Load network from file.
