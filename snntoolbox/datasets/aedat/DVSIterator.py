@@ -140,10 +140,10 @@ class DVSIterator(object):
         return self.event_deques_batch, self.y_b
 
     def next_eventframe_batch(self):
-        return next_eventframe_batch(
-            self.event_deques_batch, self.is_x_first, self.is_x_flipped,
-            self.is_y_flipped, self.batch_shape, self.data_format,
-            self.frame_width)
+        return next_eventframe_batch(self.event_deques_batch, self.is_x_first,
+                                     self.is_x_flipped, self.is_y_flipped,
+                                     self.batch_shape, self.data_format,
+                                     self.frame_width, self.frame_gen_method)
 
     def get_frame_batch(self):
         event_idxs = range(self.batch_size * (self.batch_idx - 1),
@@ -192,6 +192,8 @@ def extract_batch(event_list, frame_gen_method, batch_size,
         scale = [np.true_divide((t - 1), (c - 1)) for t, c in zip(target_shape,
                                                                   chip_size)]
 
+    num_channels = 2 if has_polarity_channels(frame_gen_method) else 1
+
     event_deques_list = [deque() for _ in range(batch_size)]
 
     print("Extracting batch of samples à {} events from DVS sequence..."
@@ -201,7 +203,7 @@ def extract_batch(event_list, frame_gen_method, batch_size,
         start_event = num_events_per_frame * batch_size * batch_idx + \
                       num_events_per_frame * sample_idx
         event_idxs = slice(start_event, start_event + num_events_per_frame)
-        event_sums = np.zeros(target_shape, 'int32')
+        event_sums = np.zeros(list(target_shape) + [num_channels], 'int32')
         frame_event_list = []
         for x, y, t, p in event_list[event_idxs]:
             if scale is not None:
@@ -212,7 +214,7 @@ def extract_batch(event_list, frame_gen_method, batch_size,
             # Need to remove polarity here if frame_gen_method ==
             # 'rectified_sum', so that we can discard an otherwise identical
             # event with opposite polarity during maxpool_subsampling.
-            pp = p if frame_gen_method == 'signed_sum' else 1
+            pp = 1 if frame_gen_method == 'rectified_sum' else p
             frame_event_list.append((x, y, t, pp))
 
         num_events = len(frame_event_list)
@@ -238,9 +240,10 @@ def extract_batch(event_list, frame_gen_method, batch_size,
                 num_events_after_subsampling - np.sum(np.abs(event_sums))))
 
         for x, y, t, p in frame_event_list:
-            if not do_clip_three_sigma or event_sums[x, y] != 0:
+            pp = p if has_polarity_channels(frame_gen_method) else 0
+            if not do_clip_three_sigma or event_sums[x, y, pp] != 0:
                 event_deques_list[sample_idx].append((x, y, t, p))
-                event_sums[x, y] -= np.sign(event_sums[x, y])
+                event_sums[x, y, pp] -= np.sign(event_sums[x, y, pp])
 
     return event_deques_list
 
@@ -331,7 +334,7 @@ def load_event_list(filename, xyrange=None):
 
 
 def get_binary_frame(event_deque, is_x_first, is_x_flipped, is_y_flipped,
-                     shape, data_format, frame_width):
+                     shape, data_format, frame_width, frame_gen_method):
     """
     Put events from event sequence into a shallow frame of at most one event
     per pixel. Stop if the time between the current and the oldest event
@@ -351,6 +354,7 @@ def get_binary_frame(event_deque, is_x_first, is_x_flipped, is_y_flipped,
     data_format: str
         Either 'channels_first' or 'channels_last'.
     frame_width: int
+    frame_gen_method: str
 
     Returns
     -------
@@ -359,8 +363,12 @@ def get_binary_frame(event_deque, is_x_first, is_x_flipped, is_y_flipped,
     """
 
     # Allocate output array.
-    channel_axis = 0 if data_format == 'channels_first' else -1
-    binary_frame = np.squeeze(np.zeros(shape), channel_axis)
+    is_channels_first = data_format == 'channels_first'
+    if is_channels_first:
+        num_channels, x_max, y_max = shape
+    else:
+        x_max, y_max, num_channels = shape
+    binary_frame = np.zeros((x_max, y_max, num_channels))
 
     # Buffer event sequence because we will be removing elements from original
     # list:
@@ -372,25 +380,33 @@ def get_binary_frame(event_deque, is_x_first, is_x_flipped, is_y_flipped,
 
     # Put events from event sequence buffer into frame, if pixel location is
     # not occupied yet.
-    x_max, y_max = binary_frame.shape
     for x, y, t, p in event_list:
         x_flipped = x_max - 1 - x if is_x_flipped else x
         y_flipped = y_max - 1 - y if is_y_flipped else y
 
         idx0, idx1 = (x_flipped, y_flipped) if is_x_first else (y_flipped,
                                                                 x_flipped)
-        if binary_frame[idx0, idx1] == 0:
-            binary_frame[idx0, idx1] = 1
+        pp = p if num_channels > 1 else 0
+        if binary_frame[idx0, idx1, pp] == 0:
+            spike = 1
+            if p == 0 and frame_gen_method in ['signed_polarity_channels',
+                                               'signed_sum']:
+                spike = -1
+            binary_frame[idx0, idx1, pp] = spike
             event_deque.remove((x, y, t, p))
         if t - first_ts_of_frame > frame_width:
             # Start next frame if width of frame exceeds time limit.
             break
 
-    return np.expand_dims(binary_frame, channel_axis)
+    if is_channels_first:
+        binary_frame = np.moveaxis(binary_frame, -1, 1)
+
+    return binary_frame
 
 
 def get_eventframe_sequence(event_deque, is_x_first, is_x_flipped,
-                            is_y_flipped, shape, data_format, frame_width):
+                            is_y_flipped, shape, data_format, frame_width,
+                            frame_gen_method):
     """
     Given a single sequence of x-y-ts events, generate a sequence of binary
     event frames.
@@ -399,15 +415,16 @@ def get_eventframe_sequence(event_deque, is_x_first, is_x_flipped,
     inp = []
 
     while len(event_deque) > 0:
-        inp.append(get_binary_frame(
-            event_deque, is_x_first, is_x_flipped, is_y_flipped, shape,
-            data_format, frame_width))
+        inp.append(get_binary_frame(event_deque, is_x_first, is_x_flipped,
+                                    is_y_flipped, shape, data_format,
+                                    frame_width, frame_gen_method))
 
     return np.stack(inp, -1)
 
 
 def next_eventframe_batch(event_deques_batch, is_x_first, is_x_flipped,
-                          is_y_flipped, shape, data_format, frame_width):
+                          is_y_flipped, shape, data_format, frame_width,
+                          frame_gen_method):
     """
     Given a batch of x-y-ts event sequences, generate a batch of binary event
     frames that can be used in a time-stepped simulator.
@@ -420,7 +437,8 @@ def next_eventframe_batch(event_deques_batch, is_x_first, is_x_flipped,
     for sample_idx in range(shape[0]):
         input_b_l[sample_idx] = get_binary_frame(
             event_deques_batch[sample_idx], is_x_first, is_x_flipped,
-            is_y_flipped, shape[1:], data_format, frame_width)
+            is_y_flipped, shape[1:], data_format, frame_width,
+            frame_gen_method)
 
     return input_b_l
 
@@ -444,8 +462,10 @@ def get_frames_from_sequence(event_list, num_events_per_frame, data_format,
     else:
         scale = [np.true_divide((t - 1), (c - 1)) for t, c in zip(target_shape,
                                                                   chip_size)]
+    num_channels = 2 if has_polarity_channels(frame_gen_method) else 1
     num_frames = len(event_list) // num_events_per_frame + 1
-    frames = np.zeros([num_frames] + list(target_shape), 'float32')
+    frames = np.zeros([num_frames] + list(target_shape) + [num_channels],
+                      'float32')
 
     print("Extracting {} frames from DVS event sequence.".format(num_frames))
 
@@ -463,7 +483,7 @@ def get_frames_from_sequence(event_list, num_events_per_frame, data_format,
                 x = int(x * scale[0])
                 y = int(y * scale[1])
 
-            pp = p if frame_gen_method == 'signed_sum' else 1
+            pp = 1 if frame_gen_method == 'rectified_sum' else p
             frame_event_list.append((x, y, t, pp))
 
         if maxpool_subsampling:
@@ -481,28 +501,30 @@ def get_frames_from_sequence(event_list, num_events_per_frame, data_format,
 
     frames = scale_event_frames(frames)
 
-    channel_axis = 1 if data_format == 'channels_first' else -1
-
-    return np.expand_dims(frames, channel_axis)
+    if data_format == 'channels_first':
+        frames = np.moveaxis(frames, -1, 1)
+    return frames
 
 
 def add_event_to_frame(frame, x, y, p, frame_gen_method='rectified_sum',
                        is_x_first=True, is_x_flipped=False,
                        is_y_flipped=False):
 
-    x_max, y_max = frame.shape
+    x_max, y_max, _ = frame.shape
 
     x = x_max - 1 - x if is_x_flipped else x
     y = y_max - 1 - y if is_y_flipped else y
 
     idx0, idx1 = (x, y) if is_x_first else (y, x)
 
-    incr = 1
-    sign = 1
     if frame_gen_method == 'signed_sum':
-        sign = 1 if p else -1
-
-    frame[idx0, idx1] += sign * incr
+        frame[idx0, idx1] += 1 if p else -1
+    elif frame_gen_method == 'rectified_sum':
+        frame[idx0, idx1] += 1
+    elif frame_gen_method == 'rectified_polarity_channels':
+        frame[idx0, idx1, p] += 1
+    elif frame_gen_method == 'signed_polarity_channels':
+        frame[idx0, idx1, p] += 1 if p else -1
 
 
 def clip_three_sigma(frame, frame_gen_method):
@@ -515,17 +537,32 @@ def clip_three_sigma(frame, frame_gen_method):
         # It would make more sense to use the same a_min, a_max as for
         # 'signed_sum', but we don't because jAER implements it like this.
     elif frame_gen_method == 'signed_sum':
-        sigma = np.std(frame)
-        mean = np.mean(frame)
+        frame_nz = frame[np.nonzero(frame)]
+        sigma = np.std(frame_nz)
+        mean = np.mean(frame_nz)
         a_min = mean - 1.5 * sigma
         a_max = mean + 1.5 * sigma
+    elif frame_gen_method == 'rectified_polarity_channels':
+        frame_off = frame[:, :, 0]
+        frame_on = frame[:, :, 1]
+        sigma_off = np.std(frame_off[np.nonzero(frame_off)])
+        sigma_on = np.std(frame_on[np.nonzero(frame_on)])
+        a_min = 0
+        a_max = [[[3 * sigma_off, 3 * sigma_on]]]  # Assumes channels_last.
+    elif frame_gen_method == 'signed_polarity_channels':
+        frame_off = frame[:, :, 0]
+        frame_on = frame[:, :, 1]
+        sigma_off = np.std(frame_off[np.nonzero(frame_off)])
+        sigma_on = np.std(frame_on[np.nonzero(frame_on)])
+        a_min = [[[-3 * sigma_off, 0]]]
+        a_max = [[[0, 3 * sigma_on]]]
     else:
         a_min = np.min(frame)
         a_max = np.max(frame)
 
     np.clip(frame, a_min, a_max, frame)
 
-    return frame.astype('int32')
+    return np.round(frame)
 
 
 def scale_event_frames(frames):
@@ -544,3 +581,7 @@ def scale_event_frames(frames):
     #     np.true_divide(frame - a_min, div, frame)
 
     return frames
+
+
+def has_polarity_channels(frame_gen_method):
+    return 'polarity_channels' in frame_gen_method

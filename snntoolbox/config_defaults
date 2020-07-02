@@ -118,7 +118,8 @@ plotproperties = {
 [restrictions]
 model_libs = {'keras', 'lasagne', 'caffe', 'pytorch'}
 dataset_formats = {'npz', 'jpg', 'aedat'}
-frame_gen_method = {'signed_sum', 'rectified_sum'}
+frame_gen_method = {'signed_sum', 'rectified_sum',
+                    'rectified_polarity_channels', 'signed_polarity_channels'}
 maxpool_types = {'fir_max', 'exp_max', 'avg_max'}
 simulators_pyNN = {'nest', 'brian', 'neuron', 'spiNNaker'}
 simulators_other = {'INI', 'brian2', 'MegaSim', 'loihi'}

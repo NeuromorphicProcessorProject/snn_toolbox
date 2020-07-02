@@ -56,7 +56,7 @@ def get_dataset(config):
     is_testset_needed = config.getboolean('tools', 'evaluate_ann') or \
         config.getboolean('tools', 'simulate') or normalize_thresholds
     is_normset_needed = normalize_thresholds or (
-            config.getboolean('tools', 'normalize') and normset is None)
+            config.getboolean('tools', 'normalize') and normset == {})
     batch_size = config.getint('simulation', 'batch_size')
 
     # _______________________________ Keras __________________________________#
@@ -72,7 +72,7 @@ def get_dataset(config):
                 'x_test': x_test[:num_to_test],
                 'y_test': y_test[:num_to_test]}
             if is_normset_needed:
-                normset = {'x_norm': x_test}
+                normset['x_norm'] = x_test
             return normset, testset
     except (NoOptionError, ImportError) as e:
         print("Warning:", e)
@@ -88,11 +88,13 @@ def get_dataset(config):
             dataflow = ImageDataGenerator().flow(x_test, y_test, batch_size,
                                                  shuffle=False)
             testset = {'dataflow': dataflow}
+            # testset = {'x_test': x_test, 'y_test': y_test}
         if is_normset_needed:
             x_norm = load_npz(dataset_path, 'x_norm.npz')
             dataflow = ImageDataGenerator().flow(x_norm, batch_size=batch_size,
                                                  shuffle=True)
-            normset = {'dataflow': dataflow}
+            normset['dataflow'] = dataflow
+            # normset['x_norm'] = x_norm
 
     # ________________________________ jpg ___________________________________#
     elif dataset_format in {'jpg', 'png'}:
@@ -131,14 +133,12 @@ def get_dataset(config):
         if is_normset_needed:
             shuffle = dataflow_kwargs.get('shuffle')
             dataflow_kwargs['shuffle'] = True
-            normset = {
-                'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
+            normset['dataflow'] = \
+                datagen.flow_from_directory(**dataflow_kwargs)
             dataflow_kwargs['shuffle'] = shuffle
-            assert normset, "Normalization set empty."
         if is_testset_needed:
             testset = {
                 'dataflow': datagen.flow_from_directory(**dataflow_kwargs)}
-            assert testset, "Test set empty."
 
     # _______________________________ aedat __________________________________#
     elif dataset_format == 'aedat':
@@ -146,7 +146,7 @@ def get_dataset(config):
             print("Loading normalization dataset from '.npz' file in {}.\n"
                   "".format(dataset_path))
             x_norm = load_npz(dataset_path, 'x_norm.npz')
-            normset = {'x_norm': x_norm}
+            normset['x_norm'] = x_norm
             # For Loihi threshold normalization we need to pass the
             # normalization data in the testset dict.
             testset = {'x_norm': x_norm}
@@ -171,20 +171,21 @@ def try_get_normset_from_scalefacs(config):
     : Union[dict, None]
         A dictionary with single key 'scale_facs'. The corresponding value is
         itself a dictionary containing the scale factors for each layer.
-        Returns ``None`` if no scale factors were found.
+        Returns empty set if no scale factors were found.
     """
 
     newpath = os.path.join(config.get('paths', 'log_dir_of_current_run'),
                            'normalization')
     if not os.path.exists(newpath):
         os.makedirs(newpath)
-        return
     filepath = os.path.join(newpath, config.get('normalization',
                                                 'percentile') + '.json')
     if os.path.isfile(filepath):
         print("Loading scale factors from disk instead of recalculating.")
         with open(filepath) as f:
             return {'scale_facs': json.load(f)}
+
+    return {}
 
 
 def to_categorical(y, nb_classes):
