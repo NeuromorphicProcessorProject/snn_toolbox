@@ -240,8 +240,8 @@ class SpikeLayer(Layer):
                 self.activation_str == 'softmax'):
             # Turn off reset (uncomment second line) to get a faster and better
             # top-1 error. The top-5 error is better when resetting:
-            new = tf.where(tf.not_equal(spikes, 0), tf.zeros_like(mem), mem)
-            # new = tf.identity(mem)
+            # new = tf.where(tf.not_equal(spikes, 0), tf.zeros_like(mem), mem)
+            new = tf.identity(mem)
         elif self.config.get('cell', 'reset') == 'Reset by subtraction':
             if self.payloads:  # Experimental.
                 new = tf.where(tf.not_equal(spikes, 0),

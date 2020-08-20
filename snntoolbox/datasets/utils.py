@@ -85,16 +85,10 @@ def get_dataset(config):
             num_to_test = config.getint('simulation', 'num_to_test')
             x_test = load_npz(dataset_path, 'x_test.npz')[:num_to_test]
             y_test = load_npz(dataset_path, 'y_test.npz')[:num_to_test]
-            dataflow = ImageDataGenerator().flow(x_test, y_test, batch_size,
-                                                 shuffle=False)
-            testset = {'dataflow': dataflow}
-            # testset = {'x_test': x_test, 'y_test': y_test}
+            testset = {'x_test': x_test, 'y_test': y_test}
         if is_normset_needed:
             x_norm = load_npz(dataset_path, 'x_norm.npz')
-            dataflow = ImageDataGenerator().flow(x_norm, batch_size=batch_size,
-                                                 shuffle=True)
-            normset['dataflow'] = dataflow
-            # normset['x_norm'] = x_norm
+            normset['x_norm'] = x_norm
 
     # ________________________________ jpg ___________________________________#
     elif dataset_format in {'jpg', 'png'}:
