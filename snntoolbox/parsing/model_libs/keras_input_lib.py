@@ -113,7 +113,14 @@ class ModelParser(AbstractModelParser):
 
     @property
     def input_layer_name(self):
-        return self.input_model.layers[0].name
+        # Check if model has a dedicated input layer. If so, return its name.
+        # Otherwise, the first layer might be a conv layer, so we return
+        # 'input'.
+        first_layer = self.input_model.layers[0]
+        if 'Input' in self.get_type(first_layer):
+            return first_layer.name
+        else:
+            return 'input'
 
 
 def load(path, filename, **kwargs):
