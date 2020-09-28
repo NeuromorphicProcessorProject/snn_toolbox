@@ -381,7 +381,7 @@ class SpikeLayer(Layer):
         if self.time is None:
             self.time = tf.Variable(self.dt, name='dt', trainable=False)
         # To save memory and computations, allocate only where needed:
-        if self.tau_refrac > 0 and self.tau_refrac_until is None:
+        if self.tau_refrac > 0 and self.refrac_until is None:
             self.refrac_until = tf.Variable(
                 tf.zeros(output_shape), name='refrac_until', trainable=False)
         if any({'spiketrains', 'spikerates', 'correlation', 'spikecounts',
