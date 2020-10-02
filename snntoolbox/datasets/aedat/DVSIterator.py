@@ -147,7 +147,8 @@ class DVSIterator(object):
 
     def get_frame_batch(self):
         event_idxs = range(self.batch_size * (self.batch_idx - 1),
-                           self.batch_size * self.batch_idx)
+                           min(self.batch_size * self.batch_idx,
+                               len(self.frames_from_sequence)))
         return self.frames_from_sequence[event_idxs]
 
     def remaining_events_of_current_batch(self):
