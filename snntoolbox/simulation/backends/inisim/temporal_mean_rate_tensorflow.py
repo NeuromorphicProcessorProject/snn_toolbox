@@ -18,7 +18,7 @@ import json
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten, AveragePooling2D, \
     MaxPooling2D, Conv2D, DepthwiseConv2D, ZeroPadding2D, Reshape, Layer, \
-    Concatenate
+    Concatenate, Conv1D
 
 from snntoolbox.parsing.utils import get_inbound_layers
 
@@ -32,6 +32,14 @@ class SpikeLayer(Layer):
 
     def __init__(self, **kwargs):
         self.config = kwargs.pop(str('config'), None)
+        if self.config is None:
+            from snntoolbox.bin.utils import load_config
+            # Todo: Enable loading config here. Needed when trying to load a
+            #       converted SNN from disk. For now we specify a dummy path.
+            try:
+                self.config = load_config('wdir/log/gui/test/.config')
+            except FileNotFoundError:
+                raise NotImplementedError
         self.layer_type = self.class_name
         self.dt = self.config.getfloat('simulation', 'dt')
         self.duration = self.config.getint('simulation', 'duration')
@@ -506,7 +514,7 @@ class SpikeConcatenate(Concatenate):
     """Spike merge layer"""
 
     def __init__(self, axis, **kwargs):
-        kwargs.pop(str('config'))
+        kwargs.pop(str('config'), None)
         Concatenate.__init__(self, axis, **kwargs)
 
     @staticmethod
@@ -531,7 +539,7 @@ class SpikeFlatten(Flatten):
     """Spike flatten layer."""
 
     def __init__(self, **kwargs):
-        kwargs.pop(str('config'))
+        kwargs.pop(str('config'), None)
         Flatten.__init__(self, **kwargs)
 
     def call(self, x, mask=None):
@@ -560,7 +568,7 @@ class SpikeZeroPadding2D(ZeroPadding2D):
     """Spike ZeroPadding2D layer."""
 
     def __init__(self, **kwargs):
-        kwargs.pop(str('config'))
+        kwargs.pop(str('config'), None)
         ZeroPadding2D.__init__(self, **kwargs)
 
     def call(self, x, mask=None):
@@ -589,7 +597,7 @@ class SpikeReshape(Reshape):
     """Spike Reshape layer."""
 
     def __init__(self, **kwargs):
-        kwargs.pop(str('config'))
+        kwargs.pop(str('config'), None)
         Reshape.__init__(self, **kwargs)
 
     def call(self, x, mask=None):
@@ -637,6 +645,33 @@ class SpikeDense(Dense, SpikeLayer):
     def call(self, x, **kwargs):
 
         return Dense.call(self, x)
+
+
+class SpikeConv1D(Conv1D, SpikeLayer):
+    """Spike 1D Convolution."""
+
+    def build(self, input_shape):
+        """Creates the layer weights.
+        Must be implemented on all layers that have weights.
+
+        Parameters
+        ----------
+
+        input_shape: Union[list, tuple, Any]
+            Keras tensor (future input to layer) or list/tuple of Keras tensors
+            to reference for weight shape computations.
+        """
+
+        Conv1D.build(self, input_shape)
+        self.init_neurons(input_shape.as_list())
+
+        if self.config.getboolean('cell', 'bias_relaxation'):
+            self.update_b()
+
+    @spike_call
+    def call(self, x, mask=None):
+
+        return Conv1D.call(self, x)
 
 
 class SpikeConv2D(Conv2D, SpikeLayer):

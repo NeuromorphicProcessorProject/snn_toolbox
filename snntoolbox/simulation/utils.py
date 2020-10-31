@@ -782,7 +782,7 @@ class AbstractSNN:
             layer_type = get_type(layer)
             if layer_type == 'Dense':
                 self.build_dense(layer)
-            elif layer_type in {'Conv2D', 'DepthwiseConv2D'}:
+            elif 'Conv' in layer_type:
                 self.build_convolution(layer)
                 self.data_format = layer.data_format
             elif layer_type in {'MaxPooling2D', 'AveragePooling2D'}:

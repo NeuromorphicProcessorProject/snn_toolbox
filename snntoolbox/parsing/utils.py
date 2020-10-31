@@ -1247,11 +1247,60 @@ def get_fanout_array(layer_pre, layer_post, is_depthwise_conv=False):
     the post-synaptic layer has stride > 1, the fan-out varies between neurons.
     """
 
+    shape = layer_pre.output_shape
+    if 'Input' in get_type(layer_pre):
+        shape = fix_input_layer_shape(shape)
+    ndim = len(shape)
+
+    if ndim == 4:
+        return _get_fanout_array_2D(layer_pre, layer_post, is_depthwise_conv)
+    elif ndim == 3:
+        return _get_fanout_array_1D(layer_pre, layer_post, is_depthwise_conv)
+    else:
+        raise NotImplementedError
+
+
+def _get_fanout_array_1D(layer_pre, layer_post, is_depthwise_conv=False):
+    ax = 1 if IS_CHANNELS_FIRST else 0
+
+    ny = layer_post.output_shape[1 + ax]  # Height of feature map
+    nz = layer_post.output_shape[ax if ax else -1]  # Number of channels
+    ky = layer_post.kernel_size[0]  # Height of kernel
+    py = int((ky - 1) / 2) if layer_post.padding == 'same' else 0
+    sy = layer_post.strides[0]
+
+    shape = layer_pre.output_shape
+    if 'Input' in get_type(layer_pre):
+        shape = fix_input_layer_shape(shape)
+    fanout = np.zeros(shape[1:])
+
+    for y_pre in range(fanout.shape[0 + ax]):
+        y_post = [int((y_pre + py) / sy)]
+        wy = (y_pre + py) % sy
+        i = 1
+        while wy + i * sy < ky:
+            y = y_post[0] - i
+            if 0 <= y < ny:
+                y_post.append(y)
+            i += 1
+
+        if ax:
+            fanout[:, y_pre] = len(y_post)
+        else:
+            fanout[y_pre, :] = len(y_post)
+
+    if not is_depthwise_conv:
+        fanout *= nz
+
+    return fanout
+
+
+def _get_fanout_array_2D(layer_pre, layer_post, is_depthwise_conv=False):
     ax = 1 if IS_CHANNELS_FIRST else 0
 
     nx = layer_post.output_shape[2 + ax]  # Width of feature map
     ny = layer_post.output_shape[1 + ax]  # Height of feature map
-    nz = layer_post.output_shape[ax]  # Number of channels
+    nz = layer_post.output_shape[ax if ax else -1]  # Number of channels
     kx, ky = layer_post.kernel_size  # Width and height of kernel
     px = int((kx - 1) / 2) if layer_post.padding == 'same' else 0
     py = int((ky - 1) / 2) if layer_post.padding == 'same' else 0

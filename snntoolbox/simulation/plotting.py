@@ -239,6 +239,10 @@ def plot_layer_activity(layer, title, path=None, limits=None,
     if limits is None:
         limits = (vmin, vmax)
 
+    # Add dummy dimension if layer is a Conv1D:
+    if data.ndim == 2:
+        data = np.expand_dims(data, 0)
+
     im = None
     shape = data.shape
     num = shape[0]
