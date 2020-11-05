@@ -38,6 +38,13 @@ def get_correlations(config):
     return np.mean(co, axis=1)
 
 
+def get_ann_acc(config):
+    logdir = os.path.join(config.get('paths', 'log_dir_of_current_run'),
+                          'log_vars', '0.npz')
+    logvars = np.load(logdir, allow_pickle=True)
+    return 1 - logvars['top1err_ann']
+
+
 class TestInputModel:
     """Test loading, parsing and evaluating an input ANN model."""
 

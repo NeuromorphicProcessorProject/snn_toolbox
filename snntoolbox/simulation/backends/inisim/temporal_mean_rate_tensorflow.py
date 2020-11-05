@@ -18,7 +18,8 @@ import json
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten, AveragePooling2D, \
     MaxPooling2D, Conv2D, DepthwiseConv2D, ZeroPadding2D, Reshape, Layer, \
-    Concatenate, Conv1D
+    Concatenate, Conv1D, Conv2DTranspose, UpSampling2D
+from tensorflow.python.keras.utils import conv_utils
 
 from snntoolbox.parsing.utils import get_inbound_layers
 
@@ -48,6 +49,7 @@ class SpikeLayer(Layer):
         self.v_thresh = None
         self.time = None
         self.mem = self.spiketrain = self.impulse = self.spikecounts = None
+        self.mem_input = None  # Used in MaxPooling layers
         self.refrac_until = self.max_spikerate = None
         if clamp_var:
             self.spikerate = self.var = None
@@ -359,19 +361,21 @@ class SpikeLayer(Layer):
             self.mem.assign(self.init_membrane_potential())
             self.time.assign(self.dt)
         if self.tau_refrac > 0:
-            self.refrac_until.assign(tf.zeros(self.output_shape, self._floatx))
+            self.refrac_until.assign(tf.zeros_like(self.refrac_until))
         if self.spiketrain is not None:
-            self.spiketrain.assign(tf.zeros(self.output_shape, self._floatx))
+            self.spiketrain.assign(tf.zeros_like(self.spiketrain))
         if self.payloads:
-            self.payloads.assign(tf.zeros(self.output_shape, self._floatx))
-            self.payloads_sum.assign(tf.zeros(self.output_shape, self._floatx))
+            self.payloads.assign(tf.zeros_like(self.payloads))
+            self.payloads_sum.assign(tf.zeros_like(self.payloads_sum))
         if self.online_normalization and do_reset:
-            self.spikecounts.assign(tf.zeros(self.output_shape, self._floatx))
+            self.spikecounts.assign(tf.zeros_like(self.spikecounts))
             self.max_spikerate.assign(0)
             self.v_thresh.assign(self._v_thresh)
         if clamp_var and do_reset:
-            self.spikerate.assign(tf.zeros(self.input_shape, self._floatx))
-            self.var.assign(tf.zeros(self.input_shape, self._floatx))
+            self.spikerate.assign(tf.zeros_like(self.spikerate))
+            self.var.assign(tf.zeros_like(self.var))
+        if self.mem_input is not None:
+            self.mem_input.assign(tf.zeros_like(self.mem_input))
 
     @tf.function
     def init_neurons(self, input_shape):
@@ -728,6 +732,55 @@ class SpikeDepthwiseConv2D(DepthwiseConv2D, SpikeLayer):
         return DepthwiseConv2D.call(self, x)
 
 
+class SpikeConv2DTranspose(Conv2DTranspose, SpikeLayer):
+    """Spike 2D transpose convolution."""
+
+    def build(self, input_shape):
+        """Creates the layer weights.
+        Must be implemented on all layers that have weights.
+
+        Parameters
+        ----------
+        input_shape: Union[list, tuple, Any]
+            Keras tensor (future input to layer) or list/tuple of Keras tensors
+            to reference for weight shape computations.
+        """
+
+        Conv2DTranspose.build(self, input_shape)
+        self.init_neurons(input_shape.as_list())
+
+        if self.config.getboolean('cell', 'bias_relaxation'):
+            self.update_b()
+
+    @spike_call
+    def call(self, x, mask=None):
+
+        return Conv2DTranspose.call(self, x)
+
+
+class SpikeUpSampling2D(UpSampling2D, SpikeLayer):
+    """Spike upsampling layer."""
+
+    def build(self, input_shape):
+        """Creates the layer weights.
+        Must be implemented on all layers that have weights.
+
+        Parameters
+        ----------
+        input_shape: Union[list, tuple, Any]
+            Keras tensor (future input to layer) or list/tuple of Keras tensors
+            to reference for weight shape computations.
+        """
+
+        UpSampling2D.build(self, input_shape)
+        self.init_neurons(input_shape.as_list())
+
+    @spike_call
+    def call(self, x, mask=None):
+
+        return UpSampling2D.call(self, x)
+
+
 class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
     """Spike Average Pooling."""
 
@@ -752,7 +805,7 @@ class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
         return AveragePooling2D.call(self, x)
 
 
-class SpikeMaxPooling2D(AveragePooling2D, SpikeLayer):
+class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
     """Spike Max Pooling."""
 
     def build(self, input_shape):
@@ -766,17 +819,27 @@ class SpikeMaxPooling2D(AveragePooling2D, SpikeLayer):
             to reference for weight shape computations.
         """
 
-        AveragePooling2D.build(self, input_shape)
+        MaxPooling2D.build(self, input_shape)
         self.init_neurons(input_shape.as_list())
+        if self.mem_input is None:
+            self.mem_input = tf.Variable(tf.zeros(input_shape),
+                                         name='mem_input', trainable=False)
 
     @spike_call
     def call(self, x, mask=None):
         """Layer functionality."""
 
-        print("WARNING: Rate-based spiking MaxPooling layer is not "
-              "implemented in TensorFlow backend. Falling back on "
-              "AveragePooling. Switch to Theano backend to use MaxPooling.")
-        return AveragePooling2D.call(self, x)
+        self.mem_input.assign_add(x)
+        _, max_idxs = tf.nn.max_pool_with_argmax(
+            self.mem_input, self.pool_size, self.strides, self.padding.upper(),
+            conv_utils.convert_data_format(self.data_format, 4),
+            include_batch_in_index=True)
+        x_max = tf.scatter_nd(tf.reshape(max_idxs, (-1, 1)),
+                              tf.ones(tf.size(max_idxs)),
+                              [tf.reduce_prod(x.shape)])
+        x_max = tf.reshape(x_max, x.shape)
+        x_masked = x * x_max
+        return MaxPooling2D.call(self, x_masked)
 
 
 custom_layers = {'SpikeFlatten': SpikeFlatten,
@@ -784,7 +847,10 @@ custom_layers = {'SpikeFlatten': SpikeFlatten,
                  'SpikeZeroPadding2D': SpikeZeroPadding2D,
                  'SpikeDense': SpikeDense,
                  'SpikeConv2D': SpikeConv2D,
+                 'SpikeConv1D': SpikeConv1D,
                  'SpikeDepthwiseConv2D': SpikeDepthwiseConv2D,
+                 'SpikeConv2DTranspose': SpikeConv2DTranspose,
                  'SpikeAveragePooling2D': SpikeAveragePooling2D,
                  'SpikeMaxPooling2D': SpikeMaxPooling2D,
-                 'SpikeConcatenate': SpikeConcatenate}
+                 'SpikeConcatenate': SpikeConcatenate,
+                 'SpikeUpSampling2D': SpikeUpSampling2D}

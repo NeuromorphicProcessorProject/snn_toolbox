@@ -97,6 +97,9 @@ class ModelParser(AbstractModelParser):
             attributes['parameters'] = tuple(attributes['parameters'])
             attributes['use_bias'] = True
 
+    def parse_transpose_convolution(self, layer, attributes):
+        self.parse_convolution(layer, attributes)
+
     def parse_pooling(self, layer, attributes):
         pass
 

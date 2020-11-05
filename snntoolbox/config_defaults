@@ -130,7 +130,7 @@ keras_backends = {'theano', 'tensorflow'}
 spike_codes = {'temporal_mean_rate', 'temporal_pattern', 'ttfs',
                'ttfs_dyn_thresh', 'ttfs_corrective'}
 # Layers that have neurons with membrane potentials, from which we can measure spikes:
-spiking_layers = {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D', 'MaxPooling2D',
+spiking_layers = {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D', 'Conv2DTranspose', 'UpSampling2D', 'MaxPooling2D',
                   'AveragePooling2D', 'Sparse', 'SparseConv2D',
                   'SparseDepthwiseConv2D'}
 # Layers that can be implemented by our spiking neuron simulators:

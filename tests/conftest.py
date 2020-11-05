@@ -19,9 +19,22 @@ from snntoolbox.utils.utils import import_configparser, is_module_installed
 
 @pytest.fixture(scope='function')
 def _config(_path_wd, _datapath):
+    return get_config(_path_wd, _datapath)
 
-    path_wd = str(_path_wd)
-    datapath = str(_datapath)
+
+@pytest.fixture(scope='function')
+def _config_first(_path_wd, _datapath_first):
+    return get_config(_path_wd, _datapath_first)
+
+
+@pytest.fixture(scope='function')
+def _config_last(_path_wd, _datapath_last):
+    return get_config(_path_wd, _datapath_last)
+
+
+def get_config(path_wd, datapath):
+    path_wd = str(path_wd)
+    datapath = str(datapath)
     filename_ann = 'mnist_cnn'
     configparser = import_configparser()
     config = configparser.ConfigParser()
@@ -47,27 +60,15 @@ def _path_wd(tmpdir_factory):
     return tmpdir_factory.mktemp('wd')
 
 
-@pytest.fixture(scope='session')
-def _datapath(tmpdir_factory, _dataset):
-    datapath = tmpdir_factory.mktemp('dataset')
-    x_train, y_train, x_test, y_test = _dataset
-
-    np.savez_compressed(os.path.join(str(datapath), 'x_test'), x_test)
-    np.savez_compressed(os.path.join(str(datapath), 'y_test'), y_test)
-    np.savez_compressed(os.path.join(str(datapath), 'x_norm'), x_test)
-
-    return datapath
-
-
-@pytest.fixture(scope='session')
-def _dataset():
-
+def get_dataset(data_format=None):
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
     x_train = x_train / 255
     x_test = x_test / 255
 
-    axis = 1 if keras.backend.image_data_format() == 'channels_first' else -1
+    if data_format is None:
+        data_format = keras.backend.image_data_format()
+    axis = 1 if data_format == 'channels_first' else -1
     x_train = np.expand_dims(x_train, axis)
     x_test = np.expand_dims(x_test, axis)
 
@@ -75,6 +76,55 @@ def _dataset():
     y_test = to_categorical(y_test, 10)
 
     return x_train, y_train, x_test, y_test
+
+
+def save_dataset(datapath, x, y):
+    np.savez_compressed(os.path.join(str(datapath), 'x_test'), x)
+    np.savez_compressed(os.path.join(str(datapath), 'y_test'), y)
+    np.savez_compressed(os.path.join(str(datapath), 'x_norm'), x)
+
+
+def get_datapath(tmpdir_factory, data_format):
+    datapath = tmpdir_factory.mktemp('dataset')
+    _, _, x_test, y_test = get_dataset(data_format)
+    save_dataset(datapath, x_test, y_test)
+    return datapath
+
+
+@pytest.fixture(scope='session')
+def _datapath_first(tmpdir_factory):
+    """Path to dataset stored in channel_first format."""
+    return get_datapath(tmpdir_factory, 'channels_first')
+
+
+@pytest.fixture(scope='session')
+def _datapath_last(tmpdir_factory):
+    """Path to dataset stored in channel_last format."""
+    return get_datapath(tmpdir_factory, 'channels_last')
+
+
+@pytest.fixture(scope='session')
+def _datapath(_datapath_first, _datapath_last):
+    if keras.backend.image_data_format() == 'channels_first':
+        return _datapath_first
+    return _datapath_last
+
+
+@pytest.fixture(scope='session')
+def _dataset(_dataset_first, _dataset_last):
+    if keras.backend.image_data_format() == 'channels_first':
+        return _dataset_first
+    return _dataset_last
+
+
+@pytest.fixture(scope='session')
+def _dataset_first():
+    return get_dataset('channels_first')
+
+
+@pytest.fixture(scope='session')
+def _dataset_last():
+    return get_dataset('channels_last')
 
 
 @pytest.fixture(scope='session')
@@ -95,8 +145,11 @@ def _installed_input_libs(_config):
 
 @pytest.fixture(scope='session')
 def _model_1(_dataset):
+    return get_model_1(_dataset)
 
-    x_train, y_train, x_test, y_test = _dataset
+
+def get_model_1(dataset):
+    x_train, y_train, x_test, y_test = dataset
 
     input_shape = x_train.shape[1:]
     input_layer = Input(input_shape)
@@ -229,6 +282,15 @@ def _model_3(_dataset):
 
 @pytest.fixture(scope='session')
 def _model_4(_dataset):
+    return get_model_4(_dataset)
+
+
+@pytest.fixture(scope='session')
+def _model_4_first(_dataset_first):
+    return get_model_4(_dataset_first)
+
+
+def get_model_4(dataset):
 
     if not is_module_installed('torch'):
         return
@@ -237,7 +299,7 @@ def _model_4(_dataset):
     import torch.nn as nn
     from tests.parsing.models import pytorch
 
-    x_train, y_train, x_test, y_test = _dataset
+    x_train, y_train, x_test, y_test = dataset
 
     # Pytorch doesn't support one-hot labels.
     y_train = np.argmax(y_train, 1)
@@ -317,15 +379,6 @@ pytorch_conditions = (is_module_installed('torch') and
                       len(tf.config.list_physical_devices('GPU')))
 pytorch_skip_if_dependency_missing = pytest.mark.skipif(
     not pytorch_conditions, reason='Pytorch dependencies missing.')
-
-# Pytorch needs channel dimension first. But Tensorflow only works with
-# channels last on CPU. Ideally, we would set and unset the channel order
-# parameter in a setup and teardown method. But that would either require
-# storing another copy of the dataset with channels_first, or setting the scope
-# of the _dataset and _datapath fixtures from 'session' to 'class'. For now
-# we force all tests to use 'channels_first'.
-if pytorch_conditions:
-    keras.backend.set_image_data_format('channels_first')
 
 loihi_conditions = (is_module_installed('nxsdk') and
                     is_module_installed('nxsdk_modules_ncl'))

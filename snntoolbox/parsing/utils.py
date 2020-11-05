@@ -269,6 +269,9 @@ class AbstractModelParser:
             if layer_type == 'SparseDepthwiseConv2D':
                 self.parse_sparse_depthwiseconvolution(layer, attributes)
 
+            if layer_type == 'Conv2DTranspose':
+                self.parse_transpose_convolution(layer, attributes)
+
             if layer_type in ['Sparse', 'SparseConv2D',
                               'SparseDepthwiseConv2D']:
                 weights, bias, mask = attributes['parameters']
@@ -280,7 +283,7 @@ class AbstractModelParser:
 
                 self.absorb_activation(layer, attributes)
 
-            if layer_type in {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D'}:
+            if layer_type in {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D', 'Conv2DTranspose'}:
                 weights, bias = attributes['parameters']
 
                 weights, bias = modify_parameter_precision(
@@ -635,6 +638,9 @@ class AbstractModelParser:
         pass
 
     def parse_sparse_convolution(self, layer, attributes):
+        pass
+
+    def parse_transpose_convolution(self, layer, attributes):
         pass
 
     def parse_sparse_depthwiseconvolution(self, layer, attributes):
