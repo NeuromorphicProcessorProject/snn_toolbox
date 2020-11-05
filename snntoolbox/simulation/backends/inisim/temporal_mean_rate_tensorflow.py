@@ -752,7 +752,7 @@ class SpikeAveragePooling2D(AveragePooling2D, SpikeLayer):
         return AveragePooling2D.call(self, x)
 
 
-class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
+class SpikeMaxPooling2D(AveragePooling2D, SpikeLayer):
     """Spike Max Pooling."""
 
     def build(self, input_shape):
@@ -766,7 +766,7 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
             to reference for weight shape computations.
         """
 
-        MaxPooling2D.build(self, input_shape)
+        AveragePooling2D.build(self, input_shape)
         self.init_neurons(input_shape.as_list())
 
     @spike_call
@@ -776,7 +776,7 @@ class SpikeMaxPooling2D(MaxPooling2D, SpikeLayer):
         print("WARNING: Rate-based spiking MaxPooling layer is not "
               "implemented in TensorFlow backend. Falling back on "
               "AveragePooling. Switch to Theano backend to use MaxPooling.")
-        return tf.nn.avg_pool2d(x, self.pool_size, self.strides, self.padding)
+        return AveragePooling2D.call(self, x)
 
 
 custom_layers = {'SpikeFlatten': SpikeFlatten,
