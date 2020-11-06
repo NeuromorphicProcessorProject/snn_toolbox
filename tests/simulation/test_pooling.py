@@ -85,9 +85,9 @@ class TestMaxPoolingINI:
         assert np.all(corr[:-1] > 0.99)
         assert corr[-1] > 0.90
 
-    @pytest.mark.xfail(raises=ValueError,
-                       reason="tf.ops.max_pool only works with NHWC data "
-                              "format")
+    reason = "tf.ops.max_pool only works with NHWC data format"
+    @pytest.mark.skip(reason)
+    @pytest.mark.xfail(raises=ValueError, reason=reason)
     def test_maxpool_first(self, _model_maxpool2D_1_first, _config_first):
         """Test that maxpooling fails with data format channels_first."""
         config = _config_first
