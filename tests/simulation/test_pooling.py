@@ -86,6 +86,7 @@ class TestMaxPoolingINI:
         assert corr[-1] > 0.90
 
     reason = "tf.ops.max_pool only works with NHWC data format"
+
     @pytest.mark.skip(reason)
     @pytest.mark.xfail(raises=ValueError, reason=reason)
     def test_maxpool_first(self, _model_maxpool2D_1_first, _config_first):
@@ -124,7 +125,6 @@ class TestMaxPoolingINI:
                 'num_to_test': 100,
                 'batch_size': 50},
             'output': {
-                'plot_vars': {'correlation'},
                 'log_vars': {'activations_n_b_l', 'spiketrains_n_b_l_t'}}}
 
         config.read_dict(updates)
