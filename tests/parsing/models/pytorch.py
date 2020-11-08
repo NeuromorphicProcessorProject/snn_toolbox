@@ -6,6 +6,7 @@ class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
 
+        # The input_shape field is required by SNN toolbox.
         self.input_shape = (1, 28, 28)
 
         layers_trunk = [
