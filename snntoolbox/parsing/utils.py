@@ -283,7 +283,8 @@ class AbstractModelParser:
 
                 self.absorb_activation(layer, attributes)
 
-            if layer_type in {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D', 'Conv2DTranspose'}:
+            if layer_type in {'Dense', 'Conv1D', 'Conv2D', 'DepthwiseConv2D',
+                              'Conv2DTranspose'}:
                 weights, bias = attributes['parameters']
 
                 weights, bias = modify_parameter_precision(
@@ -886,7 +887,7 @@ def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
     # [height, width, num_input_channels, num_output_channels],
     # and layers like [batch_size, channels, height, width] or
     # [batch_size, height, width, channels].
-    if weight.ndim == 4:
+    if weight.ndim == 4:  # Conv2D
 
         channel_axis = 2 if is_depthwise else 3
 
@@ -894,6 +895,16 @@ def absorb_bn_parameters(weight, bias, mean, var_eps_sqrt_inv, gamma, beta,
             layer2kernel_axes_map = [None, channel_axis, 0, 1]
         else:
             layer2kernel_axes_map = [None, 0, 1, channel_axis]
+
+        axis = layer2kernel_axes_map[axis]
+    elif weight.ndim == 3:  # Conv1D
+
+        channel_axis = 2
+
+        if image_data_format == 'channels_first':
+            layer2kernel_axes_map = [None, channel_axis, 0]
+        else:
+            layer2kernel_axes_map = [None, 0, channel_axis]
 
         axis = layer2kernel_axes_map[axis]
 

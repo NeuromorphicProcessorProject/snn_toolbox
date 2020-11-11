@@ -40,8 +40,9 @@ def get_correlations(config):
 
 def get_ann_acc(config):
     logdir = os.path.join(config.get('paths', 'log_dir_of_current_run'),
-                          'log_vars', '0.npz')
-    logvars = np.load(logdir, allow_pickle=True)
+                          'log_vars')
+    last_file = sorted(os.listdir(logdir))[-1]
+    logvars = np.load(os.path.join(logdir, last_file), allow_pickle=True)
     return 1 - logvars['top1err_ann']
 
 
