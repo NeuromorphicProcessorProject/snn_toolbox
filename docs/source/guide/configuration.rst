@@ -379,6 +379,8 @@ param_logscale: bool, optional
 [output]
 --------
 
+See also `this comment <https://github.com/NeuromorphicProcessorProject/snn_toolbox/issues/70#issuecomment-720936329>`_ for more information.
+
 log_vars: set, optional
     Specify the variables to monitor and save to disk. Possible values:
     'activations_n_b_l', 'spiketrains_n_b_l_t', 'input_b_l_t', 'mem_n_b_l_t',
