@@ -166,7 +166,7 @@ class TestOutputModel:
         assert acc[0] >= 0.95
 
         corr = get_correlations(_config)
-        assert np.all(corr[:-1] > 0.97)
+        assert np.all(corr[:-1] > 0.95)
         assert corr[-1] > 0.5
 
     @nest_skip_if_dependency_missing

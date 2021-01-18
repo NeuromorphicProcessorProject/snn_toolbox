@@ -70,7 +70,7 @@ class TestConv1dINI:
         updates = {
             'tools': {'evaluate_ann': False, 'normalize': True},
             'simulation': {
-                'duration': 100,
+                'duration': 200,
                 'num_to_test': 100,
                 'batch_size': 50},
             'output': {
