@@ -202,9 +202,11 @@ class SNN(AbstractSNN):
         elif self._is_aedat_input:
             raise NotImplementedError
         else:
-            spike_times = \
-                [np.linspace(0, self._duration, self._duration * amplitude)
-                 for amplitude in x_flat]
+            spike_times = []
+            for amplitude in x_flat:
+                st = np.linspace(0, self._duration,
+                                 int(self._duration * amplitude))
+                spike_times.append(st)
             self.layers[0].set(spike_times=spike_times)
 
         if is_module_installed('pynn_object_serialisation'):

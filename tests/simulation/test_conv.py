@@ -85,5 +85,5 @@ class TestConv1dINI:
         assert acc[0] >= 0.98 * acc_ann
 
         corr = get_correlations(config)
-        assert np.all(corr[:-1] > 0.99)
+        assert np.all(corr[:-1] > 0.97)
         assert corr[-1] > 0.90
