@@ -68,7 +68,8 @@ input_layer = Input(input_shape)
 
 layer = Conv2D(filters=16,
                kernel_size=(5, 5),
-               strides=(2, 2))(input_layer)
+               strides=(2, 2),
+               activation='relu')(input_layer)
 layer = BatchNormalization(axis=axis)(layer)
 layer = Activation('relu')(layer)
 layer = Conv2D(filters=32,
