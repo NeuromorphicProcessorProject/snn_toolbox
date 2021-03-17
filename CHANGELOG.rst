@@ -1,6 +1,15 @@
 SNN Toolbox: Release Notes
 ==========================
 
+Version 0.6.0
+-------------
+
+Support for Tensorflow 2.4.
+Added support for Conv1D layers.
+Implemented spiking maxpool layer for tensorflow backend.
+More example scripts for ResNets and pytorch models.
+Minor bugfixes.
+
 Version 0.5.0
 -------------
 
