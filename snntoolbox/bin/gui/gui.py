@@ -34,7 +34,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 
 from snntoolbox.bin.utils import run_pipeline
 from snntoolbox.bin.gui.tooltip import ToolTip
