@@ -93,7 +93,7 @@ class SNN(PYSNN):
         if 'Reshape' in layer.__class__.__name__:
             return
         self.layers.append(self.sim.Population(
-            np.asscalar(np.prod(layer.output_shape[1:], dtype=np.int)),
+            np.prod(layer.output_shape[1:], dtype=np.int).item(),
             self.sim.IF_curr_exp, self.cellparams, label=layer.name))
 
         self.layers[-1].initialize(v=self.layers[-1].get('v_rest'))
