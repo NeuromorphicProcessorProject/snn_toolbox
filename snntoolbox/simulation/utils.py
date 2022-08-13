@@ -1822,7 +1822,4 @@ def convert_kernel(kernel):  # Copy of Keras code removed for deprecation
     kernel = np.asarray(kernel)
     if not 3 <= kernel.ndim <= 5:
         raise ValueError('Invalid kernel shape:', kernel.shape)
-    slices = [slice(None, None, -1) for _ in range(kernel.ndim)]
-    no_flip = (slice(None, None), slice(None, None))
-    slices[-2:] = no_flip
-    return np.copy(kernel[slices])
+    return np.flip(kernel, np.arange(kernel.ndim - 2))
