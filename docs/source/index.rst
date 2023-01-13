@@ -10,8 +10,8 @@ models from many different deep-learning libraries (Keras / TF, pytorch, ...)
 and provides an interface to several backends for simulation (pyNN, brian2,
 ...) or deployment (SpiNNaker, Loihi). The source code can be found on
 `GitHub`_. See also the accompanying articles
-`[Rueckauer et al., 2017] <https://www.frontiersin.org/articles/10.3389/fnins.2017.00682/abstract>`_
-and `[Rueckauer and Liu, 2018] <https://ieeexplore.ieee.org/abstract/document/8351295/>`_.
+`[Rueckauer et al., 2017] <https://www.frontiersin.org/articles/10.3389/fnins.2017.00682/abstract>`_,
+`[Rueckauer and Liu, 2018] <https://ieeexplore.ieee.org/abstract/document/8351295/>`_, and `[Rueckauer and Liu, 2021] <https://ieeexplore.ieee.org/abstract/document/9533837>`_.
 
 User Guide
 ----------
